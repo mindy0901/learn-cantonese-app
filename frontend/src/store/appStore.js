@@ -24,7 +24,7 @@ import {
 import { invalidateWordBrowseCache, patchWordInBrowseCache } from '../lib/wordBrowseCache.js'
 import { api } from '../lib/api.js'
 import { INITIAL_WORD_PAGES, PAGE_SIZE, WORD_FETCH_PAGE_SIZE } from '../lib/constants.js'
-import { logAction } from '../lib/actionLog.js'
+import { log, logWarn, logError } from '../lib/actionLog.js'
 import { normalizeWordFields, wordContentEqual } from '../lib/wordNormalize.js'
 import { normalizePopularity } from '../lib/wordPopularity.js'
 import { useAuthStore } from './authStore.js'
@@ -85,7 +85,7 @@ async function syncMutation(action, { requireAdmin = true } = {}) {
   try {
     return await action()
   } catch (err) {
-    console.warn('[cloud sync]', err instanceof Error ? err.message : err)
+    logWarn("Cloud sync failed", err instanceof Error ? err.message : err)
     throw err
   }
 }
@@ -105,7 +105,7 @@ async function migrateLegacyLocalIfNeeded() {
       (parsed.lessons?.length ?? 0) > 0
 
     if (hasLocal) {
-      logAction('Migrate legacy local data to cloud')
+      log("Migrate legacy data")
       const remote = await api.fetchFromCloud()
       const cloudEmpty =
         (remote.words?.length ?? 0) === 0 &&
@@ -124,7 +124,7 @@ async function migrateLegacyLocalIfNeeded() {
 
     localStorage.removeItem(LEGACY_DATA_KEY)
   } catch (err) {
-    console.warn('[legacy migration]', err instanceof Error ? err.message : err)
+    logWarn("Legacy migration failed", err instanceof Error ? err.message : err)
   }
 }
 
@@ -143,7 +143,7 @@ export const useAppStore = create((set, get) => ({
   hydrated: false,
 
   clearData: () => {
-    logAction('Clear all local app data')
+    log("Clear app data")
     set({
       words: [],
       wordTotal: 0,
@@ -164,7 +164,7 @@ export const useAppStore = create((set, get) => ({
     if (hydrateFromCloudPromise) return hydrateFromCloudPromise
 
     hydrateFromCloudPromise = (async () => {
-      logAction('Load app data from cloud')
+      log("Get app data")
       set({ dataLoading: true, dataError: null })
       try {
         if (useAuthStore.getState().user?.isAdmin) {
@@ -192,15 +192,9 @@ export const useAppStore = create((set, get) => ({
           dataError: null,
           hydrated: true,
         })
-        logAction('Loaded app data from cloud', {
-          wordCount: remote.wordTotal ?? indexed.words.length,
-          wordsLoaded: indexed.words.length,
-          grammarCount: indexed.grammarBank.length,
-          sentenceCount: indexed.sentencePatterns.length,
-          lessonCount: indexed.lessons.length,
-        })
+        log("Get app data done", remote.wordTotal ?? indexed.words.length)
       } catch (err) {
-        logAction('Failed to load app data from cloud', { error: err instanceof Error ? err.message : String(err) })
+        logError("Get app data failed", err instanceof Error ? err.message : String(err))
         set({
           dataLoading: false,
           dataError: err instanceof Error ? err.message : 'Failed to load data',
@@ -216,7 +210,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   createWord: (word) => {
-    logAction('Create word', { hanTraditional: word.hanTraditional, english: word.english })
+    log("Create word", word)
     assertAdmin()
     const prev = get().words
     const item = indexWord(word, prev.length)
@@ -252,7 +246,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   createGrammar: (item) => {
-    logAction('Create grammar item', { title: item.title })
+    log("Create grammar", item)
     assertAdmin()
     const entry = indexGrammarItem(item)
     const prev = get().grammarBank
@@ -297,7 +291,7 @@ export const useAppStore = create((set, get) => ({
     const merged = normalizeWordFields({ ...existing, ...patch })
     if (wordContentEqual(existing, merged)) return
 
-    logAction('Edit word', { wordId: id, patchKeys: Object.keys(patch) })
+    log("Update word", existing)
     let nextWords = prev.some((w) => w.id === id)
       ? updateWordInList(prev, id, { ...patch, updatedAt: new Date().toISOString() })
       : [...prev, indexWord({ ...existing, ...patch, updatedAt: new Date().toISOString() }, prev.length)]
@@ -428,7 +422,7 @@ export const useAppStore = create((set, get) => ({
       mastered === Boolean(existing.mastered)
     ) return
 
-    logAction('Edit grammar item', { grammarId: id, patchKeys: Object.keys(patch) })
+    log("Update grammar", existing)
     const grammarBank = updateGrammarInList(prev, id, { ...patch, title, content, important, mastered })
     const item = grammarBank.find((g) => g.id === id)
     set({ grammarBank })
@@ -439,7 +433,7 @@ export const useAppStore = create((set, get) => ({
 
   toggleImportant: (idOrWord) => {
     const { id, snapshot } = resolveWordTarget(idOrWord)
-    logAction('Toggle word important flag', { wordId: id })
+    log("Toggle word important", snapshot ?? id)
     assertSignedIn()
     const prev = get().words
     const toggled = toggleWordFlagInStore(prev, id, 'important', snapshot)
@@ -458,7 +452,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   toggleGrammarImportant: (id) => {
-    logAction('Toggle grammar important flag', { grammarId: id })
+    log("Toggle grammar important", id)
     assertAdmin()
     const prev = get().grammarBank
     const grammarBank = toggleGrammarField(prev, id, 'important')
@@ -471,7 +465,7 @@ export const useAppStore = create((set, get) => ({
 
   toggleMastered: (idOrWord) => {
     const { id, snapshot } = resolveWordTarget(idOrWord)
-    logAction('Toggle word mastered flag', { wordId: id })
+    log("Toggle word mastered", snapshot ?? id)
     assertSignedIn()
     const prev = get().words
     const existing = prev.find((w) => w.id === id) ?? snapshot
@@ -505,7 +499,7 @@ export const useAppStore = create((set, get) => ({
     const clamped = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)))
     const nextMastered =
       'mastered' in options ? Boolean(options.mastered) : clamped >= 100
-    logAction('Set word study progress', { wordId: id, studyProgress: clamped, mastered: nextMastered })
+    log("Update word progress", snapshot ?? id)
     assertSignedIn()
     const prev = get().words
     let existing = prev.find((w) => w.id === id)
@@ -550,7 +544,7 @@ export const useAppStore = create((set, get) => ({
   setWordPopularity: (idOrWord, level) => {
     const { id, snapshot } = resolveWordTarget(idOrWord)
     const popularity = normalizePopularity(level)
-    logAction('Set word popularity', { wordId: id, popularity })
+    log("Update word popularity", snapshot ?? id)
     assertSignedIn()
     const prev = get().words
     let existing = prev.find((w) => w.id === id)
@@ -574,7 +568,7 @@ export const useAppStore = create((set, get) => ({
       },
       { requireAdmin: false },
     ).catch((err) => {
-      console.warn('[setWordPopularity]', err instanceof Error ? err.message : err)
+      logWarn("Update word popularity failed", err instanceof Error ? err.message : err)
       set({ words: prev })
       patchWordInBrowseCache(id, { popularity: existing.popularity })
       throw err
@@ -582,7 +576,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   toggleGrammarMastered: (id) => {
-    logAction('Toggle grammar mastered flag', { grammarId: id })
+    log("Toggle grammar mastered", id)
     assertSignedIn()
     const prev = get().grammarBank
     const grammarBank = toggleGrammarField(prev, id, 'mastered')
@@ -596,7 +590,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   toggleLessonGrammarMastered: (lessonId, grammarId) => {
-    logAction('Toggle lesson grammar mastered flag', { lessonId, grammarId })
+    log("Toggle lesson grammar mastered", grammarId)
     assertSignedIn()
     const prev = get().lessons
     const lessons = toggleLessonGrammarMasteredInList(prev, lessonId, grammarId)
@@ -610,11 +604,11 @@ export const useAppStore = create((set, get) => ({
   },
 
   removeWord: (id) => {
-    logAction('Delete word', { wordId: id })
     assertAdmin()
     const { words: prevWords, lessons: prevLessons } = get()
-    const next = deleteWordFromList(prevWords, prevLessons, id)
     const removed = prevWords.find((w) => w.id === id)
+    log("Delete word", removed ?? id)
+    const next = deleteWordFromList(prevWords, prevLessons, id)
     const prevWordTotal = get().wordTotal
     const prevMastered = get().masteredWordCount
     const prevRevision = get().wordsRevision
@@ -699,7 +693,7 @@ export const useAppStore = create((set, get) => ({
     if (loadAllWordsPromise) return loadAllWordsPromise
 
     loadAllWordsPromise = (async () => {
-      logAction('Lazy load all words', { wordTotal, loaded: words.length })
+      log("Load all words", `${words.length}/${wordTotal}`)
       set({ wordsLoadingAll: true })
       try {
         const byId = new Map(get().words.map((w) => [w.id, w]))
@@ -725,7 +719,7 @@ export const useAppStore = create((set, get) => ({
           wordsFullyLoaded: allWords.length >= wordTotal,
           wordsLoadingAll: false,
         })
-        logAction('Lazy load all words completed', { loaded: allWords.length, wordTotal })
+        log("Load all words done", `${allWords.length}/${wordTotal}`)
         return allWords
       } catch (err) {
         set({ wordsLoadingAll: false })
@@ -739,16 +733,16 @@ export const useAppStore = create((set, get) => ({
   },
 
   removeGrammar: (id) => {
-    logAction('Delete grammar item', { grammarId: id })
     assertAdmin()
     const prev = get().grammarBank
+    log("Delete grammar", prev.find((g) => g.id === id) ?? id)
     const grammarBank = deleteGrammarFromList(prev, id)
     set({ grammarBank })
     syncMutation(() => api.deleteGrammar(id)).catch(() => set({ grammarBank: prev }))
   },
 
   createSentence: (item) => {
-    logAction('Create sentence pattern', { hanTraditional: item.hanTraditional })
+    log("Create sentence", item)
     assertAdmin()
     const wordIds = findWordIdsInSentence(item, get().words)
     const entry = indexSentencePattern({ ...item, wordIds })
@@ -795,7 +789,7 @@ export const useAppStore = create((set, get) => ({
     const important = 'important' in patch ? Boolean(patch.important) : Boolean(existing.important)
     const mastered = 'mastered' in patch ? Boolean(patch.mastered) : Boolean(existing.mastered)
 
-    logAction('Edit sentence pattern', { sentenceId: id, patchKeys: Object.keys(patch) })
+    log("Update sentence", existing)
     const merged = {
       ...existing,
       ...patch,
@@ -837,7 +831,7 @@ export const useAppStore = create((set, get) => ({
     const important = 'important' in patch ? Boolean(patch.important) : Boolean(existing.important)
     const mastered = 'mastered' in patch ? Boolean(patch.mastered) : Boolean(existing.mastered)
 
-    logAction('Edit sentence pattern', { sentenceId: id, patchKeys: Object.keys(patch) })
+    log("Update sentence", existing)
     const merged = {
       ...existing,
       ...patch,
@@ -868,7 +862,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   toggleSentenceImportant: (id) => {
-    logAction('Toggle sentence important flag', { sentenceId: id })
+    log("Toggle sentence important", id)
     assertAdmin()
     const prev = get().sentencePatterns
     const sentencePatterns = toggleSentenceField(prev, id, 'important')
@@ -882,7 +876,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   toggleSentenceMastered: (id) => {
-    logAction('Toggle sentence mastered flag', { sentenceId: id })
+    log("Toggle sentence mastered", id)
     assertSignedIn()
     const prev = get().sentencePatterns
     const sentencePatterns = toggleSentenceField(prev, id, 'mastered')
@@ -896,16 +890,16 @@ export const useAppStore = create((set, get) => ({
   },
 
   removeSentence: (id) => {
-    logAction('Delete sentence pattern', { sentenceId: id })
     assertAdmin()
     const prev = get().sentencePatterns
+    log("Delete sentence", prev.find((s) => s.id === id) ?? id)
     const sentencePatterns = deleteSentenceFromList(prev, id)
     set({ sentencePatterns })
     syncMutation(() => api.deleteSentencePattern(id)).catch(() => set({ sentencePatterns: prev }))
   },
 
   addLesson: (name, wordIds, grammar) => {
-    logAction('Create lesson', { name, wordCount: wordIds.length, grammarSectionCount: grammar.length })
+    log("Create lesson", name)
     assertAdmin()
     const lesson = createLessonEntity(name, wordIds, grammar)
     const prev = get().lessons
@@ -915,7 +909,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   addLessonAwait: async (name, wordIds, grammar) => {
-    logAction('Create lesson', { name, wordCount: wordIds.length, grammarSectionCount: grammar.length })
+    log("Create lesson", name)
     assertAdmin()
     const lesson = createLessonEntity(name, wordIds, grammar)
     const prev = get().lessons
@@ -933,7 +927,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   editLesson: (id, patch) => {
-    logAction('Edit lesson', { lessonId: id, patchKeys: Object.keys(patch) })
+    log("Update lesson", patch?.name ?? id)
     assertAdmin()
     const prev = get().lessons
     const lessons = updateLessonInList(prev, id, patch)
@@ -945,7 +939,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   editLessonAwait: async (id, patch) => {
-    logAction('Edit lesson', { lessonId: id, patchKeys: Object.keys(patch) })
+    log("Update lesson", patch?.name ?? id)
     assertAdmin()
     const prev = get().lessons
     const lessons = updateLessonInList(prev, id, patch)
@@ -965,9 +959,9 @@ export const useAppStore = create((set, get) => ({
   },
 
   removeLesson: (id) => {
-    logAction('Delete lesson', { lessonId: id })
     assertAdmin()
     const prev = get().lessons
+    log("Delete lesson", prev.find((l) => l.id === id) ?? id)
     const lessons = deleteLessonFromList(prev, id)
     set({ lessons })
     syncMutation(() => api.deleteLesson(id)).catch(() => set({ lessons: prev }))

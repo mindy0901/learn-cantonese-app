@@ -7,6 +7,7 @@ import { AddWordModal } from '../AddWordModal.jsx'
 import { hanTextClassName } from '../../lib/wordPopularity.js'
 import { btnClass } from '../ui/buttonStyles.js'
 import { cn } from '../../lib/cn.js'
+import { logWarn } from '../../lib/actionLog.js'
 
 const chipClass =
   'inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-8 border border-border rounded-full bg-surface text-text-h text-[0.8125rem] font-medium leading-5 shadow-theme-sm cursor-pointer transition-[background,border-color,color] duration-150 hover:border-error-border hover:bg-error-bg [&:hover>:not([class*=han-popularity])]:text-error-text'
@@ -41,7 +42,7 @@ export const LessonVocabSection = memo(function LessonVocabSection() {
         }
       })
       .catch((err) => {
-        console.warn('[lesson vocab]', err instanceof Error ? err.message : err)
+        logWarn("Load draft words failed", err instanceof Error ? err.message : err)
       })
     return () => {
       cancelled = true

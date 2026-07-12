@@ -5,7 +5,7 @@
   "packageManager": "pnpm@9.15.9",
   "type": "module",
   "scripts": {
-    "predev": "node --input-type=module -e \"import fs from 'fs'; if (!fs.existsSync('node_modules/express/package.json')) { console.error('\\n[backend] Missing dependencies. Run: pnpm install\\n'); process.exit(1); }\"",
+    "predev": "node --input-type=module -e \"import fs from 'fs'; const need=['express','cookie-session']; const miss=need.filter(p=>!fs.existsSync('node_modules/'+p+'/package.json')); if(miss.length){ console.error('\\n[backend] Missing packages: '+miss.join(', ')+'. Run: pnpm install\\n'); process.exit(1); }\"",
     "dev": "node --watch index.js",
     "start": "node index.js"
   },

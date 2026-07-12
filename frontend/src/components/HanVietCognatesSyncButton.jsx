@@ -165,6 +165,7 @@ export function HanVietCognatesSyncButton() {
                 <>
                   <ul className="m-0 flex list-none flex-col gap-2 p-0 text-[0.9375rem]">
                     <li>{fmt(t.hanVietCognatesSync.datasetEntries, { count: preview.entryCount })}</li>
+                    <li>{fmt(t.hanVietCognatesSync.phienamChars, { count: preview.phienamCharCount })}</li>
                     <li>{fmt(t.hanVietCognatesSync.mappedChars, { count: preview.mappedCharCount })}</li>
                     <li>{fmt(t.hanVietCognatesSync.wordsToUpdate, { count: preview.updates.length })}</li>
                   </ul>

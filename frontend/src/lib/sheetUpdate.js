@@ -1,5 +1,5 @@
 import { api } from './api.js'
-import { logAction } from './actionLog.js'
+import { log } from './actionLog.js'
 import { fetchGoogleSheetCsvDirect } from './sheetParsers.js'
 import { resolveSheetError, toSheetError } from './sheetErrors.js'
 import {
@@ -49,7 +49,7 @@ export async function previewSheetMerge(
   type,
   { sheetUrl, existingWords = [], existingGrammar = [], existingLessons = [] } = {},
 ) {
-  logAction('Preview sheet merge', { type, sheetUrl })
+  log("Preview sheet merge", type)
   const { items, stats } = await loadSheetItems(type, sheetUrl, existingWords)
 
   let mergePreview
@@ -69,13 +69,13 @@ export async function pullAndMergeFromSheet(
   type,
   { sheetUrl, existingWords = [], items: preloadedItems } = {},
 ) {
-  logAction('Pull and merge sheet data', { type, sheetUrl, preloaded: preloadedItems != null })
+  log("Merge sheet", type)
   const { items } =
     preloadedItems != null
       ? { items: preloadedItems }
       : await loadSheetItems(type, sheetUrl, existingWords)
   const result = await api.mergeFromSheet({ type, items })
-  logAction('Pull and merge sheet data completed', { type, result })
+  log("Merge sheet done", type)
   return { ...result, validRows: items.length }
 }
 

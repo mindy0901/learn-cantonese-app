@@ -4,7 +4,7 @@ import { FlashcardSessionSummary } from './FlashcardSessionSummary.jsx'
 import { useAppActions } from '../store/appStore.js'
 import { useIsSignedIn } from '../store/authStore.js'
 import { useLocale } from '../store/localeStore.js'
-import { logAction } from '../lib/actionLog.js'
+import { log } from '../lib/actionLog.js'
 import { recordFlashcardSession } from '../lib/flashcardStats.js'
 import { clampStudyProgress, nextStudyProgress } from '../lib/flashcardProgress.js'
 import { wordFieldDisplayText, isWordFieldPending } from '../lib/wordDisplay.js'
@@ -233,7 +233,7 @@ export function FlashcardDeck({
       if (word) setSessionLog(log)
       const entries = buildSessionSummary(initialWords, log)
       recordFlashcardSession(entries)
-      logAction('Flashcard: session complete', { total: initialWords.length })
+      log("Flashcard session done", initialWords.length)
       setSessionComplete(true)
     },
     [initialWords, sessionLog],
@@ -284,17 +284,17 @@ export function FlashcardDeck({
   const goNext = useCallback(() => {
     if (isAnimating) return
     if (!flipped) {
-      logAction('Flashcard: flip card before next', { wordId: current?.id })
+      log("Flashcard flip", current)
       setFlipped(true)
       return
     }
     if (isLastCard) {
-      logAction('Flashcard: finish session', { wordId: current?.id })
+      log("Flashcard finish", current)
       const complete = () => finishSession(current)
       if (!runCardTransition('next', complete)) complete()
       return
     }
-    logAction('Flashcard: go to next card', { currentIndex: index, deckSize: deck.length })
+    log("Flashcard next", current)
     runCardTransition('next', () => {
       recordOutcome(current, 'passed')
       setFlipped(false)
@@ -304,16 +304,16 @@ export function FlashcardDeck({
 
   const goPrev = useCallback(() => {
     if (isAnimating || index <= 0) return
-    logAction('Flashcard: go to previous card', { currentIndex: index, deckSize: deck.length })
+    log("Flashcard prev", current)
     runCardTransition('prev', () => {
       setFlipped(false)
       setIndex((i) => Math.max(i - 1, 0))
     })
-  }, [deck.length, index, isAnimating, runCardTransition])
+  }, [current, index, isAnimating, runCardTransition])
 
   const openDetail = useCallback(() => {
     if (!current) return
-    logAction('Flashcard: open word detail page', { wordId: current.id, hanTraditional: current.hanTraditional })
+    log("Open word detail", current)
     navigate(wordDetailPath(current.id))
   }, [current, navigate])
 
@@ -349,7 +349,7 @@ export function FlashcardDeck({
   const handleRate = useCallback(
     (rating) => {
       if (!current) return
-      logAction('Flashcard: rate card', { rating, wordId: current.id, hanTraditional: current.hanTraditional })
+      log(`Flashcard rate ${rating}`, current)
       setStats((s) => ({ ...s, [rating]: (s[rating] ?? 0) + 1 }))
 
       if (rating === 'mastered') {
@@ -504,7 +504,7 @@ export function FlashcardDeck({
           )}
           onClick={() => {
             if (isAnimating) return
-            logAction('Flashcard: flip card', { flipped: !flipped, wordId: current?.id })
+            log("Flashcard flip", current)
             setFlipped((f) => !f)
           }}
           role="button"

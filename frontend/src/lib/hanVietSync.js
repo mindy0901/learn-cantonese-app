@@ -1,4 +1,6 @@
 import { normWordField, normalizeWordFields } from './wordNormalize.js'
+import { api } from './api.js'
+import { buildCharHanVietMapFromPhienam, mergeCharHanVietMaps } from './hanVietCharMap.js'
 import {
   HAN_VIET_ALT_SEP,
   HAN_VIET_PLACEHOLDER,
@@ -174,12 +176,17 @@ export function computeHanVietSyncUpdates(words, charMap, { placeholder = HAN_VI
   return updates
 }
 
-export function previewHanVietSync(words) {
-  const charMap = buildCharHanVietMap(words)
+export async function previewHanVietSync(words) {
+  const { charMap: phienamCharMapObj, charCount: phienamCharCount } = await api.fetchHanVietPhienam()
+  const wordBankCharMap = buildCharHanVietMap(words)
+  const phienamCharMap = buildCharHanVietMapFromPhienam(phienamCharMapObj)
+  const charMap = mergeCharHanVietMaps(wordBankCharMap, phienamCharMap)
   const updates = computeHanVietSyncUpdates(words, charMap)
   return {
     charMap,
     updates,
     mappedCharCount: charMap.size,
+    wordBankCharCount: wordBankCharMap.size,
+    phienamCharCount,
   }
 }

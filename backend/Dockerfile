@@ -12,7 +12,8 @@ COPY . .
 ENV BACKEND_HOST=0.0.0.0
 ENV BACKEND_PORT=3001
 EXPOSE 3001
-CMD ["pnpm", "dev"]
+# Named volume may lag package.json after dependency changes — sync before dev.
+CMD ["sh", "-c", "pnpm install && pnpm dev"]
 
 FROM base AS runner
 ENV NODE_ENV=production

@@ -228,10 +228,13 @@ export const zhTW = {
   hanVietSync: {
     btn: '同步漢越音',
     title: '依漢字同步漢越音',
-    description: '從已有漢越音詞條學習讀音，僅填充空白或僅含 • 的詞條。已填寫的詞（如 Trưởng）不會被覆蓋。',
+    description:
+      '從 word bank 已有詞條學習讀音，並用 phienam.txt（約 1.1 萬漢字）補充，僅填充空白或僅含 • 的詞條。word bank 中的讀音優先於 phienam。',
     placeholderNote: '尚未對應的漢字顯示為 {mark}。',
     noneNote: '暫無漢越音：填 {mark} — 不作來源，但資料有對應讀音時會更新。',
-    mappedChars: '已對應 {count} 個漢字',
+    wordBankChars: '從 word bank 得到 {count} 個漢字',
+    phienamChars: 'phienam.txt 含 {count} 個漢字',
+    mappedChars: '共 {count} 個漢字可用於填充',
     wordsToUpdate: '將更新 {count} 個詞條',
     previewListTitle: '將更新的詞條',
     syncingListTitle: '正在同步',
@@ -248,11 +251,12 @@ export const zhTW = {
     btn: '漢越音（cognates）',
     title: '從 cognates 資料集填充漢越音',
     description:
-      '使用 chinese-hanviet-cognates：先整詞匹配，再從 cognates 提取單字讀音填充剩餘 •（如 電→Điện、腦→Não）。僅更新空白或含 • 的詞條。',
+      '使用 chinese-hanviet-cognates：先整詞匹配，再用 cognates + phienam.txt 填充剩餘 •（如 電→Điện、臀→Đồn）。僅更新空白或含 • 的詞條。',
     sourceNote:
-      '來源：github.com/ryanphung/chinese-hanviet-cognates — 罕見字（飯、座、煲…）若不在 cognates 中可能仍為 •。',
+      '來源：github.com/ryanphung/chinese-hanviet-cognates（詞組 + phienam.txt）。同一字若兩處都有讀音，優先使用 cognates。',
     datasetEntries: '資料集 {count} 個詞組',
-    mappedChars: '從 cognates 得到 {count} 個漢字讀音',
+    phienamChars: 'phienam.txt 含 {count} 個漢字',
+    mappedChars: '共 {count} 個漢字可用於填充',
     wordsToUpdate: '將更新 {count} 個詞條',
     previewListTitle: '將更新的詞條',
     syncingListTitle: '正在填充漢越音…',

@@ -11,10 +11,12 @@ import {
   computeHanVietSyncUpdates,
   HAN_VIET_ALT_SEP,
 } from './hanVietSync.js'
+import { buildCharHanVietMapFromPhienam, mergeCharHanVietMaps } from './hanVietCharMap.js'
 import { isHanVietNone } from './hanVietMarkers.js'
 import { normalizeWordFields } from './wordNormalize.js'
 
 /** @typedef {{ word: string, traditional: string, hanViet: string, pinyin?: string, meaning?: string }} CognateEntry */
+/** @typedef {{ char: string, reading: string }} PhienamEntry */
 
 /** Learn per-character Hán–Việt from cognate compounds (e.g. 電影 → 電=Điện, 影=Ảnh). */
 export function buildCharHanVietMapFromCognates(items) {
@@ -119,8 +121,8 @@ function computeHanVietCognatesWordUpdates(words, cognatesMap) {
   return updates
 }
 
-/** Whole-word cognates first, then fill remaining • slots from cognate char map. */
-export function computeHanVietCognatesSyncUpdates(words, cognatesMap, cognatesCharMap) {
+/** Whole-word cognates first, then fill remaining • slots from merged char map. */
+export function computeHanVietCognatesSyncUpdates(words, cognatesMap, charMap) {
   const byId = new Map()
 
   for (const update of computeHanVietCognatesWordUpdates(words, cognatesMap)) {
@@ -131,7 +133,7 @@ export function computeHanVietCognatesSyncUpdates(words, cognatesMap, cognatesCh
     byId.has(word.id) ? { ...word, hanViet: byId.get(word.id).hanViet } : word,
   )
 
-  for (const update of computeHanVietSyncUpdates(wordsAfterWordPass, cognatesCharMap)) {
+  for (const update of computeHanVietSyncUpdates(wordsAfterWordPass, charMap)) {
     if (byId.has(update.id)) continue
     byId.set(update.id, update)
   }
@@ -140,15 +142,20 @@ export function computeHanVietCognatesSyncUpdates(words, cognatesMap, cognatesCh
 }
 
 export async function previewHanVietCognatesSync(words) {
-  const { items, entryCount, keyCount } = await api.fetchHanVietCognates()
+  const [{ items, entryCount, keyCount }, { charMap: phienamCharMapObj, charCount: phienamCharCount }] =
+    await Promise.all([api.fetchHanVietCognates(), api.fetchHanVietPhienam()])
   const cognatesMap = buildCognatesLookupMap(items)
   const cognatesCharMap = buildCharHanVietMapFromCognates(items)
-  const updates = computeHanVietCognatesSyncUpdates(words, cognatesMap, cognatesCharMap)
+  const phienamCharMap = buildCharHanVietMapFromPhienam(phienamCharMapObj)
+  const charMap = mergeCharHanVietMaps(cognatesCharMap, phienamCharMap)
+  const updates = computeHanVietCognatesSyncUpdates(words, cognatesMap, charMap)
   return {
     updates,
     entryCount,
     keyCount,
-    mappedCharCount: cognatesCharMap.size,
+    mappedCharCount: charMap.size,
+    cognatesCharCount: cognatesCharMap.size,
+    phienamCharCount,
     matchedWordCount: updates.length,
   }
 }

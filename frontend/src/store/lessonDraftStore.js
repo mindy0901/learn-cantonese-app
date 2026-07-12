@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { emptyGrammarBankItem, emptyWord } from '../types/word.js'
-import { logAction } from '../lib/actionLog.js'
+import { log } from '../lib/actionLog.js'
 
 function normalizeWordId(id) {
   return String(id ?? '').trim()
@@ -44,11 +44,7 @@ export const useLessonDraftStore = create((set, get) => ({
         grammarExtras.push(section)
       }
     }
-    logAction('Initialize lesson draft', {
-      name,
-      wordCount: wordIds.length,
-      grammarCount: grammarSelectedOrder.length,
-    })
+    log("Init lesson draft", name || "untitled")
     set({
       name,
       selectedOrder: dedupeWordIds(wordIds),
@@ -59,7 +55,7 @@ export const useLessonDraftStore = create((set, get) => ({
   },
 
   reset: () => {
-    logAction('Reset lesson draft')
+    log("Reset lesson draft")
     set({
       name: '',
       selectedOrder: [],
@@ -70,14 +66,14 @@ export const useLessonDraftStore = create((set, get) => ({
   },
 
   setName: (name) => {
-    logAction('Update lesson draft name', { name })
+    log("Lesson draft name", name)
     set({ name })
   },
 
   toggleSelected: (id) => {
     const wordId = normalizeWordId(id)
     if (!wordId) return
-    logAction('Toggle lesson draft vocabulary selection', { wordId })
+    log("Toggle draft word", wordId)
     set((state) => {
       const order = dedupeWordIds(state.selectedOrder)
       if (order.includes(wordId)) {
@@ -92,34 +88,34 @@ export const useLessonDraftStore = create((set, get) => ({
   },
 
   clearSelected: () => {
-    logAction('Clear lesson draft vocabulary selection')
+    log("Clear draft words")
     set({ selectedOrder: [] })
   },
 
   addWordExtra: (word) => {
     const entry = emptyWord(word)
-    logAction('Add lesson draft custom word', { hanTraditional: entry.hanTraditional })
+    log("Add draft word", entry)
     set((state) => ({ wordExtras: [...state.wordExtras, entry] }))
   },
 
   removeWordExtra: (id) => {
-    logAction('Remove lesson draft custom word', { wordId: id })
+    log("Remove draft word", id)
     set((state) => ({ wordExtras: state.wordExtras.filter((w) => w.id !== id) }))
   },
 
   addGrammarExtra: (section) => {
     const entry = emptyGrammarBankItem(section)
-    logAction('Add lesson draft custom grammar', { title: entry.title })
+    log("Add draft grammar", entry)
     set((state) => ({ grammarExtras: [...state.grammarExtras, entry] }))
   },
 
   removeGrammarExtra: (id) => {
-    logAction('Remove lesson draft custom grammar', { grammarId: id })
+    log("Remove draft grammar", id)
     set((state) => ({ grammarExtras: state.grammarExtras.filter((g) => g.id !== id) }))
   },
 
   toggleGrammarSelected: (id) => {
-    logAction('Toggle lesson draft grammar selection', { grammarId: id })
+    log("Toggle draft grammar", id)
     set((state) => {
       if (state.grammarSelectedOrder.includes(id)) {
         return { grammarSelectedOrder: state.grammarSelectedOrder.filter((x) => x !== id) }
@@ -129,7 +125,7 @@ export const useLessonDraftStore = create((set, get) => ({
   },
 
   clearGrammarSelected: () => {
-    logAction('Clear lesson draft grammar selection')
+    log("Clear draft grammar")
     set({ grammarSelectedOrder: [] })
   },
 

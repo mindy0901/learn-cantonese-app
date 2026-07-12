@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { logError, logOk, logStart, logStep, logWarn, userLabel } from "../lib/actionLog.js";
+import { log, logError, logWarn } from "../lib/actionLog.js";
 import {
     fetchAllData,
     fetchAppData,
@@ -29,18 +29,15 @@ import { normalizePopularity } from "../lib/wordPopularity.js";
 import { getUserId, requireAuth } from "../middleware/auth.js";
 import { requireAppAdmin } from "../middleware/appAdmin.js";
 import { isLatinSearchQuery, searchCedictByEnglish } from "../lib/cedictSearch.js";
-import {
-    getHanVietCognatesStats,
-    listHanVietCognates,
-    lookupHanVietCognate,
-} from "../lib/hanVietCognates.js";
+import { getHanVietCognatesStats, listHanVietCognates, lookupHanVietCognate } from "../lib/hanVietCognates.js";
+import { getHanVietPhienamStats, getHanVietPhienamMap, lookupHanVietPhienamChar } from "../lib/hanVietPhienam.js";
 
 export const dataRouter = Router();
 
 // Full snapshot — public read (anonymous sees admin catalog)
 dataRouter.get("/data", async (req, res, next) => {
     try {
-        logStep("data", "LOAD APP DATA", userLabel(req));
+        log("Get app data");
         const db = requireAdmin();
         const userId = await resolveReadUserId(req, db);
         const initialWordPages = Math.min(10, Math.max(0, Number(req.query.wordPages) || 5));
@@ -55,6 +52,7 @@ dataRouter.get("/data", async (req, res, next) => {
 // Paginated word bank browse
 dataRouter.get("/words/browse", async (req, res, next) => {
     try {
+        log("Browse words", req.query.q ?? req.query.search ?? `page ${req.query.page ?? 1}`);
         const db = requireAdmin();
         const userId = await resolveReadUserId(req, db);
         const result = await queryWords(db, userId, {
@@ -122,15 +120,40 @@ dataRouter.get("/hanviet/cognates", (_req, res, next) => {
     }
 });
 
+dataRouter.get("/hanviet/phienam", (_req, res, next) => {
+    try {
+        const map = getHanVietPhienamMap();
+        const stats = getHanVietPhienamStats();
+        res.json({ charMap: Object.fromEntries(map), ...stats });
+    } catch (err) {
+        next(err);
+    }
+});
+
+dataRouter.get("/hanviet/phienam/lookup", (req, res, next) => {
+    try {
+        const ch = String(req.query.char ?? req.query.q ?? "").trim();
+        if (!ch) {
+            res.json({ match: null });
+            return;
+        }
+        const match = lookupHanVietPhienamChar(ch);
+        res.json({ match, char: ch });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // Fetch words by id (e.g. lesson detail)
 dataRouter.get("/words/by-ids", async (req, res, next) => {
     try {
-        const db = requireAdmin();
-        const userId = await resolveReadUserId(req, db);
         const ids = String(req.query.ids ?? "")
             .split(",")
             .map((id) => id.trim())
             .filter(Boolean);
+        log("Get words by id", `${ids.length} id(s)`);
+        const db = requireAdmin();
+        const userId = await resolveReadUserId(req, db);
         const rows = await fetchWordsByIds(db, userId, ids);
         res.json(rows.map(rowToWord));
     } catch (err) {
@@ -142,7 +165,7 @@ dataRouter.get("/words/by-ids", async (req, res, next) => {
 dataRouter.post("/data/merge-preview", requireAuth, requireAppAdmin, async (req, res, next) => {
     try {
         const { type, items } = req.body ?? {};
-        logStep("sheet", "PREVIEW SHEET MERGE", `${type}, ${items?.length ?? 0} rows`);
+        log("Preview sheet merge", `${type} (${items?.length ?? 0})`);
         if (!type || !Array.isArray(items)) {
             return res.status(400).json({ error: "type and items[] required" });
         }
@@ -159,8 +182,14 @@ dataRouter.post("/data/merge-preview", requireAuth, requireAppAdmin, async (req,
 // Replace selected cloud data (upload) — admin only
 dataRouter.put("/data", requireAuth, requireAppAdmin, async (req, res, next) => {
     try {
-        const { types = ["words", "grammar", "lessons"], words = [], grammarBank = [], lessons = [], sentencePatterns = [] } = req.body ?? {};
-        logStep("data", "REPLACE DATA", `${types.join(", ")} — ${userLabel(req)}`);
+        const {
+            types = ["words", "grammar", "lessons"],
+            words = [],
+            grammarBank = [],
+            lessons = [],
+            sentencePatterns = [],
+        } = req.body ?? {};
+        log("Replace data", types.join(", "));
         const db = requireAdmin();
         if (!Array.isArray(types) || types.length === 0) {
             return res.status(400).json({ error: "Select at least one data type" });
@@ -172,7 +201,7 @@ dataRouter.put("/data", requireAuth, requireAppAdmin, async (req, res, next) => 
             lessons,
             sentencePatterns,
         });
-        logOk("data", "REPLACE DATA", null, JSON.stringify(counts));
+        log("Replace data done", JSON.stringify(counts));
         res.json({ ok: true, ...counts });
     } catch (err) {
         next(err);
@@ -181,28 +210,28 @@ dataRouter.put("/data", requireAuth, requireAppAdmin, async (req, res, next) => 
 
 // Fetch public Google Sheet CSV (avoids browser CORS) — admin only
 async function handleSheetCsv(req, res, next) {
-  try {
-    const url = String(req.body?.url ?? req.query.url ?? '').trim()
-    logStep("sheet", "LOAD GOOGLE SHEET CSV", url ? url.slice(0, 60) : '(missing url)')
-    if (!url) return res.status(400).json({ error: 'Missing url', code: 'NO_SHEET_URL' })
-    const csv = await fetchSheetCsvText(url)
-    res.type('text/csv; charset=utf-8').send(csv)
-  } catch (err) {
-    if (err.code) {
-      return res.status(err.status ?? 400).json({ error: err.message, code: err.code })
+    try {
+        const url = String(req.body?.url ?? req.query.url ?? "").trim();
+        log("Load sheet CSV", url ? url.slice(0, 60) : "missing url");
+        if (!url) return res.status(400).json({ error: "Missing url", code: "NO_SHEET_URL" });
+        const csv = await fetchSheetCsvText(url);
+        res.type("text/csv; charset=utf-8").send(csv);
+    } catch (err) {
+        if (err.code) {
+            return res.status(err.status ?? 400).json({ error: err.message, code: err.code });
+        }
+        next(err);
     }
-    next(err)
-  }
 }
 
-dataRouter.get('/sheet/csv', requireAuth, requireAppAdmin, handleSheetCsv)
-dataRouter.post('/sheet/csv', requireAuth, requireAppAdmin, handleSheetCsv)
+dataRouter.get("/sheet/csv", requireAuth, requireAppAdmin, handleSheetCsv);
+dataRouter.post("/sheet/csv", requireAuth, requireAppAdmin, handleSheetCsv);
 
 // Merge from sheet — additive only, no deletes — admin only
 dataRouter.post("/data/merge", requireAuth, requireAppAdmin, async (req, res, next) => {
     try {
         const { type, items } = req.body ?? {};
-        logStep("sheet", "MERGE SHEET", `${type}, ${items?.length ?? 0} rows — ${userLabel(req)}`);
+        log("Merge sheet", `${type} (${items?.length ?? 0})`);
         const db = requireAdmin();
         if (!type || !["words", "grammar", "lessons", "sentencePatterns"].includes(type)) {
             return res.status(400).json({ error: "Invalid merge type" });
@@ -211,7 +240,7 @@ dataRouter.post("/data/merge", requireAuth, requireAppAdmin, async (req, res, ne
             return res.status(400).json({ error: "items must be an array" });
         }
         const result = await mergeSheetData(db, getUserId(req), { type, items });
-        logOk("sheet", "MERGE SHEET", null, `${type}: +${result.added ?? 0} / updated ${result.updated ?? 0}`);
+        log("Merge sheet done", `${type} +${result.added ?? 0} ~${result.updated ?? 0}`);
         res.json({ ok: true, ...result });
     } catch (err) {
         next(err);
@@ -221,10 +250,10 @@ dataRouter.post("/data/merge", requireAuth, requireAppAdmin, async (req, res, ne
 // Backfill han_traditional (HK) + han_simplified for all words via OpenCC — admin only
 dataRouter.post("/data/backfill-han-variants", requireAuth, requireAppAdmin, async (req, res, next) => {
     try {
-        logStep("data", "BACKFILL HAN VARIANTS", userLabel(req));
+        log("Backfill han variants");
         const db = requireAdmin();
         const result = await backfillHanVariants(db, getUserId(req));
-        logOk("data", "BACKFILL HAN VARIANTS", null, `updated ${result.updated}/${result.total}`);
+        log("Backfill han variants done", `${result.updated}/${result.total}`);
         res.json({ ok: true, ...result });
     } catch (err) {
         next(err);
@@ -234,10 +263,10 @@ dataRouter.post("/data/backfill-han-variants", requireAuth, requireAppAdmin, asy
 // Backfill pinyin from OpenCC simplified + pinyin-pro — admin only
 dataRouter.post("/data/backfill-pinyin", requireAuth, requireAppAdmin, async (req, res, next) => {
     try {
-        logStep("data", "BACKFILL PINYIN", userLabel(req));
+        log("Backfill pinyin");
         const db = requireAdmin();
         const result = await backfillPinyin(db, getUserId(req));
-        logOk("data", "BACKFILL PINYIN", null, `updated ${result.updated}/${result.total}`);
+        log("Backfill pinyin done", `${result.updated}/${result.total}`);
         res.json({ ok: true, ...result });
     } catch (err) {
         next(err);
@@ -247,7 +276,7 @@ dataRouter.post("/data/backfill-pinyin", requireAuth, requireAppAdmin, async (re
 // --- Words CRUD ---
 dataRouter.get("/words", async (req, res, next) => {
     try {
-        logStep("word", "LIST WORDS", userLabel(req));
+        log("Get all words");
         const db = requireAdmin();
         const userId = await resolveReadUserId(req, db);
         if (req.query.page || req.query.pageSize) {
@@ -274,12 +303,11 @@ dataRouter.get("/words", async (req, res, next) => {
 
 dataRouter.post("/words", requireAuth, requireAppAdmin, async (req, res, next) => {
     try {
-        logStart("word", "CREATE WORD", req.body, userLabel(req));
+        log("Create word", req.body);
         const db = requireAdmin();
         const row = wordToRow(req.body, getUserId(req));
         const { data, error } = await db.from("words").insert(row).select().single();
         if (error) throw error;
-        logOk("word", "CREATE WORD", data);
         res.status(201).json(rowToWord(data));
     } catch (err) {
         next(err);
@@ -299,7 +327,7 @@ dataRouter.put("/words/:id", requireAuth, async (req, res, next) => {
         if (loadError) throw loadError;
         if (!existingRow) return res.status(404).json({ error: "Word not found" });
 
-        logStart("word", "UPDATE WORD", existingRow, userLabel(req));
+        log("Update word", existingRow);
         const merged = mergeWordFieldsPreferFilled(rowToWord(existingRow), {
             ...req.body,
             id: req.params.id,
@@ -315,7 +343,6 @@ dataRouter.put("/words/:id", requireAuth, async (req, res, next) => {
             .select()
             .single();
         if (error) throw error;
-        logOk("word", "UPDATE WORD", data);
         res.json(rowToWord(data));
     } catch (err) {
         next(err);
@@ -345,15 +372,17 @@ dataRouter.patch("/words/:id/flags", requireAuth, async (req, res, next) => {
             } else {
                 const parsed = normalizePopularity(popularity);
                 if (parsed === null) {
-                    logWarn("word", "PATCH WORD FLAGS", `invalid popularity: ${popularity}`);
+                    logWarn("Invalid popularity", popularity);
                     return res.status(400).json({ error: "popularity must be 0–3 or null" });
                 }
                 updates.popularity = parsed;
             }
         }
         if (Object.keys(updates).length === 1) {
-            logWarn("word", "PATCH WORD FLAGS", "no fields to update");
-            return res.status(400).json({ error: "At least one of important, mastered, popularity, or studyProgress is required" });
+            logWarn("Update word flags: no fields");
+            return res
+                .status(400)
+                .json({ error: "At least one of important, mastered, popularity, or studyProgress is required" });
         }
 
         const { data: existingRow } = await db
@@ -362,13 +391,7 @@ dataRouter.patch("/words/:id/flags", requireAuth, async (req, res, next) => {
             .eq("id", req.params.id)
             .eq("user_id", userId)
             .maybeSingle();
-        const flagDetail = [
-            typeof important === "boolean" ? `important=${important}` : null,
-            typeof mastered === "boolean" ? `mastered=${mastered}` : null,
-            "popularity" in body ? `popularity=${updates.popularity ?? "null"}` : null,
-            "studyProgress" in body ? `studyProgress=${updates.study_progress}` : null,
-        ].filter(Boolean).join(", ");
-        logStart("word", "PATCH WORD FLAGS", existingRow ?? req.params.id, userLabel(req));
+        log("Update word flags", existingRow ?? req.params.id);
 
         const { data, error } = await db
             .from("words")
@@ -378,11 +401,10 @@ dataRouter.patch("/words/:id/flags", requireAuth, async (req, res, next) => {
             .select()
             .single();
         if (error) {
-            logError("word", "PATCH WORD FLAGS", error.message);
+            logError("Update word flags failed", error.message);
             throw error;
         }
         if (!data) return res.status(404).json({ error: "Word not found" });
-        logOk("word", "PATCH WORD FLAGS", data, flagDetail);
         res.json(rowToWord(data));
     } catch (err) {
         next(err);
@@ -399,7 +421,7 @@ dataRouter.delete("/words/:id", requireAuth, requireAppAdmin, async (req, res, n
             .eq("id", req.params.id)
             .eq("user_id", userId)
             .maybeSingle();
-        logStart("word", "DELETE WORD", existingRow ?? req.params.id, userLabel(req));
+        log("Delete word", existingRow ?? req.params.id);
 
         const { data, error } = await db
             .from("words")
@@ -409,7 +431,6 @@ dataRouter.delete("/words/:id", requireAuth, requireAppAdmin, async (req, res, n
             .select("id");
         if (error) throw error;
         if (!data?.length) return res.status(404).json({ error: "Word not found" });
-        logOk("word", "DELETE WORD", existingRow ?? req.params.id);
         res.json({ ok: true });
     } catch (err) {
         next(err);
@@ -419,7 +440,7 @@ dataRouter.delete("/words/:id", requireAuth, requireAppAdmin, async (req, res, n
 // --- Grammar CRUD ---
 dataRouter.get("/grammar", async (req, res, next) => {
     try {
-        logStep("grammar", "LIST GRAMMAR", userLabel(req));
+        log("Get all grammar");
         const db = requireAdmin();
         const userId = await resolveReadUserId(req, db);
         const data = await fetchAllData(db, userId);
@@ -431,12 +452,11 @@ dataRouter.get("/grammar", async (req, res, next) => {
 
 dataRouter.post("/grammar", requireAuth, requireAppAdmin, async (req, res, next) => {
     try {
-        logStart("grammar", "CREATE GRAMMAR", req.body, userLabel(req));
+        log("Create grammar", req.body);
         const db = requireAdmin();
         const row = grammarToRow(req.body, getUserId(req));
         const { data, error } = await db.from("grammar_bank").insert(row).select().single();
         if (error) throw error;
-        logOk("grammar", "CREATE GRAMMAR", data);
         res.status(201).json(rowToGrammar(data));
     } catch (err) {
         next(err);
@@ -453,7 +473,7 @@ dataRouter.put("/grammar/:id", requireAuth, async (req, res, next) => {
             .eq("id", req.params.id)
             .eq("user_id", userId)
             .maybeSingle();
-        logStart("grammar", "UPDATE GRAMMAR", existingRow ?? req.body, userLabel(req));
+        log("Update grammar", existingRow ?? req.body);
         const row = grammarToRow({ ...req.body, id: req.params.id }, userId, { includeCreatedAt: false });
         const { data, error } = await db
             .from("grammar_bank")
@@ -463,7 +483,6 @@ dataRouter.put("/grammar/:id", requireAuth, async (req, res, next) => {
             .select()
             .single();
         if (error) throw error;
-        logOk("grammar", "UPDATE GRAMMAR", data);
         res.json(rowToGrammar(data));
     } catch (err) {
         next(err);
@@ -480,7 +499,7 @@ dataRouter.delete("/grammar/:id", requireAuth, requireAppAdmin, async (req, res,
             .eq("id", req.params.id)
             .eq("user_id", userId)
             .maybeSingle();
-        logStart("grammar", "DELETE GRAMMAR", existingRow ?? req.params.id, userLabel(req));
+        log("Delete grammar", existingRow ?? req.params.id);
 
         const { data, error } = await db
             .from("grammar_bank")
@@ -490,7 +509,6 @@ dataRouter.delete("/grammar/:id", requireAuth, requireAppAdmin, async (req, res,
             .select("id");
         if (error) throw error;
         if (!data?.length) return res.status(404).json({ error: "Grammar not found" });
-        logOk("grammar", "DELETE GRAMMAR", existingRow ?? req.params.id);
         res.json({ ok: true });
     } catch (err) {
         next(err);
@@ -500,7 +518,7 @@ dataRouter.delete("/grammar/:id", requireAuth, requireAppAdmin, async (req, res,
 // --- Sentence patterns CRUD ---
 dataRouter.get("/sentence-patterns", async (req, res, next) => {
     try {
-        logStep("sentence", "LIST SENTENCE PATTERNS", userLabel(req));
+        log("Get all sentences");
         const db = requireAdmin();
         const userId = await resolveReadUserId(req, db);
         const data = await fetchAllData(db, userId);
@@ -512,7 +530,7 @@ dataRouter.get("/sentence-patterns", async (req, res, next) => {
 
 dataRouter.get("/sentence-patterns/by-word/:wordId", async (req, res, next) => {
     try {
-        logStep("sentence", "LIST SENTENCES FOR WORD", `${req.params.wordId} — ${userLabel(req)}`);
+        log("Get sentences for word", req.params.wordId);
         const db = requireAdmin();
         const userId = await resolveReadUserId(req, db);
         const wordId = req.params.wordId;
@@ -531,7 +549,7 @@ dataRouter.get("/sentence-patterns/by-word/:wordId", async (req, res, next) => {
 
 dataRouter.post("/sentence-patterns", requireAuth, requireAppAdmin, async (req, res, next) => {
     try {
-        logStart("sentence", "CREATE SENTENCE PATTERN", req.body, userLabel(req));
+        log("Create sentence", req.body);
         const db = requireAdmin();
         const userId = getUserId(req);
         const row = sentencePatternToRow(req.body, userId);
@@ -544,7 +562,6 @@ dataRouter.post("/sentence-patterns", requireAuth, requireAppAdmin, async (req, 
             }
             throw error;
         }
-        logOk("sentence", "CREATE SENTENCE PATTERN", data);
         res.status(201).json(rowToSentencePattern(data));
     } catch (err) {
         next(err);
@@ -561,12 +578,8 @@ dataRouter.put("/sentence-patterns/:id", requireAuth, async (req, res, next) => 
             .eq("id", req.params.id)
             .eq("user_id", userId)
             .maybeSingle();
-        logStart("sentence", "UPDATE SENTENCE PATTERN", existingRow ?? req.body, userLabel(req));
-        const row = sentencePatternToRow(
-            { ...req.body, id: req.params.id },
-            userId,
-            { includeCreatedAt: false },
-        );
+        log("Update sentence", existingRow ?? req.body);
+        const row = sentencePatternToRow({ ...req.body, id: req.params.id }, userId, { includeCreatedAt: false });
         const { data, error } = await db
             .from("sentence_patterns")
             .update(row)
@@ -575,7 +588,6 @@ dataRouter.put("/sentence-patterns/:id", requireAuth, async (req, res, next) => 
             .select()
             .single();
         if (error) throw error;
-        logOk("sentence", "UPDATE SENTENCE PATTERN", data);
         res.json(rowToSentencePattern(data));
     } catch (err) {
         next(err);
@@ -592,7 +604,7 @@ dataRouter.delete("/sentence-patterns/:id", requireAuth, requireAppAdmin, async 
             .eq("id", req.params.id)
             .eq("user_id", userId)
             .maybeSingle();
-        logStart("sentence", "DELETE SENTENCE PATTERN", existingRow ?? req.params.id, userLabel(req));
+        log("Delete sentence", existingRow ?? req.params.id);
 
         const { data, error } = await db
             .from("sentence_patterns")
@@ -602,7 +614,6 @@ dataRouter.delete("/sentence-patterns/:id", requireAuth, requireAppAdmin, async 
             .select("id");
         if (error) throw error;
         if (!data?.length) return res.status(404).json({ error: "Sentence pattern not found" });
-        logOk("sentence", "DELETE SENTENCE PATTERN", existingRow ?? req.params.id);
         res.json({ ok: true });
     } catch (err) {
         next(err);
@@ -612,7 +623,7 @@ dataRouter.delete("/sentence-patterns/:id", requireAuth, requireAppAdmin, async 
 // --- Lessons CRUD ---
 dataRouter.get("/lessons", async (req, res, next) => {
     try {
-        logStep("lesson", "LIST LESSONS", userLabel(req));
+        log("Get all lessons");
         const db = requireAdmin();
         const userId = await resolveReadUserId(req, db);
         const data = await fetchAllData(db, userId);
@@ -624,12 +635,11 @@ dataRouter.get("/lessons", async (req, res, next) => {
 
 dataRouter.post("/lessons", requireAuth, requireAppAdmin, async (req, res, next) => {
     try {
-        logStart("lesson", "CREATE LESSON", req.body?.name ?? req.body, userLabel(req));
+        log("Create lesson", req.body?.name ?? req.body);
         const db = requireAdmin();
         const row = lessonToRow(req.body, getUserId(req));
         const { data, error } = await db.from("lessons").insert(row).select().single();
         if (error) throw error;
-        logOk("lesson", "CREATE LESSON", data?.name ?? data);
         res.status(201).json(rowToLesson(data));
     } catch (err) {
         next(err);
@@ -646,7 +656,7 @@ dataRouter.put("/lessons/:id", requireAuth, async (req, res, next) => {
             .eq("id", req.params.id)
             .eq("user_id", userId)
             .maybeSingle();
-        logStart("lesson", "UPDATE LESSON", existingRow?.name ?? req.body?.name ?? req.params.id, userLabel(req));
+        log("Update lesson", existingRow?.name ?? req.body?.name ?? req.params.id);
         const row = lessonToRow({ ...req.body, id: req.params.id }, userId);
         const { data, error } = await db
             .from("lessons")
@@ -656,7 +666,6 @@ dataRouter.put("/lessons/:id", requireAuth, async (req, res, next) => {
             .select()
             .single();
         if (error) throw error;
-        logOk("lesson", "UPDATE LESSON", data?.name ?? data);
         res.json(rowToLesson(data));
     } catch (err) {
         next(err);
@@ -673,7 +682,7 @@ dataRouter.delete("/lessons/:id", requireAuth, requireAppAdmin, async (req, res,
             .eq("id", req.params.id)
             .eq("user_id", userId)
             .maybeSingle();
-        logStart("lesson", "DELETE LESSON", existingRow?.name ?? req.params.id, userLabel(req));
+        log("Delete lesson", existingRow?.name ?? req.params.id);
 
         const { data, error } = await db
             .from("lessons")
@@ -683,7 +692,6 @@ dataRouter.delete("/lessons/:id", requireAuth, requireAppAdmin, async (req, res,
             .select("id");
         if (error) throw error;
         if (!data?.length) return res.status(404).json({ error: "Lesson not found" });
-        logOk("lesson", "DELETE LESSON", existingRow?.name ?? req.params.id);
         res.json({ ok: true });
     } catch (err) {
         next(err);

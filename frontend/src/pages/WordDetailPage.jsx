@@ -6,6 +6,7 @@ import { useLocale } from '../store/localeStore.js'
 import { useIsAdmin, useIsSignedIn } from '../store/authStore.js'
 import { ButtonLink } from '../components/ui/Button.jsx'
 import { wordDetailPath } from '../lib/wordRoutes.js'
+import { log, logWarn } from '../lib/actionLog.js'
 
 export function WordDetailPage() {
   const { id } = useParams()
@@ -31,9 +32,10 @@ export function WordDetailPage() {
     }
     let cancelled = false
     setResolving(true)
+    log("Get word detail", id)
     ensureWordsByIds([id])
       .catch((err) => {
-        console.warn('[word detail]', err instanceof Error ? err.message : err)
+        logWarn("Get word detail failed", err instanceof Error ? err.message : err)
       })
       .finally(() => {
         if (!cancelled) setResolving(false)

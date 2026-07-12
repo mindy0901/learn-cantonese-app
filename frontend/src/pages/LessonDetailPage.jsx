@@ -9,6 +9,7 @@ import { HanziiHanCellLink } from '../components/HanziiHanCellLink.jsx'
 import { btnClass } from '../components/ui/buttonStyles.js'
 import { cn } from '../lib/cn.js'
 import { useOpenWordDetail } from '../hooks/useOpenWordDetail.js'
+import { logWarn } from '../lib/actionLog.js'
 
 export function LessonDetailPage() {
   const { id } = useParams()
@@ -24,7 +25,7 @@ export function LessonDetailPage() {
   useEffect(() => {
     if (!lesson?.wordIds?.length) return
     ensureWordsByIds(lesson.wordIds).catch((err) => {
-      console.warn('[lesson words]', err instanceof Error ? err.message : err)
+      logWarn("Load lesson words failed", err instanceof Error ? err.message : err)
     })
   }, [lesson, ensureWordsByIds])
 

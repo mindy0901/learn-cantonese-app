@@ -13,6 +13,7 @@ import {
   exportLessonsCsv,
   exportWordsCsv,
 } from '../lib/sheetExport.js'
+import { log, logWarn } from '../lib/actionLog.js'
 import { btnClass } from './ui/buttonStyles.js'
 
 export function SheetExportButton({ type }) {
@@ -25,6 +26,7 @@ export function SheetExportButton({ type }) {
 
   const handleExport = useCallback(async () => {
     setExporting(true)
+    log("Export sheet", type)
     try {
       if (type === 'words') {
         if (wordCount === 0) return
@@ -39,7 +41,7 @@ export function SheetExportButton({ type }) {
         exportLessonsCsv(lessons, useAppStore.getState().words)
       }
     } catch (err) {
-      console.warn('[sheet export]', err instanceof Error ? err.message : err)
+      logWarn("Sheet export failed", err instanceof Error ? err.message : err)
     } finally {
       setExporting(false)
     }

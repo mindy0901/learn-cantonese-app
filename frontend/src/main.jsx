@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 import { useAuthStore } from "./store/authStore.js";
-import { logAction } from "./lib/actionLog.js";
+import { log, logError } from "./lib/actionLog.js";
 
 function showBootError(message) {
     const root = document.getElementById("root");
@@ -22,7 +22,7 @@ class ErrorBoundary extends Component {
     }
 
     componentDidCatch(error) {
-        console.error("[App render error]", error);
+        logError("App render error", error?.message ?? error);
     }
 
     render() {
@@ -42,7 +42,7 @@ function Root() {
     const init = useAuthStore((s) => s.init);
 
     useEffect(() => {
-        logAction("Bootstrap app on page load");
+        log("App rendered");
         init().catch(() => {});
     }, [init]);
 

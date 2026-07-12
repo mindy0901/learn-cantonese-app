@@ -51,7 +51,7 @@ export function HanVietSyncButton() {
     try {
       await ensureAllWordsLoaded()
       const words = useAppStore.getState().words
-      setPreview(previewHanVietSync(words))
+      setPreview(await previewHanVietSync(words))
       setOpen(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -150,6 +150,8 @@ export function HanVietSyncButton() {
               {preview && (
                 <>
                   <ul className="m-0 flex list-none flex-col gap-2 p-0 text-[0.9375rem]">
+                    <li>{fmt(t.hanVietSync.wordBankChars, { count: preview.wordBankCharCount })}</li>
+                    <li>{fmt(t.hanVietSync.phienamChars, { count: preview.phienamCharCount })}</li>
                     <li>{fmt(t.hanVietSync.mappedChars, { count: preview.mappedCharCount })}</li>
                     <li>{fmt(t.hanVietSync.wordsToUpdate, { count: preview.updates.length })}</li>
                   </ul>

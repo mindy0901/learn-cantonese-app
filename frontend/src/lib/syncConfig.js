@@ -1,4 +1,4 @@
-import { logAction } from './actionLog.js'
+import { log } from './actionLog.js'
 
 const STORAGE_KEY = 'cantonese-app-sheet-urls'
 
@@ -19,7 +19,7 @@ export function loadSheetUrls() {
 }
 
 export function saveSheetUrls(patch) {
-  logAction('Save Google Sheet URLs to local storage', { patchKeys: Object.keys(patch) })
+  log("Save sheet URLs", Object.keys(patch).join(", "))
   const next = { ...loadSheetUrls(), ...patch }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   return next

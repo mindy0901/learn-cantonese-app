@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { api, signInWithGoogle as redirectGoogleSignIn } from '../lib/api.js'
-import { logAction } from '../lib/actionLog.js'
+import { log } from '../lib/actionLog.js'
 import { setWordBrowseCacheOwner } from '../lib/wordBrowseCache.js'
 
 function readAuthErrorFromUrl() {
@@ -22,7 +22,7 @@ export const useAuthStore = create((set, get) => ({
   init: async () => {
     if (get().initialized) return
 
-    logAction('Initialize auth state')
+    log("Checking auth")
     const urlError = readAuthErrorFromUrl()
     if (urlError) set({ authError: urlError })
 
@@ -39,20 +39,16 @@ export const useAuthStore = create((set, get) => ({
         initialized: true,
         authError: urlError ? get().authError : null,
       })
-      logAction('Auth state initialized', {
-        signedIn: Boolean(user),
-        email: user?.email ?? null,
-        isAdmin: user?.isAdmin ?? false,
-      })
+      log("Getting user", user?.email?.split("@")[0] ?? "guest")
     } catch {
       setWordBrowseCacheOwner(null)
       set({ user: null, googleReady: false, loading: false, initialized: true })
-      logAction('Auth state initialized', { signedIn: false })
+      log("Getting user", "guest")
     }
   },
 
   signInWithGoogle: () => {
-    logAction('Start Google sign-in flow')
+    log("Google sign-in")
     if (!get().googleReady) {
       set({ authError: 'google_not_configured' })
       return
@@ -62,7 +58,7 @@ export const useAuthStore = create((set, get) => ({
   },
 
   signOut: async () => {
-    logAction('Sign out user')
+    log("Sign out")
     set({ signingOut: true })
     try {
       await api.logout()
@@ -75,14 +71,14 @@ export const useAuthStore = create((set, get) => ({
       } catch {
         /* error state handled in CloudGate */
       }
-      logAction('Sign out completed, reloaded public data')
+      log("Sign out done")
     } finally {
       set({ signingOut: false })
     }
   },
 
   clearAuthError: () => {
-    logAction('Clear auth error message')
+    log("Clear auth error")
     set({ authError: null })
   },
 }))

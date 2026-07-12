@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { logAction, logFail, logOk, logStep } from "../lib/actionLog.js";
+import { log, logWarn } from "../lib/actionLog.js";
 import { ensureSupabaseUser } from "../lib/dataService.js";
 import { getAdminEmails, isAppAdmin } from "../lib/appAdmin.js";
 import { requireAdmin } from "../lib/supabaseAdmin.js";
@@ -38,31 +38,30 @@ authRouter.get("/status", (req, res) => {
 });
 
 authRouter.get("/google", (req, res) => {
-    logStep("auth", "Google sign-in started");
+    log("Google sign-in");
     if (!googleConfigured()) {
-        logFail("auth", "GOOGLE SIGN-IN", "OAuth not configured");
+        logWarn("Google sign-in failed", "OAuth not configured");
         return res.redirect(`${FRONTEND_URL}?auth_error=google_not_configured`);
     }
-    logStep("auth", "Redirecting to Google OAuth");
-    const params = new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID,
-        redirect_uri: GOOGLE_REDIRECT_URI,
-        response_type: "code",
-        scope: "openid email profile",
-        access_type: "online",
-        prompt: "select_account",
-    });
-    res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+    res.redirect(
+        `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+            client_id: GOOGLE_CLIENT_ID,
+            redirect_uri: GOOGLE_REDIRECT_URI,
+            response_type: "code",
+            scope: "openid email profile",
+            access_type: "online",
+            prompt: "select_account",
+        })}`,
+    );
 });
 
 authRouter.get("/google/callback", async (req, res) => {
     try {
-        logStep("auth", "Google OAuth callback received");
+        log("Google callback");
         if (!googleConfigured()) throw new Error("Google OAuth not configured");
         const code = req.query.code;
         if (!code) throw new Error("Missing OAuth code");
 
-        logStep("auth", "Exchanging OAuth code", "fetching access token");
         const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -77,14 +76,12 @@ authRouter.get("/google/callback", async (req, res) => {
         const tokens = await tokenRes.json();
         if (!tokenRes.ok) throw new Error(tokens.error_description ?? tokens.error ?? "Token exchange failed");
 
-        logStep("auth", "Fetching Google profile");
         const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
             headers: { Authorization: `Bearer ${tokens.access_token}` },
         });
         const profile = await profileRes.json();
         if (!profileRes.ok || !profile.email) throw new Error("Could not read Google profile");
 
-        logStep("auth", "Syncing Supabase user", profile.email.split("@")[0]);
         const db = requireAdmin();
         const user = await ensureSupabaseUser(db, {
             email: profile.email,
@@ -97,29 +94,29 @@ authRouter.get("/google/callback", async (req, res) => {
         req.session.name = profile.name ?? profile.email;
         req.session.picture = profile.picture ?? null;
 
-        logOk("auth", "SIGN IN", profile.email.split("@")[0]);
+        log("Sign in", profile.email.split("@")[0]);
 
         res.redirect(FRONTEND_URL);
     } catch (err) {
-        logFail("auth", "SIGN IN", err.message);
+        logWarn("Sign in failed", err.message);
         console.error(err);
         res.redirect(`${FRONTEND_URL}?auth_error=${encodeURIComponent(err.message)}`);
     }
 });
 
 authRouter.get("/me", (req, res) => {
+    log("Checking auth");
     const user = sessionUser(req);
     if (!user) {
-        logStep("auth", "Session check", "not signed in");
+        log("Not signed in");
         return res.status(401).json({ error: "Not signed in" });
     }
-    logStep("auth", "Session check", `OK — ${user.email.split("@")[0]}`);
+    log("Getting user", user.email.split("@")[0]);
     res.json(user);
 });
 
 authRouter.post("/logout", (req, res) => {
-    const who = req.session?.email?.split("@")[0] ?? "guest";
-    logAction("auth", "SIGN OUT", who);
+    log("Sign out", req.session?.email?.split("@")[0] ?? "guest");
     req.session = null;
     res.json({ ok: true });
 });

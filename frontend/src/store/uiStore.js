@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { logAction } from '../lib/actionLog.js'
+import { log } from '../lib/actionLog.js'
 
 const STORAGE_KEY = 'cantonese-app-ui'
 
@@ -30,7 +30,7 @@ export const useUiStore = create((set, get) => ({
   },
 
   setTheme: (theme) => {
-    logAction('Set UI theme', { theme })
+    log("Set theme", theme)
     document.documentElement.dataset.theme = theme
     get().persistUi({ theme })
   },

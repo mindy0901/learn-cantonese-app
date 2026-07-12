@@ -16,6 +16,7 @@ import {
 import { cn } from '../lib/cn.js'
 import { Pagination } from './Pagination.jsx'
 import { WordRow } from './WordRow.jsx'
+import { logWarn } from '../lib/actionLog.js'
 
 const thClass =
   'text-left border-b border-border align-middle break-words min-w-0 bg-bg text-text-muted font-medium text-xs uppercase tracking-wide align-middle'
@@ -252,7 +253,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
       .catch((err) => {
         if (cancelled) return
         const message = err instanceof Error ? err.message : String(err)
-        console.warn('[word browse]', message)
+        logWarn("Browse words failed", message)
         setLoadError(message)
         setItems([])
         setTotal(0)

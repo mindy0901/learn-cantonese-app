@@ -1,4 +1,4 @@
-import { logAction, logApiCall, logApiError, logApiResult } from './actionLog.js'
+import { log, logApiError } from './actionLog.js'
 import { INITIAL_WORD_PAGES, PAGE_SIZE } from './constants.js'
 import { normalizePopularity } from './wordPopularity.js'
 
@@ -6,7 +6,6 @@ const API = import.meta.env.VITE_API_URL ?? ''
 
 async function request(path, options = {}) {
   const method = options.method ?? 'GET'
-  logApiCall(method, path)
 
   try {
     const res = await fetch(`${API}${path}`, {
@@ -31,20 +30,16 @@ async function request(path, options = {}) {
       }
       const error = new Error(message)
       error.status = res.status
-      logApiError(method, path, error, { status: res.status })
+      logApiError(method, path, error)
       throw error
     }
 
-    if (res.status === 204) {
-      logApiResult(method, path, { status: res.status })
-      return null
-    }
+    if (res.status === 204) return null
 
-    const data = JSON.parse(await res.text())
-    logApiResult(method, path, { status: res.status })
-    return data
+    return JSON.parse(await res.text())
   } catch (err) {
-    if (!(err instanceof Error) || !err.message) {
+    // HTTP errors already logged above (have .status)
+    if (!(err instanceof Error && 'status' in err)) {
       logApiError(method, path, err)
     }
     throw err
@@ -174,6 +169,13 @@ export const api = {
 
   fetchHanVietCognates: () => request('/api/hanviet/cognates'),
 
+  fetchHanVietPhienam: () => request('/api/hanviet/phienam'),
+
+  lookupHanVietPhienamChar: (char) => {
+    const params = new URLSearchParams({ char: String(char ?? '').trim() })
+    return request(`/api/hanviet/phienam/lookup?${params}`)
+  },
+
   lookupHanVietCognate: (q) => {
     const params = new URLSearchParams({ q: String(q ?? '').trim() })
     return request(`/api/hanviet/lookup?${params}`)
@@ -181,6 +183,6 @@ export const api = {
 }
 
 export function signInWithGoogle() {
-  logAction('Redirect to Google OAuth sign-in', { path: '/auth/google' })
+  log("Google sign-in")
   window.location.href = `${API}/auth/google`
 }
