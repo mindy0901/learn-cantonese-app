@@ -120,8 +120,6 @@ authRouter.get("/me", (req, res) => {
 authRouter.post("/logout", (req, res) => {
     const who = req.session?.email?.split("@")[0] ?? "guest";
     logAction("auth", "SIGN OUT", who);
-    req.session.destroy(() => {
-        res.clearCookie("cantonese.sid");
-        res.json({ ok: true });
-    });
+    req.session = null;
+    res.json({ ok: true });
 });

@@ -2,7 +2,7 @@ import 'dotenv/config'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
-import session from 'express-session'
+import cookieSession from 'cookie-session'
 import { authRouter } from './routes/auth.js'
 import { cedictRouter } from './routes/cedict.js'
 import { dataRouter } from './routes/data.js'
@@ -13,6 +13,7 @@ const cookieSecure =
   process.env.COOKIE_SECURE != null
     ? process.env.COOKIE_SECURE === 'true'
     : process.env.NODE_ENV === 'production'
+const cookieSameSite = process.env.COOKIE_SAME_SITE ?? 'lax'
 
 const app = express()
 app.set('trust proxy', 1)
@@ -25,18 +26,16 @@ app.use(
 )
 app.use(express.json({ limit: '50mb' }))
 app.use(cookieParser())
+// Store session in the signed cookie itself so auth survives Vercel serverless cold starts
+// (express-session MemoryStore is per-instance and breaks PUT/auth on other instances).
 app.use(
-  session({
+  cookieSession({
     name: 'cantonese.sid',
-    secret: process.env.SESSION_SECRET ?? 'dev-secret-change-me',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: cookieSecure ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    },
+    keys: [process.env.SESSION_SECRET ?? 'dev-secret-change-me'],
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: cookieSecure,
+    sameSite: cookieSameSite,
   }),
 )
 
