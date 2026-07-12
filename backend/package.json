@@ -1,0 +1,23 @@
+{
+  "name": "learn-cantonese-backend",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@9.15.9",
+  "type": "module",
+  "scripts": {
+    "predev": "node --input-type=module -e \"import fs from 'fs'; if (!fs.existsSync('node_modules/express/package.json')) { console.error('\\n[backend] Missing dependencies. Run: pnpm install\\n'); process.exit(1); }\"",
+    "dev": "node --watch index.js",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.0",
+    "cc-cedict": "1.1.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "opencc-js": "1.0.5",
+    "pinyin-pro": "3.27.0"
+  }
+}

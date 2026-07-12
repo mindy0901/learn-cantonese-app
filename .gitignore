@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+**/.pnpm-store/
+
+# Build
+dist/
+dist-ssr/
+
+# Env
+.env
+.env.dev
+.env.prod
+.env.local
+*.local
+!.env.dev.example
+!.env.prod.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Tooling cache / temp
+.cursor/
+**/.ignored/
+**/.vite/
+backend/supabase/.temp/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+.vercel

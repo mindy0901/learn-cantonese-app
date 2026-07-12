@@ -1,0 +1,30 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "frontend": {
+      "root": "frontend/",
+      "framework": "vite",
+      "installCommand": "corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install",
+      "buildCommand": "pnpm build",
+      "outputDirectory": "dist"
+    },
+    "backend": {
+      "root": "backend/",
+      "framework": "express",
+      "entrypoint": "app.js",
+      "installCommand": "corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install",
+      "functions": {
+        "app.js": {
+          "maxDuration": 60,
+          "memory": 1024
+        }
+      }
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": { "service": "backend" } },
+    { "source": "/auth/:path*", "destination": { "service": "backend" } },
+    { "source": "/health", "destination": { "service": "backend" } },
+    { "source": "/(.*)", "destination": { "service": "frontend" } }
+  ]
+}

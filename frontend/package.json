@@ -1,0 +1,31 @@
+{
+  "name": "learn-cantonese-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@9.15.9",
+  "type": "module",
+  "scripts": {
+    "predev": "node --input-type=module -e \"import fs from 'fs'; if (!fs.existsSync('node_modules/vite/bin/vite.js')) { console.error('\\n[frontend] Missing dependencies. Run: pnpm install\\n'); process.exit(1); }\"",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "opencc-js": "1.0.5",
+    "pinyin-pro": "3.27.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1",
+    "tailwind-merge": "^3.3.1",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.71.0",
+    "tailwindcss": "^4.1.11",
+    "vite": "^8.1.1"
+  }
+}

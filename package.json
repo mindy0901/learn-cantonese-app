@@ -1,0 +1,13 @@
+{
+  "name": "learn-cantonese-app",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "deploy": "vercel deploy --yes",
+    "deploy:prod": "vercel deploy --prod --yes"
+  },
+  "devDependencies": {
+    "vercel": "^55.0.0"
+  }
+}
