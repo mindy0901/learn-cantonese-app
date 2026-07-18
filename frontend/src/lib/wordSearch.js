@@ -5,6 +5,7 @@ export function normalizeSearchText(text) {
     .toLowerCase()
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
+    .replace(/đ/g, 'd')
     .replace(/[–—−]/g, '-')
     .replace(/\s+/g, ' ')
     .trim()

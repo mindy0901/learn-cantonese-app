@@ -1,24 +1,28 @@
+import { normalizeSearchText } from "./wordSearch.js";
+
 export function getSentenceSearchBlob(item) {
-  return `${item.hanTraditional ?? ''} ${item.hanSimplified ?? ''} ${item.jyutping ?? ''} ${item.pinyin ?? ''} ${item.vietnamese ?? ''} ${item.english ?? ''}`.toLowerCase()
+    return normalizeSearchText(
+        `${item.hanTraditional ?? ""} ${item.hanSimplified ?? ""} ${item.jyutping ?? ""} ${item.pinyin ?? ""} ${item.vietnamese ?? ""} ${item.english ?? ""}`,
+    );
 }
 
 export function matchesSentenceSearch(item, query) {
-  const q = query.trim().toLowerCase()
-  if (!q) return true
-  if (item._searchBlob && !item._searchBlob.includes(q)) return false
-  const blob = getSentenceSearchBlob(item)
-  return blob.includes(q)
+    const q = normalizeSearchText(query);
+    if (!q) return true;
+    if (item._searchBlob && !item._searchBlob.includes(q)) return false;
+    const blob = getSentenceSearchBlob(item);
+    return blob.includes(q);
 }
 
 export function getSentenceSearchScore(item, query) {
-  const q = query.trim().toLowerCase()
-  if (!q) return 0
-  let score = 0
-  const han = (item.hanTraditional ?? '').toLowerCase()
-  const viet = (item.vietnamese ?? '').toLowerCase()
-  if (han === q) score += 100
-  else if (han.startsWith(q)) score += 50
-  else if (han.includes(q)) score += 25
-  if (viet.includes(q)) score += 10
-  return score
+    const q = normalizeSearchText(query);
+    if (!q) return 0;
+    let score = 0;
+    const han = normalizeSearchText(item.hanTraditional ?? "");
+    const viet = normalizeSearchText(item.vietnamese ?? "");
+    if (han === q) score += 100;
+    else if (han.startsWith(q)) score += 50;
+    else if (han.includes(q)) score += 25;
+    if (viet.includes(q)) score += 10;
+    return score;
 }

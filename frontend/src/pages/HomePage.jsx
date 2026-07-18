@@ -24,7 +24,7 @@ export function HomePage() {
     .slice(0, 4)
 
   return (
-    <main className="flex-1 max-w-[1080px] w-full mx-auto px-5 py-8 pb-12">
+    <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
       <section className="mb-6">
         <FlashcardStatsPanel />
       </section>

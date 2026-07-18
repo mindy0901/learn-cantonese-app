@@ -38,7 +38,7 @@ function buildDraft(item) {
   }
 }
 
-export function AddSentenceModal({ onSave, onClose, item: editItem }) {
+export function AddSentenceModal({ onSave, onClose, item: editItem, existingItems }) {
   const { t } = useLocale()
   const isEdit = Boolean(editItem?.id)
   const [draft, setDraft] = useState(() => buildDraft(editItem))
@@ -59,6 +59,18 @@ export function AddSentenceModal({ onSave, onClose, item: editItem }) {
     if (!hanTraditional || !vietnamese) {
       setValidationError(t.sentenceBank.requiredFields)
       return
+    }
+    // Check for duplicate sentence pattern (exclude current item when editing)
+    if (existingItems) {
+      const duplicate = existingItems.find(
+        (s) => s.hanTraditional?.trim().toLowerCase() === hanTraditional.toLowerCase()
+          && s.vietnamese?.trim().toLowerCase() === vietnamese.toLowerCase()
+          && s.id !== editItem?.id
+      )
+      if (duplicate) {
+        setValidationError(t.sentenceBank.duplicatePattern)
+        return
+      }
     }
     const payload = {
       hanTraditional,

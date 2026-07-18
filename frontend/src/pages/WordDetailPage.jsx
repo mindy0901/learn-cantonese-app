@@ -60,7 +60,7 @@ export function WordDetailPage() {
 
   if (resolving && !word) {
     return (
-      <main className="flex-1 max-w-[1080px] w-full mx-auto px-5 py-8 pb-12">
+      <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
         <p className="text-text-muted text-sm">{t.common.loading}</p>
       </main>
     )
@@ -68,7 +68,7 @@ export function WordDetailPage() {
 
   if (!word) {
     return (
-      <main className="flex-1 max-w-[1080px] w-full mx-auto px-5 py-8 pb-12">
+      <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
         <div className="text-center py-12 px-6 text-text-muted flex flex-col items-center gap-4">
           <p>{t.wordDetail.notFound}</p>
           <ButtonLink to="/words" variant="primary" preventScrollReset>
@@ -80,7 +80,7 @@ export function WordDetailPage() {
   }
 
   return (
-    <main className="flex-1 max-w-[1080px] w-full mx-auto px-5 py-8 pb-12">
+    <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
       <div className="mb-6">
         <ButtonLink to="/words" variant="ghost" preventScrollReset>
           ← {t.wordDetail.backToWordBank}

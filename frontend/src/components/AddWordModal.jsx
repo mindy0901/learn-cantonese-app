@@ -12,10 +12,13 @@ const backdropClass =
 const modalClass =
   'm-auto flex w-full max-w-[520px] shrink-0 flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]'
 
-export function AddWordModal({ onSave, onClose, word: editWord }) {
+export function AddWordModal({ onSave, onClose, word: editWord, initialHanTraditional }) {
   const { t } = useLocale()
   const isEdit = Boolean(editWord?.id)
-  const [draft, setDraft] = useState(() => (editWord ? buildWordDraft(editWord) : emptyWord()))
+  const [draft, setDraft] = useState(() => {
+    if (editWord) return buildWordDraft(editWord)
+    return emptyWord({ hanTraditional: initialHanTraditional ?? '' })
+  })
   const [validationError, setValidationError] = useState('')
 
   useEffect(() => {

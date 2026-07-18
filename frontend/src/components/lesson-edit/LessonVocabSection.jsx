@@ -9,8 +9,9 @@ import { btnClass } from '../ui/buttonStyles.js'
 import { cn } from '../../lib/cn.js'
 import { logWarn } from '../../lib/actionLog.js'
 
-const chipClass =
-  'inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-8 border border-border rounded-full bg-surface text-text-h text-[0.8125rem] font-medium leading-5 shadow-theme-sm cursor-pointer transition-[background,border-color,color] duration-150 hover:border-error-border hover:bg-error-bg [&:hover>:not([class*=han-popularity])]:text-error-text'
+const thClass = 'px-3 py-2 text-left text-[0.8125rem] font-semibold text-text-h border-b border-border'
+const tdClass = 'px-3 py-2 text-left text-[0.8125rem] text-text-h border-b border-border truncate max-w-[180px]'
+const rowHoverClass = 'cursor-pointer hover:bg-error-bg/60 transition-colors'
 
 export const LessonVocabSection = memo(function LessonVocabSection() {
   const { t, fmt } = useLocale()
@@ -23,6 +24,7 @@ export const LessonVocabSection = memo(function LessonVocabSection() {
   const addWordExtra = useLessonDraftStore((s) => s.addWordExtra)
   const removeWordExtra = useLessonDraftStore((s) => s.removeWordExtra)
   const [addOpen, setAddOpen] = useState(false)
+  const [initialHan, setInitialHan] = useState('')
 
   const selectedSet = useMemo(
     () => new Set(selectedOrder.map((id) => String(id))),
@@ -64,50 +66,65 @@ export const LessonVocabSection = memo(function LessonVocabSection() {
       <WordPicker
         selected={selectedSet}
         onToggle={toggleSelected}
+        onAddNew={(q) => { setInitialHan(q); setAddOpen(true) }}
       />
       <div className="mt-3">
-        <button type="button" className={btnClass('outline', 'sm')} onClick={() => setAddOpen(true)}>
-          + {t.lessonEdit.addCustomWord}
-        </button>
-      </div>
-      <div className="mt-3">
         {hasChips && (
-          <>
-            <p className="mb-1.5 text-text-muted text-sm">{t.lessonEdit.tapChipToRemove}</p>
-            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-0.5">
-              {selectedWords.map((w) => (
-                <button
-                  key={w.id}
-                  type="button"
-                  className={chipClass}
-                  onClick={() => toggleSelected(w.id)}
-                  title={t.lessonEdit.tapChipToRemove}
-                >
-                  <span className={hanTextClassName(w.popularity)}>{w.hanTraditional}</span>
-                  <span className="text-text-muted">·</span>
-                  <span>{w.english}</span>
-                  <span className="ml-0.5 text-base leading-none opacity-55 hover:opacity-100" aria-hidden="true">×</span>
-                </button>
-              ))}
-              {wordExtras.map((w) => (
-                <button
-                  key={w.id}
-                  type="button"
-                  className={cn(chipClass, 'border-dashed')}
-                  onClick={() => removeWordExtra(w.id)}
-                  title={t.lessonEdit.tapChipToRemove}
-                >
-                  <span className="text-[0.6875rem] font-semibold uppercase tracking-wide text-accent bg-accent-bg border border-accent-border rounded px-1.5 leading-snug">
-                    {t.lessonEdit.customBadge}
-                  </span>
-                  <span className={hanTextClassName(w.popularity)}>{w.hanTraditional}</span>
-                  <span className="text-text-muted">·</span>
-                  <span>{w.english || w.vietnamese}</span>
-                  <span className="ml-0.5 text-base leading-none opacity-55 hover:opacity-100" aria-hidden="true">×</span>
-                </button>
-              ))}
-            </div>
-          </>
+          <div className="border border-border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-bg">
+                  <th className={cn(thClass, 'w-[1%] whitespace-nowrap')}>#</th>
+                  <th className={thClass}>{t.wordBank.colHanViet}</th>
+                  <th className={thClass}>{t.wordBank.colHanTraditional}</th>
+                  <th className={thClass}>{t.wordBank.colVietnamese}</th>
+                  <th className={thClass}>{t.wordBank.colEnglish}</th>
+                  <th className={cn(thClass, 'w-[1%]')}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedWords.map((w, i) => (
+                  <tr
+                    key={w.id}
+                    className={rowHoverClass}
+                    onClick={() => toggleSelected(w.id)}
+                    title={t.lessonEdit.tapChipToRemove}
+                  >
+                    <td className={cn(tdClass, 'text-text-muted whitespace-nowrap')}>{i + 1}</td>
+                    <td className={cn(tdClass, 'text-viet font-medium')}>{w.hanViet || '—'}</td>
+                    <td className={cn(tdClass, hanTextClassName(w.popularity))}>{w.hanTraditional}</td>
+                    <td className={cn(tdClass, 'text-viet')}>{w.vietnamese || '—'}</td>
+                    <td className={tdClass}>{w.english}</td>
+                    <td className={cn(tdClass, 'text-center')}>
+                      <span className="text-base text-text-muted leading-none hover:text-error-text" aria-hidden="true">×</span>
+                    </td>
+                  </tr>
+                ))}
+                {wordExtras.map((w, i) => (
+                  <tr
+                    key={w.id}
+                    className={rowHoverClass}
+                    onClick={() => removeWordExtra(w.id)}
+                    title={t.lessonEdit.tapChipToRemove}
+                  >
+                    <td className={cn(tdClass, 'text-text-muted whitespace-nowrap')}>{selectedWords.length + i + 1}</td>
+                    <td className={cn(tdClass, 'text-viet font-medium')}>{w.hanViet || '—'}</td>
+                    <td className={cn(tdClass, hanTextClassName(w.popularity))}>
+                      {w.hanTraditional}
+                      <span className="ml-1.5 text-[0.625rem] font-semibold uppercase tracking-wide text-accent bg-accent-bg border border-accent-border rounded px-1 align-middle">
+                        {t.lessonEdit.customBadge}
+                      </span>
+                    </td>
+                    <td className={cn(tdClass, 'text-viet')}>{w.vietnamese || '—'}</td>
+                    <td className={tdClass}>{w.english}</td>
+                    <td className={cn(tdClass, 'text-center')}>
+                      <span className="text-base text-text-muted leading-none hover:text-error-text" aria-hidden="true">×</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         <div className="flex justify-between items-center mt-2 text-[0.8125rem] text-text-muted">
           <span>{fmt(t.lessonEdit.selected, { count: totalCount })}</span>
@@ -124,7 +141,8 @@ export const LessonVocabSection = memo(function LessonVocabSection() {
       {addOpen && (
         <AddWordModal
           onSave={addWordExtra}
-          onClose={() => setAddOpen(false)}
+          onClose={() => { setAddOpen(false); setInitialHan('') }}
+          initialHanTraditional={initialHan}
         />
       )}
     </section>

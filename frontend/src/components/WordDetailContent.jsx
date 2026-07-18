@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '../lib/cn.js'
 import { Button, IconButton } from './ui/Button.jsx'
 import { uiInputClass, uiTextareaClass } from './ui/controlStyles.js'
 import { useLocale } from '../store/localeStore.js'
 import { wordLookupDisplay } from '../lib/hanLookup.js'
-import { HanziiHanCellLink } from './HanziiHanCellLink.jsx'
 import { WordPopularityPicker } from './WordPopularityPicker.jsx'
 import { WordSentenceSuggestions } from './WordSentenceSuggestions.jsx'
 import { WordRelatedLessons } from './WordRelatedLessons.jsx'
 import { WordFieldText } from './WordFieldText.jsx'
 import { buildWordDraft, wordDraftPayload } from './WordEditFields.jsx'
+import { TagInput } from './TagInput.jsx'
 import { normalizePopularity } from '../lib/wordPopularity.js'
 import { normalizeWordFields, wordContentEqual } from '../lib/wordNormalize.js'
+import { useHanCharacters } from '../store/appStore.js'
+import { hanCharacterDetailPath } from '../lib/hanCharacterRoutes.js'
+import { hanziiWordUrl } from '../lib/hanzii.js'
 
 const detailTextClass = 'wd-text m-0 max-w-full leading-normal break-normal'
 
@@ -24,11 +28,11 @@ const subLabelClass = 'wd-sub m-0 font-semibold uppercase tracking-wide text-tex
 const hanShellClass =
   'w-full rounded-xl border border-border/80 bg-surface/80 px-6 py-6 sm:px-7 sm:py-7'
 
-const hanGridClass = 'grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-7'
+const hanGridClass = 'grid grid-cols-1 items-stretch sm:grid-cols-2 sm:gap-0'
 
-const hanCellClass = 'flex h-full min-h-0 flex-col gap-3'
+const hanCellClass = 'flex h-full min-h-0 flex-col gap-3 items-center'
 
-const hanCellBodyClass = 'wd-han-cell-body flex flex-1 flex-col justify-end gap-2.5'
+const hanCellBodyClass = 'wd-han-cell-body flex flex-1 flex-col justify-center items-center gap-2.5'
 
 const hanGlyphClass = 'wd-han block'
 
@@ -65,40 +69,101 @@ function HanSubField({ label, children, bordered }) {
   )
 }
 
-function WordHanRomanBlock({ editing, draft, display, popularity, onDraftChange }) {
+function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, hanTraditional }) {
   const { t } = useLocale()
-  const lookupTraditional = display.traditional || display.simplified
+  const navigate = useNavigate()
+  const hanCharacters = useHanCharacters()
+
+  // Build a lookup map: character → hanCharacter id (prefer simplified match, fallback to traditional)
+  const charIdMap = new Map()
+  for (const hc of hanCharacters) {
+    const simp = (hc.hanSimplified ?? '').trim()
+    const trad = (hc.hanTraditional ?? '').trim()
+    if (simp && !charIdMap.has(simp)) charIdMap.set(simp, hc.id)
+    if (trad && trad !== simp && !charIdMap.has(trad)) charIdMap.set(trad, hc.id)
+  }
+
+  /** Render text as clickable han characters where possible */
+  function renderHanText(text) {
+    if (!text) return null
+    return [...text].map((ch, i) => {
+      const hanId = charIdMap.get(ch)
+      const isHan = /\p{Script=Han}/u.test(ch)
+      if (hanId && isHan) {
+        return (
+          <button
+            key={i}
+            type="button"
+            className="inline cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit leading-tight rounded transition-colors duration-150 hover:text-accent hover:bg-accent/10 focus:outline-2 focus:outline-accent focus:outline-offset-2"
+            onClick={(e) => { e.stopPropagation(); navigate(hanCharacterDetailPath(hanId)) }}
+            title={`${ch} — ${t.hanCharacters?.viewDetail ?? 'Xem chi tiết'}`}
+          >
+            {ch}
+          </button>
+        )
+      }
+      return <span key={i}>{ch}</span>
+    })
+  }
+
+  // When trad === simp, collapse to single column (common for characters like 人, 大, etc.)
+  const same = display.traditional === (display.simplified || display.traditional)
+  const gridClass = same ? 'grid-cols-1' : 'sm:grid-cols-2'
+  const shellClass = same ? 'py-6' : hanShellClass
 
   if (editing) {
-    return (
-      <div className={hanShellClass}>
-        <div className={hanGridClass}>
-          <HanSubField label={t.hanLookup.traditionalHk} bordered>
+    if (same) {
+      return (
+        <div className={shellClass}>
+          <div className="flex flex-col gap-3">
             <input
               className={cn(wordDetailInputClass, 'text-red-600 dark:text-red-400')}
               value={draft.hanTraditional}
               onChange={(e) => onDraftChange('hanTraditional', e.target.value)}
             />
-            <input
-              className={cn(wordDetailInputClass, 'font-semibold text-jyutping')}
+            <TagInput
               value={draft.jyutping ?? ''}
-              onChange={(e) => onDraftChange('jyutping', e.target.value)}
+              onChange={(v) => onDraftChange('jyutping', v)}
+              className="font-semibold text-jyutping"
               placeholder={t.wordBank.colJyutping}
-              aria-label={t.wordBank.colJyutping}
             />
-          </HanSubField>
-          <HanSubField label={t.wordBank.colHanSimplified}>
+            <TagInput
+              value={draft.pinyin ?? ''}
+              onChange={(v) => onDraftChange('pinyin', v)}
+              className="font-semibold text-jyutping"
+              placeholder={t.wordBank.colPinyin}
+            />
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className={shellClass}>
+        <div className={cn(hanGridClass, gridClass)}>
+          <HanSubField label={t.wordBank.colHanSimplified} bordered>
             <input
               className={cn(wordDetailInputClass, 'font-semibold text-han')}
               value={draft.hanSimplified ?? ''}
               onChange={(e) => onDraftChange('hanSimplified', e.target.value)}
             />
-            <input
-              className={cn(wordDetailInputClass, 'font-semibold text-jyutping')}
+            <TagInput
               value={draft.pinyin ?? ''}
-              onChange={(e) => onDraftChange('pinyin', e.target.value)}
+              onChange={(v) => onDraftChange('pinyin', v)}
+              className="font-semibold text-jyutping"
               placeholder={t.wordBank.colPinyin}
-              aria-label={t.wordBank.colPinyin}
+            />
+          </HanSubField>
+          <HanSubField label={t.hanLookup.traditionalHk}>
+            <input
+              className={cn(wordDetailInputClass, 'text-red-600 dark:text-red-400')}
+              value={draft.hanTraditional}
+              onChange={(e) => onDraftChange('hanTraditional', e.target.value)}
+            />
+            <TagInput
+              value={draft.jyutping ?? ''}
+              onChange={(v) => onDraftChange('jyutping', v)}
+              className="font-semibold text-jyutping"
+              placeholder={t.wordBank.colJyutping}
             />
           </HanSubField>
         </div>
@@ -106,31 +171,90 @@ function WordHanRomanBlock({ editing, draft, display, popularity, onDraftChange 
     )
   }
 
+  if (same) {
+    const hasJyutping = display.jyutping && display.jyutping !== '—'
+    const hasPinyin = display.pinyin && display.pinyin !== '—'
+    return (
+      <div className={shellClass}>
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="relative inline-flex">
+            <span className={cn(hanGlyphClass, 'font-semibold text-han')}>
+              {renderHanText(display.traditional)}
+            </span>
+            <a
+              href={hanziiWordUrl(hanTraditional, locale) ?? '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute -top-1.5 -right-10 inline-flex items-center justify-center size-8 rounded text-sm font-bold text-accent no-underline leading-none hover:text-accent-hover hover:bg-accent/10"
+              title={t.wordDetail.openHanzii?.replace('{hanTraditional}', hanTraditional) ?? 'Tra Hanzii'}
+              aria-label={t.wordDetail.openHanzii?.replace('{hanTraditional}', hanTraditional) ?? 'Tra Hanzii'}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </a>
+          </div>
+          {hasJyutping && hasPinyin ? (
+            <div className="flex items-center gap-3">
+              <span className={romanLineClass}>{display.pinyin}</span>
+              <span className="text-text-muted select-none">|</span>
+              <span className={romanLineClass}>{display.jyutping}</span>
+            </div>
+          ) : (
+            <>
+              <p className={romanLineClass}>{display.jyutping || '—'}</p>
+              {display.pinyin && <p className={romanLineClass}>{display.pinyin}</p>}
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className={hanShellClass}>
-      <div className={hanGridClass}>
-        <HanSubField label={t.hanLookup.traditionalHk} bordered>
-          <span className={hanGlyphClass}>
-            <HanziiHanCellLink
-              hanTraditional={lookupTraditional}
-              displayText={display.traditional}
-              popularity={popularity}
-              emphasis="primary"
-            />
-          </span>
-          <p className={romanLineClass}>{display.jyutping || '—'}</p>
-        </HanSubField>
-        <HanSubField label={t.wordBank.colHanSimplified}>
-          <span className={hanGlyphClass}>
-            <HanziiHanCellLink
-              hanTraditional={lookupTraditional}
-              displayText={display.simplified || display.traditional}
-              popularity={popularity}
-              emphasis="primary"
-            />
-          </span>
-          <p className={romanLineClass}>{display.pinyin || '—'}</p>
-        </HanSubField>
+    <div className={shellClass}>
+      <div className={cn(hanGridClass, gridClass)}>
+        <div>
+          <HanSubField label={t.wordBank.colHanSimplified} bordered>
+            <div className="relative inline-flex">
+              <span className={cn(hanGlyphClass, 'font-semibold text-han')}>
+                {renderHanText(display.simplified || display.traditional)}
+              </span>
+              <a
+                href={hanziiWordUrl(display.simplified || display.traditional, locale) ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute -top-0.5 -right-8 inline-flex items-center justify-center size-7 rounded text-xs font-bold text-accent no-underline leading-none hover:text-accent-hover hover:bg-accent/10"
+                title={t.wordDetail.openHanzii?.replace('{hanTraditional}', display.simplified || display.traditional) ?? 'Tra Hanzii'}
+                aria-label={t.wordDetail.openHanzii?.replace('{hanTraditional}', display.simplified || display.traditional) ?? 'Tra Hanzii'}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </a>
+            </div>
+            <p className={romanLineClass}>{display.pinyin || '—'}</p>
+          </HanSubField>
+        </div>
+        <div className="sm:pl-6">
+          <HanSubField label={t.hanLookup.traditionalHk}>
+            <div className="relative inline-flex">
+              <span className={cn(hanGlyphClass, 'font-semibold text-han')}>
+                {renderHanText(display.traditional)}
+              </span>
+              <a
+                href={hanziiWordUrl(display.traditional, locale) ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute -top-0.5 -right-8 inline-flex items-center justify-center size-7 rounded text-xs font-bold text-accent no-underline leading-none hover:text-accent-hover hover:bg-accent/10"
+                title={t.wordDetail.openHanzii?.replace('{hanTraditional}', display.traditional) ?? 'Tra Hanzii'}
+                aria-label={t.wordDetail.openHanzii?.replace('{hanTraditional}', display.traditional) ?? 'Tra Hanzii'}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </a>
+            </div>
+            <p className={romanLineClass}>{display.jyutping || '—'}</p>
+          </HanSubField>
+        </div>
       </div>
     </div>
   )
@@ -146,7 +270,7 @@ export function WordDetailContent({
   onNextRandom,
   relatedLessons = [],
 }) {
-  const { t } = useLocale()
+  const { t, locale } = useLocale()
   const display = wordLookupDisplay(word)
 
   const [editing, setEditing] = useState(false)
@@ -261,7 +385,7 @@ export function WordDetailContent({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-7">
-        <div className={cn('mx-auto flex w-full min-w-0 max-w-3xl flex-1 flex-col justify-center', fieldStackClass)}>
+        <div className={cn('mx-auto flex w-full min-w-0 flex-1 flex-col justify-center items-center', fieldStackClass)}>
         <DetailField>
           {editing ? (
             <input
@@ -276,7 +400,7 @@ export function WordDetailContent({
               word={word}
               field="hanViet"
               updatingLabel={t.wordBank.fieldUpdating}
-              className={cn(detailTextClass, 'text-text-muted')}
+              className={cn(detailTextClass, 'text-text-h font-medium text-center')}
             />
           )}
         </DetailField>
@@ -285,8 +409,9 @@ export function WordDetailContent({
           editing={editing}
           draft={draft}
           display={display}
-          popularity={localPopularity}
           onDraftChange={setDraftField}
+          locale={locale}
+          hanTraditional={word.hanTraditional}
         />
 
         <DetailField>
@@ -303,7 +428,7 @@ export function WordDetailContent({
               word={word}
               field="vietnamese"
               updatingLabel={t.wordBank.fieldUpdating}
-              className={cn(detailTextClass, 'font-semibold text-viet')}
+              className={cn(detailTextClass, 'font-semibold text-viet text-center')}
             />
           )}
         </DetailField>
@@ -320,7 +445,7 @@ export function WordDetailContent({
                 aria-label={t.addWord.vietnameseDetail}
               />
             ) : (
-              <p className={cn(detailTextClass, 'wd-detail-block whitespace-pre-wrap text-text-h')}>{detailText}</p>
+              <p className={cn(detailTextClass, 'wd-detail-block whitespace-pre-wrap text-text-h text-center')}>{detailText}</p>
             )}
           </DetailField>
         )}
@@ -339,7 +464,7 @@ export function WordDetailContent({
               word={word}
               field="english"
               updatingLabel={t.wordBank.fieldUpdating}
-              className={cn(detailTextClass, 'font-medium text-text-h')}
+              className={cn(detailTextClass, 'font-medium text-text-h text-center')}
             />
           )}
         </DetailField>
@@ -351,7 +476,7 @@ export function WordDetailContent({
         )}
         </div>
 
-        <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-6">
+        <div className="mx-auto flex w-full min-w-0 flex-col gap-6">
           <WordSentenceSuggestions word={word} />
           <WordRelatedLessons lessons={relatedLessons} />
         </div>
@@ -378,7 +503,6 @@ export function WordDetailContent({
               disabled={!onSetPopularity}
               onChange={handlePopularityChange}
               compact
-              footer
             />
           )}
         </div>

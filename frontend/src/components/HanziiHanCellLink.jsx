@@ -28,7 +28,7 @@ const linkHoverSecondary = cn(
 )
 
 const linkClass =
-  'no-underline rounded transition-[color,background-color,filter] duration-150 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2'
+  'no-underline rounded transition-[color,background-color,filter] duration-150 focus:outline-2 focus:outline-accent focus:outline-offset-2'
 
 export function HanziiHanCellLink({
   hanTraditional,

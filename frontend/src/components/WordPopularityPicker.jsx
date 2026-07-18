@@ -7,6 +7,7 @@ const dotColors = {
   1: 'bg-[var(--han-popularity-1)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--han-popularity-1)_28%,transparent)]',
   2: 'bg-[var(--han-popularity-2)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--han-popularity-2)_28%,transparent)]',
   3: 'bg-[var(--han-popularity-3)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--han-popularity-3)_28%,transparent)]',
+  4: 'bg-[var(--han-popularity-4)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--han-popularity-4)_28%,transparent)]',
 }
 
 const dotRing = {
@@ -14,16 +15,13 @@ const dotRing = {
   1: 'ring-[var(--han-popularity-1)]',
   2: 'ring-[var(--han-popularity-2)]',
   3: 'ring-[var(--han-popularity-3)]',
+  4: 'ring-[var(--han-popularity-4)]',
 }
-
-const levelBtnClass =
-  'rounded-md border-0 bg-transparent px-1 py-1 text-inherit font-inherit leading-tight transition-colors duration-150 disabled:cursor-default disabled:opacity-65 enabled:hover:bg-accent-bg enabled:hover:text-text-h'
 
 export function WordPopularityPicker({ value, onChange, disabled, compact = false, footer = false }) {
   const { t } = useLocale()
   const level = normalizePopularity(value)
   const showTitle = !compact || footer
-  const showLabels = !compact && !footer
 
   const dotSize = footer ? 'size-9' : compact ? 'size-7' : 'size-8'
   const trackClass = cn(
@@ -79,26 +77,6 @@ export function WordPopularityPicker({ value, onChange, disabled, compact = fals
           )
         })}
       </div>
-      {showLabels && (
-        <div className="mt-2 grid grid-cols-4 gap-1 text-center text-[0.6875rem] leading-tight text-text-muted">
-          {POPULARITY_LEVELS.map((n) => {
-            const active = level === n
-            const label = t.wordPopularity.levels[n]
-            return (
-              <button
-                key={n}
-                type="button"
-                disabled={disabled}
-                className={cn(levelBtnClass, active && 'bg-accent-bg font-semibold text-text-h')}
-                onClick={() => onChange(active ? null : n)}
-                aria-label={label}
-              >
-                {label}
-              </button>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }

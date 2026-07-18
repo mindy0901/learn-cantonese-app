@@ -34,3 +34,6 @@ backend/supabase/.temp/
 .DS_Store
 
 .vercel
+**/.codewhale/*
+!**/.codewhale/constitution.json
+.deepseek/

@@ -39,7 +39,7 @@ export function LessonEditPage() {
 
   if (!isNew && !existing) {
     return (
-      <main className="flex-1 max-w-[1080px] w-full mx-auto px-5 py-8 pb-12">
+      <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
         <div className="text-center py-12 px-6 text-text-muted flex flex-col items-center gap-4">
           <p>{t.lessons.notFound}</p>
           <Link to="/lessons" className={btnClass('primary')}>{t.lessons.backToList}</Link>
@@ -49,7 +49,7 @@ export function LessonEditPage() {
   }
 
   return (
-    <main className="flex-1 max-w-[1080px] w-full mx-auto px-5 py-8 pb-12">
+    <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
       <div className="flex items-start justify-between gap-4 mb-6 max-sm:flex-col">
         <div>
           <h1>{isNew ? t.lessonEdit.createTitle : t.lessonEdit.editTitle}</h1>

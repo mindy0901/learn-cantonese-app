@@ -4,7 +4,7 @@ const url = process.env.SUPABASE_URL?.replace(/\/rest\/v1\/?$/i, "").replace(/\/
 const secretKey = process.env.SUPABASE_SECRET_KEY?.trim();
 
 if (!url || !secretKey) {
-    console.warn("Missing SUPABASE_URL or SUPABASE_SECRET_KEY — cloud routes will fail");
+    console.warn("Missing SUPABASE_URL or SUPABASE_SECRET_KEY â€” cloud routes will fail");
 }
 
 export const supabaseAdmin =

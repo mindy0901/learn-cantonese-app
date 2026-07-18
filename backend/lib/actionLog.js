@@ -1,11 +1,7 @@
 /** Compact backend logs: "Update word: 你好" / "Checking auth" */
 
 function emit(level, message) {
-    const line = String(message ?? "").trim();
-    if (!line) return;
-    if (level === "warn") console.warn(line);
-    else if (level === "error") console.error(line);
-    else console.log(line);
+    // Logging moved to frontend
 }
 
 function quoteIfNeeded(text) {

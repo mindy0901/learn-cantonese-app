@@ -23,7 +23,7 @@ async function ensureCedictLoaded() {
             })
             .catch((err) => {
                 loadPromise = null;
-                throw new Error(`CC-CEDICT chưa cài — chạy "pnpm install" trong backend. (${err.message ?? err})`);
+                throw new Error(`CC-CEDICT chÆ°a cÃ i â€” cháº¡y "pnpm install" trong backend. (${err.message ?? err})`);
             });
     }
     await loadPromise;
@@ -119,6 +119,6 @@ export function isLatinSearchQuery(text) {
 /** Warm CC-CEDICT on server start (non-blocking). */
 export function warmCedictIndex() {
     ensureEnglishIndex().catch((err) => {
-        console.warn("[cedict] Index warmup failed —", err.message ?? err);
+        console.warn("[cedict] Index warmup failed â€”", err.message ?? err);
     });
 }

@@ -24,6 +24,17 @@ export const LessonEditFooter = memo(function LessonEditFooter({ isNew, lessonId
     setSaving(true)
     setSaveError('')
     try {
+      // Check for duplicate lesson name
+      const lessons = useAppStore.getState().lessons
+      const duplicate = lessons.find(
+        (l) => l.name?.trim().toLowerCase() === trimmed.toLowerCase() && l.id !== lessonId
+      )
+      if (duplicate) {
+        setSaveError(t.lessonEdit.duplicateName)
+        setSaving(false)
+        return
+      }
+
       const createdIds = []
       for (const extra of wordExtras) {
         const saved = await createWordAwait(extra)

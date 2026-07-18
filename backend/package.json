@@ -7,17 +7,20 @@
   "scripts": {
     "predev": "node --input-type=module -e \"import fs from 'fs'; const need=['express','cookie-session']; const miss=need.filter(p=>!fs.existsSync('node_modules/'+p+'/package.json')); if(miss.length){ console.error('\\n[backend] Missing packages: '+miss.join(', ')+'. Run: pnpm install\\n'); process.exit(1); }\"",
     "dev": "node --watch index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "import-han-characters": "node scripts/import-han-characters.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",
     "cc-cedict": "1.1.1",
     "cookie-parser": "^1.4.7",
+    "cookie-session": "^2.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "cookie-session": "^2.1.0",
     "opencc-js": "1.0.5",
-    "pinyin-pro": "3.27.0"
+    "pg": "^8.22.0",
+    "pinyin-pro": "3.27.0",
+    "to-jyutping": "^3.1.1"
   }
 }

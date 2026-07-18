@@ -69,7 +69,7 @@ export function FlashcardPage() {
 
   if (wordCount === 0) {
     return (
-      <main className="flex-1 max-w-[720px] w-full mx-auto px-5 py-8 pb-12">
+      <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
         <div className="text-center py-12 px-6 text-text-muted flex flex-col items-center gap-4">
           <p>{withAdminHint(t.flashcard.empty, t.flashcard.emptyAdminHint, isAdmin)}</p>
           <Link to="/" className={btnClass('primary')}>{t.flashcard.goHome}</Link>
@@ -79,7 +79,7 @@ export function FlashcardPage() {
   }
 
   return (
-    <main className="flex-1 max-w-[720px] w-full mx-auto px-5 py-8 pb-12">
+    <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
       <div className="flex items-start justify-between gap-4 mb-6 max-sm:flex-col">
         <div>
           <h1>{t.flashcard.title}</h1>

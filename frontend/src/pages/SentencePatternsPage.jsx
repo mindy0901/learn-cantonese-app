@@ -30,7 +30,7 @@ export function SentencePatternsPage() {
   const handleFilterChange = useCallback((patch) => setSentenceBankPrefs(patch), [setSentenceBankPrefs])
 
   return (
-    <main className="flex-1 max-w-[1240px] w-full mx-auto px-5 pt-8 pb-12">
+    <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 pt-8 pb-12">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1>{t.sentenceBank.title}</h1>
@@ -63,12 +63,13 @@ export function SentencePatternsPage() {
         />
       )}
 
-      {addOpen && <AddSentenceModal onSave={createSentence} onClose={() => setAddOpen(false)} />}
+      {addOpen && <AddSentenceModal onSave={createSentence} onClose={() => setAddOpen(false)} existingItems={items} />}
       {editItem && (
         <AddSentenceModal
           item={items.find((s) => s.id === editItem.id) ?? editItem}
           onSave={editSentence}
           onClose={() => setEditItem(null)}
+          existingItems={items}
         />
       )}
       {viewItem && (

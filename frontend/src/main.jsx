@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 import { useAuthStore } from "./store/authStore.js";
-import { log, logError } from "./lib/actionLog.js";
+import { logError } from "./lib/actionLog.js";
 
 function showBootError(message) {
     const root = document.getElementById("root");
@@ -42,7 +42,6 @@ function Root() {
     const init = useAuthStore((s) => s.init);
 
     useEffect(() => {
-        log("App rendered");
         init().catch(() => {});
     }, [init]);
 

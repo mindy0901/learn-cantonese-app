@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { formatMessage, translations } from '../i18n/index.js'
-import { log } from '../lib/actionLog.js'
 
 const STORAGE_KEY = 'cantonese-app-locale'
 
@@ -25,7 +24,6 @@ export const useLocaleStore = create((set) => ({
   locale: initialLocale,
 
   setLocale: (next) => {
-    log("Set locale", next)
     localStorage.setItem(STORAGE_KEY, next)
     document.documentElement.lang = next
     set({ locale: next })

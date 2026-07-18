@@ -6,7 +6,6 @@ import cookieSession from "cookie-session";
 import { authRouter } from "./routes/auth.js";
 import { cedictRouter } from "./routes/cedict.js";
 import { dataRouter } from "./routes/data.js";
-import { hanvietRouter } from "./routes/hanviet.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 const cookieSecure =
@@ -43,9 +42,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/auth", authRouter);
 app.use("/api/cedict", cedictRouter);
-app.use("/api/hanviet", hanvietRouter);
 app.use("/api", dataRouter);
-
 
 app.use((err, _req, res, _next) => {
     console.error(`Error: ${err.message ?? err}`);
@@ -53,11 +50,7 @@ app.use((err, _req, res, _next) => {
 });
 
 import { warmCedictIndex } from "./lib/cedictSearch.js";
-import { warmHanVietCognatesIndex } from "./lib/hanVietCognates.js";
-import { warmHanVietPhienamIndex } from "./lib/hanVietPhienam.js";
 
 warmCedictIndex();
-warmHanVietCognatesIndex();
-warmHanVietPhienamIndex();
 
 export default app;

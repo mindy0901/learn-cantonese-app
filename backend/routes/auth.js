@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { log, logWarn } from "../lib/actionLog.js";
 import { ensureSupabaseUser } from "../lib/dataService.js";
 import { getAdminEmails, isAppAdmin } from "../lib/appAdmin.js";
@@ -99,7 +99,6 @@ authRouter.get("/google/callback", async (req, res) => {
         res.redirect(FRONTEND_URL);
     } catch (err) {
         logWarn("Sign in failed", err.message);
-        console.error(err);
         res.redirect(`${FRONTEND_URL}?auth_error=${encodeURIComponent(err.message)}`);
     }
 });

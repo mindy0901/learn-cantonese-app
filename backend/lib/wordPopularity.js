@@ -1,9 +1,9 @@
-export const POPULARITY_LEVELS = [0, 1, 2, 3];
+export const POPULARITY_LEVELS = [0, 1, 2, 3, 4];
 
 export function normalizePopularity(value) {
     if (value === null || value === undefined || value === "") return null;
     const n = Number(value);
-    if (!Number.isInteger(n) || n < 0 || n > 3) return null;
+    if (!Number.isInteger(n) || n < 0 || n > 4) return null;
     return n;
 }
 

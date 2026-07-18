@@ -99,6 +99,7 @@ export const LessonGrammarSection = memo(function LessonGrammarSection() {
         <AddGrammarModal
           onSave={handleAddCustom}
           onClose={() => setAddOpen(false)}
+          existingItems={grammarBank}
         />
       )}
     </section>

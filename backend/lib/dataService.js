@@ -5,6 +5,8 @@ const DELETE_BATCH = 200;
 import { normalizeWordFields } from "./wordNormalize.js";
 import { normalizePopularity } from "./wordPopularity.js";
 import { countWords, queryWords } from "./wordQuery.js";
+import { normalizeSearchText } from "./searchNormalize.js";
+import { randomUUID } from "crypto";
 
 function clampStudyProgress(value) {
     const n = Math.round(Number(value) || 0);
@@ -209,6 +211,74 @@ async function fetchAllIds(db, table, userId) {
     return ids;
 }
 
+export function hanCharacterToRow(item, userId, { includeCreatedAt = true } = {}) {
+    const ch = item.hanSimplified ?? item.character ?? "";
+    const readings = Array.isArray(item.hanViet)
+        ? item.hanViet.map((r) => String(r ?? "").trim()).filter(Boolean)
+        : String(item.hanViet ?? "").trim()
+          ? [String(item.hanViet).trim()]
+          : [];
+    const hanVietArr = readings.length > 0 ? readings : null;
+    const hanVietText = [...new Set(readings.map((r) => normalizeSearchText(r)).filter(Boolean))].join(" ");
+
+    const parseArr = (val) => {
+        if (Array.isArray(val)) return val.map((r) => String(r ?? "").trim()).filter(Boolean);
+        const s = String(val ?? "").trim();
+        return s ? [s] : [];
+    };
+    const pinyinArr = parseArr(item.pinyin);
+    const jyutpingArr = parseArr(item.jyutping);
+    const pinyinText = [...new Set(pinyinArr.map((r) => normalizeSearchText(r)).filter(Boolean))].join(" ");
+    const jyutpingText = [...new Set(jyutpingArr.map((r) => normalizeSearchText(r)).filter(Boolean))].join(" ");
+
+    const row = {
+        id: item.id ?? randomUUID(),
+        user_id: userId,
+        han_simplified: ch,
+        han_traditional: String(item.hanTraditional ?? "").trim() || null,
+        han_viet: hanVietArr,
+        pinyin: pinyinArr.length > 0 ? pinyinArr : null,
+        jyutping: jyutpingArr.length > 0 ? jyutpingArr : null,
+        popularity: normalizePopularity(item.popularity),
+        important: item.important ?? false,
+        mastered: item.mastered ?? false,
+        search_key: normalizeSearchText(
+            ch + " " + (item.hanTraditional ?? "") + " " + hanVietText + " " + pinyinText + " " + jyutpingText,
+        ),
+        updated_at: new Date().toISOString(),
+    };
+    if (includeCreatedAt) {
+        row.created_at = item.createdAt ?? new Date().toISOString();
+    }
+    return row;
+}
+
+export function rowToHanCharacter(row) {
+    const updatedAt = row.updated_at ?? row.created_at ?? undefined;
+    const createdAt = row.created_at ?? row.updated_at ?? undefined;
+    const toArr = (v) => {
+        if (Array.isArray(v)) return v.length > 0 ? v : undefined;
+        if (!v) return undefined;
+        // Old data: single text string, may be space-separated multiple readings
+        const parts = String(v).split(/\s+/).filter(Boolean);
+        return parts.length > 0 ? parts : undefined;
+    };
+    const hanViet = toArr(row.han_viet);
+    return {
+        id: row.id,
+        hanSimplified: row.han_simplified ?? "",
+        hanTraditional: row.han_traditional ?? undefined,
+        hanViet,
+        pinyin: toArr(row.pinyin),
+        jyutping: toArr(row.jyutping),
+        popularity: row.popularity ?? undefined,
+        important: row.important ?? false,
+        mastered: row.mastered ?? false,
+        createdAt,
+        updatedAt,
+    };
+}
+
 export async function upsertBatched(db, table, rows) {
     for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
         const chunk = rows.slice(i, i + UPSERT_BATCH);
@@ -253,12 +323,10 @@ export async function fetchAllData(db, userId) {
     };
 }
 
-/** Initial app load — limits words to first N pages; includes totals for stats. */
-export async function fetchAppData(db, userId, { initialWordPages = 5, wordPageSize = 15 } = {}) {
-    const safePages = Math.min(10, Math.max(0, Number(initialWordPages) || 0));
-    const safePageSize = Math.min(50, Math.max(1, Number(wordPageSize) || 15));
-
-    const [grammarRows, lessonRows, sentenceRows, wordTotal, masteredWordCount] = await Promise.all([
+/** Initial app load — loads ALL data in one shot. Pagination handled by frontend. */
+export async function fetchAppData(db, userId) {
+    const [wordRows, grammarRows, lessonRows, sentenceRows, wordTotal, masteredWordCount] = await Promise.all([
+        fetchAllRows(db, "words", userId),
         fetchAllRows(db, "grammar_bank", userId),
         fetchAllRows(db, "lessons", userId),
         fetchSentencePatternRows(db, userId),
@@ -266,18 +334,16 @@ export async function fetchAppData(db, userId, { initialWordPages = 5, wordPageS
         countWords(db, userId, { filter: "mastered" }),
     ]);
 
-    const wordRows = [];
-    if (safePages > 0) {
-        for (let page = 1; page <= safePages; page++) {
-            const wordsPage = await queryWords(db, userId, {
-                page,
-                pageSize: safePageSize,
-                sortKey: "createdAt",
-                sortDir: "desc",
-            });
-            wordRows.push(...(wordsPage.items ?? []));
-            if ((wordsPage.items?.length ?? 0) < safePageSize) break;
-        }
+    // Load all han characters (skip if table doesn't exist yet)
+    let hanCharacterRows = [];
+    let hanCharacterTotal = 0;
+    try {
+        const hanRows = await fetchAllRows(db, "han_characters", userId);
+        hanCharacterRows = hanRows;
+        hanCharacterTotal = hanRows.length;
+    } catch (err) {
+        const msg = String(err?.message ?? "");
+        if (!/relation.*does not exist|PGRST205/i.test(msg)) throw err;
     }
 
     return {
@@ -287,6 +353,8 @@ export async function fetchAppData(db, userId, { initialWordPages = 5, wordPageS
         grammarBank: grammarRows.map(rowToGrammar),
         lessons: lessonRows.map(rowToLesson),
         sentencePatterns: sentenceRows.map(rowToSentencePattern),
+        hanCharacters: hanCharacterRows.map(rowToHanCharacter),
+        hanCharacterTotal,
     };
 }
 

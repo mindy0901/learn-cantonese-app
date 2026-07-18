@@ -30,6 +30,9 @@ export function toHanHK(text) {
 /**
  * Ensure word has both HK traditional (`hanTraditional`) and simplified Mandarin (`hanSimplified`).
  * `hanTraditional` is canonical for display (HK priority).
+ *
+ * IMPORTANT: Preserve the original hanTraditional when already present — do not re-round-trip
+ * through simplified, as OpenCC can lose the character (e.g. 係 → cn → 系 → hk → 系).
  */
 export function ensureHanVariants({ hanTraditional, hanSimplified, hanTrad, han }) {
   const rawTrad = String(hanTraditional ?? hanTrad ?? han ?? '').trim()
@@ -37,19 +40,29 @@ export function ensureHanVariants({ hanTraditional, hanSimplified, hanTrad, han 
 
   if (rawTrad && rawSimp) {
     return {
-      hanTraditional: toHanHK(rawTrad),
+      // Keep original hanTraditional; only normalize simplified
+      hanTraditional: rawTrad,
       hanSimplified: toHanSimplified(rawSimp),
     }
   }
 
-  const source = rawTrad || rawSimp
-  if (!source) return { hanTraditional: '', hanSimplified: '' }
-
-  const simplified = toHanSimplified(source)
-  return {
-    hanTraditional: toHanHK(simplified),
-    hanSimplified: simplified,
+  if (rawTrad) {
+    // We have traditional — keep it, derive simplified from it
+    return {
+      hanTraditional: rawTrad,
+      hanSimplified: toHanSimplified(rawTrad),
+    }
   }
+
+  if (rawSimp) {
+    // Only simplified — derive traditional from it
+    return {
+      hanTraditional: toHanHK(rawSimp),
+      hanSimplified: rawSimp,
+    }
+  }
+
+  return { hanTraditional: '', hanSimplified: '' }
 }
 
 export function hasHanScript(text) {

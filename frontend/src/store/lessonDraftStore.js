@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { emptyGrammarBankItem, emptyWord } from '../types/word.js'
-import { log } from '../lib/actionLog.js'
 
 function normalizeWordId(id) {
   return String(id ?? '').trim()
@@ -44,7 +43,6 @@ export const useLessonDraftStore = create((set, get) => ({
         grammarExtras.push(section)
       }
     }
-    log("Init lesson draft", name || "untitled")
     set({
       name,
       selectedOrder: dedupeWordIds(wordIds),
@@ -55,7 +53,6 @@ export const useLessonDraftStore = create((set, get) => ({
   },
 
   reset: () => {
-    log("Reset lesson draft")
     set({
       name: '',
       selectedOrder: [],
@@ -66,14 +63,12 @@ export const useLessonDraftStore = create((set, get) => ({
   },
 
   setName: (name) => {
-    log("Lesson draft name", name)
     set({ name })
   },
 
   toggleSelected: (id) => {
     const wordId = normalizeWordId(id)
     if (!wordId) return
-    log("Toggle draft word", wordId)
     set((state) => {
       const order = dedupeWordIds(state.selectedOrder)
       if (order.includes(wordId)) {
@@ -88,34 +83,28 @@ export const useLessonDraftStore = create((set, get) => ({
   },
 
   clearSelected: () => {
-    log("Clear draft words")
     set({ selectedOrder: [] })
   },
 
   addWordExtra: (word) => {
     const entry = emptyWord(word)
-    log("Add draft word", entry)
     set((state) => ({ wordExtras: [...state.wordExtras, entry] }))
   },
 
   removeWordExtra: (id) => {
-    log("Remove draft word", id)
     set((state) => ({ wordExtras: state.wordExtras.filter((w) => w.id !== id) }))
   },
 
   addGrammarExtra: (section) => {
     const entry = emptyGrammarBankItem(section)
-    log("Add draft grammar", entry)
     set((state) => ({ grammarExtras: [...state.grammarExtras, entry] }))
   },
 
   removeGrammarExtra: (id) => {
-    log("Remove draft grammar", id)
     set((state) => ({ grammarExtras: state.grammarExtras.filter((g) => g.id !== id) }))
   },
 
   toggleGrammarSelected: (id) => {
-    log("Toggle draft grammar", id)
     set((state) => {
       if (state.grammarSelectedOrder.includes(id)) {
         return { grammarSelectedOrder: state.grammarSelectedOrder.filter((x) => x !== id) }
@@ -125,7 +114,6 @@ export const useLessonDraftStore = create((set, get) => ({
   },
 
   clearGrammarSelected: () => {
-    log("Clear draft grammar")
     set({ grammarSelectedOrder: [] })
   },
 

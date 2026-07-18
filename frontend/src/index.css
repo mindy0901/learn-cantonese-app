@@ -27,6 +27,7 @@
     --color-han-pop-1: var(--han-popularity-1);
     --color-han-pop-2: var(--han-popularity-2);
     --color-han-pop-3: var(--han-popularity-3);
+    --color-han-pop-4: var(--han-popularity-4);
     --shadow-theme: var(--shadow);
     --shadow-theme-sm: var(--shadow-sm);
     --font-sans: var(--sans);
@@ -51,6 +52,7 @@
 }
 
 :root {
+    color-scheme: light;
     --han-scale: 1.3;
     --jyutping-scale: 1.15;
 
@@ -59,6 +61,7 @@
     --han-popularity-1: #ea580c;
     --han-popularity-2: #65a30d;
     --han-popularity-3: #059669;
+    --han-popularity-4: #7c3aed;
     --jyutping-color: #0e7490;
     --viet-color: #047857;
 
@@ -90,7 +93,7 @@
     --heading: "Roboto", "Inter", "Noto Sans SC", "Noto Sans TC", system-ui, sans-serif;
     --mono: "Roboto Mono", ui-monospace, Consolas, monospace;
 
-    font-size: 17px;
+    font-size: 20px;
     font-family: var(--sans);
     line-height: 1.5;
     color: var(--text);
@@ -102,7 +105,37 @@
     scrollbar-gutter: stable;
 }
 
+/* Font size scaling */
+html[data-font-size="md"] {
+    font-size: 22px;
+    --han-scale: 1.35;
+    --jyutping-scale: 1.2;
+}
+html[data-font-size="lg"] {
+    font-size: 24px;
+    --han-scale: 1.4;
+    --jyutping-scale: 1.25;
+}
+
+/* Han character detail page — larger font sizes */
+.han-detail-page {
+    --word-detail-content-scale: 2.25;
+}
+.han-detail-page .text-6xl {
+    font-size: 4rem !important;
+}
+.han-detail-page .text-lg {
+    font-size: 1.375rem !important;
+}
+.han-detail-page .text-xs {
+    font-size: 0.9375rem !important;
+}
+.han-detail-page .text-base {
+    font-size: 1.125rem !important;
+}
+
 [data-theme="dark"] {
+    color-scheme: dark;
     --text: #cbd5e1;
     --text-h: #f1f5f9;
     --text-muted: #94a3b8;
@@ -127,6 +160,7 @@
     --han-popularity-1: #fb923c;
     --han-popularity-2: #a3e635;
     --han-popularity-3: #34d399;
+    --han-popularity-4: #a78bfa;
     --jyutping-color: #67e8f9;
     --viet-color: #6ee7b7;
 }
@@ -415,6 +449,10 @@ code {
 
 .flashcard-han.han-popularity--lvl-3 {
     color: var(--han-popularity-3) !important;
+}
+
+.flashcard-han.han-popularity--lvl-4 {
+    color: var(--han-popularity-4) !important;
 }
 
 @media (max-width: 640px) {

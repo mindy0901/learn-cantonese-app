@@ -9,9 +9,12 @@ import { LessonDetailPage } from "./pages/LessonDetailPage.jsx";
 import { LessonEditPage } from "./pages/LessonEditPage.jsx";
 import { LessonsPage } from "./pages/LessonsPage.jsx";
 import { FlashcardPage } from "./pages/FlashcardPage.jsx";
+import { HanCharactersPage } from "./pages/HanCharactersPage.jsx";
+import { HanCharacterDetailPage } from "./pages/HanCharacterDetailPage.jsx";
 import { HanLookupPage } from "./pages/HanLookupPage.jsx";
 import { WordBankPage } from "./pages/WordBankPage.jsx";
 import { WordDetailPage } from "./pages/WordDetailPage.jsx";
+import { ErrorPage } from "./pages/ErrorPage.jsx";
 
 function App() {
     return (
@@ -19,6 +22,7 @@ function App() {
             <AuthGate>
                 <Routes>
                     <Route element={<Layout />}>
+                        <Route path="error" element={<ErrorPage />} />
                         <Route element={<CloudGate />}>
                             <Route index element={<HomePage />} />
                             <Route path="words" element={<WordBankPage />} />
@@ -29,6 +33,8 @@ function App() {
                             <Route path="lessons/new" element={<LessonEditPage />} />
                             <Route path="lessons/:id/edit" element={<LessonEditPage />} />
                             <Route path="lessons/:id" element={<LessonDetailPage />} />
+                            <Route path="han-characters" element={<HanCharactersPage />} />
+                            <Route path="han-characters/:id" element={<HanCharacterDetailPage />} />
                             <Route path="lookup" element={<HanLookupPage />} />
                             <Route path="flashcard" element={<FlashcardPage />} />
                             <Route path="study" element={<Navigate to="/flashcard" replace />} />

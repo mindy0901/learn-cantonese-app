@@ -35,6 +35,18 @@ export function emptyGrammarBankItem(partial) {
   }
 }
 
+export function emptyHanCharacter(partial) {
+  const now = new Date().toISOString()
+  return {
+    id: crypto.randomUUID(),
+    hanSimplified: '',
+    hanViet: '',
+    createdAt: now,
+    updatedAt: now,
+    ...partial,
+  }
+}
+
 export function emptySentencePattern(partial) {
   const now = new Date().toISOString()
   return {

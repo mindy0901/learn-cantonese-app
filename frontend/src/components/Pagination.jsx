@@ -3,7 +3,7 @@ import { btnClass } from './ui/buttonStyles.js'
 import { useLocale } from '../store/localeStore.js'
 import { getPaginationRange } from '../lib/pagination.js'
 
-export function Pagination({ page, totalPages, total, startIndex, pageSize, onPageChange, reserveSpace = false }) {
+export function Pagination({ page, totalPages, total, startIndex, pageSize, onPageChange, reserveSpace = false, compact = false }) {
   const { t, fmt } = useLocale()
 
   if (totalPages <= 1 && !reserveSpace) return null
@@ -14,7 +14,7 @@ export function Pagination({ page, totalPages, total, startIndex, pageSize, onPa
 
   const from = total === 0 ? 0 : startIndex + 1
   const to = Math.min(startIndex + pageSize, total)
-  const pageNumbers = getPaginationRange(page, totalPages)
+  const pageNumbers = getPaginationRange(page, totalPages, compact ? 0 : 1)
 
   return (
     <nav

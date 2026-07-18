@@ -19,7 +19,7 @@ function buildDraft(item) {
   }
 }
 
-export function AddGrammarModal({ onSave, onClose, item: editItem }) {
+export function AddGrammarModal({ onSave, onClose, item: editItem, existingItems }) {
   const { t } = useLocale()
   const isEdit = Boolean(editItem?.id)
   const [draft, setDraft] = useState(() => buildDraft(editItem))
@@ -40,6 +40,16 @@ export function AddGrammarModal({ onSave, onClose, item: editItem }) {
     if (!title || !content) {
       setValidationError(t.grammarBank.requiredFields)
       return
+    }
+    // Check for duplicate title (exclude current item when editing)
+    if (existingItems) {
+      const duplicate = existingItems.find(
+        (g) => g.title?.trim().toLowerCase() === title.toLowerCase() && g.id !== editItem?.id
+      )
+      if (duplicate) {
+        setValidationError(t.grammarBank.duplicateTitle)
+        return
+      }
     }
     const payload = { title, content }
     if (isEdit) {
