@@ -169,6 +169,11 @@ export function toJyutping(text) {
 
     const parts = [];
     for (const [ch, jp] of mlPairs) {
+        // Preserve "/" separator for variant characters
+        if (ch === "/") {
+            parts.push("/");
+            continue;
+        }
         if (jp && jp.trim()) {
             parts.push(jp.trim());
         } else {

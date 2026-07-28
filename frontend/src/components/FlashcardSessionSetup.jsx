@@ -1,216 +1,215 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useLocale } from '../store/localeStore.js'
-import { useLessons, useWordsRevision } from '../store/appStore.js'
+import { useEffect, useMemo, useState } from "react";
+import { useLocale } from "../store/localeStore.js";
+import { useLessons, useVocabulariesRevision } from "../store/appStore.js";
 import {
-  FLASHCARD_CARD_MODES,
-  FLASHCARD_SCOPES,
-  FLASHCARD_SESSION_SIZES,
-  FLASHCARD_SOURCES,
-  loadFlashcardPrefs,
-  saveFlashcardPrefs,
-} from '../lib/flashcardPrefs.js'
-import { countDueFlashcardWords } from '../lib/flashcardWords.js'
-import { cn } from '../lib/cn.js'
-import { btnClass } from './ui/buttonStyles.js'
+    FLASHCARD_CARD_MODES,
+    FLASHCARD_SCOPES,
+    FLASHCARD_SESSION_SIZES,
+    FLASHCARD_SOURCES,
+    loadFlashcardPrefs,
+    saveFlashcardPrefs,
+} from "../lib/flashcardPrefs.js";
+import { countDueFlashcardVocabularies } from "../lib/flashcardWords.js";
+import { cn } from "../lib/cn.js";
+import { btnClass } from "./ui/buttonStyles.js";
 
 const fieldClass =
-  'w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text-h focus:outline-none focus:ring-2 focus:ring-accent/35 focus:border-accent-border'
+    "w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text-h focus:outline-none focus:ring-2 focus:ring-accent/35 focus:border-accent-border";
 
-const labelClass = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted'
+const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted";
 
 export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = null }) {
-  const { t, fmt } = useLocale()
-  const lessons = useLessons()
-  const wordsRevision = useWordsRevision()
-  const [prefs, setPrefs] = useState(() => loadFlashcardPrefs())
-  const [dueTotal, setDueTotal] = useState(dueCount)
+    const { t, fmt } = useLocale();
+    const lessons = useLessons();
+    const wordsRevision = useVocabulariesRevision();
+    const [prefs, setPrefs] = useState(() => loadFlashcardPrefs());
+    const [dueTotal, setDueTotal] = useState(dueCount);
 
-  useEffect(() => {
-    if (dueCount != null) {
-      setDueTotal(dueCount)
-      return
-    }
-    let cancelled = false
-    countDueFlashcardWords({ revision: wordsRevision })
-      .then((total) => {
-        if (!cancelled) setDueTotal(total)
-      })
-      .catch(() => {
-        if (!cancelled) setDueTotal(0)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [dueCount, wordsRevision])
+    useEffect(() => {
+        if (dueCount != null) {
+            setDueTotal(dueCount);
+            return;
+        }
+        let cancelled = false;
+        countDueFlashcardWords({ revision: wordsRevision })
+            .then((total) => {
+                if (!cancelled) setDueTotal(total);
+            })
+            .catch(() => {
+                if (!cancelled) setDueTotal(0);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [dueCount, wordsRevision]);
 
-  const lessonOptions = useMemo(
-    () => lessons.filter((lesson) => (lesson.wordIds?.length ?? 0) > 0),
-    [lessons],
-  )
+    const lessonOptions = useMemo(() => lessons.filter((lesson) => (lesson.wordIds?.length ?? 0) > 0), [lessons]);
 
-  const updatePref = (patch) => {
-    const next = saveFlashcardPrefs(patch)
-    setPrefs(next)
-  }
+    const updatePref = (patch) => {
+        const next = saveFlashcardPrefs(patch);
+        setPrefs(next);
+    };
 
-  const sourceLabels = {
-    due: t.flashcard.sourceDue,
-    random: t.flashcard.sourceRandom,
-  }
+    const sourceLabels = {
+        due: t.flashcard.sourceDue,
+        random: t.flashcard.sourceRandom,
+    };
 
-  const scopeLabels = {
-    all: t.flashcard.scopeAll,
-    important: t.flashcard.scopeImportant,
-    lowProgress: t.flashcard.scopeLowProgress,
-  }
+    const scopeLabels = {
+        all: t.flashcard.scopeAll,
+        important: t.flashcard.scopeImportant,
+        lowProgress: t.flashcard.scopeLowProgress,
+    };
 
-  const cardModeLabels = {
-    hanToMeaning: t.flashcard.modeHanToMeaning,
-    meaningToHan: t.flashcard.modeMeaningToHan,
-    jyutpingToHan: t.flashcard.modeJyutpingToHan,
-  }
+    const cardModeLabels = {
+        hanToMeaning: t.flashcard.modeHanToMeaning,
+        meaningToHan: t.flashcard.modeMeaningToHan,
+        jyutpingToHan: t.flashcard.modeJyutpingToHan,
+    };
 
-  const handleStart = () => {
-    onStart?.({
-      ...prefs,
-      lesson: prefs.lessonId ? lessons.find((l) => l.id === prefs.lessonId) ?? null : null,
-    })
-  }
+    const handleStart = () => {
+        onStart?.({
+            ...prefs,
+            lesson: prefs.lessonId ? (lessons.find((l) => l.id === prefs.lessonId) ?? null) : null,
+        });
+    };
 
-  return (
-    <div className="flex flex-col gap-5">
-      {dueTotal != null && dueTotal > 0 && (
-        <div className="rounded-xl border border-accent-border bg-accent-bg/50 px-4 py-3 text-center">
-          <p className="m-0 text-sm text-text-muted">{t.flashcard.dueToday}</p>
-          <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-accent">
-            {fmt(t.flashcard.dueCount, { count: dueTotal })}
-          </p>
-        </div>
-      )}
+    return (
+        <div className="flex flex-col gap-5">
+            {dueTotal != null && dueTotal > 0 && (
+                <div className="rounded-xl border border-accent-border bg-accent-bg/50 px-4 py-3 text-center">
+                    <p className="m-0 text-sm text-text-muted">{t.flashcard.dueToday}</p>
+                    <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-accent">
+                        {fmt(t.flashcard.dueCount, { count: dueTotal })}
+                    </p>
+                </div>
+            )}
 
-      <section className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
-        <h2 className="m-0 mb-4 text-sm font-semibold text-text-h">{t.flashcard.setupSource}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className={labelClass} htmlFor="flashcard-source">
-              {t.flashcard.sourceLabel}
-            </label>
-            <select
-              id="flashcard-source"
-              className={fieldClass}
-              value={prefs.source}
-              onChange={(e) => updatePref({ source: e.target.value })}
-            >
-              {FLASHCARD_SOURCES.map((value) => (
-                <option key={value} value={value}>
-                  {sourceLabels[value]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass} htmlFor="flashcard-scope">
-              {t.flashcard.scopeLabel}
-            </label>
-            <select
-              id="flashcard-scope"
-              className={fieldClass}
-              value={prefs.scope}
-              onChange={(e) => updatePref({ scope: e.target.value })}
-            >
-              {FLASHCARD_SCOPES.map((value) => (
-                <option key={value} value={value}>
-                  {scopeLabels[value]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="flashcard-lesson">
-              {t.flashcard.lessonLabel}
-            </label>
-            <select
-              id="flashcard-lesson"
-              className={fieldClass}
-              value={prefs.lessonId}
-              onChange={(e) => updatePref({ lessonId: e.target.value })}
-            >
-              <option value="">{t.flashcard.lessonAll}</option>
-              {lessonOptions.map((lesson) => (
-                <option key={lesson.id} value={lesson.id}>
-                  {lesson.name || t.flashcard.lessonUntitled}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </section>
+            <section className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
+                <h2 className="m-0 mb-4 text-sm font-semibold text-text-h">{t.flashcard.setupSource}</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label className={labelClass} htmlFor="flashcard-source">
+                            {t.flashcard.sourceLabel}
+                        </label>
+                        <select
+                            id="flashcard-source"
+                            className={fieldClass}
+                            value={prefs.source}
+                            onChange={(e) => updatePref({ source: e.target.value })}
+                        >
+                            {FLASHCARD_SOURCES.map((value) => (
+                                <option key={value} value={value}>
+                                    {sourceLabels[value]}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className={labelClass} htmlFor="flashcard-scope">
+                            {t.flashcard.scopeLabel}
+                        </label>
+                        <select
+                            id="flashcard-scope"
+                            className={fieldClass}
+                            value={prefs.scope}
+                            onChange={(e) => updatePref({ scope: e.target.value })}
+                        >
+                            {FLASHCARD_SCOPES.map((value) => (
+                                <option key={value} value={value}>
+                                    {scopeLabels[value]}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                        <label className={labelClass} htmlFor="flashcard-lesson">
+                            {t.flashcard.lessonLabel}
+                        </label>
+                        <select
+                            id="flashcard-lesson"
+                            className={fieldClass}
+                            value={prefs.lessonId}
+                            onChange={(e) => updatePref({ lessonId: e.target.value })}
+                        >
+                            <option value="">{t.flashcard.lessonAll}</option>
+                            {lessonOptions.map((lesson) => (
+                                <option key={lesson.id} value={lesson.id}>
+                                    {lesson.name || t.flashcard.lessonUntitled}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </section>
 
-      <section className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
-        <h2 className="m-0 mb-4 text-sm font-semibold text-text-h">{t.flashcard.setupMode}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="flashcard-card-mode">
-              {t.flashcard.cardModeLabel}
-            </label>
-            <select
-              id="flashcard-card-mode"
-              className={fieldClass}
-              value={prefs.cardMode}
-              onChange={(e) => updatePref({ cardMode: e.target.value })}
-            >
-              {FLASHCARD_CARD_MODES.map((value) => (
-                <option key={value} value={value}>
-                  {cardModeLabels[value]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <label className="flex items-center gap-2 text-sm text-text-h sm:col-span-2">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-border accent-accent"
-              checked={prefs.hideJyutping}
-              onChange={(e) => updatePref({ hideJyutping: e.target.checked })}
-              disabled={prefs.cardMode === 'jyutpingToHan'}
-            />
-            {t.flashcard.hideJyutping}
-          </label>
-        </div>
-      </section>
+            <section className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
+                <h2 className="m-0 mb-4 text-sm font-semibold text-text-h">{t.flashcard.setupMode}</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                        <label className={labelClass} htmlFor="flashcard-card-mode">
+                            {t.flashcard.cardModeLabel}
+                        </label>
+                        <select
+                            id="flashcard-card-mode"
+                            className={fieldClass}
+                            value={prefs.cardMode}
+                            onChange={(e) => updatePref({ cardMode: e.target.value })}
+                        >
+                            {FLASHCARD_CARD_MODES.map((value) => (
+                                <option key={value} value={value}>
+                                    {cardModeLabels[value]}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-text-h sm:col-span-2">
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-border accent-accent"
+                            checked={prefs.hideJyutping}
+                            onChange={(e) => updatePref({ hideJyutping: e.target.checked })}
+                            disabled={prefs.cardMode === "jyutpingToHan"}
+                        />
+                        {t.flashcard.hideJyutping}
+                    </label>
+                </div>
+            </section>
 
-      <section className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
-        <h2 className="m-0 mb-4 text-sm font-semibold text-text-h">{t.flashcard.setupSize}</h2>
-        <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
-          {FLASHCARD_SESSION_SIZES.map((size) => (
+            <section className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
+                <h2 className="m-0 mb-4 text-sm font-semibold text-text-h">{t.flashcard.setupSize}</h2>
+                <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
+                    {FLASHCARD_SESSION_SIZES.map((size) => (
+                        <button
+                            key={size}
+                            type="button"
+                            className={cn(
+                                "flex flex-col items-center justify-center gap-1.5 min-h-[5.5rem] px-3 py-3 border rounded-xl cursor-pointer transition-[background,border-color,transform] duration-150",
+                                prefs.sessionSize === size
+                                    ? "border-accent-border bg-accent-bg text-accent shadow-theme-sm"
+                                    : "border-border bg-bg text-text hover:bg-accent-bg/40 hover:border-accent-border/60",
+                                "disabled:opacity-60 disabled:cursor-not-allowed",
+                            )}
+                            disabled={disabled || loading}
+                            onClick={() => updatePref({ sessionSize: size })}
+                        >
+                            <span className="text-[1.5rem] font-bold leading-none">{size}</span>
+                            <span className="text-xs text-text-muted">
+                                {fmt(t.flashcard.randomCards, { count: size })}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            </section>
+
             <button
-              key={size}
-              type="button"
-              className={cn(
-                'flex flex-col items-center justify-center gap-1.5 min-h-[5.5rem] px-3 py-3 border rounded-xl cursor-pointer transition-[background,border-color,transform] duration-150',
-                prefs.sessionSize === size
-                  ? 'border-accent-border bg-accent-bg text-accent shadow-theme-sm'
-                  : 'border-border bg-bg text-text hover:bg-accent-bg/40 hover:border-accent-border/60',
-                'disabled:opacity-60 disabled:cursor-not-allowed',
-              )}
-              disabled={disabled || loading}
-              onClick={() => updatePref({ sessionSize: size })}
+                type="button"
+                className={cn(btnClass("primary"), "w-full")}
+                disabled={disabled || loading}
+                onClick={handleStart}
             >
-              <span className="text-[1.5rem] font-bold leading-none">{size}</span>
-              <span className="text-xs text-text-muted">{fmt(t.flashcard.randomCards, { count: size })}</span>
+                {loading ? t.common.loading : t.flashcard.startSession}
             </button>
-          ))}
         </div>
-      </section>
-
-      <button
-        type="button"
-        className={cn(btnClass('primary'), 'w-full')}
-        disabled={disabled || loading}
-        onClick={handleStart}
-      >
-        {loading ? t.common.loading : t.flashcard.startSession}
-      </button>
-    </div>
-  )
+    );
 }

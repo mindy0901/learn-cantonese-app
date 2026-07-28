@@ -1,11 +1,12 @@
 import { isAppAdmin } from "../lib/appAdmin.js";
 import { log, logWarn } from "../lib/actionLog.js";
 
-export function requireAppAdmin(req, res, next) {
-    log("Checking admin");
-    if (!isAppAdmin(req.session?.email)) {
-        logWarn("Admin required", req.session?.email?.split("@")[0] ?? "guest");
-        return res.status(403).json({ error: "Admin only" });
-    }
-    next();
+export function requireAppAdmin(request, reply, done) {
+  log("Checking admin");
+  if (!isAppAdmin(request.session?.email)) {
+    logWarn("Admin required", request.session?.email?.split("@")[0] ?? "guest");
+    reply.code(403).send({ error: "Admin only" });
+    return;
+  }
+  done();
 }

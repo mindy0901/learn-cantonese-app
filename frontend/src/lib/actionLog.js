@@ -99,7 +99,7 @@ export function subjectLabel(subject) {
     if (typeof o.loaded === "number" && typeof o.wordTotal === "number") {
         return `${o.loaded}/${o.wordTotal}`;
     }
-    if (typeof o.wordCount === "number") return String(o.wordCount);
+    if (typeof o.vocabCount === "number") return String(o.vocabCount);
     if (typeof o.total === "number") return String(o.total);
 
     return "";

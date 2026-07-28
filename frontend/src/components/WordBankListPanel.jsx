@@ -14,14 +14,21 @@ import { WordBankBrowseTable } from "./WordBankBrowseTable.jsx";
 
 export const WordBankListPanel = memo(function WordBankListPanel({
     filter,
+    showImportant,
+    showMastered,
+    hskLevel,
     sortKey,
     sortDir,
     onFilterChange,
     onView,
+    onEdit,
     restoreState = null,
 }) {
     const { t, fmt } = useLocale();
-    const browseContext = useMemo(() => ({ filter, sortKey, sortDir }), [filter, sortKey, sortDir]);
+    const browseContext = useMemo(
+        () => ({ filter, showImportant, showMastered, hskLevel, sortKey, sortDir }),
+        [filter, showImportant, showMastered, hskLevel, sortKey, sortDir],
+    );
     const activeRestore = useMemo(
         () => (wordBankReturnMatches(restoreState, browseContext) ? restoreState : null),
         [restoreState, browseContext],
@@ -32,12 +39,21 @@ export const WordBankListPanel = memo(function WordBankListPanel({
     const handleSearch = useCallback((value) => setSearch(value), []);
     const handleTotalChange = useCallback((total) => setFilteredTotal(total), []);
 
+    const hskLevels = [
+        { value: "all", label: t.wordBank.levelAll || "Tất cả cấp" },
+        { value: "1", label: "HSK 1" },
+        { value: "2", label: "HSK 2" },
+        { value: "3", label: "HSK 3" },
+        { value: "4", label: "HSK 4" },
+        { value: "5", label: "HSK 5" },
+        { value: "6", label: "HSK 6" },
+        { value: "7-9", label: "HSK 7-9" },
+    ];
+
     const sortOptions = [
-        { value: "hanViet", label: t.sort.hanViet },
+        { value: "sinoVietnamese", label: t.sort.sinoVietnamese },
         { value: "hanTraditional", label: t.sort.hanTraditional },
         { value: "jyutping", label: t.sort.jyutping },
-        { value: "vietnamese", label: t.sort.vietnamese },
-        { value: "english", label: t.sort.english },
         { value: "createdAt", label: t.sort.createdAt },
     ];
 
@@ -46,21 +62,17 @@ export const WordBankListPanel = memo(function WordBankListPanel({
     return (
         <div className="w-full">
             <div className={bankToolbarRowClass}>
-                <BankSearchInput
-                    className={bankToolbarSearchClass}
-                    onChange={handleSearch}
-                    placeholder={t.wordBank.searchPlaceholder}
-                    initialValue={activeRestore?.search ?? ""}
-                />
                 <select
                     className={bankToolbarSelectClass}
-                    value={filter}
-                    onChange={(e) => onFilterChange({ filter: e.target.value })}
-                    aria-label="Filter"
+                    value={hskLevel}
+                    onChange={(e) => onFilterChange({ hskLevel: e.target.value })}
+                    aria-label={t.wordBank.levelFilter || "Level"}
                 >
-                    <option value="all">{t.wordBank.filterAll}</option>
-                    <option value="important">{t.wordBank.filterImportant}</option>
-                    <option value="mastered">{t.wordBank.filterMastered}</option>
+                    {hskLevels.map((l) => (
+                        <option key={l.value} value={l.value}>
+                            {l.label}
+                        </option>
+                    ))}
                 </select>
                 <select
                     className={bankToolbarSelectClass}
@@ -87,15 +99,43 @@ export const WordBankListPanel = memo(function WordBankListPanel({
                 >
                     {sortDirLabel}
                 </button>
+                <label className="inline-flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        className="size-4 rounded border-border accent-amber-500 cursor-pointer"
+                        checked={showImportant}
+                        onChange={(e) => onFilterChange({ showImportant: e.target.checked })}
+                    />
+                    <span className="text-text-h">{t.wordBank.filterImportant}</span>
+                </label>
+                <label className="inline-flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        className="size-4 rounded border-border accent-green-500 cursor-pointer"
+                        checked={showMastered}
+                        onChange={(e) => onFilterChange({ showMastered: e.target.checked })}
+                    />
+                    <span className="text-text-h">{t.wordBank.filterMastered}</span>
+                </label>
+                <BankSearchInput
+                    className={bankToolbarSearchClass + " ml-auto"}
+                    onChange={handleSearch}
+                    placeholder={t.wordBank.searchPlaceholder}
+                    initialValue={activeRestore?.search ?? ""}
+                />
             </div>
 
             <WordBankBrowseTable
                 variant="bank"
                 search={debouncedSearch}
                 filter={filter}
+                showImportant={showImportant}
+                showMastered={showMastered}
+                hskLevel={hskLevel}
                 sortKey={sortKey}
                 sortDir={sortDir}
                 onView={onView}
+                onEdit={onEdit}
                 onTotalChange={handleTotalChange}
                 restoreState={activeRestore}
             />

@@ -3,11 +3,11 @@ import { createPortal } from "react-dom";
 import { api } from "../lib/api.js";
 import { logError } from "../lib/actionLog.js";
 import { findMissingHanChars } from "../lib/hanCharExtract.js";
-import { useAppActions, useDataHydrated, useHanCharacters, useWords } from "../store/appStore.js";
+import { useAppActions, useDataHydrated, useHanCharacters, useVocabularies } from "../store/appStore.js";
 import { btnClass } from "./ui/buttonStyles.js";
 
 export function MissingHanCharsSync() {
-    const words = useWords();
+    const words = useVocabularies();
     const hanCharacters = useHanCharacters();
     const hydrated = useDataHydrated();
     const { mergeHanCharacters } = useAppActions();
@@ -39,7 +39,7 @@ export function MissingHanCharsSync() {
                     batch.map((ch) =>
                         api.createHanCharacter({
                             hanSimplified: ch,
-                            hanViet: undefined,
+                            sinoVietnamese: undefined,
                         }),
                     ),
                 );
@@ -98,74 +98,77 @@ export function MissingHanCharsSync() {
                 <p className="text-[0.6875rem] text-text-muted mt-0.5">Chưa có trong danh sách</p>
             </button>
 
-            {showModal && createPortal(
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
-                    onClick={() => setShowModal(false)}
-                >
+            {showModal &&
+                createPortal(
                     <div
-                        className="bg-surface border border-border rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
-                        onClick={(e) => e.stopPropagation()}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+                        onClick={() => setShowModal(false)}
                     >
-                        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-                            <h3 className="m-0 text-lg font-semibold text-text-h">
-                                Chữ Hán chưa có ({missing.length})
-                            </h3>
-                            <button
-                                type="button"
-                                className="text-text-muted hover:text-text-h text-xl leading-none px-1"
-                                onClick={() => setShowModal(false)}
-                            >
-                                ×
-                            </button>
-                        </div>
-
-                        <div className="p-5 overflow-auto flex-1">
-                            {result ? (
-                                <div className="text-sm">
-                                    <p className="text-green-600 dark:text-green-400 font-medium">
-                                        Đã thêm {result.added} chữ Hán
-                                    </p>
-                                    {result.failed > 0 && <p className="text-red-500 mt-1">{result.failed} thất bại</p>}
-                                </div>
-                            ) : (
-                                <>
-                                    <p className="text-sm text-text-muted mb-3">
-                                        Các chữ Hán xuất hiện trong Từ vựng nhưng chưa có trong danh sách:
-                                    </p>
-                                    <div className="flex flex-wrap gap-1.5 max-h-60 overflow-auto">
-                                        {missing.map((ch) => (
-                                            <span
-                                                key={ch}
-                                                className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-bg text-lg font-medium"
-                                            >
-                                                {ch}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
-                            <button type="button" className={btnClass("ghost")} onClick={() => setShowModal(false)}>
-                                Đóng
-                            </button>
-                            {!result && (
+                        <div
+                            className="bg-surface border border-border rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                                <h3 className="m-0 text-lg font-semibold text-text-h">
+                                    Chữ Hán chưa có ({missing.length})
+                                </h3>
                                 <button
                                     type="button"
-                                    className={btnClass("primary")}
-                                    onClick={handleSync}
-                                    disabled={syncing}
+                                    className="text-text-muted hover:text-text-h text-xl leading-none px-1"
+                                    onClick={() => setShowModal(false)}
                                 >
-                                    {syncing ? "Đang thêm..." : `Thêm ${missing.length} chữ Hán`}
+                                    ×
                                 </button>
-                            )}
+                            </div>
+
+                            <div className="p-5 overflow-auto flex-1">
+                                {result ? (
+                                    <div className="text-sm">
+                                        <p className="text-green-600 dark:text-green-400 font-medium">
+                                            Đã thêm {result.added} chữ Hán
+                                        </p>
+                                        {result.failed > 0 && (
+                                            <p className="text-red-500 mt-1">{result.failed} thất bại</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <p className="text-sm text-text-muted mb-3">
+                                            Các chữ Hán xuất hiện trong Từ vựng nhưng chưa có trong danh sách:
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5 max-h-60 overflow-auto">
+                                            {missing.map((ch) => (
+                                                <span
+                                                    key={ch}
+                                                    className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-bg text-lg font-medium"
+                                                >
+                                                    {ch}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
+                                <button type="button" className={btnClass("ghost")} onClick={() => setShowModal(false)}>
+                                    Đóng
+                                </button>
+                                {!result && (
+                                    <button
+                                        type="button"
+                                        className={btnClass("primary")}
+                                        onClick={handleSync}
+                                        disabled={syncing}
+                                    >
+                                        {syncing ? "Đang thêm..." : `Thêm ${missing.length} chữ Hán`}
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+                    </div>,
+                    document.body,
+                )}
         </>
     );
 }

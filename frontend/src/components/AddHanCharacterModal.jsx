@@ -18,7 +18,7 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
     const [character, setCharacter] = useState(editItem?.hanSimplified ?? editItem?.character ?? "");
     const [pinyin, setPinyin] = useState(editItem?.pinyin ?? "");
     const [readings, setReadings] = useState(() => {
-        const existing = editItem?.hanViet;
+        const existing = editItem?.sinoVietnamese;
         return Array.isArray(existing) && existing.length > 0 ? [...existing] : [""];
     });
     const [validationError, setValidationError] = useState("");
@@ -49,7 +49,7 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
         onSave({
             ...(isEdit ? editItem : {}),
             hanSimplified: character.trim(),
-            hanViet: filtered.length > 0 ? filtered : undefined,
+            sinoVietnamese: filtered.length > 0 ? filtered : undefined,
             pinyin: pinyin.trim() || undefined,
         });
         onClose();
@@ -99,7 +99,7 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
                         />
                     </label>
                     <fieldset className="flex flex-col gap-2 border-0 p-0">
-                        <legend className="text-sm font-medium text-text-h">{t.hanCharacters.colHanViet}</legend>
+                        <legend className="text-sm font-medium text-text-h">{t.hanCharacters.colSinoVietnamese}</legend>
                         {readings.map((r, i) => (
                             <div key={i} className="flex gap-1.5">
                                 <input
@@ -141,7 +141,7 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
                     <button type="button" className={btnClass("ghost")} onClick={onClose}>
                         {t.common.cancel}
                     </button>
-                    <button type="button" className={btnClass("primary")} onClick={handleSave}>
+                    <button type="button" className={btnClass(isEdit ? "warning" : "success")} onClick={handleSave}>
                         {isEdit ? t.common.save : t.common.add}
                     </button>
                 </div>

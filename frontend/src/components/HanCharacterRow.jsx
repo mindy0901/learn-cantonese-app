@@ -56,7 +56,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
     const [editing, setEditing] = useState(false);
     const [draftHan, setDraftHan] = useState(item.hanSimplified ?? item.character);
     const initArr = (v) => (Array.isArray(v) && v.length > 0 ? [...v] : [""]);
-    const [readings, setReadings] = useState(() => initArr(item.hanViet));
+    const [readings, setReadings] = useState(() => initArr(item.sinoVietnamese));
     const [pinyins, setPinyins] = useState(() => initArr(item.pinyin));
     const [jyutpings, setJyutpings] = useState(() => initArr(item.jyutping));
     const [draftPopularity, setDraftPopularity] = useState(() => normalizePopularity(item.popularity));
@@ -64,7 +64,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
     const startEdit = (e) => {
         e.stopPropagation();
         setDraftHan(item.hanSimplified ?? item.character);
-        setReadings(initArr(item.hanViet));
+        setReadings(initArr(item.sinoVietnamese));
         setPinyins(initArr(item.pinyin));
         setJyutpings(initArr(item.jyutping));
         setDraftPopularity(normalizePopularity(item.popularity));
@@ -82,7 +82,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
         const filterArr = (arr) => arr.map((r) => r.trim()).filter(Boolean);
         onSave(item, {
             hanSimplified: draftHan.trim(),
-            hanViet: filterArr(readings).length > 0 ? filterArr(readings) : undefined,
+            sinoVietnamese: filterArr(readings).length > 0 ? filterArr(readings) : undefined,
             pinyin: filterArr(pinyins).length > 0 ? filterArr(pinyins) : undefined,
             jyutping: filterArr(jyutpings).length > 0 ? filterArr(jyutpings) : undefined,
             popularity: draftPopularity,
@@ -108,18 +108,18 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                     {index + 1}
                 </td>
                 <td className={tdEditClass}>
+                    <input
+                        className={cn(cellInputClass, hanCharClass, "!text-red-600 dark:!text-red-400")}
+                        value={draftHan}
+                        onChange={(e) => setDraftHan(e.target.value)}
+                    />
+                </td>
+                <td className={tdEditClass}>
                     <MultiInput
                         values={readings}
                         onChange={setReadings}
                         placeholder={t.hanCharacters.hanVietHint}
                         addLabel={t.hanCharacters.addReading || "Add"}
-                    />
-                </td>
-                <td className={tdEditClass}>
-                    <input
-                        className={cn(cellInputClass, hanCharClass, "!text-red-600 dark:!text-red-400")}
-                        value={draftHan}
-                        onChange={(e) => setDraftHan(e.target.value)}
                     />
                 </td>
                 <td className={tdEditClass}>
@@ -197,20 +197,8 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
 
     return (
         <tr className={cn(rowClass, "hover:bg-accent-bg")}>
-            <td className="px-1.5 py-2.5 text-center text-text-muted text-[0.8125rem] whitespace-nowrap">{index + 1}</td>
-            <td className={cn(tdClass, "text-text-h text-sm")}>
-                {Array.isArray(item.hanViet) && item.hanViet.length > 0
-                    ? item.hanViet
-                          .flatMap((r) => String(r).split(/[-–—]/))
-                          .map((r) => r.trim())
-                          .filter(Boolean)
-                          .map((r, i, arr) => (
-                              <span key={i}>
-                                  {i > 0 && <span className="text-text-muted mx-1">/</span>}
-                                  {r.charAt(0).toUpperCase() + r.slice(1).toLowerCase()}
-                              </span>
-                          ))
-                    : "—"}
+            <td className="px-1.5 py-2.5 text-center text-text-muted text-[0.8125rem] whitespace-nowrap">
+                {index + 1}
             </td>
             <td className={tdClass}>
                 <HanziiHanCellLink
@@ -232,6 +220,20 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                         />
                     </>
                 )}
+            </td>
+            <td className={cn(tdClass, "text-text-h text-sm")}>
+                {Array.isArray(item.sinoVietnamese) && item.sinoVietnamese.length > 0
+                    ? item.sinoVietnamese
+                          .flatMap((r) => String(r).split(/[-–—]/))
+                          .map((r) => r.trim())
+                          .filter(Boolean)
+                          .map((r, i, arr) => (
+                              <span key={i}>
+                                  {i > 0 && <span className="text-text-muted mx-1">/</span>}
+                                  {r.charAt(0).toUpperCase() + r.slice(1).toLowerCase()}
+                              </span>
+                          ))
+                    : "—"}
             </td>
             <td className={cn(tdClass, "text-text-h text-sm italic")}>
                 {(() => {
@@ -315,7 +317,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                                 type="button"
                                 className={cn(
                                     uiCompactIconButtonClass,
-                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-text-muted rounded hover:bg-bg",
+                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-amber-50 hover:text-amber-600",
                                 )}
                                 onClick={startEdit}
                                 title={t.common.edit}
@@ -326,7 +328,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                                 type="button"
                                 className={cn(
                                     uiCompactIconButtonClass,
-                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-error rounded hover:bg-bg",
+                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-red-50 hover:text-red-600",
                                 )}
                                 onClick={() => onDelete(item)}
                                 title={t.common.delete}
@@ -336,10 +338,19 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                             <Link
                                 to={hanCharacterDetailPath(item.id)}
                                 className="inline-flex items-center justify-center size-8 rounded-lg border border-border bg-surface text-text-muted no-underline transition-colors duration-150 hover:border-accent-border hover:text-accent hover:bg-accent/10"
-                                title={t.hanCharacters?.viewDetail ?? 'Xem chi tiết'}
+                                title={t.hanCharacters?.viewDetail ?? "Xem chi tiết"}
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
                                     <path d="M5 12h14" />
                                     <polyline points="12 5 19 12 12 19" />
                                 </svg>

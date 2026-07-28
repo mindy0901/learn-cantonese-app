@@ -13,6 +13,7 @@ import { cn } from "../lib/cn.js";
 import { useLocale } from "../store/localeStore.js";
 import { useAppActions, useHanCharacters } from "../store/appStore.js";
 import { btnClass, spinnerClass } from "../components/ui/buttonStyles.js";
+import { SkeletonTable } from "../components/ui/Skeleton.jsx";
 import {
     bankToolbarRowClass,
     bankToolbarSearchClass,
@@ -65,7 +66,7 @@ export function HanCharactersPage() {
         try {
             const groups = new Map();
             for (const h of storeHanCharacters) {
-                const key = (h.hanSimplified ?? '').trim();
+                const key = (h.hanSimplified ?? "").trim();
                 if (!key) continue;
                 if (!groups.has(key)) groups.set(key, []);
                 groups.get(key).push(h);
@@ -77,12 +78,16 @@ export function HanCharactersPage() {
                 // Keep the one with most readings, break ties by popularity
                 const score = (h) => {
                     let s = 0;
-                    const jp = Array.isArray(h.jyutping) ? h.jyutping : (h.jyutping ? [h.jyutping] : []);
-                    const py = Array.isArray(h.pinyin) ? h.pinyin : (h.pinyin ? [h.pinyin] : []);
-                    const hv = Array.isArray(h.hanViet) ? h.hanViet : (h.hanViet ? [h.hanViet] : []);
+                    const jp = Array.isArray(h.jyutping) ? h.jyutping : h.jyutping ? [h.jyutping] : [];
+                    const py = Array.isArray(h.pinyin) ? h.pinyin : h.pinyin ? [h.pinyin] : [];
+                    const hv = Array.isArray(h.sinoVietnamese)
+                        ? h.sinoVietnamese
+                        : h.sinoVietnamese
+                          ? [h.sinoVietnamese]
+                          : [];
                     s += jp.length + py.length + hv.length;
                     if (h.hanTraditional) s += 2;
-                    s += (h.popularity ?? 0);
+                    s += h.popularity ?? 0;
                     return s;
                 };
                 group.sort((a, b) => score(b) - score(a));
@@ -102,7 +107,7 @@ export function HanCharactersPage() {
             if (removed > 0) {
                 alert(`Đã xóa ${removed} hán tự trùng lặp.`);
             } else {
-                alert('Không có hán tự trùng lặp.');
+                alert("Không có hán tự trùng lặp.");
             }
         } finally {
             setDeduping(false);
@@ -126,7 +131,7 @@ export function HanCharactersPage() {
         const q = debouncedSearch.trim().toLowerCase();
         if (q) {
             filtered = filtered.filter((h) => {
-                const haystack = [h.hanSimplified, h.hanTraditional, h.hanViet, h.pinyin, h.jyutping]
+                const haystack = [h.hanSimplified, h.hanTraditional, h.sinoVietnamese, h.pinyin, h.jyutping]
                     .flat()
                     .filter(Boolean)
                     .join(" ")
@@ -197,7 +202,12 @@ export function HanCharactersPage() {
             try {
                 const isFlagsOnly =
                     Object.keys(patch).every((k) => k === "important" || k === "mastered" || k === "popularity") &&
-                    !("hanSimplified" in patch || "hanViet" in patch || "pinyin" in patch || "jyutping" in patch);
+                    !(
+                        "hanSimplified" in patch ||
+                        "sinoVietnamese" in patch ||
+                        "pinyin" in patch ||
+                        "jyutping" in patch
+                    );
 
                 let updated;
                 if (isFlagsOnly) {
@@ -228,7 +238,7 @@ export function HanCharactersPage() {
 
     const handleDelete = useCallback(
         (item) => {
-            const label = item.hanSimplified || item.hanViet || item.id;
+            const label = item.hanSimplified || item.sinoVietnamese || item.id;
             ask({
                 title: t.confirm.deleteTitle,
                 message: fmt(t.hanCharacters.deleteConfirm, { label: String(label).slice(0, 20) }),
@@ -316,18 +326,18 @@ export function HanCharactersPage() {
         }
     }, [refreshHanCharacters]);
 
-    const [syncingHanViet, setSyncingHanViet] = useState(false);
-    const handleBackfillHanViet = useCallback(async () => {
-        setSyncingHanViet(true);
+    const [syncingSinoVietnamese, setSyncingSinoVietnamese] = useState(false);
+    const handleBackfillSinoVietnamese = useCallback(async () => {
+        setSyncingSinoVietnamese(true);
         try {
-            const result = await api.backfillHanCharHanViet();
-            logWarn(`Han char han-viet backfill: updated ${result.updated ?? "?"} / ${result.total ?? "?"}`);
+            const result = await api.backfillHanCharSinoVietnamese();
+            logWarn(`Han char sino-vietnamese backfill: updated ${result.updated ?? "?"} / ${result.total ?? "?"}`);
             invalidateHanCharacterBrowseCache();
             await refreshHanCharacters();
         } catch (err) {
-            logError("Han char han-viet backfill failed", err instanceof Error ? err.message : String(err));
+            logError("Han char sino-vietnamese backfill failed", err instanceof Error ? err.message : String(err));
         } finally {
-            setSyncingHanViet(false);
+            setSyncingSinoVietnamese(false);
         }
     }, [refreshHanCharacters]);
 
@@ -343,6 +353,22 @@ export function HanCharactersPage() {
             setSyncingRelations(false);
         }
     }, []);
+
+    const [syncingFromVocab, setSyncingFromVocab] = useState(false);
+    const handleSyncFromVocab = useCallback(async () => {
+        setSyncingFromVocab(true);
+        try {
+            const result = await api.syncHanCharsFromVocab();
+            alert(`Đã tạo ${result.created} hán tự mới, cập nhật ${result.updated}. Tổng: ${result.total} chữ Hán.`);
+            invalidateHanCharacterBrowseCache();
+            invalidateDataCache();
+            await refreshHanCharacters();
+        } catch (err) {
+            logError("Sync han chars from vocab failed", err instanceof Error ? err.message : String(err));
+        } finally {
+            setSyncingFromVocab(false);
+        }
+    }, [refreshHanCharacters]);
 
     const sortDirLabel =
         sortKey === "createdAt"
@@ -367,8 +393,8 @@ export function HanCharactersPage() {
                             label="Hán-Việt"
                             desc="Từ phienam.txt"
                             count={storeHanCharacters.length}
-                            loading={syncingHanViet}
-                            onClick={handleBackfillHanViet}
+                            loading={syncingSinoVietnamese}
+                            onClick={handleBackfillSinoVietnamese}
                         />
                         <SyncButton
                             label="Pinyin"
@@ -403,6 +429,16 @@ export function HanCharactersPage() {
                         </div>
 
                         <div className="border-t border-border pt-3 mt-1">
+                            <SyncButton
+                                label="Từ Kho Từ"
+                                desc="Thu thập chữ Hán + âm đọc từ vựng"
+                                count={storeHanCharacters.length}
+                                loading={syncingFromVocab}
+                                onClick={handleSyncFromVocab}
+                            />
+                        </div>
+
+                        <div className="border-t border-border pt-3 mt-1">
                             <MissingHanCharsSync />
                         </div>
 
@@ -414,9 +450,11 @@ export function HanCharactersPage() {
                                 disabled={deduping}
                             >
                                 <span className="block text-xs font-semibold text-error-text">
-                                    {deduping ? 'Đang xóa...' : 'Xóa trùng lặp'}
+                                    {deduping ? "Đang xóa..." : "Xóa trùng lặp"}
                                 </span>
-                                <span className="block text-[0.6875rem] text-text-muted mt-0.5">Gộp hán tự giống nhau</span>
+                                <span className="block text-[0.6875rem] text-text-muted mt-0.5">
+                                    Gộp hán tự giống nhau
+                                </span>
                             </button>
                         </div>
                     </aside>
@@ -473,35 +511,27 @@ export function HanCharactersPage() {
                         )}
                     </div>
 
-                    {!loading && items.length === 0 ? (
+                    {loading ? (
+                        <SkeletonTable rows={10} />
+                    ) : items.length === 0 ? (
                         <p className="text-text-muted text-sm py-12 text-center">
                             {search ? t.hanCharacters.noSearchMatch : t.hanCharacters.empty}
                         </p>
                     ) : (
                         <>
-                            <div className="overflow-x-auto rounded-xl border border-border relative">
-                                <table className="w-full border-collapse text-base">
+                            <div className="overflow-x-auto rounded-xl border border-border">
+                                <table className="w-full text-sm">
                                     <thead>
-                                        <tr className="border-b border-border bg-surface text-text-muted text-sm uppercase tracking-wide">
+                                        <tr className="border-b border-border bg-bg text-left text-text-muted text-xs uppercase tracking-wider">
                                             <th className="px-1.5 py-3 text-center w-10">#</th>
-                                            <th className="px-3.5 py-3 text-left truncate">
-                                                {t.hanCharacters.colHanViet}
+                                            <th className="px-3.5 py-3">{t.hanCharacters.hanCharacter || "Hán tự"}</th>
+                                            <th className="px-3.5 py-3">{t.hanCharacters.hanViet || "Hán Việt"}</th>
+                                            <th className="px-3.5 py-3">{t.hanCharacters.pinyin || "Pinyin"}</th>
+                                            <th className="px-3.5 py-3">{t.hanCharacters.jyutping || "Jyutping"}</th>
+                                            <th className="px-3.5 py-3 text-center">
+                                                {t.wordPopularity.label || "Phổ biến"}
                                             </th>
-                                            <th className="px-3.5 py-3 text-left truncate">
-                                                {t.hanCharacters.colHanSimplified}
-                                            </th>
-                                            <th className="px-3.5 py-3 text-left truncate">
-                                                {t.hanCharacters.colPinyin || "Pinyin"}
-                                            </th>
-                                            <th className="px-3.5 py-3 text-left truncate">
-                                                {t.hanCharacters.colJyutping || "Jyutping"}
-                                            </th>
-                                            <th className="px-3.5 py-3 text-center min-w-[100px]">
-                                                {t.hanCharacters.colPopularity || "Phổ biến"}
-                                            </th>
-                                            {isAdmin && (
-                                                <th className="px-0.5 py-3 text-center w-20">{t.common.actions}</th>
-                                            )}
+                                            <th className="px-3.5 py-3 text-center w-24">{t.common.actions || ""}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -517,11 +547,6 @@ export function HanCharactersPage() {
                                         ))}
                                     </tbody>
                                 </table>
-                                {loading && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-surface/60">
-                                        <span className={spinnerClass("md")} />
-                                    </div>
-                                )}
                             </div>
 
                             {totalPages > 1 && (

@@ -1,10 +1,6 @@
-﻿import { Router } from "express";
 import { log, logWarn } from "../lib/actionLog.js";
-import { ensureSupabaseUser } from "../lib/dataService.js";
+import { ensureUser, ensureUserVocabulary } from "../lib/prismaService.js";
 import { getAdminEmails, isAppAdmin } from "../lib/appAdmin.js";
-import { requireAdmin } from "../lib/supabaseAdmin.js";
-
-export const authRouter = Router();
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -15,107 +11,109 @@ function googleConfigured() {
     return Boolean(GOOGLE_CLIENT_ID?.trim() && GOOGLE_CLIENT_SECRET?.trim());
 }
 
-function sessionUser(req) {
-    if (!req.session?.userId) return null;
+function sessionUser(request) {
+    if (!request.session?.userId) return null;
     return {
-        id: req.session.userId,
-        email: req.session.email,
-        name: req.session.name,
-        picture: req.session.picture ?? null,
-        isAdmin: isAppAdmin(req.session.email),
+        id: request.session.userId,
+        email: request.session.email,
+        name: request.session.name,
+        picture: request.session.picture ?? null,
+        isAdmin: isAppAdmin(request.session.email),
     };
 }
 
-authRouter.get("/status", (req, res) => {
-    const user = sessionUser(req);
-    res.json({
-        googleReady: googleConfigured(),
-        supabaseReady: Boolean(process.env.SUPABASE_SECRET_KEY?.trim()),
-        adminConfigured: getAdminEmails().size > 0,
-        signedIn: Boolean(user),
-        user,
+export async function authRoutes(fastify) {
+    fastify.get("/status", async (request) => {
+        const user = sessionUser(request);
+        return {
+            googleReady: googleConfigured(),
+            adminConfigured: getAdminEmails().size > 0,
+            signedIn: Boolean(user),
+            user,
+        };
     });
-});
 
-authRouter.get("/google", (req, res) => {
-    log("Google sign-in");
-    if (!googleConfigured()) {
-        logWarn("Google sign-in failed", "OAuth not configured");
-        return res.redirect(`${FRONTEND_URL}?auth_error=google_not_configured`);
-    }
-    res.redirect(
-        `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-            client_id: GOOGLE_CLIENT_ID,
-            redirect_uri: GOOGLE_REDIRECT_URI,
-            response_type: "code",
-            scope: "openid email profile",
-            access_type: "online",
-            prompt: "select_account",
-        })}`,
-    );
-});
-
-authRouter.get("/google/callback", async (req, res) => {
-    try {
-        log("Google callback");
-        if (!googleConfigured()) throw new Error("Google OAuth not configured");
-        const code = req.query.code;
-        if (!code) throw new Error("Missing OAuth code");
-
-        const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({
-                code,
+    fastify.get("/google", async (_request, reply) => {
+        log("Google sign-in");
+        if (!googleConfigured()) {
+            logWarn("Google sign-in failed", "OAuth not configured");
+            return reply.redirect(`${FRONTEND_URL}?auth_error=google_not_configured`);
+        }
+        return reply.redirect(
+            `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
                 client_id: GOOGLE_CLIENT_ID,
-                client_secret: GOOGLE_CLIENT_SECRET,
                 redirect_uri: GOOGLE_REDIRECT_URI,
-                grant_type: "authorization_code",
-            }),
-        });
-        const tokens = await tokenRes.json();
-        if (!tokenRes.ok) throw new Error(tokens.error_description ?? tokens.error ?? "Token exchange failed");
+                response_type: "code",
+                scope: "openid email profile",
+                access_type: "online",
+                prompt: "select_account",
+            })}`,
+        );
+    });
 
-        const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-            headers: { Authorization: `Bearer ${tokens.access_token}` },
-        });
-        const profile = await profileRes.json();
-        if (!profileRes.ok || !profile.email) throw new Error("Could not read Google profile");
+    fastify.get("/google/callback", async (request, reply) => {
+        try {
+            log("Google callback");
+            if (!googleConfigured()) throw new Error("Google OAuth not configured");
+            const code = request.query.code;
+            if (!code) throw new Error("Missing OAuth code");
 
-        const db = requireAdmin();
-        const user = await ensureSupabaseUser(db, {
-            email: profile.email,
-            name: profile.name ?? profile.email,
-            googleId: profile.id,
-        });
+            const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    code,
+                    client_id: GOOGLE_CLIENT_ID,
+                    client_secret: GOOGLE_CLIENT_SECRET,
+                    redirect_uri: GOOGLE_REDIRECT_URI,
+                    grant_type: "authorization_code",
+                }),
+            });
+            const tokens = await tokenRes.json();
+            if (!tokenRes.ok) throw new Error(tokens.error_description ?? tokens.error ?? "Token exchange failed");
 
-        req.session.userId = user.id;
-        req.session.email = profile.email;
-        req.session.name = profile.name ?? profile.email;
-        req.session.picture = profile.picture ?? null;
+            const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+                headers: { Authorization: `Bearer ${tokens.access_token}` },
+            });
+            const profile = await profileRes.json();
+            if (!profileRes.ok || !profile.email) throw new Error("Could not read Google profile");
 
-        log("Sign in", profile.email.split("@")[0]);
+            const user = await ensureUser({
+                email: profile.email,
+                name: profile.name ?? profile.email,
+            });
 
-        res.redirect(FRONTEND_URL);
-    } catch (err) {
-        logWarn("Sign in failed", err.message);
-        res.redirect(`${FRONTEND_URL}?auth_error=${encodeURIComponent(err.message)}`);
-    }
-});
+            // Link shared vocabulary to new users
+            await ensureUserVocabulary(user.id);
 
-authRouter.get("/me", (req, res) => {
-    log("Checking auth");
-    const user = sessionUser(req);
-    if (!user) {
-        log("Not signed in");
-        return res.status(401).json({ error: "Not signed in" });
-    }
-    log("Getting user", user.email.split("@")[0]);
-    res.json(user);
-});
+            request.session.userId = user.id;
+            request.session.email = profile.email;
+            request.session.name = profile.name ?? profile.email;
+            request.session.picture = profile.picture ?? null;
 
-authRouter.post("/logout", (req, res) => {
-    log("Sign out", req.session?.email?.split("@")[0] ?? "guest");
-    req.session = null;
-    res.json({ ok: true });
-});
+            log("Sign in", profile.email.split("@")[0]);
+
+            return reply.redirect(FRONTEND_URL);
+        } catch (err) {
+            logWarn("Sign in failed", err.message);
+            return reply.redirect(`${FRONTEND_URL}?auth_error=${encodeURIComponent(err.message)}`);
+        }
+    });
+
+    fastify.get("/me", async (request, reply) => {
+        log("Checking auth");
+        const user = sessionUser(request);
+        if (!user) {
+            log("Not signed in");
+            return reply.code(401).send({ error: "Not signed in" });
+        }
+        log("Getting user", user.email.split("@")[0]);
+        return user;
+    });
+
+    fastify.post("/logout", async (request) => {
+        log("Sign out", request.session?.email?.split("@")[0] ?? "guest");
+        request.session.destroy();
+        return { ok: true };
+    });
+}

@@ -1,14 +1,14 @@
-import { useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { wordDetailPath } from '../lib/wordRoutes.js'
+import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { vocabularyDetailPath } from "../lib/wordRoutes.js";
 
 export function useOpenWordDetail() {
-  const navigate = useNavigate()
-  return useCallback(
-    (word) => {
-      const id = typeof word === 'string' ? word : word?.id
-      if (id) navigate(wordDetailPath(id))
-    },
-    [navigate],
-  )
+    const navigate = useNavigate();
+    return useCallback(
+        (vocab) => {
+            const id = typeof vocab === "string" ? vocab : vocab?.id;
+            if (id) navigate(vocabularyDetailPath(id));
+        },
+        [navigate],
+    );
 }

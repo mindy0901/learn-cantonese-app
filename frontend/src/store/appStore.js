@@ -5,27 +5,26 @@ import {
     deleteGrammarFromList,
     deleteLessonFromList,
     deleteSentenceFromList,
-    deleteWordFromList,
+    deleteVocabularyFromList,
     indexCloudPayload,
     indexGrammarItem,
     indexSentencePattern,
-    indexWord,
+    indexVocabulary,
     migrateLesson,
     stripSearchIndex,
     toggleGrammarField,
     toggleLessonGrammarMasteredInList,
     toggleSentenceField,
-    toggleWordField,
+    toggleVocabularyField,
     updateGrammarInList,
     updateLessonInList,
     updateSentenceInList,
-    updateWordInList,
+    updateVocabularyInList,
 } from "../lib/dataTransforms.js";
-import { invalidateWordBrowseCache, patchWordInBrowseCache } from "../lib/wordBrowseCache.js";
+import { invalidateVocabularyBrowseCache, patchVocabularyInBrowseCache } from "../lib/wordBrowseCache.js";
 import { api } from "../lib/api.js";
 import { log, logWarn, logError, logFetchDone, logMutStart, logMutDone } from "../lib/actionLog.js";
-import { normalizeWordFields, wordContentEqual } from "../lib/wordNormalize.js";
-import { normalizePopularity } from "../lib/wordPopularity.js";
+import { normalizeVocabularyFields, vocabularyContentEqual } from "../lib/wordNormalize.js";
 import { useAuthStore } from "./authStore.js";
 import { findWordIdsInSentence } from "../lib/sentencePatternMatch.js";
 import { saveDataCache, loadDataCache, invalidateDataCache } from "../lib/dataCache.js";
@@ -47,33 +46,33 @@ function assertSignedIn() {
     }
 }
 
-function resolveWordTarget(idOrWord) {
-    if (idOrWord && typeof idOrWord === "object") {
-        return { id: idOrWord.id, snapshot: idOrWord };
+function resolveVocabularyTarget(idOrVocab) {
+    if (idOrVocab && typeof idOrVocab === "object") {
+        return { id: idOrVocab.id, snapshot: idOrVocab };
     }
-    return { id: idOrWord, snapshot: undefined };
+    return { id: idOrVocab, snapshot: undefined };
 }
 
-function wordTimeMs(word) {
-    const value = word?.updatedAt ?? word?.createdAt;
+function vocabTimeMs(vocab) {
+    const value = vocab?.updatedAt ?? vocab?.createdAt;
     const ms = Date.parse(String(value ?? ""));
     return Number.isFinite(ms) ? ms : 0;
 }
 
-function toggleWordFlagInStore(words, id, field, snapshot) {
-    let existing = words.find((w) => w.id === id);
+function toggleVocabularyFlagInStore(vocabularies, id, field, snapshot) {
+    let existing = vocabularies.find((w) => w.id === id);
     if (!existing && snapshot) {
-        existing = indexWord(snapshot);
+        existing = indexVocabulary(snapshot);
     }
     if (!existing) return null;
 
-    const nextWords = words.some((w) => w.id === id)
-        ? toggleWordField(words, id, field)
-        : [...words, indexWord({ ...existing, [field]: !existing[field] }, words.length)];
+    const nextVocabularies = vocabularies.some((w) => w.id === id)
+        ? toggleVocabularyField(vocabularies, id, field)
+        : [...vocabularies, indexVocabulary({ ...existing, [field]: !existing[field] }, vocabularies.length)];
 
     return {
-        words: nextWords,
-        word: nextWords.find((w) => w.id === id),
+        vocabularies: nextVocabularies,
+        vocab: nextVocabularies.find((w) => w.id === id),
     };
 }
 
@@ -115,7 +114,7 @@ async function migrateLegacyLocalIfNeeded() {
 
             if (cloudEmpty) {
                 await api.uploadToCloud({
-                    types: ["words", "grammar", "lessons"],
+                    types: ["vocabularies", "grammar", "lessons"],
                     words: parsed.words ?? [],
                     grammarBank: parsed.grammarBank ?? [],
                     lessons: parsed.lessons ?? [],
@@ -130,10 +129,10 @@ async function migrateLegacyLocalIfNeeded() {
 }
 
 export const useAppStore = create((set, get) => ({
-    words: [],
-    wordTotal: 0,
-    masteredWordCount: 0,
-    wordsRevision: 0,
+    vocabularies: [],
+    vocabularyTotal: 0,
+    masteredVocabularyCount: 0,
+    vocabulariesRevision: 0,
     grammarBank: [],
     sentencePatterns: [],
     lessons: [],
@@ -148,10 +147,10 @@ export const useAppStore = create((set, get) => ({
         log("Clear app data");
         invalidateDataCache();
         set({
-            words: [],
-            wordTotal: 0,
-            masteredWordCount: 0,
-            wordsRevision: 0,
+            vocabularies: [],
+            vocabularyTotal: 0,
+            masteredVocabularyCount: 0,
+            vocabulariesRevision: 0,
             grammarBank: [],
             sentencePatterns: [],
             lessons: [],
@@ -182,8 +181,8 @@ export const useAppStore = create((set, get) => ({
                     });
                     set({
                         ...indexed,
-                        wordTotal: cached.wordTotal ?? indexed.words.length,
-                        masteredWordCount: cached.masteredWordCount ?? 0,
+                        vocabularyTotal: cached.vocabularyTotal ?? indexed.vocabularies.length,
+                        masteredVocabularyCount: cached.masteredVocabularyCount ?? 0,
                         hanCharacters: cached.hanCharacters ?? [],
                         hanCharacterTotal: cached.hanCharacterTotal ?? cached.hanCharacters?.length ?? 0,
                         dataLoading: false,
@@ -202,7 +201,7 @@ export const useAppStore = create((set, get) => ({
                 }
                 const remote = await api.fetchFullData();
                 logFetchDone({
-                    words: remote.wordTotal ?? remote.words?.length ?? 0,
+                    vocabularies: remote.vocabularies?.length ?? 0,
                     lessons: remote.lessons?.length ?? 0,
                     grammar: remote.grammarBank?.length ?? 0,
                     sentences: remote.sentencePatterns?.length ?? 0,
@@ -211,15 +210,15 @@ export const useAppStore = create((set, get) => ({
                 // Save raw payload to cache for next cold start
                 saveDataCache(remote);
                 const indexed = indexCloudPayload({
-                    words: remote.words ?? [],
+                    vocabularies: remote.vocabularies ?? [],
                     grammarBank: remote.grammarBank ?? [],
                     lessons: remote.lessons ?? [],
                     sentencePatterns: remote.sentencePatterns ?? [],
                 });
                 set({
                     ...indexed,
-                    wordTotal: remote.wordTotal ?? indexed.words.length,
-                    masteredWordCount: remote.masteredWordCount ?? 0,
+                    vocabularyTotal: remote.vocabularyTotal ?? indexed.vocabularies.length,
+                    masteredVocabularyCount: remote.masteredVocabularyCount ?? 0,
                     hanCharacters: remote.hanCharacters ?? [],
                     hanCharacterTotal: remote.hanCharacterTotal ?? remote.hanCharacters?.length ?? 0,
                     dataLoading: false,
@@ -247,41 +246,47 @@ export const useAppStore = create((set, get) => ({
         return hydrateFromCloudPromise;
     },
 
-    createWord: (word) => {
-        const label = word.hanTraditional || word.vietnamese || word.english || "";
-        logMutStart("Create word", label, word);
+    createVocabulary: (vocab) => {
+        const label = vocab.hanTraditional || vocab.vietMeanings || vocab.engMeanings || "";
+        logMutStart("Create vocabulary", label, vocab);
         assertAdmin();
-        const prev = get().words;
-        const item = indexWord(word, prev.length);
-        set({ words: [...prev, item], wordTotal: get().wordTotal + 1 });
-        syncMutation(async () => {
-            const saved = await api.createWord(stripSearchIndex(item));
-            logMutDone("Create word", label, saved);
-            invalidateWordBrowseCache();
+        const prev = get().vocabularies;
+        const item = indexVocabulary(vocab, prev.length);
+        set({ vocabularies: [...prev, item], vocabularyTotal: get().vocabularyTotal + 1 });
+        return syncMutation(async () => {
+            const saved = await api.createVocabulary(stripSearchIndex(item));
+            logMutDone("Create vocabulary", label, saved);
+            invalidateVocabularyBrowseCache();
             set({
-                words: updateWordInList(get().words, item.id, { ...saved, _sortSeq: item._sortSeq }),
-                wordsRevision: get().wordsRevision + 1,
+                vocabularies: updateVocabularyInList(get().vocabularies, item.id, {
+                    ...saved,
+                    _sortSeq: item._sortSeq,
+                }),
+                vocabulariesRevision: get().vocabulariesRevision + 1,
             });
-        }).catch(() => set({ words: prev, wordTotal: Math.max(0, get().wordTotal - 1) }));
+        }).catch(() => set({ vocabularies: prev, vocabularyTotal: Math.max(0, get().vocabularyTotal - 1) }));
     },
 
-    createWordAwait: async (word) => {
+    createVocabularyAwait: async (vocab) => {
         assertAdmin();
-        const prev = get().words;
-        const item = indexWord(normalizeWordFields(word), prev.length);
-        set({ words: [...prev, item], wordTotal: get().wordTotal + 1 });
+        const prev = get().vocabularies;
+        const item = indexVocabulary(normalizeVocabularyFields(vocab), prev.length);
+        set({ vocabularies: [...prev, item], vocabularyTotal: get().vocabularyTotal + 1 });
         try {
-            const saved = await api.createWord(stripSearchIndex(item));
-            invalidateWordBrowseCache();
+            const saved = await api.createVocabulary(stripSearchIndex(item));
+            invalidateVocabularyBrowseCache();
             invalidateDataCache();
             set({
-                words: updateWordInList(get().words, item.id, { ...saved, _sortSeq: item._sortSeq }),
-                wordsRevision: get().wordsRevision + 1,
-                wordTotal: get().wordTotal,
+                vocabularies: updateVocabularyInList(get().vocabularies, item.id, {
+                    ...saved,
+                    _sortSeq: item._sortSeq,
+                }),
+                vocabulariesRevision: get().vocabulariesRevision + 1,
+                vocabularyTotal: get().vocabularyTotal,
             });
             return saved;
         } catch (err) {
-            set({ words: prev, wordTotal: Math.max(0, get().wordTotal - 1) });
+            set({ vocabularies: prev, vocabularyTotal: Math.max(0, get().vocabularyTotal - 1) });
             throw err;
         }
     },
@@ -318,74 +323,89 @@ export const useAppStore = create((set, get) => ({
         }
     },
 
-    editWord: (idOrWord, patch) => {
+    editVocabulary: (idOrVocab, patch) => {
         assertAdmin();
-        const { id, snapshot } = resolveWordTarget(idOrWord);
-        const prev = get().words;
+        const { id, snapshot } = resolveVocabularyTarget(idOrVocab);
+        const prev = get().vocabularies;
         let existing = prev.find((w) => w.id === id);
         if (!existing && snapshot) {
-            existing = indexWord(snapshot);
+            existing = indexVocabulary(snapshot);
         }
         if (!existing) return;
 
-        const merged = normalizeWordFields({ ...existing, ...patch });
-        if (wordContentEqual(existing, merged)) return;
+        const merged = normalizeVocabularyFields({ ...existing, ...patch });
+        if (vocabularyContentEqual(existing, merged)) return;
 
         const label =
-            existing.hanTraditional || existing.vietnamese || existing.english || `#${String(id).slice(0, 8)}`;
-        logMutStart("Update word", label, patch);
-        let nextWords = prev.some((w) => w.id === id)
-            ? updateWordInList(prev, id, { ...patch, updatedAt: new Date().toISOString() })
-            : [...prev, indexWord({ ...existing, ...patch, updatedAt: new Date().toISOString() }, prev.length)];
+            existing.hanTraditional || existing.vietMeanings || existing.engMeanings || `#${String(id).slice(0, 8)}`;
+        logMutStart("Update vocabulary", label, patch);
+        let nextVocabularies = prev.some((w) => w.id === id)
+            ? updateVocabularyInList(prev, id, { ...patch, updatedAt: new Date().toISOString() })
+            : [...prev, indexVocabulary({ ...existing, ...patch, updatedAt: new Date().toISOString() }, prev.length)];
 
-        const word = nextWords.find((w) => w.id === id);
-        set({ words: nextWords });
-        if (word) {
-            patchWordInBrowseCache(id, {
-                english: word.english,
-                hanTraditional: word.hanTraditional,
-                vietnamese: word.vietnamese,
-                hanViet: word.hanViet,
-                jyutping: word.jyutping,
-                vietnameseDetail: word.vietnameseDetail,
-                important: word.important,
+        const vocab = nextVocabularies.find((w) => w.id === id);
+        set({ vocabularies: nextVocabularies });
+        if (vocab) {
+            patchVocabularyInBrowseCache(id, {
+                engMeanings: vocab.engMeanings,
+                engExamples: vocab.engExamples,
+                hanTraditional: vocab.hanTraditional,
+                vietMeanings: vocab.vietMeanings,
+                vietExamples: vocab.vietExamples,
+                sinoVietnamese: vocab.sinoVietnamese,
+                jyutping: vocab.jyutping,
+                important: vocab.important,
             });
-            syncMutation(async () => {
-                const current = get().words.find((w) => w.id === id);
+            return syncMutation(async () => {
+                const current = get().vocabularies.find((w) => w.id === id);
                 if (!current) return;
-                const saved = await api.updateWord(id, stripSearchIndex(current));
-                logMutDone("Update word", label, saved);
-                set({ words: updateWordInList(get().words, id, saved) });
-                patchWordInBrowseCache(id, {
-                    english: saved.english,
+                const saved = await api.updateVocabulary(id, stripSearchIndex(current));
+                logMutDone("Update vocabulary", label, saved);
+                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, saved) });
+                patchVocabularyInBrowseCache(id, {
+                    engMeanings: saved.engMeanings,
+                    engExamples: saved.engExamples,
                     hanTraditional: saved.hanTraditional,
-                    vietnamese: saved.vietnamese,
-                    hanViet: saved.hanViet,
+                    vietMeanings: saved.vietMeanings,
+                    vietExamples: saved.vietExamples,
+                    sinoVietnamese: saved.sinoVietnamese,
                     jyutping: saved.jyutping,
-                    vietnameseDetail: saved.vietnameseDetail,
                     important: saved.important,
                 });
-            }).catch(() => set({ words: prev }));
+            }).catch((err) => {
+                set({ vocabularies: prev });
+                throw err;
+            });
         }
     },
 
     syncHanVariantsAll: async () => {
         assertAdmin();
         const result = await api.backfillHanVariants();
-        invalidateWordBrowseCache();
+        invalidateVocabularyBrowseCache();
         invalidateDataCache();
-        await get().refreshWords();
-        set((s) => ({ wordsRevision: s.wordsRevision + 1 }));
+        await get().refreshVocabularies();
+        set((s) => ({ vocabulariesRevision: s.vocabulariesRevision + 1 }));
         return result;
     },
 
     syncPinyinAll: async () => {
         assertAdmin();
         const result = await api.backfillPinyin();
-        invalidateWordBrowseCache();
+        invalidateVocabularyBrowseCache();
         invalidateDataCache();
-        await get().refreshWords();
-        set((s) => ({ wordsRevision: s.wordsRevision + 1 }));
+        await get().refreshVocabularies();
+        set((s) => ({ vocabulariesRevision: s.vocabulariesRevision + 1 }));
+        return result;
+    },
+
+    syncJyutpingAll: async () => {
+        assertAdmin();
+        const result = await api.backfillJyutping();
+        invalidateVocabularyBrowseCache();
+        invalidateDataCache();
+        await get().refreshVocabularies();
+        set((s) => ({ vocabulariesRevision: s.vocabulariesRevision + 1 }));
         return result;
     },
 
@@ -416,24 +436,24 @@ export const useAppStore = create((set, get) => ({
         }
     },
 
-    toggleImportant: (idOrWord) => {
-        const { id, snapshot } = resolveWordTarget(idOrWord);
-        log("Toggle word important", snapshot ?? id);
+    toggleImportant: (idOrVocab) => {
+        const { id, snapshot } = resolveVocabularyTarget(idOrVocab);
+        log("Toggle vocabulary important", snapshot ?? id);
         assertSignedIn();
-        const prev = get().words;
-        const toggled = toggleWordFlagInStore(prev, id, "important", snapshot);
+        const prev = get().vocabularies;
+        const toggled = toggleVocabularyFlagInStore(prev, id, "important", snapshot);
         if (!toggled) return;
-        const { words, word } = toggled;
-        set({ words });
-        patchWordInBrowseCache(id, { important: word.important });
+        const { vocabularies, vocab } = toggled;
+        set({ vocabularies });
+        patchVocabularyInBrowseCache(id, { important: vocab.important });
         syncMutation(
             async () => {
-                const saved = await api.patchWordFlags(id, { important: word.important }, snapshot ?? word);
-                set({ words: updateWordInList(get().words, id, saved) });
-                patchWordInBrowseCache(id, { important: saved.important });
+                const saved = await api.patchVocabularyFlags(id, { important: vocab.important }, snapshot ?? vocab);
+                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, saved) });
+                patchVocabularyInBrowseCache(id, { important: saved.important });
             },
             { requireAdmin: false },
-        ).catch(() => set({ words: prev }));
+        ).catch(() => set({ vocabularies: prev }));
     },
 
     toggleGrammarImportant: (id) => {
@@ -448,110 +468,76 @@ export const useAppStore = create((set, get) => ({
         }
     },
 
-    toggleMastered: (idOrWord) => {
-        const { id, snapshot } = resolveWordTarget(idOrWord);
-        log("Toggle word mastered", snapshot ?? id);
+    toggleMastered: (idOrVocab) => {
+        const { id, snapshot } = resolveVocabularyTarget(idOrVocab);
+        log("Toggle vocabulary mastered", snapshot ?? id);
         assertSignedIn();
-        const prev = get().words;
+        const prev = get().vocabularies;
         const existing = prev.find((w) => w.id === id) ?? snapshot;
-        const toggled = toggleWordFlagInStore(prev, id, "mastered", snapshot);
+        const toggled = toggleVocabularyFlagInStore(prev, id, "mastered", snapshot);
         if (!toggled) return;
-        const { words, word } = toggled;
+        const { vocabularies, vocab } = toggled;
         const masteredDelta =
-            existing && word && Boolean(existing.mastered) !== Boolean(word.mastered) ? (word.mastered ? 1 : -1) : 0;
-        const prevMastered = get().masteredWordCount;
+            existing && vocab && Boolean(existing.mastered) !== Boolean(vocab.mastered) ? (vocab.mastered ? 1 : -1) : 0;
+        const prevMastered = get().masteredVocabularyCount;
         set({
-            words,
-            masteredWordCount: Math.max(0, prevMastered + masteredDelta),
+            vocabularies,
+            masteredVocabularyCount: Math.max(0, prevMastered + masteredDelta),
         });
-        patchWordInBrowseCache(id, { mastered: word.mastered });
+        patchVocabularyInBrowseCache(id, { mastered: vocab.mastered });
         syncMutation(
             async () => {
-                const saved = await api.patchWordFlags(id, { mastered: word.mastered }, snapshot ?? word);
-                set({ words: updateWordInList(get().words, id, saved) });
-                patchWordInBrowseCache(id, { mastered: saved.mastered });
+                const saved = await api.patchVocabularyFlags(id, { mastered: vocab.mastered }, snapshot ?? vocab);
+                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, saved) });
+                patchVocabularyInBrowseCache(id, { mastered: saved.mastered });
             },
             { requireAdmin: false },
-        ).catch(() => set({ words: prev, masteredWordCount: prevMastered }));
+        ).catch(() => set({ vocabularies: prev, masteredVocabularyCount: prevMastered }));
     },
 
-    setWordStudyProgress: (idOrWord, progress, options = {}) => {
-        const { id, snapshot } = resolveWordTarget(idOrWord);
+    setVocabularyStudyProgress: (idOrVocab, progress, options = {}) => {
+        const { id, snapshot } = resolveVocabularyTarget(idOrVocab);
         const clamped = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
         const nextMastered = "mastered" in options ? Boolean(options.mastered) : clamped >= 100;
-        log("Update word progress", snapshot ?? id);
+        log("Update vocabulary progress", snapshot ?? id);
         assertSignedIn();
-        const prev = get().words;
+        const prev = get().vocabularies;
         let existing = prev.find((w) => w.id === id);
         if (!existing && snapshot) {
-            existing = indexWord(snapshot);
+            existing = indexVocabulary(snapshot);
         }
         if (!existing) return;
 
         const studiedAt = new Date().toISOString();
         const patch = { studyProgress: clamped, mastered: nextMastered, studyProgressAt: studiedAt };
-        const nextWords = prev.some((w) => w.id === id)
-            ? updateWordInList(prev, id, patch)
-            : [...prev, indexWord({ ...existing, ...patch }, prev.length)];
+        const nextVocabularies = prev.some((w) => w.id === id)
+            ? updateVocabularyInList(prev, id, patch)
+            : [...prev, indexVocabulary({ ...existing, ...patch }, prev.length)];
 
         const masteredDelta = Boolean(existing.mastered) !== Boolean(nextMastered) ? (nextMastered ? 1 : -1) : 0;
-        const prevMastered = get().masteredWordCount;
+        const prevMastered = get().masteredVocabularyCount;
         set({
-            words: nextWords,
-            masteredWordCount: Math.max(0, prevMastered + masteredDelta),
+            vocabularies: nextVocabularies,
+            masteredVocabularyCount: Math.max(0, prevMastered + masteredDelta),
         });
-        patchWordInBrowseCache(id, patch);
-        const word = nextWords.find((w) => w.id === id);
+        patchVocabularyInBrowseCache(id, patch);
+        const vocab = nextVocabularies.find((w) => w.id === id);
         return syncMutation(
             async () => {
-                const saved = await api.patchWordFlags(
+                const saved = await api.patchVocabularyFlags(
                     id,
                     { studyProgress: clamped, mastered: nextMastered },
-                    snapshot ?? word,
+                    snapshot ?? vocab,
                 );
-                set({ words: updateWordInList(get().words, id, saved) });
-                patchWordInBrowseCache(id, {
+                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, saved) });
+                patchVocabularyInBrowseCache(id, {
                     studyProgress: saved.studyProgress,
                     studyProgressAt: saved.studyProgressAt,
                     mastered: saved.mastered,
                 });
             },
             { requireAdmin: false },
-        ).catch(() => set({ words: prev, masteredWordCount: prevMastered }));
-    },
-
-    setWordPopularity: (idOrWord, level) => {
-        const { id, snapshot } = resolveWordTarget(idOrWord);
-        const popularity = normalizePopularity(level);
-        log("Update word popularity", snapshot ?? id);
-        assertSignedIn();
-        const prev = get().words;
-        let existing = prev.find((w) => w.id === id);
-        if (!existing && snapshot) {
-            existing = indexWord(snapshot);
-        }
-        if (!existing) return;
-
-        const nextWords = prev.some((w) => w.id === id)
-            ? updateWordInList(prev, id, { popularity: popularity ?? undefined })
-            : [...prev, indexWord({ ...existing, popularity: popularity ?? undefined }, prev.length)];
-
-        const word = nextWords.find((w) => w.id === id);
-        set({ words: nextWords });
-        patchWordInBrowseCache(id, { popularity: word?.popularity });
-        return syncMutation(
-            async () => {
-                const saved = await api.patchWordFlags(id, { popularity: popularity ?? null }, snapshot ?? word);
-                set({ words: updateWordInList(get().words, id, saved) });
-                patchWordInBrowseCache(id, { popularity: saved.popularity });
-            },
-            { requireAdmin: false },
-        ).catch((err) => {
-            logWarn("Update word popularity failed", err instanceof Error ? err.message : err);
-            set({ words: prev });
-            patchWordInBrowseCache(id, { popularity: existing.popularity });
-            throw err;
-        });
+        ).catch(() => set({ vocabularies: prev, masteredVocabularyCount: prevMastered }));
     },
 
     toggleGrammarMastered: (id) => {
@@ -582,106 +568,103 @@ export const useAppStore = create((set, get) => ({
         }
     },
 
-    removeWord: (id) => {
+    removeVocabulary: (id) => {
         assertAdmin();
-        const { words: prevWords, lessons: prevLessons } = get();
-        const removed = prevWords.find((w) => w.id === id);
+        const { vocabularies: prevVocabularies, lessons: prevLessons } = get();
+        const removed = prevVocabularies.find((w) => w.id === id);
         const label =
-            removed?.hanTraditional || removed?.vietnamese || removed?.english || `#${String(id).slice(0, 8)}`;
-        logMutStart("Delete word", label);
-        const next = deleteWordFromList(prevWords, prevLessons, id);
-        const prevWordTotal = get().wordTotal;
-        const prevMastered = get().masteredWordCount;
-        const prevRevision = get().wordsRevision;
+            removed?.hanTraditional || removed?.vietMeanings || removed?.engMeanings || `#${String(id).slice(0, 8)}`;
+        logMutStart("Delete vocabulary", label);
+        const next = deleteVocabularyFromList(prevVocabularies, prevLessons, id);
+        const prevVocabularyTotal = get().vocabularyTotal;
+        const prevMastered = get().masteredVocabularyCount;
+        const prevRevision = get().vocabulariesRevision;
         set({
-            ...next,
-            wordTotal: Math.max(0, prevWordTotal - 1),
-            masteredWordCount: removed?.mastered ? Math.max(0, prevMastered - 1) : prevMastered,
-            wordsRevision: prevRevision + 1,
+            vocabularies: next.vocabularies,
+            lessons: next.lessons,
+            vocabularyTotal: Math.max(0, prevVocabularyTotal - 1),
+            masteredVocabularyCount: removed?.mastered ? Math.max(0, prevMastered - 1) : prevMastered,
+            vocabulariesRevision: prevRevision + 1,
         });
         syncMutation(() =>
-            api.deleteWord(id).then((r) => {
-                logMutDone("Delete word", label);
+            api.deleteVocabulary(id).then((r) => {
+                logMutDone("Delete vocabulary", label);
                 return r;
             }),
         ).catch(() =>
             set({
-                words: prevWords,
+                vocabularies: prevVocabularies,
                 lessons: prevLessons,
-                wordTotal: prevWordTotal,
-                masteredWordCount: prevMastered,
-                wordsRevision: prevRevision,
+                vocabularyTotal: prevVocabularyTotal,
+                masteredVocabularyCount: prevMastered,
+                vocabulariesRevision: prevRevision,
             }),
         );
     },
 
-    mergeWords: (incoming) => {
+    mergeVocabularies: (incoming) => {
         if (!incoming?.length) return;
         set((s) => {
-            const byId = new Map(s.words.map((w) => [w.id, w]));
+            const byId = new Map(s.vocabularies.map((w) => [w.id, w]));
             for (const raw of incoming) {
                 const existing = byId.get(raw.id);
-                const keepExistingContent = existing && wordTimeMs(existing) > wordTimeMs(raw);
-                const incomingNewer = !existing || wordTimeMs(raw) >= wordTimeMs(existing);
+                const keepExistingContent = existing && vocabTimeMs(existing) > vocabTimeMs(raw);
+                const incomingNewer = !existing || vocabTimeMs(raw) >= vocabTimeMs(existing);
                 const payload = existing
                     ? {
                           ...raw,
                           ...(keepExistingContent
                               ? {
-                                    english: existing.english,
+                                    engMeanings: existing.engMeanings,
                                     hanTraditional: existing.hanTraditional,
                                     hanSimplified: existing.hanSimplified,
-                                    vietnamese: existing.vietnamese,
-                                    hanViet: existing.hanViet,
+                                    vietMeanings: existing.vietMeanings,
+                                    sinoVietnamese: existing.sinoVietnamese,
                                     jyutping: existing.jyutping,
-                                    vietnameseDetail: existing.vietnameseDetail,
+                                    vietExamples: existing.vietExamples,
                                     updatedAt: existing.updatedAt,
                                 }
                               : {}),
                           important: incomingNewer ? Boolean(raw.important) : Boolean(existing.important),
                           mastered: incomingNewer ? Boolean(raw.mastered) : Boolean(existing.mastered),
-                          vietnameseDetail: keepExistingContent
-                              ? existing.vietnameseDetail
-                              : "vietnameseDetail" in raw
-                                ? raw.vietnameseDetail || undefined
-                                : existing?.vietnameseDetail,
-                          popularity:
-                              incomingNewer && "popularity" in raw
-                                  ? (raw.popularity ?? undefined)
-                                  : (existing?.popularity ?? raw?.popularity),
+                          vietExamples: keepExistingContent
+                              ? existing.vietExamples
+                              : "vietExamples" in raw
+                                ? raw.vietExamples || undefined
+                                : existing?.vietExamples,
                       }
                     : raw;
-                byId.set(raw.id, indexWord(payload, existing?._sortSeq ?? byId.size));
+                byId.set(raw.id, indexVocabulary(payload, existing?._sortSeq ?? byId.size));
             }
-            const words = Array.from(byId.values());
-            return { words };
+            const vocabularies = Array.from(byId.values());
+            return { vocabularies };
         });
     },
 
-    ensureWordsByIds: async (ids) => {
+    ensureVocabulariesByIds: async (ids) => {
         const list = [...new Set((ids ?? []).map(String).filter(Boolean))];
         if (list.length === 0) return;
-        const loaded = new Set(get().words.map((w) => String(w.id)));
+        const loaded = new Set(get().vocabularies.map((w) => String(w.id)));
         const missing = list.filter((id) => !loaded.has(id));
         if (missing.length === 0) return;
-        const fetched = await api.fetchWordsByIds(missing);
-        get().mergeWords(fetched);
+        const fetched = await api.fetchVocabulariesByIds(missing);
+        get().mergeVocabularies(fetched);
     },
 
-    /** Re-fetch all words from server (after backfill etc.). */
-    refreshWords: async () => {
+    /** Re-fetch all vocabulary from server (after backfill etc.). */
+    refreshVocabularies: async () => {
         const remote = await api.fetchFullData();
         const indexed = indexCloudPayload({
-            words: remote.words ?? [],
+            vocabularies: remote.vocabularies ?? [],
             grammarBank: [],
             lessons: [],
             sentencePatterns: [],
         });
         set({
-            words: indexed.words,
-            wordTotal: remote.wordTotal ?? indexed.words.length,
-            masteredWordCount: remote.masteredWordCount ?? 0,
-            wordsRevision: get().wordsRevision + 1,
+            vocabularies: indexed.vocabularies,
+            vocabularyTotal: remote.vocabularyTotal ?? indexed.vocabularies.length,
+            masteredVocabularyCount: remote.masteredVocabularyCount ?? 0,
+            vocabulariesRevision: get().vocabulariesRevision + 1,
         });
     },
 
@@ -766,7 +749,7 @@ export const useAppStore = create((set, get) => ({
     createSentence: (item) => {
         log("Create sentence", item);
         assertAdmin();
-        const wordIds = findWordIdsInSentence(item, get().words);
+        const wordIds = findWordIdsInSentence(item, get().vocabularies);
         const entry = indexSentencePattern({ ...item, wordIds });
         const prev = get().sentencePatterns;
         set({ sentencePatterns: [...prev, entry] });
@@ -781,7 +764,7 @@ export const useAppStore = create((set, get) => ({
     createSentenceAwait: async (item) => {
         assertAdmin();
         const prev = get().sentencePatterns;
-        const wordIds = findWordIdsInSentence(item, get().words);
+        const wordIds = findWordIdsInSentence(item, get().vocabularies);
         const entry = indexSentencePattern({ ...item, wordIds }, prev.length);
         set({ sentencePatterns: [...prev, entry] });
         try {
@@ -824,7 +807,7 @@ export const useAppStore = create((set, get) => ({
             important,
             mastered,
         };
-        const wordIds = findWordIdsInSentence(merged, get().words);
+        const wordIds = findWordIdsInSentence(merged, get().vocabularies);
         const sentencePatterns = updateSentenceInList(prev, id, { ...merged, wordIds });
         const item = sentencePatterns.find((s) => s.id === id);
         set({ sentencePatterns });
@@ -866,7 +849,7 @@ export const useAppStore = create((set, get) => ({
             important,
             mastered,
         };
-        const wordIds = findWordIdsInSentence(merged, get().words);
+        const wordIds = findWordIdsInSentence(merged, get().vocabularies);
         const sentencePatterns = updateSentenceInList(prev, id, { ...merged, wordIds });
         const item = sentencePatterns.find((s) => s.id === id);
         if (!item) return;
@@ -992,34 +975,34 @@ export const useAppStore = create((set, get) => ({
     getLesson: (id) => get().lessons.find((l) => l.id === id),
 }));
 
-export const useWords = () => useAppStore((s) => s.words);
+export const useVocabularies = () => useAppStore((s) => s.vocabularies);
 export const useGrammarBank = () => useAppStore((s) => s.grammarBank);
 export const useSentencePatterns = () => useAppStore((s) => s.sentencePatterns);
 export const useLessons = () => useAppStore((s) => s.lessons);
 export const useDataLoading = () => useAppStore((s) => s.dataLoading);
 export const useDataError = () => useAppStore((s) => s.dataError);
 export const useDataHydrated = () => useAppStore((s) => s.hydrated);
-export const useWordCount = () => useAppStore((s) => s.wordTotal);
-export const useWordsRevision = () => useAppStore((s) => s.wordsRevision);
+export const useVocabularyCount = () => useAppStore((s) => s.vocabularyTotal);
+export const useVocabulariesRevision = () => useAppStore((s) => s.vocabulariesRevision);
 export const useHanCharacters = () => useAppStore((s) => s.hanCharacters);
 export const useHanCharacterTotal = () => useAppStore((s) => s.hanCharacterTotal);
 export const useHanCharactersRevision = () => useAppStore((s) => s.hanCharactersRevision);
 export const useGrammarCount = () => useAppStore((s) => s.grammarBank.length);
 export const useSentenceCount = () => useAppStore((s) => s.sentencePatterns.length);
 export const useLessonCount = () => useAppStore((s) => s.lessons.length);
-export const useMasteredWordCount = () => useAppStore((s) => s.masteredWordCount);
+export const useMasteredVocabularyCount = () => useAppStore((s) => s.masteredVocabularyCount);
 export const useLesson = (id) => useAppStore((s) => (id ? s.lessons.find((l) => l.id === id) : undefined));
 
 export const useAppActions = () =>
     useAppStore(
         useShallow((s) => ({
-            createWord: s.createWord,
-            createWordAwait: s.createWordAwait,
+            createVocabulary: s.createVocabulary,
+            createVocabularyAwait: s.createVocabularyAwait,
             createGrammar: s.createGrammar,
             createGrammarAwait: s.createGrammarAwait,
             createSentence: s.createSentence,
             createSentenceAwait: s.createSentenceAwait,
-            editWord: s.editWord,
+            editVocabulary: s.editVocabulary,
             editGrammar: s.editGrammar,
             editSentence: s.editSentence,
             editSentenceAwait: s.editSentenceAwait,
@@ -1027,12 +1010,11 @@ export const useAppActions = () =>
             toggleGrammarImportant: s.toggleGrammarImportant,
             toggleSentenceImportant: s.toggleSentenceImportant,
             toggleMastered: s.toggleMastered,
-            setWordStudyProgress: s.setWordStudyProgress,
-            setWordPopularity: s.setWordPopularity,
+            setVocabularyStudyProgress: s.setVocabularyStudyProgress,
             toggleGrammarMastered: s.toggleGrammarMastered,
             toggleSentenceMastered: s.toggleSentenceMastered,
             toggleLessonGrammarMastered: s.toggleLessonGrammarMastered,
-            removeWord: s.removeWord,
+            removeVocabulary: s.removeVocabulary,
             removeGrammar: s.removeGrammar,
             removeSentence: s.removeSentence,
             addLesson: s.addLesson,
@@ -1043,11 +1025,11 @@ export const useAppActions = () =>
             hydrateFromCloud: s.hydrateFromCloud,
             clearData: s.clearData,
             getLesson: s.getLesson,
-            mergeWords: s.mergeWords,
-            ensureWordsByIds: s.ensureWordsByIds,
-            ensureAllWordsLoaded: s.ensureAllWordsLoaded,
+            mergeVocabularies: s.mergeVocabularies,
+            ensureVocabulariesByIds: s.ensureVocabulariesByIds,
             syncHanVariantsAll: s.syncHanVariantsAll,
             syncPinyinAll: s.syncPinyinAll,
+            syncJyutpingAll: s.syncJyutpingAll,
             mergeHanCharacters: s.mergeHanCharacters,
             removeHanCharacter: s.removeHanCharacter,
             bumpHanCharactersRevision: s.bumpHanCharactersRevision,

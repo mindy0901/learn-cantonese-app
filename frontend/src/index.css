@@ -21,6 +21,7 @@
     --color-success-text: var(--success-text);
     --color-success-border: var(--success-border);
     --color-han: var(--han-color);
+    --color-pinyin: var(--pinyin-color);
     --color-jyutping: var(--jyutping-color);
     --color-viet: var(--viet-color);
     --color-han-pop-0: var(--han-popularity-0);
@@ -63,27 +64,28 @@
     --han-popularity-3: #059669;
     --han-popularity-4: #7c3aed;
     --jyutping-color: #0e7490;
-    --viet-color: #047857;
+    --viet-color: #16a34a;
+    --pinyin-color: #0e7490;
 
     --text: #475569;
-    --text-h: #0f172a;
-    --text-muted: #64748b;
-    --bg: #f8fafc;
+    --text-h: #312e81;
+    --text-muted: #475569;
+    --bg: #eef2ff;
     --surface: #ffffff;
-    --border: #e2e8f0;
-    --code-bg: #ecfeff;
-    --accent: #0f766e;
-    --accent-hover: #115e59;
-    --accent-bg: rgba(15, 118, 110, 0.08);
-    --accent-border: rgba(15, 118, 110, 0.35);
+    --border: #c7d2fe;
+    --code-bg: #e0e7ff;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --accent-bg: rgba(79, 70, 229, 0.08);
+    --accent-border: rgba(79, 70, 229, 0.35);
     --error-bg: #fef2f2;
     --error-text: #b91c1c;
     --error-border: #fecaca;
-    --success-bg: #ecfdf5;
-    --success-text: #047857;
-    --success-border: #a7f3d0;
-    --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
-    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --success-bg: #f0fdf4;
+    --success-text: #16a34a;
+    --success-border: #bbf7d0;
+    --shadow: 0 1px 2px rgba(79, 70, 229, 0.06), 0 4px 12px rgba(79, 70, 229, 0.05);
+    --shadow-sm: 0 1px 2px rgba(79, 70, 229, 0.06);
 
     /* Word detail card — baseline 34rem, +20% */
     --word-detail-card-min-height: 40.8rem;
@@ -137,32 +139,33 @@ html[data-font-size="lg"] {
 [data-theme="dark"] {
     color-scheme: dark;
     --text: #cbd5e1;
-    --text-h: #f1f5f9;
-    --text-muted: #94a3b8;
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --border: #334155;
-    --code-bg: #164e63;
-    --accent: #2dd4bf;
-    --accent-hover: #5eead4;
-    --accent-bg: rgba(45, 212, 191, 0.12);
-    --accent-border: rgba(45, 212, 191, 0.35);
+    --text-h: #e0e7ff;
+    --text-muted: #a5b4fc;
+    --bg: #0f0a2e;
+    --surface: #1e1b4b;
+    --border: #3730a3;
+    --code-bg: #1e1b4b;
+    --accent: #818cf8;
+    --accent-hover: #a5b4fc;
+    --accent-bg: rgba(129, 140, 248, 0.12);
+    --accent-border: rgba(129, 140, 248, 0.35);
     --error-bg: #450a0a;
     --error-text: #fca5a5;
     --error-border: #7f1d1d;
-    --success-bg: #064e3b;
-    --success-text: #6ee7b7;
-    --success-border: #065f46;
+    --success-bg: #052e16;
+    --success-text: #4ade80;
+    --success-border: #166534;
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.25);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --han-color: #a5b4fc;
+    --han-color: #f87171;
     --han-popularity-0: #f87171;
     --han-popularity-1: #fb923c;
     --han-popularity-2: #a3e635;
     --han-popularity-3: #34d399;
     --han-popularity-4: #a78bfa;
     --jyutping-color: #67e8f9;
-    --viet-color: #6ee7b7;
+    --viet-color: #4ade80;
+    --pinyin-color: #67e8f9;
 }
 
 *,
@@ -379,7 +382,7 @@ code {
 
 /* Flashcard typography */
 
-.flashcard-han-viet {
+.flashcard-sino-vietnamese {
     font-size: 1.125rem;
     font-weight: 500;
     color: var(--text-muted);

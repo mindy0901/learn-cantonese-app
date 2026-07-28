@@ -17,9 +17,9 @@ function extractChars(text) {
  * Finds all han_characters whose hanSimplified or hanTraditional
  * matches any character in the word's hanTraditional or hanSimplified fields.
  */
-export async function syncWordHanRelations(db, userId, word) {
-    const trad = (word.hanTraditional ?? "").trim();
-    const simp = (word.hanSimplified ?? "").trim();
+export async function syncVocabularyHanRelations(db, userId, vocab) {
+    const trad = (vocab.hanTraditional ?? "").trim();
+    const simp = (vocab.hanSimplified ?? "").trim();
     const allChars = [...new Set([...extractChars(trad), ...extractChars(simp)])];
     if (allChars.length === 0) return { added: 0, removed: 0 };
 
@@ -45,13 +45,13 @@ export async function syncWordHanRelations(db, userId, word) {
 
     const hanCharIds = [...foundIds];
 
-    // Delete existing relations for this word
-    await db.from("word_han_characters").delete().eq("word_id", word.id);
+    // Delete existing relations for this vocabulary
+    await db.from("word_han_characters").delete().eq("word_id", vocab.id);
 
     // Insert new relations
     if (hanCharIds.length > 0) {
         const rows = hanCharIds.map((hid) => ({
-            word_id: word.id,
+            word_id: vocab.id,
             han_character_id: hid,
         }));
         await db.from("word_han_characters").insert(rows);
@@ -63,9 +63,9 @@ export async function syncWordHanRelations(db, userId, word) {
 /**
  * Backfill all existing word-han relationships.
  */
-export async function backfillWordHanRelations(db, userId) {
-    // Fetch all words
-    const allWords = [];
+export async function backfillVocabularyHanRelations(db, userId) {
+    // Fetch all vocabularies
+    const allVocabs = [];
     let from = 0;
     while (true) {
         const { data } = await db
@@ -74,23 +74,23 @@ export async function backfillWordHanRelations(db, userId) {
             .eq("user_id", userId)
             .range(from, from + 999);
         if (!data?.length) break;
-        allWords.push(...data);
+        allVocabs.push(...data);
         from += 1000;
     }
 
     let added = 0;
-    for (const word of allWords) {
-        const result = await syncWordHanRelations(db, userId, word);
+    for (const vocab of allVocabs) {
+        const result = await syncVocabularyHanRelations(db, userId, vocab);
         added += result.added;
     }
 
-    return { total: allWords.length, added };
+    return { total: allVocabs.length, added };
 }
 
 /**
  * Get all han characters related to a word.
  */
-export async function getHanCharsForWord(db, userId, wordId) {
+export async function getHanCharsForVocabulary(db, userId, wordId) {
     const { data, error } = await db
         .from("word_han_characters")
         .select("han_character_id, han_characters(*)")
@@ -109,7 +109,7 @@ export async function getHanCharsForWord(db, userId, wordId) {
 /**
  * Get all words containing a given han character.
  */
-export async function getWordsForHanChar(db, userId, hanCharId) {
+export async function getVocabulariesForHanChar(db, userId, hanCharId) {
     const { data, error } = await db
         .from("word_han_characters")
         .select("word_id, words(*)")

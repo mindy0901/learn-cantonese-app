@@ -16,28 +16,28 @@ export function hanAppearsInText(needle, haystack) {
     return haystack.includes(needle);
 }
 
-export function sentenceMatchesWord(pattern, word) {
-    const wordId = word.id;
+export function sentenceMatchesVocabulary(pattern, vocab) {
+    const wordId = vocab.id;
     const wordIds = pattern.word_ids ?? pattern.wordIds ?? [];
     if (wordId && wordIds.includes(wordId)) return true;
 
     const sentences = sentenceHanTexts(pattern);
-    const forms = hanVariantsForMatch(word);
+    const forms = hanVariantsForMatch(vocab);
     return forms.some((form) => sentences.some((sentence) => hanAppearsInText(form, sentence)));
 }
 
-export function findWordIdsInSentence(pattern, words) {
+export function findVocabularyIdsInSentence(pattern, vocabs) {
     const ids = new Set(pattern.word_ids ?? pattern.wordIds ?? []);
     const sentences = sentenceHanTexts(pattern);
-    for (const word of words) {
-        const forms = hanVariantsForMatch(word);
+    for (const vocab of vocabs) {
+        const forms = hanVariantsForMatch(vocab);
         if (forms.some((form) => sentences.some((sentence) => hanAppearsInText(form, sentence)))) {
-            if (word.id) ids.add(word.id);
+            if (vocab.id) ids.add(vocab.id);
         }
     }
     return [...ids];
 }
 
-export function filterSentencePatternsForWord(patterns, word) {
-    return patterns.filter((pattern) => sentenceMatchesWord(pattern, word));
+export function filterSentencePatternsForVocabulary(patterns, vocab) {
+    return patterns.filter((pattern) => sentenceMatchesVocabulary(pattern, vocab));
 }

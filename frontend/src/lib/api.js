@@ -1,6 +1,5 @@
 import { log, logApiError } from "./actionLog.js";
 import { PAGE_SIZE } from "./constants.js";
-import { normalizePopularity } from "./wordPopularity.js";
 
 const API = import.meta.env.VITE_API_URL ?? "";
 
@@ -12,7 +11,7 @@ async function request(path, options = {}) {
             credentials: "include",
             ...options,
             headers: {
-                "Content-Type": "application/json",
+                ...(options.body != null ? { "Content-Type": "application/json" } : {}),
                 ...options.headers,
             },
         });
@@ -55,7 +54,7 @@ export const api = {
 
     fetchFullData: () => api.fetchFromCloud(),
 
-    browseWords: async ({
+    browseVocabularies: async ({
         page = 1,
         pageSize = PAGE_SIZE,
         sortKey = "createdAt",
@@ -65,6 +64,7 @@ export const api = {
         importantFirst = false,
         studyDue = false,
         maxProgress = null,
+        hskLevel = null,
     } = {}) => {
         const params = new URLSearchParams({
             page: String(page),
@@ -77,31 +77,29 @@ export const api = {
         if (q.trim()) params.set("q", q.trim());
         if (studyDue) params.set("studyDue", "1");
         if (maxProgress != null && maxProgress !== "") params.set("maxProgress", String(maxProgress));
+        if (hskLevel) params.set("hskLevel", hskLevel);
         const query = params.toString();
         try {
-            return await request(`/api/words/browse?${query}`);
+            return await request(`/api/vocabulary/browse?${query}`);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             if (!/not found|404/i.test(message)) throw err;
-            return request(`/api/words?${query}`);
+            return request(`/api/vocabulary?${query}`);
         }
     },
 
-    fetchWordsByIds: (ids) => {
+    fetchVocabulariesByIds: (ids) => {
         const list = [...new Set((ids ?? []).map(String).filter(Boolean))];
         if (list.length === 0) return Promise.resolve([]);
-        return request(`/api/words/by-ids?ids=${encodeURIComponent(list.join(","))}`);
+        return request(`/api/vocabulary/by-ids?ids=${encodeURIComponent(list.join(","))}`);
     },
 
-    createWord: (word) => request("/api/words", { method: "POST", body: JSON.stringify(word) }),
-    updateWord: (id, word) => request(`/api/words/${id}`, { method: "PUT", body: JSON.stringify(word) }),
-    patchWordFlags: async (id, flags, word) => {
+    createVocabulary: (vocab) => request("/api/vocabulary", { method: "POST", body: JSON.stringify(vocab) }),
+    updateVocabulary: (id, vocab) => request(`/api/vocabulary/${id}`, { method: "PUT", body: JSON.stringify(vocab) }),
+    patchVocabularyFlags: async (id, flags, vocab) => {
         const payload = { ...flags };
-        if ("popularity" in payload) {
-            payload.popularity = normalizePopularity(payload.popularity);
-        }
         try {
-            return await request(`/api/words/${id}/flags`, {
+            return await request(`/api/vocabulary/${id}/flags`, {
                 method: "PATCH",
                 body: JSON.stringify(payload),
             });
@@ -115,14 +113,14 @@ export const api = {
                     "important" in payload ||
                     "mastered" in payload ||
                     "studyProgress" in payload);
-            if ((!patchUnavailable && !patchRejected) || !word) throw err;
-            return request(`/api/words/${id}`, {
+            if ((!patchUnavailable && !patchRejected) || !vocab) throw err;
+            return request(`/api/vocabulary/${id}`, {
                 method: "PUT",
-                body: JSON.stringify({ ...word, ...payload }),
+                body: JSON.stringify({ ...vocab, ...payload }),
             });
         }
     },
-    deleteWord: (id) => request(`/api/words/${id}`, { method: "DELETE" }),
+    deleteVocabulary: (id) => request(`/api/vocabulary/${id}`, { method: "DELETE" }),
 
     createGrammar: (item) => request("/api/grammar", { method: "POST", body: JSON.stringify(item) }),
     updateGrammar: (id, item) => request(`/api/grammar/${id}`, { method: "PUT", body: JSON.stringify(item) }),
@@ -142,21 +140,27 @@ export const api = {
 
     backfillPinyin: () => request("/api/data/backfill-pinyin", { method: "POST", body: "{}" }),
 
+    backfillJyutping: () => request("/api/data/backfill-jyutping", { method: "POST", body: "{}" }),
+
     backfillHanCharPinyin: () => request("/api/data/backfill-han-char-pinyin", { method: "POST", body: "{}" }),
 
     backfillHanCharJyutping: () => request("/api/data/backfill-han-char-jyutping", { method: "POST", body: "{}" }),
 
     backfillHanCharVariants: () => request("/api/data/backfill-han-char-variants", { method: "POST", body: "{}" }),
 
-    backfillHanCharHanViet: () => request("/api/data/backfill-han-char-hanviet", { method: "POST", body: "{}" }),
+    backfillHanCharSinoVietnamese: () =>
+        request("/api/data/backfill-han-char-sinovietnamese", { method: "POST", body: "{}" }),
 
     dedupHanCharacters: () => request("/api/han-characters/dedup", { method: "POST", body: "{}" }),
 
+    /** Sync han characters from all vocabularies — extract chars with readings */
+    syncHanCharsFromVocab: () => request("/api/han-characters/sync", { method: "POST", body: "{}" }),
+
     backfillWordHanRelations: () => request("/api/data/backfill-word-han-relations", { method: "POST", body: "{}" }),
 
-    getHanCharsForWord: (wordId) => request(`/api/words/${wordId}/han-characters`),
+    getHanCharsForVocabulary: (wordId) => request(`/api/vocabulary/${wordId}/han-characters`),
 
-    getWordsForHanChar: (hanCharId) => request(`/api/han-characters/${hanCharId}/words`),
+    getVocabulariesForHanChar: (hanCharId) => request(`/api/han-characters/${hanCharId}/vocabulary`),
 
     searchCedict: ({ q, limit = 30 } = {}) => {
         const params = new URLSearchParams({ q: String(q ?? "").trim(), limit: String(limit) });
@@ -214,6 +218,27 @@ export const api = {
 
     patchHanCharacterFlags: (id, flags) =>
         request(`/api/han-characters/${id}/flags`, { method: "PATCH", body: JSON.stringify(flags) }),
+
+    /** Translate text via DeepL (VI → EN) */
+    translateViToEn: (text) =>
+        request("/api/translate", {
+            method: "POST",
+            body: JSON.stringify({ text, sourceLang: "VI", targetLang: "EN-US" }),
+        }),
+
+    /** Convert Chinese text to Jyutping */
+    toJyutping: (text) =>
+        request("/api/jyutping", {
+            method: "POST",
+            body: JSON.stringify({ text }),
+        }),
+
+    /** Convert Chinese text to Pinyin */
+    toPinyin: (text) =>
+        request("/api/pinyin", {
+            method: "POST",
+            body: JSON.stringify({ text }),
+        }),
 };
 
 export function signInWithGoogle() {

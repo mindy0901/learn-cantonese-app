@@ -1,9 +1,7 @@
 /** Trailing sentence punctuation (Latin + CJK). Does not strip internal dots. */
 import { ensureHanVariants } from "./opencc.js";
-import { inferDialect } from "./wordDialect.js";
-import { mergePopularity, normalizePopularity } from "./wordPopularity.js";
-import { HAN_VIET_NONE, isHanVietNone } from "./hanVietMarkers.js";
-import { normalizeHanVietValue } from "./hanVietReadings.js";
+import { SINO_VIETNAMESE_NONE, isSinoVietnameseNone } from "./sinoVietnameseMarkers.js";
+import { normalizeSinoVietnameseValue } from "./sinoVietnameseReadings.js";
 
 const TRAILING_PUNCT_RE = /(?:\.{2,}|[\s.,?!…:;，。！？、])+$/u;
 
@@ -17,7 +15,7 @@ export function stripTrailingPunctuation(value) {
     return s;
 }
 
-export function normWordField(value) {
+export function normVocabularyField(value) {
     return stripTrailingPunctuation(value).toLowerCase();
 }
 
@@ -37,112 +35,102 @@ export function toDisplayCase(value) {
         .trim()
         .split(/\s+/)
         .filter(Boolean)
-        .map(titleCaseToken)
+        .map((token) => {
+            // Erhua suffix: keep lowercase "r"
+            if (token === "r" || token === "R") return "r";
+            return titleCaseToken(token);
+        })
         .join(" ");
 }
 
-/** @param {{ hanTraditional?: string, hanTrad?: string, han?: string }} word */
-function resolveHanTraditional(word) {
-    return stripTrailingPunctuation(word.hanTraditional ?? word.hanTrad ?? word.han);
+/** @param {{ hanTraditional?: string, hanTrad?: string, han?: string }} vocab */
+function resolveHanTraditional(vocab) {
+    return stripTrailingPunctuation(vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han);
 }
 
-/** Duplicate when dialect + Hán tự + romanization match (ignoring trailing punctuation). */
-export function wordMergeKey(word) {
-    const dialect = inferDialect(word);
-    return `${dialect}|${normWordField(resolveHanTraditional(word))}|${normWordField(word.jyutping)}|${normWordField(word.pinyin)}`;
+/** Duplicate when Hán tự + romanization match (ignoring trailing punctuation). */
+export function vocabularyMergeKey(vocab) {
+    return `${normVocabularyField(resolveHanTraditional(vocab))}|${normVocabularyField(vocab.jyutping)}|${normVocabularyField(vocab.pinyin)}`;
 }
 
-export function wordKeyIsEmpty(key) {
+export function vocabularyKeyIsEmpty(key) {
     return !key.replace(/\|/g, "").length;
 }
 
-export function normalizeWordFields(word) {
+export function normalizeVocabularyFields(vocab) {
     const hanVariants = ensureHanVariants({
-        hanTraditional: resolveHanTraditional(word),
-        hanSimplified: stripTrailingPunctuation(word.hanSimplified),
+        hanTraditional: resolveHanTraditional(vocab),
+        hanSimplified: stripTrailingPunctuation(vocab.hanSimplified),
     });
     const next = {
-        ...word,
-        english: toDisplayCase(stripTrailingPunctuation(word.english)),
+        ...vocab,
+        engMeanings: toDisplayCase(stripTrailingPunctuation(vocab.engMeanings)),
         hanTraditional: hanVariants.hanTraditional,
         hanSimplified: hanVariants.hanSimplified || undefined,
-        vietnamese: toDisplayCase(stripTrailingPunctuation(word.vietnamese)),
+        vietMeanings: toDisplayCase(stripTrailingPunctuation(vocab.vietMeanings)),
     };
     delete next.han;
     if (!hanVariants.hanSimplified) {
         delete next.hanSimplified;
     }
-    if (word.hanViet != null && word.hanViet !== "") {
-        if (isHanVietNone(word.hanViet)) {
-            next.hanViet = HAN_VIET_NONE;
+    if (vocab.sinoVietnamese != null && vocab.sinoVietnamese !== "") {
+        if (isSinoVietnameseNone(vocab.sinoVietnamese)) {
+            next.sinoVietnamese = SINO_VIETNAMESE_NONE;
         } else {
-            next.hanViet = normalizeHanVietValue(word.hanViet);
+            next.sinoVietnamese = normalizeSinoVietnameseValue(vocab.sinoVietnamese);
         }
     }
-    if (word.jyutping != null && word.jyutping !== "") {
-        next.jyutping = stripTrailingPunctuation(word.jyutping);
+    if (vocab.jyutping != null && vocab.jyutping !== "") {
+        next.jyutping = stripTrailingPunctuation(vocab.jyutping);
     } else {
         delete next.jyutping;
     }
-    if (word.pinyin != null && word.pinyin !== "") {
-        next.pinyin = stripTrailingPunctuation(word.pinyin);
+    if (vocab.pinyin != null && vocab.pinyin !== "") {
+        next.pinyin = stripTrailingPunctuation(vocab.pinyin);
     } else {
         delete next.pinyin;
     }
-    next.dialect = inferDialect(next);
-    const vietnameseDetail = String(word.vietnameseDetail ?? "").trim();
-    if (vietnameseDetail) {
-        next.vietnameseDetail = vietnameseDetail;
+    const vietExamples = String(vocab.vietExamples ?? "").trim();
+    if (vietExamples) {
+        next.vietExamples = vietExamples;
     } else {
-        delete next.vietnameseDetail;
+        delete next.vietExamples;
     }
-    const popularity = normalizePopularity(word.popularity);
-    if (popularity !== null) {
-        next.popularity = popularity;
-    } else {
-        delete next.popularity;
-    }
+    delete next.popularity;
     delete next.definitions;
     return next;
 }
 
-export function mergeWordFieldsPreferFilled(existing, incoming) {
+export function mergeVocabularyFieldsPreferFilled(existing, incoming) {
     return {
         id: existing.id,
-        english: "english" in incoming ? (incoming.english ?? "") : (existing.english ?? ""),
+        engMeanings: "engMeanings" in incoming ? (incoming.engMeanings ?? "") : (existing.engMeanings ?? ""),
         hanTraditional:
             "hanTraditional" in incoming || "hanTrad" in incoming || "han" in incoming
                 ? (incoming.hanTraditional ?? incoming.hanTrad ?? incoming.han ?? "")
                 : (existing.hanTraditional ?? existing.hanTrad ?? existing.han ?? ""),
         hanSimplified: "hanSimplified" in incoming ? incoming.hanSimplified || undefined : existing.hanSimplified,
-        vietnamese: "vietnamese" in incoming ? (incoming.vietnamese ?? "") : (existing.vietnamese ?? ""),
-        hanViet: "hanViet" in incoming ? incoming.hanViet || undefined : existing.hanViet,
+        vietMeanings: "vietMeanings" in incoming ? (incoming.vietMeanings ?? "") : (existing.vietMeanings ?? ""),
+        sinoVietnamese: "sinoVietnamese" in incoming ? incoming.sinoVietnamese || undefined : existing.sinoVietnamese,
         jyutping: "jyutping" in incoming ? (incoming.jyutping ?? "") : (existing.jyutping ?? ""),
         pinyin: "pinyin" in incoming ? (incoming.pinyin ?? "") : (existing.pinyin ?? ""),
-        dialect: "dialect" in incoming ? (incoming.dialect ?? existing.dialect) : (existing.dialect ?? "cantonese"),
-        vietnameseDetail:
-            "vietnameseDetail" in incoming ? incoming.vietnameseDetail || undefined : existing.vietnameseDetail,
+        vietExamples: "vietExamples" in incoming ? incoming.vietExamples || undefined : existing.vietExamples,
         important: Boolean(existing.important || incoming.important),
         mastered: Boolean(existing.mastered || incoming.mastered),
-        popularity: mergePopularity(
-            "popularity" in incoming ? incoming.popularity : existing.popularity,
-            existing.popularity,
-        ),
         createdAt: existing.createdAt ?? incoming.createdAt,
         updatedAt: incoming.updatedAt ?? existing.updatedAt,
     };
 }
 
-export function wordContentEqual(a, b) {
+export function vocabularyContentEqual(a, b) {
     return (
-        normWordField(a.english) === normWordField(b.english) &&
-        normWordField(resolveHanTraditional(a)) === normWordField(resolveHanTraditional(b)) &&
-        normWordField(a.hanSimplified) === normWordField(b.hanSimplified) &&
-        normWordField(a.vietnamese) === normWordField(b.vietnamese) &&
-        normWordField(a.hanViet) === normWordField(b.hanViet) &&
-        normWordField(a.jyutping) === normWordField(b.jyutping) &&
-        normWordField(a.pinyin) === normWordField(b.pinyin) &&
-        inferDialect(a) === inferDialect(b) &&
+        normVocabularyField(a.engMeanings) === normVocabularyField(b.engMeanings) &&
+        normVocabularyField(resolveHanTraditional(a)) === normVocabularyField(resolveHanTraditional(b)) &&
+        normVocabularyField(a.hanSimplified) === normVocabularyField(b.hanSimplified) &&
+        normVocabularyField(a.vietMeanings) === normVocabularyField(b.vietMeanings) &&
+        normVocabularyField(a.sinoVietnamese) === normVocabularyField(b.sinoVietnamese) &&
+        normVocabularyField(a.jyutping) === normVocabularyField(b.jyutping) &&
+        normVocabularyField(a.pinyin) === normVocabularyField(b.pinyin) &&
         Boolean(a.important) === Boolean(b.important) &&
         Boolean(a.mastered) === Boolean(b.mastered)
     );

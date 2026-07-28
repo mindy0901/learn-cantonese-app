@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { HanVariantSyncButton } from "../components/HanVariantSyncButton.jsx";
 import { PinyinSyncButton } from "../components/PinyinSyncButton.jsx";
-import { AddWordModal } from "../components/AddWordModal.jsx";
+import { JyutpingSyncButton } from "../components/JyutpingSyncButton.jsx";
+import { AddWordPanel } from "../components/AddWordPanel.jsx";
+import { EditWordPanel } from "../components/EditWordPanel.jsx";
 import { WordBankListPanel } from "../components/WordBankListPanel.jsx";
-import { useAppActions } from "../store/appStore.js";
 import { usePrefsStore, useWordBankPrefs } from "../store/prefsStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { btnClass } from "../components/ui/buttonStyles.js";
@@ -13,7 +13,6 @@ import { loadWordBankReturnState } from "../lib/wordBankReturn.js";
 
 export function WordBankPage() {
     const { isAdmin } = useOutletContext();
-    const { createWord } = useAppActions();
     const { t } = useLocale();
     const openWordDetail = useOpenWordDetail();
     const prefs = useWordBankPrefs();
@@ -21,14 +20,16 @@ export function WordBankPage() {
     const [restoreState] = useState(() => loadWordBankReturnState());
 
     const [addOpen, setAddOpen] = useState(false);
+    const [editWord, setEditWord] = useState(null);
 
-    const { filter, sortKey, sortDir } = prefs;
+    const { filter, showImportant, showMastered, hskLevel, sortKey, sortDir } = prefs;
 
     const handleView = useCallback((word) => openWordDetail(word), [openWordDetail]);
+    const handleEdit = useCallback((word) => setEditWord(word), []);
     const handleFilterChange = useCallback((patch) => setWordBankPrefs(patch), [setWordBankPrefs]);
 
     return (
-        <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 pt-8 pb-12">
+        <main className="flex-1 max-w-[1400px] w-full mx-auto px-5 pt-8 pb-12">
             <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
                     <h1>{t.wordBank.title}</h1>
@@ -36,9 +37,9 @@ export function WordBankPage() {
                 <div className="flex gap-2 shrink-0">
                     {isAdmin && (
                         <>
-                            <HanVariantSyncButton />
                             <PinyinSyncButton />
-                            <button type="button" className={btnClass("primary")} onClick={() => setAddOpen(true)}>
+                            <JyutpingSyncButton />
+                            <button type="button" className={btnClass("success")} onClick={() => setAddOpen(true)}>
                                 + {t.wordBank.addWord}
                             </button>
                         </>
@@ -48,14 +49,19 @@ export function WordBankPage() {
 
             <WordBankListPanel
                 filter={filter}
+                showImportant={showImportant}
+                showMastered={showMastered}
+                hskLevel={hskLevel}
                 sortKey={sortKey}
                 sortDir={sortDir}
                 onFilterChange={handleFilterChange}
                 onView={handleView}
+                onEdit={handleEdit}
                 restoreState={restoreState}
             />
 
-            {addOpen && <AddWordModal onSave={createWord} onClose={() => setAddOpen(false)} />}
+            {addOpen && <AddWordPanel onClose={() => setAddOpen(false)} />}
+            {editWord && <EditWordPanel word={editWord} onClose={() => setEditWord(null)} />}
         </main>
     );
 }

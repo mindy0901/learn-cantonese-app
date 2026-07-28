@@ -1,0 +1,187 @@
+// Starter models — replace with your own
+
+generator client {
+    provider = "prisma-client"
+    output   = "../generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+model HanCharacter {
+    id             String   @id @default(uuid()) @db.Uuid
+    sinoVietnamese String[] @map("sino_vietnamese") @db.VarChar
+    hanSimplified  String?  @default("") @map("han_simplified") @db.VarChar
+    pinyin         String[] @db.VarChar
+    hanTraditional String   @map("han_traditional") @db.VarChar
+    jyutping       String[] @db.VarChar
+    hskLevel       String?  @default("") @map("hsk_level") @db.VarChar
+    searchKey      String?  @map("search_key") @db.Text
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    vocabularyCharacters VocabularyCharacter[]
+
+    @@unique([id, hanSimplified, hanTraditional])
+    @@index([jyutping, pinyin])
+    @@map("han_characters")
+}
+
+model Vocabulary {
+    id             String  @id @default(uuid()) @db.Uuid
+    sinoVietnamese String? @default("") @map("sino_vietnamese") @db.VarChar
+    hanSimplified  String? @default("") @map("han_simplified") @db.VarChar
+    pinyin         String? @default("") @db.VarChar
+    hanTraditional String  @default("") @map("han_traditional") @db.VarChar
+    jyutping       String? @default("") @db.VarChar
+    hskLevel       String? @default("") @map("hsk_level") @db.VarChar
+    searchKey      String? @map("search_key") @db.Text
+    vietMeanings   String? @default("") @map("viet_meanings") @db.VarChar
+    engMeanings    String? @default("") @map("eng_meanings") @db.VarChar
+    vietExamples   String? @default("") @map("viet_examples") @db.Text
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    vocabularyMeanings   VocabularyMeaning[]
+    vocabularyExamples   VocabularyExample[]
+    vocabularyCharacters VocabularyCharacter[]
+    userVocabularies     UserVocabulary[]
+
+    @@index([searchKey, hskLevel])
+    @@map("vocabularies")
+}
+
+model VocabularyMeaning {
+    id           String   @id @default(uuid()) @db.Uuid
+    vocabularyId String   @map("vocabulary_id") @db.Uuid
+    category     String?  @default("") @db.VarChar
+    vietMeanings String?  @default("") @map("viet_meanings") @db.VarChar
+    engMeanings  String?  @default("") @map("eng_meanings") @db.VarChar
+    position     Int      @default(0) @db.SmallInt
+    createdAt    DateTime @default(now()) @map("created_at")
+    updatedAt    DateTime @updatedAt @map("updated_at")
+
+    vocabulary Vocabulary          @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+    examples   VocabularyExample[]
+
+    @@map("vocabulary_meanings")
+}
+
+model VocabularyExample {
+    id              String   @id @default(uuid()) @db.Uuid
+    vocabularyId    String   @map("vocabulary_id") @db.Uuid
+    meaningId       String?  @map("meaning_id") @db.Uuid
+    hanExample      String?  @default("") @map("han_example") @db.Text
+    jyutpingExample String?  @default("") @map("jyutping_example") @db.VarChar
+    pinyinExample   String?  @default("") @map("pinyin_example") @db.VarChar
+    vietExamples    String?  @default("") @map("viet_examples") @db.VarChar
+    engExamples     String?  @default("") @map("eng_examples") @db.VarChar
+    position        Int      @default(0) @db.SmallInt
+    createdAt       DateTime @default(now()) @map("created_at")
+    updatedAt       DateTime @updatedAt @map("updated_at")
+
+    vocabulary Vocabulary         @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+    meaning    VocabularyMeaning? @relation(fields: [meaningId], references: [id], onDelete: SetNull)
+
+    @@map("vocabulary_examples")
+}
+
+model VocabularyCharacter {
+    id             String       @id @default(uuid()) @db.Uuid
+    vocabularyId   String       @map("vocabulary_id") @db.Uuid
+    hanCharacterId String       @map("han_character_id") @db.Uuid
+    position       Int          @db.SmallInt
+    vocabulary     Vocabulary   @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+    hanCharacter   HanCharacter @relation(fields: [hanCharacterId], references: [id], onDelete: Cascade)
+
+    @@unique([vocabularyId, hanCharacterId])
+    @@unique([vocabularyId, position])
+    @@index([hanCharacterId])
+    @@map("vocabulary_characters")
+}
+
+model Grammar {
+    id       String  @id @default(uuid()) @db.Uuid
+    userId   String  @map("user_id") @db.Uuid
+    title    String  @default("") @db.VarChar
+    content  String  @default("") @db.Text
+    hskLevel String? @default("") @map("hsk_level") @db.VarChar
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@unique([id, userId])
+    @@index([userId])
+    @@map("grammars")
+}
+
+model Lesson {
+    id            String   @id @default(uuid()) @db.Uuid
+    userId        String   @map("user_id") @db.Uuid
+    title         String   @default("") @db.VarChar
+    vocabularyIds String[] @map("vocabulary_ids") @db.Uuid
+    grammarIds    String[] @map("grammar_ids") @db.Uuid
+    hskLevel      String?  @default("") @map("hsk_level") @db.VarChar
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@unique([id, userId])
+    @@index([userId, title])
+    @@map("lessons")
+}
+
+model User {
+    id               String           @id @default(uuid()) @db.Uuid
+    email            String           @unique
+    name             String?
+    isAdmin          Boolean          @default(false) @map("is_admin")
+    createdAt        DateTime         @default(now()) @map("created_at")
+    updatedAt        DateTime         @updatedAt @map("updated_at")
+    userVocabularies UserVocabulary[]
+
+    @@map("users")
+}
+
+model UserVocabulary {
+    id              String     @id @default(uuid()) @db.Uuid
+    userId          String     @map("user_id") @db.Uuid
+    vocabularyId    String     @map("vocabulary_id") @db.Uuid
+    user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    vocabulary      Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+    important       Boolean    @default(false)
+    mastered        Boolean    @default(false)
+    studyProgress   Int        @default(0) @map("study_progress") @db.SmallInt
+    studyProgressAt DateTime?  @map("study_progress_at")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@unique([userId, vocabularyId])
+    @@index([userId])
+    @@index([vocabularyId])
+    @@map("user_vocabularies")
+}
+
+model SentencePattern {
+    id             String   @id @default(uuid()) @db.Uuid
+    userId         String   @map("user_id") @db.Uuid
+    hanTraditional String   @default("") @map("han_traditional") @db.VarChar
+    hanSimplified  String?  @map("han_simplified") @db.VarChar
+    jyutping       String?  @db.VarChar
+    pinyin         String?  @db.VarChar
+    vietnamese     String   @default("") @db.VarChar
+    english        String   @default("") @db.VarChar
+    wordIds        String[] @map("word_ids") @db.Uuid
+    important      Boolean  @default(false)
+    mastered       Boolean  @default(false)
+    createdAt      DateTime @default(now()) @map("created_at")
+    updatedAt      DateTime @updatedAt @map("updated_at")
+
+    @@unique([id, userId])
+    @@index([userId])
+    @@map("sentence_patterns")
+}

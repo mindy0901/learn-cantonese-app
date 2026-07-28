@@ -87,6 +87,12 @@ export const SentenceRow = memo(function SentenceRow({
                         value={draft.hanTraditional}
                         onChange={(e) => setDraft((d) => ({ ...d, hanTraditional: e.target.value }))}
                     />
+                    <input
+                        className={cn(cellInputClass, "mt-1")}
+                        value={draft.jyutping ?? ""}
+                        placeholder="jyutping"
+                        onChange={(e) => setDraft((d) => ({ ...d, jyutping: e.target.value }))}
+                    />
                 </td>
                 <td className={tdClass}>
                     <input
@@ -160,7 +166,10 @@ export const SentenceRow = memo(function SentenceRow({
                     </button>
                 </td>
             )}
-            <td className={cn(tdClass, "font-semibold text-text-h max-w-md")}>{hanDisplay || "—"}</td>
+            <td className={cn(tdClass, "max-w-md")}>
+                <div className="font-semibold text-text-h">{hanDisplay || "—"}</div>
+                {item.jyutping && <div className="text-jyutping text-sm mt-0.5">{item.jyutping}</div>}
+            </td>
             <td className={cn(tdClass, "text-viet max-w-sm")}>{item.vietnamese}</td>
             <td className={cn(tdClass, "text-text max-w-sm")}>{item.english || "—"}</td>
             {canMark && (
@@ -186,7 +195,7 @@ export const SentenceRow = memo(function SentenceRow({
                         type="button"
                         className={cn(
                             uiCompactIconButtonClass,
-                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-text-muted rounded hover:bg-bg hover:text-text-h",
+                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-amber-50 hover:text-amber-600",
                         )}
                         onClick={startEdit}
                         title={t.common.edit}
@@ -197,7 +206,7 @@ export const SentenceRow = memo(function SentenceRow({
                         type="button"
                         className={cn(
                             uiCompactIconButtonClass,
-                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-text-muted rounded hover:bg-bg hover:text-red-600",
+                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-red-50 hover:text-red-600",
                         )}
                         onClick={() => onDelete(item)}
                         title={t.common.delete}

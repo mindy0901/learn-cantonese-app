@@ -11,7 +11,6 @@ import { LessonsPage } from "./pages/LessonsPage.jsx";
 import { FlashcardPage } from "./pages/FlashcardPage.jsx";
 import { HanCharactersPage } from "./pages/HanCharactersPage.jsx";
 import { HanCharacterDetailPage } from "./pages/HanCharacterDetailPage.jsx";
-import { HanLookupPage } from "./pages/HanLookupPage.jsx";
 import { WordBankPage } from "./pages/WordBankPage.jsx";
 import { WordDetailPage } from "./pages/WordDetailPage.jsx";
 import { ErrorPage } from "./pages/ErrorPage.jsx";
@@ -25,8 +24,8 @@ function App() {
                         <Route path="error" element={<ErrorPage />} />
                         <Route element={<CloudGate />}>
                             <Route index element={<HomePage />} />
-                            <Route path="words" element={<WordBankPage />} />
-                            <Route path="words/:id" element={<WordDetailPage />} />
+                            <Route path="vocabulary" element={<WordBankPage />} />
+                            <Route path="vocabulary/:id" element={<WordDetailPage />} />
                             <Route path="grammar" element={<GrammarBankPage />} />
                             <Route path="sentences" element={<SentencePatternsPage />} />
                             <Route path="lessons" element={<LessonsPage />} />
@@ -35,7 +34,6 @@ function App() {
                             <Route path="lessons/:id" element={<LessonDetailPage />} />
                             <Route path="han-characters" element={<HanCharactersPage />} />
                             <Route path="han-characters/:id" element={<HanCharacterDetailPage />} />
-                            <Route path="lookup" element={<HanLookupPage />} />
                             <Route path="flashcard" element={<FlashcardPage />} />
                             <Route path="study" element={<Navigate to="/flashcard" replace />} />
                         </Route>

@@ -25,7 +25,6 @@ pnpm-debug.log*
 .cursor/
 **/.ignored/
 **/.vite/
-backend/supabase/.temp/
 
 # Editor
 .vscode/*

@@ -1,525 +1,949 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { cn } from '../lib/cn.js'
-import { Button, IconButton } from './ui/Button.jsx'
-import { uiInputClass, uiTextareaClass } from './ui/controlStyles.js'
-import { useLocale } from '../store/localeStore.js'
-import { wordLookupDisplay } from '../lib/hanLookup.js'
-import { WordPopularityPicker } from './WordPopularityPicker.jsx'
-import { WordSentenceSuggestions } from './WordSentenceSuggestions.jsx'
-import { WordRelatedLessons } from './WordRelatedLessons.jsx'
-import { WordFieldText } from './WordFieldText.jsx'
-import { buildWordDraft, wordDraftPayload } from './WordEditFields.jsx'
-import { TagInput } from './TagInput.jsx'
-import { normalizePopularity } from '../lib/wordPopularity.js'
-import { normalizeWordFields, wordContentEqual } from '../lib/wordNormalize.js'
-import { useHanCharacters } from '../store/appStore.js'
-import { hanCharacterDetailPath } from '../lib/hanCharacterRoutes.js'
-import { hanziiWordUrl } from '../lib/hanzii.js'
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { cn } from "../lib/cn.js";
+import { Button, IconButton } from "./ui/Button.jsx";
+import { uiInputClass } from "./ui/controlStyles.js";
+import { useLocale } from "../store/localeStore.js";
+import { vocabularyLookupDisplay } from "../lib/hanLookup.js";
+import { diffHanChars } from "../lib/hanScriptDisplay.js";
+import { WordPopularityPicker } from "./WordPopularityPicker.jsx";
+import { WordSentenceSuggestions } from "./WordSentenceSuggestions.jsx";
+import { WordRelatedLessons } from "./WordRelatedLessons.jsx";
+import { WordFieldText } from "./WordFieldText.jsx";
+import { buildWordDraft, wordDraftPayload } from "./WordEditFields.jsx";
+import { MeaningsEditor } from "./WordEditFields.jsx";
+import { TagInput } from "./TagInput.jsx";
+import { normalizePopularity } from "../lib/wordPopularity.js";
+import { normalizeVocabularyFields, vocabularyContentEqual } from "../lib/wordNormalize.js";
+import { useHanCharacters } from "../store/appStore.js";
+import { useVocabularies } from "../store/appStore.js";
+import { hanCharacterDetailPath } from "../lib/hanCharacterRoutes.js";
+import { hanziiWordUrl } from "../lib/hanzii.js";
+import { IconMinus } from "./NavIcons.jsx";
 
-const detailTextClass = 'wd-text m-0 max-w-full leading-normal break-normal'
+const detailTextClass = "wd-text m-0 max-w-full leading-normal break-normal";
 
-const fieldStackClass = 'word-detail-content flex w-full min-w-0 flex-col gap-6'
+const fieldStackClass = "word-detail-content flex w-full min-w-0 flex-col gap-6";
 
-const valueShellClass = 'w-full min-w-0'
+const valueShellClass = "w-full min-w-0";
 
-const subLabelClass = 'wd-sub m-0 font-semibold uppercase tracking-wide text-text-muted'
+const subLabelClass = "wd-sub m-0 font-semibold uppercase tracking-wide text-text-muted text-center";
 
-const hanShellClass =
-  'w-full rounded-xl border border-border/80 bg-surface/80 px-6 py-6 sm:px-7 sm:py-7'
+const hanShellClass = "w-full rounded-xl border border-border/80 bg-surface/80 px-6 py-6 sm:px-7 sm:py-7";
 
-const hanGridClass = 'grid grid-cols-1 items-stretch sm:grid-cols-2 sm:gap-0'
+/** Color-coded HSK level badge: green (1-2) → yellow (3-4) → orange (5-6) → red (7-9) */
+function hskLevelBadgeClass(level) {
+    const match = String(level).match(/(\d+)/);
+    const num = match ? parseInt(match[1], 10) : 0;
+    if (num <= 2)
+        return "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+    if (num <= 4)
+        return "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800";
+    if (num <= 6)
+        return "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800";
+    return "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800";
+}
 
-const hanCellClass = 'flex h-full min-h-0 flex-col gap-3 items-center'
+const hanGridClass = "grid grid-cols-1 items-stretch sm:grid-cols-2 sm:gap-0";
 
-const hanCellBodyClass = 'wd-han-cell-body flex flex-1 flex-col justify-center items-center gap-2.5'
+const hanCellClass = "flex h-full min-h-0 flex-col gap-3 items-center";
 
-const hanGlyphClass = 'wd-han block'
+const hanCellBodyClass = "wd-han-cell-body flex flex-1 flex-col justify-center items-center gap-2.5";
 
-const romanLineClass = cn(
-  detailTextClass,
-  'wd-roman font-semibold not-italic tracking-wide text-jyutping',
-)
+const hanGlyphClass = "wd-han block text-[clamp(3rem,8vw,7rem)] leading-none";
 
-const wordDetailInputClass = cn(uiInputClass, 'wd-input')
+const hanDiffClass = "text-amber-600 dark:text-amber-400";
 
-const actionBarClass = 'grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 min-h-10'
+const romanLineClass = cn(detailTextClass, "wd-roman font-semibold not-italic tracking-wide text-jyutping");
+
+const pinyinLineClass = cn(detailTextClass, "wd-roman font-semibold not-italic tracking-wide text-pinyin");
+
+const wordDetailInputClass = cn(uiInputClass, "wd-input");
+
+/** Highlight characters in text that match the vocabulary word's hanTraditional */
+function highlightVocabChars(exampleText, hanTraditional) {
+    if (!exampleText || !hanTraditional) return exampleText;
+    const chars = [...hanTraditional].filter((ch) => /\p{Script=Han}/u.test(ch));
+    if (chars.length === 0) return exampleText;
+    const pattern = chars.map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+    const regex = new RegExp(`(${pattern})`, "gu");
+    const parts = exampleText.split(regex);
+    return parts.map((part, i) => {
+        if (regex.test(part)) {
+            regex.lastIndex = 0; // reset after test
+            return (
+                <mark
+                    key={i}
+                    className="bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded px-0.5"
+                >
+                    {part}
+                </mark>
+            );
+        }
+        return part;
+    });
+}
+
+/** Parse Hán-Việt into tokens — same logic as WordRow */
+function parseSinoVietnameseTokens(raw) {
+    const parts = String(raw ?? "")
+        .split(/\s+/)
+        .filter(Boolean);
+    const merged = [];
+    let i = 0;
+    while (i < parts.length) {
+        if (parts[i] === "|" || parts[i] === "/" || parts[i] === ",") {
+            if (merged.length > 0) merged[merged.length - 1] += " " + parts[i];
+            i++;
+            while (i < parts.length && parts[i] !== "|" && parts[i] !== "/" && parts[i] !== ",") {
+                merged[merged.length - 1] += " " + parts[i];
+                i++;
+            }
+        } else {
+            merged.push(parts[i]);
+            i++;
+        }
+    }
+    return merged;
+}
+
+/** Split comma/slash-separated string into tokens */
+function splitPronunciation(raw) {
+    return String(raw ?? "")
+        .split(/[,\/、]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
+const actionBarClass = "grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 min-h-10";
 
 const masteredBtnClass = (mastered) =>
-  cn(
-    'transition-[color,background-color,border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-    'active:enabled:scale-[0.98]',
-    mastered
-      ? 'shadow-[0_1px_4px_color-mix(in_srgb,var(--success-text)_18%,transparent)] ring-1 ring-success-border/50'
-      : 'text-text-muted hover:enabled:border-text-muted/40 hover:enabled:text-text-h',
-  )
+    cn(
+        "transition-[color,background-color,border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+        "active:enabled:scale-[0.98]",
+        mastered
+            ? "shadow-[0_1px_4px_color-mix(in_srgb,var(--success-text)_18%,transparent)] ring-1 ring-success-border/50"
+            : "text-text-muted hover:enabled:border-text-muted/40 hover:enabled:text-text-h",
+    );
 
 function DetailField({ valueMinHeight, children }) {
-  return (
-    <div className={cn(valueShellClass, valueMinHeight, 'flex flex-col justify-center')}>{children}</div>
-  )
+    return <div className={cn(valueShellClass, valueMinHeight, "flex flex-col justify-center")}>{children}</div>;
 }
 
 function HanSubField({ label, children, bordered }) {
-  return (
-    <div className={cn(hanCellClass, bordered && 'sm:border-r sm:border-border/60 sm:pr-6')}>
-      <p className={subLabelClass}>{label}</p>
-      <div className={hanCellBodyClass}>{children}</div>
-    </div>
-  )
+    return (
+        <div className={cn(hanCellClass, bordered && "sm:border-r sm:border-border/60 sm:pr-6")}>
+            <p className={subLabelClass}>{label}</p>
+            <div className={hanCellBodyClass}>{children}</div>
+        </div>
+    );
 }
 
-function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, hanTraditional }) {
-  const { t } = useLocale()
-  const navigate = useNavigate()
-  const hanCharacters = useHanCharacters()
+function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, hanTraditional, pinyin, jyutping }) {
+    const { t } = useLocale();
+    const navigate = useNavigate();
+    const hanCharacters = useHanCharacters();
 
-  // Build a lookup map: character → hanCharacter id (prefer simplified match, fallback to traditional)
-  const charIdMap = new Map()
-  for (const hc of hanCharacters) {
-    const simp = (hc.hanSimplified ?? '').trim()
-    const trad = (hc.hanTraditional ?? '').trim()
-    if (simp && !charIdMap.has(simp)) charIdMap.set(simp, hc.id)
-    if (trad && trad !== simp && !charIdMap.has(trad)) charIdMap.set(trad, hc.id)
-  }
-
-  /** Render text as clickable han characters where possible */
-  function renderHanText(text) {
-    if (!text) return null
-    return [...text].map((ch, i) => {
-      const hanId = charIdMap.get(ch)
-      const isHan = /\p{Script=Han}/u.test(ch)
-      if (hanId && isHan) {
-        return (
-          <button
-            key={i}
-            type="button"
-            className="inline cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit leading-tight rounded transition-colors duration-150 hover:text-accent hover:bg-accent/10 focus:outline-2 focus:outline-accent focus:outline-offset-2"
-            onClick={(e) => { e.stopPropagation(); navigate(hanCharacterDetailPath(hanId)) }}
-            title={`${ch} — ${t.hanCharacters?.viewDetail ?? 'Xem chi tiết'}`}
-          >
-            {ch}
-          </button>
-        )
-      }
-      return <span key={i}>{ch}</span>
-    })
-  }
-
-  // When trad === simp, collapse to single column (common for characters like 人, 大, etc.)
-  const same = display.traditional === (display.simplified || display.traditional)
-  const gridClass = same ? 'grid-cols-1' : 'sm:grid-cols-2'
-  const shellClass = same ? 'py-6' : hanShellClass
-
-  if (editing) {
-    if (same) {
-      return (
-        <div className={shellClass}>
-          <div className="flex flex-col gap-3">
-            <input
-              className={cn(wordDetailInputClass, 'text-red-600 dark:text-red-400')}
-              value={draft.hanTraditional}
-              onChange={(e) => onDraftChange('hanTraditional', e.target.value)}
-            />
-            <TagInput
-              value={draft.jyutping ?? ''}
-              onChange={(v) => onDraftChange('jyutping', v)}
-              className="font-semibold text-jyutping"
-              placeholder={t.wordBank.colJyutping}
-            />
-            <TagInput
-              value={draft.pinyin ?? ''}
-              onChange={(v) => onDraftChange('pinyin', v)}
-              className="font-semibold text-jyutping"
-              placeholder={t.wordBank.colPinyin}
-            />
-          </div>
-        </div>
-      )
+    // Build a lookup map: character → hanCharacter id (prefer simplified match, fallback to traditional)
+    const charIdMap = new Map();
+    for (const hc of hanCharacters) {
+        const simp = (hc.hanSimplified ?? "").trim();
+        const trad = (hc.hanTraditional ?? "").trim();
+        if (simp && !charIdMap.has(simp)) charIdMap.set(simp, hc.id);
+        if (trad && trad !== simp && !charIdMap.has(trad)) charIdMap.set(trad, hc.id);
     }
-    return (
-      <div className={shellClass}>
-        <div className={cn(hanGridClass, gridClass)}>
-          <HanSubField label={t.wordBank.colHanSimplified} bordered>
-            <input
-              className={cn(wordDetailInputClass, 'font-semibold text-han')}
-              value={draft.hanSimplified ?? ''}
-              onChange={(e) => onDraftChange('hanSimplified', e.target.value)}
-            />
-            <TagInput
-              value={draft.pinyin ?? ''}
-              onChange={(v) => onDraftChange('pinyin', v)}
-              className="font-semibold text-jyutping"
-              placeholder={t.wordBank.colPinyin}
-            />
-          </HanSubField>
-          <HanSubField label={t.hanLookup.traditionalHk}>
-            <input
-              className={cn(wordDetailInputClass, 'text-red-600 dark:text-red-400')}
-              value={draft.hanTraditional}
-              onChange={(e) => onDraftChange('hanTraditional', e.target.value)}
-            />
-            <TagInput
-              value={draft.jyutping ?? ''}
-              onChange={(v) => onDraftChange('jyutping', v)}
-              className="font-semibold text-jyutping"
-              placeholder={t.wordBank.colJyutping}
-            />
-          </HanSubField>
-        </div>
-      </div>
-    )
-  }
 
-  if (same) {
-    const hasJyutping = display.jyutping && display.jyutping !== '—'
-    const hasPinyin = display.pinyin && display.pinyin !== '—'
-    return (
-      <div className={shellClass}>
-        <div className="flex flex-col items-center gap-2.5">
-          <div className="relative inline-flex">
-            <span className={cn(hanGlyphClass, 'font-semibold text-han')}>
-              {renderHanText(display.traditional)}
-            </span>
-            <a
-              href={hanziiWordUrl(hanTraditional, locale) ?? '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="absolute -top-1.5 -right-10 inline-flex items-center justify-center size-8 rounded text-sm font-bold text-accent no-underline leading-none hover:text-accent-hover hover:bg-accent/10"
-              title={t.wordDetail.openHanzii?.replace('{hanTraditional}', hanTraditional) ?? 'Tra Hanzii'}
-              aria-label={t.wordDetail.openHanzii?.replace('{hanTraditional}', hanTraditional) ?? 'Tra Hanzii'}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            </a>
-          </div>
-          {hasJyutping && hasPinyin ? (
-            <div className="flex items-center gap-3">
-              <span className={romanLineClass}>{display.pinyin}</span>
-              <span className="text-text-muted select-none">|</span>
-              <span className={romanLineClass}>{display.jyutping}</span>
-            </div>
-          ) : (
-            <>
-              <p className={romanLineClass}>{display.jyutping || '—'}</p>
-              {display.pinyin && <p className={romanLineClass}>{display.pinyin}</p>}
-            </>
-          )}
-        </div>
-      </div>
-    )
-  }
+    /** Render text as clickable han characters where possible */
+    function renderHanText(text) {
+        if (!text) return null;
+        return [...text].map((ch, i) => {
+            const hanId = charIdMap.get(ch);
+            const isHan = /\p{Script=Han}/u.test(ch);
+            if (hanId && isHan) {
+                return (
+                    <button
+                        key={i}
+                        type="button"
+                        className="inline cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit leading-tight rounded transition-opacity duration-150 hover:opacity-80 focus:outline-2 focus:outline-accent focus:outline-offset-2"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(hanCharacterDetailPath(hanId));
+                        }}
+                        title={`${ch} — ${t.hanCharacters?.viewDetail ?? "Xem chi tiết"}`}
+                    >
+                        {ch}
+                    </button>
+                );
+            }
+            return <span key={i}>{ch}</span>;
+        });
+    }
 
-  return (
-    <div className={shellClass}>
-      <div className={cn(hanGridClass, gridClass)}>
-        <div>
-          <HanSubField label={t.wordBank.colHanSimplified} bordered>
-            <div className="relative inline-flex">
-              <span className={cn(hanGlyphClass, 'font-semibold text-han')}>
-                {renderHanText(display.simplified || display.traditional)}
-              </span>
-              <a
-                href={hanziiWordUrl(display.simplified || display.traditional, locale) ?? '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute -top-0.5 -right-8 inline-flex items-center justify-center size-7 rounded text-xs font-bold text-accent no-underline leading-none hover:text-accent-hover hover:bg-accent/10"
-                title={t.wordDetail.openHanzii?.replace('{hanTraditional}', display.simplified || display.traditional) ?? 'Tra Hanzii'}
-                aria-label={t.wordDetail.openHanzii?.replace('{hanTraditional}', display.simplified || display.traditional) ?? 'Tra Hanzii'}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              </a>
+    /** Render text with per-character diff highlighting */
+    function renderHanWithDiff(text, diffChars) {
+        if (!text) return null;
+        const hasDiff = diffChars && diffChars.length > 0 && text.length > 1;
+        if (!hasDiff) return renderHanText(text);
+        return diffChars.map((c, i) => {
+            const ch = c.char;
+            const hanId = charIdMap.get(ch);
+            const isHan = /\p{Script=Han}/u.test(ch);
+            if (hanId && isHan) {
+                return (
+                    <button
+                        key={i}
+                        type="button"
+                        className={cn(
+                            "inline cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit leading-tight rounded transition-opacity duration-150 hover:opacity-80 focus:outline-2 focus:outline-accent focus:outline-offset-2",
+                            !c.same && hanDiffClass,
+                        )}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(hanCharacterDetailPath(hanId));
+                        }}
+                        title={`${ch} — ${t.hanCharacters?.viewDetail ?? "Xem chi tiết"}`}
+                    >
+                        {ch}
+                    </button>
+                );
+            }
+            return (
+                <span key={i} className={cn(!c.same && hanDiffClass)}>
+                    {ch}
+                </span>
+            );
+        });
+    }
+
+    // When trad === simp, collapse to single column (common for characters like 人, 大, etc.)
+    const same = display.traditional === (display.simplified || display.traditional);
+    const hanDiff = same ? null : diffHanChars({ traditional: display.traditional, simplified: display.simplified });
+    const gridClass = same ? "grid-cols-1" : "sm:grid-cols-2";
+    const shellClass = same ? "py-6" : hanShellClass;
+
+    if (editing) {
+        const hanEditClass =
+            "w-full px-1 py-3 font-semibold text-han bg-transparent border-0 border-b-2 border-border outline-none transition-colors focus:border-accent-border text-center";
+        if (same) {
+            return (
+                <div className={shellClass}>
+                    <div className="flex flex-col gap-3">
+                        <input
+                            className={hanEditClass}
+                            style={{ fontSize: 48 }}
+                            value={draft.hanTraditional}
+                            onChange={(e) => onDraftChange("hanTraditional", e.target.value)}
+                        />
+                    </div>
+                </div>
+            );
+        }
+        return (
+            <div className={shellClass}>
+                <div className={cn(hanGridClass, gridClass)}>
+                    <HanSubField label={t.wordBank.colHanSimplified} bordered>
+                        <input
+                            className={hanEditClass}
+                            style={{ fontSize: 48 }}
+                            value={draft.hanSimplified ?? ""}
+                            onChange={(e) => onDraftChange("hanSimplified", e.target.value)}
+                        />
+                    </HanSubField>
+                    <div className="sm:pl-6">
+                        <HanSubField label={t.hanLookup.traditionalHk}>
+                            <input
+                                className={hanEditClass}
+                                style={{ fontSize: 48 }}
+                                value={draft.hanTraditional}
+                                onChange={(e) => onDraftChange("hanTraditional", e.target.value)}
+                            />
+                        </HanSubField>
+                    </div>
+                </div>
             </div>
-            <p className={romanLineClass}>{display.pinyin || '—'}</p>
-          </HanSubField>
-        </div>
-        <div className="sm:pl-6">
-          <HanSubField label={t.hanLookup.traditionalHk}>
-            <div className="relative inline-flex">
-              <span className={cn(hanGlyphClass, 'font-semibold text-han')}>
-                {renderHanText(display.traditional)}
-              </span>
-              <a
-                href={hanziiWordUrl(display.traditional, locale) ?? '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute -top-0.5 -right-8 inline-flex items-center justify-center size-7 rounded text-xs font-bold text-accent no-underline leading-none hover:text-accent-hover hover:bg-accent/10"
-                title={t.wordDetail.openHanzii?.replace('{hanTraditional}', display.traditional) ?? 'Tra Hanzii'}
-                aria-label={t.wordDetail.openHanzii?.replace('{hanTraditional}', display.traditional) ?? 'Tra Hanzii'}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              </a>
+        );
+    }
+
+    if (same) {
+        return (
+            <div className={shellClass}>
+                <div className="flex flex-col items-center gap-2.5">
+                    <div className="relative inline-flex">
+                        <span className={cn(hanGlyphClass, "font-semibold text-han")}>
+                            {renderHanText(display.traditional)}
+                        </span>
+                        <a
+                            href={hanziiWordUrl(hanTraditional, locale) ?? "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute -top-1.5 -right-20 inline-flex items-center justify-center size-8 rounded text-sm font-bold text-accent no-underline leading-none hover:text-accent-hover hover:bg-accent/10"
+                            title={t.wordDetail.openHanzii?.replace("{hanTraditional}", hanTraditional) ?? "Tra Hanzii"}
+                            aria-label={
+                                t.wordDetail.openHanzii?.replace("{hanTraditional}", hanTraditional) ?? "Tra Hanzii"
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <svg
+                                width="21"
+                                height="21"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="16" x2="12" y2="12" />
+                                <line x1="12" y1="8" x2="12.01" y2="8" />
+                            </svg>
+                        </a>
+                        <a
+                            href={`https://translate.google.com/?sl=yue&tl=vi&text=${encodeURIComponent(hanTraditional || "")}&op=translate`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute -top-1.5 -right-10 inline-flex items-center justify-center size-8 rounded text-sm font-bold text-blue-600 no-underline leading-none hover:text-blue-700 hover:bg-blue-50"
+                            title={`Dịch "${hanTraditional}" (Cantonese → Việt)`}
+                            aria-label={`Dịch "${hanTraditional}" (Cantonese → Việt)`}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            G
+                        </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className={pinyinLineClass}>
+                            {pinyin || <span className="italic text-text-muted">đang cập nhật</span>}
+                        </span>
+                        {jyutping && <span className="text-text-muted text-sm">·</span>}
+                        <span className={romanLineClass}>{jyutping || ""}</span>
+                    </div>
+                </div>
             </div>
-            <p className={romanLineClass}>{display.jyutping || '—'}</p>
-          </HanSubField>
+        );
+    }
+
+    return (
+        <div className={shellClass}>
+            <div className={cn(hanGridClass, gridClass)}>
+                <div>
+                    <HanSubField label={t.wordBank.colHanSimplified} bordered>
+                        <span className={cn(hanGlyphClass, "font-semibold text-han")}>
+                            {hanDiff
+                                ? renderHanWithDiff(display.simplified || display.traditional, hanDiff.simp)
+                                : renderHanText(display.simplified || display.traditional)}
+                        </span>
+                        <p className={cn(pinyinLineClass, "text-center mt-1")}>
+                            {pinyin || <span className="italic text-text-muted">đang cập nhật</span>}
+                        </p>
+                    </HanSubField>
+                </div>
+                <div className="sm:pl-6">
+                    <HanSubField label={t.hanLookup.traditionalHk}>
+                        <span className={cn(hanGlyphClass, "font-semibold text-han")}>
+                            {hanDiff
+                                ? renderHanWithDiff(display.traditional, hanDiff.trad)
+                                : renderHanText(display.traditional)}
+                        </span>
+                        <p className={cn(romanLineClass, "text-center mt-1")}>{jyutping || ""}</p>
+                    </HanSubField>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  )
+    );
 }
 
 export function WordDetailContent({
-  word,
-  onToggleImportant,
-  onToggleMastered,
-  onSetPopularity,
-  canEdit,
-  onSave,
-  onNextRandom,
-  relatedLessons = [],
+    word,
+    onToggleImportant,
+    onToggleMastered,
+    onSetPopularity,
+    canEdit,
+    onSave,
+    onNextRandom,
+    relatedLessons = [],
+    initialEditing = false,
 }) {
-  const { t, locale } = useLocale()
-  const display = wordLookupDisplay(word)
+    const { t, locale } = useLocale();
+    const display = vocabularyLookupDisplay(word);
+    const vocabularies = useVocabularies();
 
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(() => buildWordDraft(word))
-  const [validationError, setValidationError] = useState('')
-  const [localPopularity, setLocalPopularity] = useState(() => normalizePopularity(word.popularity))
-  const showPopularity = onSetPopularity || localPopularity !== null
-  const detailText = word.vietnameseDetail?.trim()
-  const showDetailField = editing || Boolean(detailText)
+    const [editing, setEditing] = useState(initialEditing);
+    const [draft, setDraft] = useState(() => buildWordDraft(word));
+    const [validationError, setValidationError] = useState("");
+    const [duplicateWarning, setDuplicateWarning] = useState(null);
+    const [duplicateDetailOpen, setDuplicateDetailOpen] = useState(false);
+    const [localPopularity, setLocalPopularity] = useState(() => normalizePopularity(word.popularity));
+    const [pairCount, setPairCount] = useState(() => {
+        const svLen = parseSinoVietnameseTokens(word.sinoVietnamese).length;
+        const pyLen = String(word.pinyin ?? "")
+            .split(/[,\/、]+/)
+            .filter(Boolean).length;
+        const jpLen = String(word.jyutping ?? "")
+            .split(/\s+/)
+            .filter(Boolean).length;
+        return Math.max(svLen, pyLen, jpLen, 1);
+    });
+    const [expandedExamples, setExpandedExamples] = useState(new Set());
+    const showPopularity = onSetPopularity || localPopularity !== null;
 
-  useEffect(() => {
-    setLocalPopularity(normalizePopularity(word.popularity))
-    if (!editing) setDraft(buildWordDraft(word))
-  }, [word, editing])
+    useEffect(() => {
+        setLocalPopularity(normalizePopularity(word.popularity));
+        if (!editing) setDraft(buildWordDraft(word));
+    }, [word, editing]);
 
-  const setDraftField = (field, value) => {
-    setDraft((d) => ({ ...d, [field]: value }))
-    if (validationError) setValidationError('')
-  }
+    // Duplicate check for add mode: warn if hanTraditional already exists
+    const isAddMode = !word.hanTraditional?.trim();
+    useEffect(() => {
+        if (!isAddMode || !editing) {
+            setDuplicateWarning(null);
+            return;
+        }
+        const han = (draft.hanTraditional || "").trim();
+        if (!han) {
+            setDuplicateWarning(null);
+            return;
+        }
+        const norm = han.replace(/\s+/g, "");
+        const matches = vocabularies.filter((v) => (v.hanTraditional || "").replace(/\s+/g, "") === norm);
+        if (matches.length > 0) {
+            setDuplicateWarning(matches);
+        } else {
+            setDuplicateWarning(null);
+        }
+    }, [draft.hanTraditional, isAddMode, editing, vocabularies]);
 
-  const handlePopularityChange = (level) => {
-    const next = normalizePopularity(level)
-    const prev = localPopularity
-    setLocalPopularity(next)
-    const result = onSetPopularity?.(word, next)
-    if (result?.then) {
-      result.catch(() => setLocalPopularity(prev))
-    }
-  }
+    const setDraftField = (field, value) => {
+        setDraft((d) => ({ ...d, [field]: value }));
+        if (validationError) setValidationError("");
+    };
 
-  const startEdit = () => {
-    setDraft(buildWordDraft(word))
-    setValidationError('')
-    setEditing(true)
-  }
+    const handlePopularityChange = (level) => {
+        const next = normalizePopularity(level);
+        const prev = localPopularity;
+        setLocalPopularity(next);
+        const result = onSetPopularity?.(word, next);
+        if (result?.then) {
+            result.catch(() => setLocalPopularity(prev));
+        }
+    };
 
-  const cancelEdit = () => {
-    setDraft(buildWordDraft(word))
-    setValidationError('')
-    setEditing(false)
-  }
+    const startEdit = () => {
+        setDraft(buildWordDraft(word));
+        setValidationError("");
+        const svLen = parseSinoVietnameseTokens(word.sinoVietnamese).length;
+        const pyLen = String(word.pinyin ?? "")
+            .split(/[,\/、]+/)
+            .filter(Boolean).length;
+        const jpLen = String(word.jyutping ?? "")
+            .split(/\s+/)
+            .filter(Boolean).length;
+        setPairCount(Math.max(svLen, pyLen, jpLen, 1));
+        setEditing(true);
+    };
 
-  const saveEdit = () => {
-    if (!draft.hanTraditional.trim() || !(draft.jyutping ?? '').trim()) {
-      setValidationError(t.addWord.requiredFields)
-      return
-    }
-    const payload = wordDraftPayload(draft)
-    if (wordContentEqual(word, normalizeWordFields({ ...word, ...payload }))) {
-      setEditing(false)
-      return
-    }
-    onSave?.(word, payload)
-    setEditing(false)
-  }
+    const cancelEdit = () => {
+        setDraft(buildWordDraft(word));
+        setValidationError("");
+        setEditing(false);
+    };
 
-  const handleFormKeyDown = (e) => {
-    if (!editing) return
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      cancelEdit()
-    } else if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-      e.preventDefault()
-      saveEdit()
-    }
-  }
+    const saveEdit = async () => {
+        if (!draft.hanTraditional.trim() || (!(draft.jyutping ?? "").trim() && !(draft.pinyin ?? "").trim())) {
+            setValidationError(t.addWord.requiredFields);
+            return;
+        }
+        const payload = wordDraftPayload(draft);
+        if (vocabularyContentEqual(word, normalizeVocabularyFields({ ...word, ...payload }))) {
+            setEditing(false);
+            return;
+        }
+        try {
+            await onSave?.(word, payload);
+            setEditing(false);
+        } catch (err) {
+            setValidationError(err instanceof Error ? err.message : String(err));
+        }
+    };
 
-  const important = word.important
+    const handleFormKeyDown = (e) => {
+        if (!editing) return;
+        if (e.key === "Escape") {
+            e.preventDefault();
+            cancelEdit();
+        } else if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
+            e.preventDefault();
+            saveEdit();
+        }
+    };
 
-  return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-7" onKeyDown={handleFormKeyDown}>
-      <div className={cn(actionBarClass, 'shrink-0')}>
-        <div className="flex justify-start">
-          {onToggleImportant && !editing ? (
-            <IconButton
-              className={important ? 'text-yellow-500' : 'text-text-muted'}
-              onClick={() => onToggleImportant(word)}
-              aria-label={important ? t.wordBank.unmarkImportant : t.wordBank.markImportant}
-              title={important ? t.wordBank.unmarkImportant : t.wordBank.markImportant}
-              aria-pressed={important}
-            >
-              ★
-            </IconButton>
-          ) : null}
-        </div>
-        <div aria-hidden="true" />
-        <div className="flex justify-end">
-          {onToggleMastered && !editing ? (
-            <Button
-              variant={word.mastered ? 'success' : 'ghost'}
-              className={masteredBtnClass(word.mastered)}
-              onClick={() => onToggleMastered(word)}
-              aria-label={word.mastered ? t.wordDetail.unmarkMastered : t.wordDetail.mastered}
-              title={word.mastered ? t.wordDetail.unmarkMastered : t.wordDetail.mastered}
-              aria-pressed={word.mastered}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  className={cn(
-                    'inline-flex shrink-0 overflow-hidden transition-[width,opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-                    word.mastered ? 'w-[1em] translate-x-0 opacity-100' : 'w-0 -translate-x-1 opacity-0',
-                  )}
-                  aria-hidden
+    const important = word.important;
+
+    return (
+        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3" onKeyDown={handleFormKeyDown}>
+            <div className={cn(actionBarClass, "shrink-0")}>
+                <div className="flex justify-start">
+                    {onToggleImportant && !editing ? (
+                        <IconButton
+                            className={important ? "text-yellow-500" : "text-text-muted"}
+                            onClick={() => onToggleImportant(word)}
+                            aria-label={important ? t.wordBank.unmarkImportant : t.wordBank.markImportant}
+                            title={important ? t.wordBank.unmarkImportant : t.wordBank.markImportant}
+                            aria-pressed={important}
+                        >
+                            ★
+                        </IconButton>
+                    ) : null}
+                </div>
+                <div className="flex items-center gap-2">
+                    {editing && word.hanTraditional?.trim() && (
+                        <a
+                            href={hanziiWordUrl(word.hanTraditional.trim(), locale)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                                "inline-flex items-center justify-center size-7 rounded-lg",
+                                "text-xs font-bold no-underline",
+                                "bg-surface border border-border text-text-muted",
+                                "hover:border-accent-border hover:text-accent hover:bg-accent-bg",
+                                "transition-all duration-200",
+                            )}
+                            title={`Tra "${word.hanTraditional.trim()}" trên Hanzii`}
+                        >
+                            ⓘ
+                        </a>
+                    )}
+                </div>
+                <div className="flex justify-end">
+                    {editing ? (
+                        <select
+                            className="rounded-full border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-3 py-1 outline-none cursor-pointer"
+                            value={draft.hskLevel ?? ""}
+                            onChange={(e) => setDraftField("hskLevel", e.target.value || undefined)}
+                        >
+                            <option value="">— Cấp độ —</option>
+                            <option value="HSK 1">HSK 1</option>
+                            <option value="HSK 2">HSK 2</option>
+                            <option value="HSK 3">HSK 3</option>
+                            <option value="HSK 4">HSK 4</option>
+                            <option value="HSK 5">HSK 5</option>
+                            <option value="HSK 6">HSK 6</option>
+                            <option value="HSK 7-9">HSK 7-9</option>
+                        </select>
+                    ) : word.hskLevel ? (
+                        <span
+                            className={cn(
+                                "inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full border",
+                                hskLevelBadgeClass(word.hskLevel),
+                            )}
+                        >
+                            {word.hskLevel}
+                        </span>
+                    ) : null}
+                </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col gap-3">
+                <div
+                    className={cn(
+                        "mx-auto flex w-full min-w-0 flex-1 flex-col justify-start items-start",
+                        fieldStackClass,
+                    )}
                 >
-                  ✓
-                </span>
-                {t.wordDetail.mastered}
-              </span>
-            </Button>
-          ) : null}
+                    {/* Sino-Vietnamese above han characters */}
+                    {!editing && (
+                        <DetailField>
+                            <p className={cn(detailTextClass, "text-viet font-medium text-center")}>
+                                <WordFieldText
+                                    word={word}
+                                    field="sinoVietnamese"
+                                    updatingLabel={t.wordBank.fieldUpdating}
+                                />
+                            </p>
+                        </DetailField>
+                    )}
+
+                    <WordHanRomanBlock
+                        editing={editing}
+                        draft={draft}
+                        display={display}
+                        onDraftChange={setDraftField}
+                        locale={locale}
+                        hanTraditional={word.hanTraditional}
+                        pinyin={display.pinyin}
+                        jyutping={display.jyutping}
+                    />
+
+                    {editing
+                        ? (() => {
+                              const svTokens = parseSinoVietnameseTokens(draft.sinoVietnamese);
+                              const pyTokens = String(draft.pinyin ?? "")
+                                  .split(/[,\/、]+/)
+                                  .map((s) => s.trim());
+                              const jpTokens = String(draft.jyutping ?? "")
+                                  .split(/[,\/、]+/)
+                                  .map((s) => (s.trim() === "-" ? "" : s.trim()));
+
+                              const handlePairedChange = (idx, field, value) => {
+                                  if (field === "sv") {
+                                      const sv = [...Array(Math.max(idx + 1, pairCount))].map(
+                                          (_, i) => svTokens[i] || "",
+                                      );
+                                      sv[idx] = value;
+                                      setDraftField("sinoVietnamese", sv.join(" "));
+                                  } else if (field === "py") {
+                                      const py = [...Array(Math.max(idx + 1, pairCount))].map(
+                                          (_, i) => pyTokens[i] || "",
+                                      );
+                                      py[idx] = value;
+                                      setDraftField("pinyin", py.join(" / "));
+                                  } else if (field === "jp") {
+                                      const jp = [...Array(Math.max(idx + 1, pairCount))].map(
+                                          (_, i) => jpTokens[i] || "",
+                                      );
+                                      jp[idx] = value || "-";
+                                      setDraftField("jyutping", jp.map((v) => v || "-").join(" / "));
+                                  }
+                              };
+
+                              const handleAddRow = (e) => {
+                                  e.preventDefault();
+                                  setPairCount((n) => n + 1);
+                              };
+
+                              const handleRemoveRow = (idx) => {
+                                  if (pairCount <= 1) return;
+                                  // Remove the slot from all three fields
+                                  const sv = svTokens.filter((_, i) => i !== idx);
+                                  const py = pyTokens.filter((_, i) => i !== idx);
+                                  const jp = jpTokens.filter((_, i) => i !== idx);
+                                  setDraftField("sinoVietnamese", sv.join(" "));
+                                  setDraftField("pinyin", py.join(" / "));
+                                  setDraftField("jyutping", jp.map((v) => v || "-").join(" / "));
+                                  setPairCount((n) => n - 1);
+                              };
+
+                              return (
+                                  <div className="w-full rounded-xl border border-border/80 bg-surface/80 px-4 py-4">
+                                      <div
+                                          className="grid gap-y-1.5"
+                                          style={{ gridTemplateColumns: "1fr 1fr 1fr auto" }}
+                                      >
+                                          <p className={cn(subLabelClass, "text-center text-xs")}>
+                                              {t.wordBank.colSinoVietnamese}
+                                          </p>
+                                          <p className={cn(subLabelClass, "text-center text-xs")}>
+                                              {t.wordBank.colPinyin}
+                                          </p>
+                                          <p className={cn(subLabelClass, "text-center text-xs")}>
+                                              {t.wordBank.colJyutping}
+                                          </p>
+                                          <span />
+                                          {Array.from({ length: pairCount }, (_, i) => (
+                                              <div key={i} className="contents">
+                                                  <input
+                                                      className={cn(
+                                                          wordDetailInputClass,
+                                                          "text-center rounded-none border-x-0 border-t-0",
+                                                      )}
+                                                      value={svTokens[i] || ""}
+                                                      onChange={(e) => handlePairedChange(i, "sv", e.target.value)}
+                                                  />
+                                                  <input
+                                                      className={cn(
+                                                          wordDetailInputClass,
+                                                          "text-center rounded-none border-x-0 border-t-0",
+                                                      )}
+                                                      value={pyTokens[i] || ""}
+                                                      onChange={(e) => handlePairedChange(i, "py", e.target.value)}
+                                                  />
+                                                  <input
+                                                      className={cn(
+                                                          wordDetailInputClass,
+                                                          "text-center rounded-none border-x-0 border-t-0",
+                                                      )}
+                                                      value={jpTokens[i] || ""}
+                                                      onChange={(e) => handlePairedChange(i, "jp", e.target.value)}
+                                                  />
+                                                  {pairCount > 1 && (
+                                                      <button
+                                                          type="button"
+                                                          className="inline-flex items-center justify-center size-6 rounded border bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900 transition-colors self-center"
+                                                          onClick={() => handleRemoveRow(i)}
+                                                          title="Xóa hàng"
+                                                      >
+                                                          <IconMinus size={12} />
+                                                      </button>
+                                                  )}
+                                              </div>
+                                          ))}
+                                      </div>
+                                      <div className="pt-4 flex justify-center">
+                                          <button
+                                              type="button"
+                                              className="inline-flex items-center gap-1 rounded-md border bg-success-bg text-success-text border-success-border px-2 py-1 text-xs font-medium transition-colors hover:enabled:bg-success-bg hover:enabled:border-success-text"
+                                              onClick={handleAddRow}
+                                          >
+                                              <svg
+                                                  width="10"
+                                                  height="10"
+                                                  viewBox="0 0 24 24"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  strokeWidth="2.5"
+                                                  strokeLinecap="round"
+                                              >
+                                                  <line x1="12" y1="5" x2="12" y2="19" />
+                                                  <line x1="5" y1="12" x2="19" y2="12" />
+                                              </svg>
+                                              Thêm hàng
+                                          </button>
+                                      </div>
+                                  </div>
+                              );
+                          })()
+                        : null}
+
+                    {editing ? (
+                        <div className="w-full">
+                            <MeaningsEditor
+                                meanings={draft.meanings ?? []}
+                                onChange={(newMeanings) => setDraftField("meanings", newMeanings)}
+                            />
+                        </div>
+                    ) : (word.meanings ?? []).length > 0 ? (
+                        <div className="w-full flex flex-col gap-5 mt-2">
+                            {(() => {
+                                const groups = new Map();
+                                for (const m of word.meanings) {
+                                    const cat = (m.category ?? "").trim() || "Nghĩa";
+                                    if (!groups.has(cat)) groups.set(cat, []);
+                                    groups.get(cat).push(m);
+                                }
+                                return [...groups.entries()].map(([category, items]) => (
+                                    <div key={category} className="rounded-xl border border-border/60 bg-bg/50 p-4">
+                                        <h3 className="text-sm font-semibold text-violet-600 dark:text-violet-400 mb-3">
+                                            {category}
+                                        </h3>
+                                        <div className="flex flex-col gap-4">
+                                            {items.map((m, i) => (
+                                                <div key={m.id || i} className="pl-3 border-l-2 border-border/40">
+                                                    <div className="flex items-baseline gap-2 mb-1">
+                                                        <span className="text-xs font-semibold text-accent">
+                                                            {i + 1}.
+                                                        </span>
+                                                        <span className="text-sm font-semibold text-viet">
+                                                            {m.vietMeanings || "—"}
+                                                        </span>
+                                                    </div>
+                                                    {m.engMeanings?.trim() && (
+                                                        <div className="flex items-baseline gap-2 mb-1">
+                                                            <span className="text-xs font-semibold invisible">1.</span>
+                                                            <span className="text-sm text-blue-600 dark:text-blue-400">
+                                                                {m.engMeanings}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {(m.examples ?? []).length > 0 && (
+                                                        <div className="mt-2 ml-4">
+                                                            <button
+                                                                type="button"
+                                                                className="inline-flex items-center gap-1 text-xs text-accent font-semibold hover:underline mb-2"
+                                                                onClick={() =>
+                                                                    setExpandedExamples((prev) => {
+                                                                        const next = new Set(prev);
+                                                                        const key = m.id || i;
+                                                                        if (next.has(key)) next.delete(key);
+                                                                        else next.add(key);
+                                                                        return next;
+                                                                    })
+                                                                }
+                                                            >
+                                                                {expandedExamples.has(m.id || i) ? "▾" : "▸"} Ví dụ (
+                                                                {(m.examples ?? []).length})
+                                                            </button>
+                                                            {expandedExamples.has(m.id || i) && (
+                                                                <div className="flex flex-col gap-2">
+                                                                    {m.examples.map((ex, j) => (
+                                                                        <div
+                                                                            key={ex.id || j}
+                                                                            className="rounded-lg border border-border/40 bg-surface p-2.5"
+                                                                        >
+                                                                            {ex.hanExample?.trim() && (
+                                                                                <p className="text-sm text-red-600 dark:text-red-400 mb-1">
+                                                                                    {highlightVocabChars(
+                                                                                        ex.hanExample,
+                                                                                        word.hanTraditional,
+                                                                                    )}
+                                                                                </p>
+                                                                            )}
+                                                                            {ex.pinyinExample?.trim() && (
+                                                                                <p className="text-xs text-pinyin font-semibold mb-1">
+                                                                                    {ex.pinyinExample}
+                                                                                </p>
+                                                                            )}
+                                                                            {ex.jyutpingExample?.trim() && (
+                                                                                <p className="text-xs text-jyutping font-semibold mb-1">
+                                                                                    {ex.jyutpingExample}
+                                                                                </p>
+                                                                            )}
+                                                                            {ex.vietExamples?.trim() && (
+                                                                                <p className="text-sm text-viet">
+                                                                                    {ex.vietExamples}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ));
+                            })()}
+                        </div>
+                    ) : canEdit ? (
+                        <p className="text-sm text-text-muted italic py-2">
+                            Chưa có nghĩa & ví dụ. Nhấn <strong>Sửa</strong> để thêm.
+                        </p>
+                    ) : null}
+
+                    {duplicateWarning && editing && (
+                        <button
+                            type="button"
+                            className="m-0 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-left hover:bg-yellow-500/20 transition-colors cursor-pointer"
+                            onClick={() => setDuplicateDetailOpen(true)}
+                        >
+                            <p className="text-yellow-600 dark:text-yellow-400 font-medium">
+                                ⚠ Từ này đã có trong kho ({duplicateWarning.length} bản ghi) — Nhấn để xem chi tiết
+                            </p>
+                        </button>
+                    )}
+
+                    {duplicateDetailOpen && duplicateWarning && (
+                        <div
+                            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4"
+                            onClick={() => setDuplicateDetailOpen(false)}
+                        >
+                            <div
+                                className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl bg-surface shadow-xl p-6 flex flex-col gap-4"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <p className="text-text-h font-semibold">
+                                        Từ "{duplicateWarning[0].hanTraditional}" đã có {duplicateWarning.length} bản
+                                        ghi
+                                    </p>
+                                    <button
+                                        className="inline-flex items-center justify-center size-8 rounded-lg text-text-muted hover:bg-bg hover:text-text-h transition-colors"
+                                        onClick={() => setDuplicateDetailOpen(false)}
+                                    >
+                                        <IconMinus size={16} />
+                                    </button>
+                                </div>
+                                <div className="flex flex-col gap-3">
+                                    {duplicateWarning.map((v, i) => (
+                                        <div key={v.id} className="rounded-lg border border-border bg-bg p-3 text-sm">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs font-semibold text-text-muted">#{i + 1}</span>
+                                                <span className="text-han font-semibold">{v.hanTraditional}</span>
+                                                {v.hskLevel && (
+                                                    <span className="text-xs text-text-muted border border-border rounded-full px-2 py-0.5">
+                                                        {v.hskLevel}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-text-muted">
+                                                {v.pinyin && (
+                                                    <span>
+                                                        Pinyin:{" "}
+                                                        <span className="text-pinyin font-medium">{v.pinyin}</span>
+                                                    </span>
+                                                )}
+                                                {v.jyutping && (
+                                                    <span>
+                                                        Jyutping:{" "}
+                                                        <span className="text-jyutping font-medium">{v.jyutping}</span>
+                                                    </span>
+                                                )}
+                                                {v.sinoVietnamese && (
+                                                    <span>
+                                                        Hán-Việt:{" "}
+                                                        <span className="text-viet font-medium">
+                                                            {v.sinoVietnamese}
+                                                        </span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {v.vietMeanings && (
+                                                <p className="text-viet text-xs mt-1">{v.vietMeanings}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-sm text-text-muted">
+                                    Bạn vẫn có thể thêm phiên âm mới, hoặc đóng popup này và sửa từ đã có.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {validationError && (
+                        <p
+                            className="m-0 rounded-lg border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text"
+                            role="alert"
+                        >
+                            {validationError}
+                        </p>
+                    )}
+                </div>
+
+                <div className="mx-auto flex w-full min-w-0 flex-col gap-6">
+                    <WordSentenceSuggestions word={word} />
+                    <WordRelatedLessons lessons={relatedLessons} />
+                </div>
+            </div>
+
+            <div className={cn(actionBarClass, "mt-auto shrink-0")}>
+                <div className="flex justify-start">
+                    {canEdit && onSave && !editing && (
+                        <Button variant="warning" onClick={startEdit}>
+                            {t.common.edit}
+                        </Button>
+                    )}
+                    {canEdit && onSave && editing && (
+                        <Button variant="danger" onClick={cancelEdit}>
+                            {t.common.cancel}
+                        </Button>
+                    )}
+                </div>
+
+                <div className="flex justify-center">
+                    {showPopularity && !editing && (
+                        <WordPopularityPicker
+                            value={localPopularity}
+                            disabled={!onSetPopularity}
+                            onChange={handlePopularityChange}
+                            compact
+                        />
+                    )}
+                </div>
+
+                <div className="flex justify-end">
+                    {canEdit && onSave && editing && (
+                        <Button variant="success" onClick={saveEdit}>
+                            {t.common.save}
+                        </Button>
+                    )}
+                    {onNextRandom && !editing && (
+                        <Button variant="ghost" onClick={onNextRandom}>
+                            {t.wordDetail.nextWord} →
+                        </Button>
+                    )}
+                </div>
+            </div>
         </div>
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col gap-7">
-        <div className={cn('mx-auto flex w-full min-w-0 flex-1 flex-col justify-center items-center', fieldStackClass)}>
-        <DetailField>
-          {editing ? (
-            <input
-              className={wordDetailInputClass}
-              value={draft.hanViet ?? ''}
-              onChange={(e) => setDraftField('hanViet', e.target.value)}
-              aria-label={t.wordBank.colHanViet}
-              placeholder={t.wordBank.hanVietAltHint}
-            />
-          ) : (
-            <WordFieldText
-              word={word}
-              field="hanViet"
-              updatingLabel={t.wordBank.fieldUpdating}
-              className={cn(detailTextClass, 'text-text-h font-medium text-center')}
-            />
-          )}
-        </DetailField>
-
-        <WordHanRomanBlock
-          editing={editing}
-          draft={draft}
-          display={display}
-          onDraftChange={setDraftField}
-          locale={locale}
-          hanTraditional={word.hanTraditional}
-        />
-
-        <DetailField>
-          {editing ? (
-            <input
-              className={cn(wordDetailInputClass, 'text-viet')}
-              value={draft.vietnamese}
-              onChange={(e) => setDraftField('vietnamese', e.target.value)}
-              aria-label={t.wordBank.colVietnamese}
-              placeholder={t.wordBank.colVietnamese}
-            />
-          ) : (
-            <WordFieldText
-              word={word}
-              field="vietnamese"
-              updatingLabel={t.wordBank.fieldUpdating}
-              className={cn(detailTextClass, 'font-semibold text-viet text-center')}
-            />
-          )}
-        </DetailField>
-
-        {showDetailField && (
-          <DetailField valueMinHeight="wd-detail-block">
-            {editing ? (
-              <textarea
-                className={cn(uiTextareaClass, 'wd-input wd-detail-block resize-none [field-sizing:content]')}
-                rows={3}
-                value={draft.vietnameseDetail ?? ''}
-                onChange={(e) => setDraftField('vietnameseDetail', e.target.value)}
-                placeholder={t.addWord.vietnameseDetailPlaceholder}
-                aria-label={t.addWord.vietnameseDetail}
-              />
-            ) : (
-              <p className={cn(detailTextClass, 'wd-detail-block whitespace-pre-wrap text-text-h text-center')}>{detailText}</p>
-            )}
-          </DetailField>
-        )}
-
-        <DetailField>
-          {editing ? (
-            <input
-              className={wordDetailInputClass}
-              value={draft.english}
-              onChange={(e) => setDraftField('english', e.target.value)}
-              aria-label={t.wordBank.colEnglish}
-              placeholder={t.wordBank.colEnglish}
-            />
-          ) : (
-            <WordFieldText
-              word={word}
-              field="english"
-              updatingLabel={t.wordBank.fieldUpdating}
-              className={cn(detailTextClass, 'font-medium text-text-h text-center')}
-            />
-          )}
-        </DetailField>
-
-        {validationError && (
-          <p className="m-0 rounded-lg border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text" role="alert">
-            {validationError}
-          </p>
-        )}
-        </div>
-
-        <div className="mx-auto flex w-full min-w-0 flex-col gap-6">
-          <WordSentenceSuggestions word={word} />
-          <WordRelatedLessons lessons={relatedLessons} />
-        </div>
-      </div>
-
-      <div className={cn(actionBarClass, 'mt-auto shrink-0')}>
-        <div className="flex justify-start">
-          {canEdit && onSave && !editing && (
-            <Button variant="ghost" onClick={startEdit}>
-              {t.common.edit}
-            </Button>
-          )}
-          {canEdit && onSave && editing && (
-            <Button variant="ghost" onClick={cancelEdit}>
-              {t.common.cancel}
-            </Button>
-          )}
-        </div>
-
-        <div className="flex justify-center">
-          {showPopularity && !editing && (
-            <WordPopularityPicker
-              value={localPopularity}
-              disabled={!onSetPopularity}
-              onChange={handlePopularityChange}
-              compact
-            />
-          )}
-        </div>
-
-        <div className="flex justify-end">
-          {canEdit && onSave && editing && (
-            <Button variant="primary" onClick={saveEdit}>
-              {t.common.save}
-            </Button>
-          )}
-          {onNextRandom && !editing && (
-            <Button variant="ghost" onClick={onNextRandom}>
-              {t.wordDetail.nextWord} →
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
+    );
 }

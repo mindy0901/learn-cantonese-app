@@ -1,56 +1,83 @@
-import "dotenv/config";
-import cookieParser from "cookie-parser";
-import cors from "cors";
-import express from "express";
-import cookieSession from "cookie-session";
-import { authRouter } from "./routes/auth.js";
-import { cedictRouter } from "./routes/cedict.js";
-import { dataRouter } from "./routes/data.js";
+import dotenv from "dotenv";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __app_dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: resolve(__app_dirname, "..", ".env.dev") });
+
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import cookie from "@fastify/cookie";
+import session from "@fastify/session";
+import formbody from "@fastify/formbody";
+import { authRoutes } from "./routes/auth.js";
+import { cedictRoutes } from "./routes/cedict.js";
+import { dataRoutes } from "./routes/data.js";
+import { translateRoutes } from "./routes/translate.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 const cookieSecure =
     process.env.COOKIE_SECURE != null ? process.env.COOKIE_SECURE === "true" : process.env.NODE_ENV === "production";
 const cookieSameSite = process.env.COOKIE_SAME_SITE ?? "lax";
 
-const app = express();
-app.set("trust proxy", 1);
+export async function buildApp(opts = {}) {
+    const app = Fastify({
+        trustProxy: true,
+        ...opts,
+    });
 
-app.use(
-    cors({
+    // CORS
+    await app.register(cors, {
         origin: FRONTEND_URL,
         credentials: true,
-    }),
-);
-app.use(express.json({ limit: "50mb" }));
-app.use(cookieParser());
-// Store session in the signed cookie itself so auth survives Vercel serverless cold starts
-// (express-session MemoryStore is per-instance and breaks PUT/auth on other instances).
-app.use(
-    cookieSession({
-        name: "cantonese.sid",
-        keys: [process.env.SESSION_SECRET ?? "dev-secret-change-me"],
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        secure: cookieSecure,
-        sameSite: cookieSameSite,
-    }),
-);
+    });
 
-app.get("/health", (_req, res) => {
-    res.json({ ok: true });
-});
+    // Body parsing
+    await app.register(formbody);
+    app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+        try {
+            done(null, body ? JSON.parse(body) : {});
+        } catch (err) {
+            done(err, undefined);
+        }
+    });
 
-app.use("/auth", authRouter);
-app.use("/api/cedict", cedictRouter);
-app.use("/api", dataRouter);
+    // Cookies
+    await app.register(cookie);
 
-app.use((err, _req, res, _next) => {
-    console.error(`Error: ${err.message ?? err}`);
-    res.status(err.status ?? 500).json({ error: err.message ?? "Server error" });
-});
+    // Session — ensure secret is at least 32 chars for @fastify/session v11
+    let sessionSecret = process.env.SESSION_SECRET ?? "dev-secret-change-me-min-32-chars!";
+    if (sessionSecret.length < 32) {
+        sessionSecret = sessionSecret.padEnd(32, "0");
+    }
+    await app.register(session, {
+        cookieName: "cantonese.sid",
+        secret: sessionSecret,
+        cookie: {
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            httpOnly: true,
+            secure: cookieSecure,
+            sameSite: cookieSameSite,
+            path: "/",
+        },
+        saveUninitialized: false,
+    });
 
-import { warmCedictIndex } from "./lib/cedictSearch.js";
+    // Health check
+    app.get("/health", async () => ({ ok: true }));
 
-warmCedictIndex();
+    // Routes
+    await app.register(authRoutes, { prefix: "/auth" });
+    await app.register(cedictRoutes, { prefix: "/api/cedict" });
+    await app.register(dataRoutes, { prefix: "/api" });
+    await app.register(translateRoutes, { prefix: "/api" });
 
-export default app;
+    // Error handler
+    app.setErrorHandler((error, _request, reply) => {
+        console.error(`Error: ${error.message ?? error}`);
+        const status = error.statusCode ?? error.status ?? 500;
+        reply.code(status).send({ error: error.message ?? "Server error" });
+    });
+
+    return app;
+}

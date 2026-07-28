@@ -3,12 +3,13 @@ import { searchQueryVariants } from "./searchNormalize.js";
 const STALE_STUDY_DAYS = 3;
 
 const SORT_COLUMNS = {
-    hanViet: "han_viet",
+    sinoVietnamese: "sino_vietnamese",
     hanTraditional: "han_traditional",
     jyutping: "jyutping",
     pinyin: "pinyin",
-    vietnamese: "vietnamese",
-    english: "english",
+    vietMeanings: "vietMeanings",
+    engMeanings: "engMeanings",
+    hskLevel: "hsk_level",
     createdAt: "created_at",
     studyProgressAt: "study_progress_at",
 };
@@ -24,10 +25,24 @@ function escapeIlike(value) {
         .replace(/_/g, "\\_");
 }
 
-function applyWordFilters(query, { filter = "all", search = "", studyDue = false, maxProgress = null } = {}) {
+function applyVocabularyFilters(
+    query,
+    { filter = "all", search = "", studyDue = false, maxProgress = null, hskLevel = null } = {},
+) {
     let q = query;
     if (filter === "important") q = q.eq("important", true);
     else if (filter === "mastered") q = q.eq("mastered", true);
+
+    if (hskLevel === "hsk") {
+        // Only HSK data (has hsk_level set)
+        q = q.not("hsk_level", "is", null);
+    } else if (hskLevel === "legacy") {
+        // Only legacy/user data (hsk_level is null)
+        q = q.is("hsk_level", null);
+    } else if (hskLevel && hskLevel !== "all") {
+        // Specific HSK level, e.g. "HSK 1", "HSK 7-9"
+        q = q.eq("hsk_level", hskLevel);
+    }
 
     if (studyDue) {
         q = q
@@ -60,19 +75,19 @@ function applyWordFilters(query, { filter = "all", search = "", studyDue = false
     return q;
 }
 
-export async function countWords(
+export async function countVocabularies(
     db,
     userId,
-    { filter = "all", search = "", studyDue = false, maxProgress = null } = {},
+    { filter = "all", search = "", studyDue = false, maxProgress = null, hskLevel = null } = {},
 ) {
     let q = db.from("words").select("id", { count: "exact", head: true }).eq("user_id", userId);
-    q = applyWordFilters(q, { filter, search, studyDue, maxProgress });
+    q = applyVocabularyFilters(q, { filter, search, studyDue, maxProgress, hskLevel });
     const { count, error } = await q;
     if (error) throw error;
     return count ?? 0;
 }
 
-export async function queryWords(
+export async function queryVocabularies(
     db,
     userId,
     {
@@ -85,6 +100,7 @@ export async function queryWords(
         importantFirst = false,
         studyDue = false,
         maxProgress = null,
+        hskLevel = null,
     } = {},
 ) {
     const safePageSize = Math.min(50, Math.max(1, Number(pageSize) || 10));
@@ -93,7 +109,7 @@ export async function queryWords(
     const ascending = studyDue ? true : sortDir === "asc";
 
     let q = db.from("words").select("*", { count: "exact" }).eq("user_id", userId);
-    q = applyWordFilters(q, { filter, search, studyDue, maxProgress });
+    q = applyVocabularyFilters(q, { filter, search, studyDue, maxProgress, hskLevel });
 
     if (importantFirst) {
         q = q.order("important", { ascending: false });
@@ -120,7 +136,7 @@ export async function queryWords(
     };
 }
 
-export async function fetchWordsByIds(db, userId, ids) {
+export async function fetchVocabulariesByIds(db, userId, ids) {
     const unique = [...new Set((ids ?? []).map(String).filter(Boolean))];
     if (unique.length === 0) return [];
 

@@ -1,52 +1,53 @@
-import { ensureHanVariants } from './opencc.js'
-import { isHanVietNone } from './hanVietMarkers.js'
-import { displayHanViet, hasFilledHanViet } from './hanVietReadings.js'
+import { ensureHanVariants } from "./opencc.js";
+import { isSinoVietnameseNone } from "./sinoVietnameseMarkers.js";
+import { displaySinoVietnamese, hasFilledSinoVietnamese } from "./sinoVietnameseReadings.js";
 
 /** Table summary from top-level english / vietnamese fields. */
-export function wordFieldSummary(word, field) {
-  return String(word[field] ?? '').trim()
+export function vocabularyFieldSummary(vocab, field) {
+    return String(vocab[field] ?? "").trim();
 }
 
-/** True when Hán–Việt, Vietnamese, or English is still empty / placeholder-only. */
-export function isWordFieldPending(word, field) {
-  if (field === 'hanViet') {
-    const hanViet = String(word?.hanViet ?? '').trim()
-    if (!hanViet) return true
-    if (isHanVietNone(hanViet)) return false
-    return !hasFilledHanViet(hanViet)
-  }
-  return !wordFieldSummary(word, field)
-}
-
-/** Display value for a word field, or the localized "updating" label when pending. */
-export function wordFieldDisplayText(word, field, updatingLabel) {
-  if (field === 'hanViet') {
-    const hanViet = String(word?.hanViet ?? '').trim()
-    if (!hanViet || (!isHanVietNone(hanViet) && !hasFilledHanViet(hanViet))) {
-      return updatingLabel
+/** True when Sino-Vietnamese, Vietnamese, or English is still empty / placeholder-only. */
+export function isVocabularyFieldPending(vocab, field) {
+    if (field === "sinoVietnamese") {
+        const sinoVietnamese = String(vocab?.sinoVietnamese ?? "").trim();
+        if (!sinoVietnamese) return true;
+        if (isSinoVietnameseNone(sinoVietnamese)) return false;
+        return !hasFilledSinoVietnamese(sinoVietnamese);
     }
-    return displayHanViet(hanViet)
-  }
-  return wordFieldSummary(word, field) || updatingLabel
+    return !vocabularyFieldSummary(vocab, field);
 }
 
-function resolvedHanVariants(word) {
-  return ensureHanVariants({
-    hanTraditional: word.hanTraditional,
-    hanSimplified: word.hanSimplified,
-    hanTrad: word.hanTrad,
-    han: word.han,
-  })
+/** Display value for a vocabulary field, or the localized "updating" label when pending. */
+export function vocabularyFieldDisplayText(vocab, field, updatingLabel) {
+    if (field === "sinoVietnamese") {
+        const sinoVietnamese = String(vocab?.sinoVietnamese ?? "").trim();
+        if (!sinoVietnamese) return updatingLabel || "đang cập nhật";
+        if (!isSinoVietnameseNone(sinoVietnamese) && !hasFilledSinoVietnamese(sinoVietnamese)) {
+            return updatingLabel;
+        }
+        return displaySinoVietnamese(sinoVietnamese);
+    }
+    return vocabularyFieldSummary(vocab, field) || updatingLabel || "đang cập nhật";
+}
+
+function resolvedHanVariants(vocab) {
+    return ensureHanVariants({
+        hanTraditional: vocab.hanTraditional,
+        hanSimplified: vocab.hanSimplified,
+        hanTrad: vocab.hanTrad,
+        han: vocab.han,
+    });
 }
 
 /** Traditional Chinese characters for tables and lists. */
-export function displayHan(word) {
-  const stored = String(word.hanTraditional ?? word.hanTrad ?? word.han ?? '').trim()
-  if (stored) return stored
-  return resolvedHanVariants(word).hanTraditional.trim()
+export function displayHan(vocab) {
+    const stored = String(vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han ?? "").trim();
+    if (stored) return stored;
+    return resolvedHanVariants(vocab).hanTraditional.trim();
 }
 
 /** Jyutping for tables and lists. */
-export function displayRomanization(word) {
-  return String(word.jyutping ?? '').trim()
+export function displayRomanization(vocab) {
+    return String(vocab.jyutping ?? "").trim();
 }

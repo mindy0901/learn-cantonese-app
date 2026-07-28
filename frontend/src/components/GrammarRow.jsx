@@ -157,7 +157,7 @@ export const GrammarRow = memo(function GrammarRow({
                         type="button"
                         className={cn(
                             uiCompactIconButtonClass,
-                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-text-muted rounded hover:bg-bg hover:text-text-h",
+                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-amber-50 hover:text-amber-600",
                         )}
                         onClick={startEdit}
                         title={t.common.edit}
@@ -168,7 +168,7 @@ export const GrammarRow = memo(function GrammarRow({
                         type="button"
                         className={cn(
                             uiCompactIconButtonClass,
-                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-text-muted rounded hover:bg-bg hover:text-red-600",
+                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-red-50 hover:text-red-600",
                         )}
                         onClick={() => onDelete(item)}
                         title={t.common.delete}

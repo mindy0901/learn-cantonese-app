@@ -1,3 +1,3 @@
-export function wordDetailPath(id) {
-  return `/words/${id}`
+export function vocabularyDetailPath(id) {
+    return `/vocabulary/${id}`;
 }

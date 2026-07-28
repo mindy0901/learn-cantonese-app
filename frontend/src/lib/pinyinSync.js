@@ -1,34 +1,34 @@
-import { resolvePinyin, pinyinSourceHan } from './pinyin.js'
-import { normWordField } from './wordNormalize.js'
+import { resolvePinyin, pinyinSourceHan } from "./pinyin.js";
+import { normVocabularyField } from "./wordNormalize.js";
 
-/** Preview pinyin updates for all words (OpenCC simplified → pinyin-pro). */
-export function previewPinyinSync(words) {
-  const updates = []
+/** Preview pinyin updates for all vocabulary (OpenCC simplified → pinyin-pro). */
+export function previewPinyinSync(vocabularies) {
+    const updates = [];
 
-  for (const word of words ?? []) {
-    const sourceHan = pinyinSourceHan(word)
-    if (!sourceHan) continue
+    for (const vocab of vocabularies ?? []) {
+        const sourceHan = pinyinSourceHan(vocab);
+        if (!sourceHan) continue;
 
-    const nextPinyin = resolvePinyin(word)
-    if (!nextPinyin) continue
+        const nextPinyin = resolvePinyin(vocab);
+        if (!nextPinyin) continue;
 
-    const prevPinyin = String(word.pinyin ?? '').trim()
-    if (normWordField(prevPinyin) === normWordField(nextPinyin)) continue
+        const prevPinyin = String(vocab.pinyin ?? "").trim();
+        if (normVocabularyField(prevPinyin) === normVocabularyField(nextPinyin)) continue;
 
-    updates.push({
-      id: word.id,
-      hanTraditional: String(word.hanTraditional ?? word.hanTrad ?? word.han ?? '').trim(),
-      hanSimplified: sourceHan,
-      prevPinyin,
-      nextPinyin,
-      popularity: word.popularity,
-    })
-  }
+        updates.push({
+            id: vocab.id,
+            hanTraditional: String(vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han ?? "").trim(),
+            hanSimplified: sourceHan,
+            prevPinyin,
+            nextPinyin,
+            popularity: vocab.popularity,
+        });
+    }
 
-  return { updates, wordCount: words?.length ?? 0 }
+    return { updates, vocabCount: vocabularies?.length ?? 0 };
 }
 
 export function formatPinyin(value) {
-  const text = String(value ?? '').trim()
-  return text || '—'
+    const text = String(value ?? "").trim();
+    return text || "—";
 }

@@ -5,8 +5,9 @@ import { GrammarBankListPanel } from "../components/GrammarBankListPanel.jsx";
 import { useGrammarCount, useGrammarBank, useAppActions } from "../store/appStore.js";
 import { usePrefsStore, useGrammarBankPrefs } from "../store/prefsStore.js";
 import { useLocale } from "../store/localeStore.js";
-import { withAdminHint } from "../lib/emptyMessage.js";
 import { btnClass } from "../components/ui/buttonStyles.js";
+import { EmptyState } from "../components/ui/EmptyState.jsx";
+import { IconGrammar } from "../components/NavIcons.jsx";
 
 export function GrammarBankPage() {
     const { isAdmin } = useOutletContext();
@@ -33,7 +34,7 @@ export function GrammarBankPage() {
                 <div className="flex gap-2 shrink-0">
                     {isAdmin && (
                         <>
-                            <button type="button" className={btnClass("primary")} onClick={() => setAddOpen(true)}>
+                            <button type="button" className={btnClass("success")} onClick={() => setAddOpen(true)}>
                                 + {t.grammarBank.addItem}
                             </button>
                         </>
@@ -42,16 +43,18 @@ export function GrammarBankPage() {
             </div>
 
             {grammarCount === 0 ? (
-                <div className="flex flex-col items-center gap-4 px-6 py-12 text-center text-text-muted">
-                    <p>{withAdminHint(t.grammarBank.empty, t.grammarBank.emptyAdminHint, isAdmin)}</p>
-                    {isAdmin && (
-                        <div className="flex gap-3">
+                <EmptyState
+                    icon={<IconGrammar size={28} />}
+                    title={t.grammarBank.empty}
+                    description={isAdmin ? t.grammarBank.emptyAdminHint : undefined}
+                    action={
+                        isAdmin && (
                             <button type="button" className={btnClass("primary")} onClick={() => setAddOpen(true)}>
-                                {t.grammarBank.addItem}
+                                + {t.grammarBank.addItem}
                             </button>
-                        </div>
-                    )}
-                </div>
+                        )
+                    }
+                />
             ) : (
                 <GrammarBankListPanel
                     filter={filter}
@@ -61,7 +64,9 @@ export function GrammarBankPage() {
                 />
             )}
 
-            {addOpen && <AddGrammarModal onSave={createGrammar} onClose={() => setAddOpen(false)} existingItems={items} />}
+            {addOpen && (
+                <AddGrammarModal onSave={createGrammar} onClose={() => setAddOpen(false)} existingItems={items} />
+            )}
             {editItem && (
                 <AddGrammarModal
                     item={items.find((g) => g.id === editItem.id) ?? editItem}

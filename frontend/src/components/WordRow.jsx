@@ -1,201 +1,195 @@
-import { memo, useState } from "react";
+import { memo, useRef, useState, useEffect } from "react";
 import { useLocale } from "../store/localeStore.js";
-import { wordFieldSummary } from "../lib/wordDisplay.js";
-import { orderedHanVariants, displayRomanization } from "../lib/hanScriptDisplay.js";
-import { wordLookupDisplay } from "../lib/hanLookup.js";
+import { orderedHanVariants, displayRomanization, diffHanChars } from "../lib/hanScriptDisplay.js";
+import { vocabularyLookupDisplay } from "../lib/hanLookup.js";
 import { HanziiHanCellLink } from "./HanziiHanCellLink.jsx";
 import { WordFieldText } from "./WordFieldText.jsx";
-import { hanTextClassName } from "../lib/wordPopularity.js";
-import { normalizeWordFields, wordContentEqual } from "../lib/wordNormalize.js";
 import { cn } from "../lib/cn.js";
 import { uiCompactIconButtonClass } from "./ui/controlStyles.js";
+import { IconViewDetail, IconEdit, IconTrash } from "./NavIcons.jsx";
 
-const tdClass = "px-3.5 py-2.5 text-left align-middle truncate max-w-[200px]";
+const tdClass = "px-5 py-2.5 text-left align-middle truncate max-w-[200px]";
 
 const rowClass = "border-b border-border";
 
-const cellInputClass =
-    "w-full min-w-20 px-2 py-1.5 border border-accent-border rounded-md bg-surface text-sm outline-none focus:border-accent";
+// Highlight color for characters that differ between trad/simp
+const hanDiffClass = "text-amber-600 dark:text-amber-400";
+
+/**
+ * Renders a han variant (simp or trad) with per-character diff highlighting.
+ * Links to Hanzii using the simplified form for lookups.
+ */
+function HanVariantCell({ text, diffChars, pickerMode, lookupSimp, className }) {
+    if (!text) return <span className={cn(className, "italic text-text-muted")}>đang cập nhật</span>;
+
+    const hasDiff = diffChars && diffChars.length > 0 && text.length > 1;
+
+    if (!hasDiff) {
+        if (pickerMode) {
+            return <span className={cn("text-han font-semibold", className)}>{text}</span>;
+        }
+        return (
+            <HanziiHanCellLink
+                hanTraditional={lookupSimp || text}
+                displayText={text}
+                emphasis="primary"
+                className={className}
+            />
+        );
+    }
+
+    const inner = diffChars.map((c, i) => (
+        <span key={i} className={cn(!c.same && hanDiffClass)}>
+            {c.char}
+        </span>
+    ));
+
+    if (pickerMode) {
+        return <span className={cn("text-han font-semibold", className)}>{inner}</span>;
+    }
+    return (
+        <HanziiHanCellLink
+            hanTraditional={lookupSimp || text}
+            displayText={text}
+            emphasis="primary"
+            className={className}
+        >
+            {inner}
+        </HanziiHanCellLink>
+    );
+}
+
+/** Map HSK level string to a color class. Green (low) → Red (high). */
+function hskColorClass(level) {
+    const match = String(level).match(/(\d+)/);
+    const num = match ? parseInt(match[1], 10) : 0;
+    if (num <= 2)
+        return "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+    if (num <= 4)
+        return "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800";
+    if (num <= 6)
+        return "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800";
+    return "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800";
+}
 
 export const WordRow = memo(function WordRow({
     word,
     index,
-    canEdit,
     canMark,
     pickerMode,
     selected,
     onToggleSelect,
-    onSave,
-    onDelete,
     onToggleImportant,
     onToggleMastered,
     onView,
+    onEdit,
+    onDelete,
 }) {
-    const { t } = useLocale();
-    const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState(word);
+    const { t, locale } = useLocale();
+    const [menuOpen, setMenuOpen] = useState(false);
+    const menuRef = useRef(null);
 
-    const startEdit = (e) => {
-        e.stopPropagation();
-        setDraft({
-            ...word,
-            english: (word.english ?? "").trim() || wordFieldSummary(word, "english"),
-            vietnamese: (word.vietnamese ?? "").trim() || wordFieldSummary(word, "vietnamese"),
-        });
-        setEditing(true);
-    };
-
-    const cancelEdit = (e) => {
-        e.stopPropagation();
-        setDraft(word);
-        setEditing(false);
-    };
-
-    const saveEdit = (e) => {
-        e.stopPropagation();
-        if (!draft.hanTraditional.trim() || !(draft.jyutping ?? "").trim()) return;
-        const patch = {
-            english: draft.english.trim(),
-            hanTraditional: draft.hanTraditional.trim(),
-            vietnamese: draft.vietnamese.trim(),
-            hanViet: draft.hanViet?.trim() || undefined,
-            jyutping: draft.jyutping.trim(),
-            cantonese: draft.cantonese?.trim() || undefined,
+    useEffect(() => {
+        if (!menuOpen) return;
+        const handler = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                setMenuOpen(false);
+            }
         };
-        if (wordContentEqual(word, normalizeWordFields({ ...word, ...patch }))) {
-            setEditing(false);
-            return;
-        }
-        onSave(word, patch);
-        setEditing(false);
-    };
-
-    const set = (field, value) => {
-        setDraft((d) => ({ ...d, [field]: value }));
-    };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [menuOpen]);
 
     const stop = (e) => e.stopPropagation();
 
-    const handleEditKeyDown = (e) => {
-        if (e.key === "Escape") {
-            e.preventDefault();
-            cancelEdit(e);
-        } else if (e.key === "Enter") {
-            e.preventDefault();
-            saveEdit(e);
-        }
-    };
-
     const numClass = cn(
-        "text-text-muted text-[0.8125rem] whitespace-nowrap text-center px-1.5",
+        "text-text-muted text-[0.8125rem] whitespace-nowrap text-center px-1.5 align-middle",
         !pickerMode && "pr-0.5",
     );
 
     const flagColClass = "px-0.5 py-1.5 text-center align-middle [&:nth-child(2)]:pl-0 [&:nth-child(2)]:pr-1";
-    const actionsColClass = "px-0.5 py-1.5 text-center align-middle whitespace-nowrap";
 
-    if (editing && canEdit) {
-        return (
-            <tr className="bg-accent-bg border-b border-border" onClick={stop} onKeyDown={handleEditKeyDown}>
-                <td className={numClass}>{index + 1}</td>
-                {canMark && <td className={flagColClass} />}
-                <td className={tdClass}>
-                    <input
-                        className={cellInputClass}
-                        value={draft.hanViet ?? ""}
-                        onChange={(e) => set("hanViet", e.target.value)}
-                        placeholder={t.wordBank.hanVietAltHint}
-                        title={t.wordBank.hanVietAltHint}
-                    />
-                </td>
-                <td className={tdClass}>
-                    <input
-                        className={cn(cellInputClass, "text-red-600")}
-                        value={draft.hanTraditional}
-                        onChange={(e) => set("hanTraditional", e.target.value)}
-                    />
-                </td>
-                <td className={tdClass}>
-                    <input
-                        className={cn(cellInputClass, "text-jyutping font-semibold")}
-                        value={draft.jyutping ?? ""}
-                        onChange={(e) => set("jyutping", e.target.value)}
-                    />
-                </td>
-                <td className={tdClass}>
-                    <input
-                        className={cn(cellInputClass, "text-green-600")}
-                        value={draft.vietnamese}
-                        onChange={(e) => set("vietnamese", e.target.value)}
-                    />
-                </td>
-                <td className={tdClass}>
-                    <input
-                        className={cellInputClass}
-                        value={draft.english}
-                        onChange={(e) => set("english", e.target.value)}
-                    />
-                </td>
-                {canMark && <td className={flagColClass} />}
-                {canEdit && (
-                    <td className={actionsColClass}>
-                        <span className="inline-flex items-center justify-center gap-1.5 align-middle">
-                            <button
-                                type="button"
-                                className={cn(
-                                    uiCompactIconButtonClass,
-                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-green-600 rounded hover:bg-bg",
-                                )}
-                                onClick={saveEdit}
-                                title={t.common.save}
-                            >
-                                ✓
-                            </button>
-                            <button
-                                type="button"
-                                className={cn(
-                                    uiCompactIconButtonClass,
-                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-text-muted rounded hover:bg-bg",
-                                )}
-                                onClick={cancelEdit}
-                                title={t.common.cancel}
-                            >
-                                ×
-                            </button>
-                        </span>
-                    </td>
-                )}
-            </tr>
-        );
-    }
-
-    const handleRowClick = () => {
-        if (pickerMode) onToggleSelect?.(String(word.id));
-        else onView?.(word);
-    };
-
-    const hanDisplay = wordLookupDisplay(word);
+    const hanDisplay = vocabularyLookupDisplay(word);
     const hanOrdered = orderedHanVariants({
         traditional: hanDisplay.traditional,
         simplified: hanDisplay.simplified,
     });
     const hanLookup = hanDisplay.traditional || hanDisplay.simplified;
     const romanization = displayRomanization(word);
-    const romanClass =
-        "text-jyutping font-semibold not-italic text-[calc(0.9375rem*var(--jyutping-scale))] leading-snug tracking-wide truncate";
+    const romanClass = "text-jyutping font-semibold not-italic leading-snug tracking-wide truncate";
+
+    // Parse tokens for vertical paired display.
+    // Space-separated Hán-Việt = separate character slots.
+    // "|" with surrounding spaces = alternative readings of the SAME character → keep on one line.
+    function parseSinoVietnameseTokens(raw) {
+        const parts = String(raw ?? "")
+            .split(/\s+/)
+            .filter(Boolean);
+        const merged = [];
+        let i = 0;
+        while (i < parts.length) {
+            if (parts[i] === "|" || parts[i] === "/" || parts[i] === ",") {
+                // Merge delimiter with previous token
+                if (merged.length > 0) {
+                    merged[merged.length - 1] += " " + parts[i];
+                }
+                i++;
+                // Merge following tokens until next delimiter or end
+                while (i < parts.length && parts[i] !== "|" && parts[i] !== "/" && parts[i] !== ",") {
+                    merged[merged.length - 1] += " " + parts[i];
+                    i++;
+                }
+            } else {
+                merged.push(parts[i]);
+                i++;
+            }
+        }
+        return merged;
+    }
+
+    const svTokens = parseSinoVietnameseTokens(word.sinoVietnamese);
+    const pyTokens = (word.pinyin ?? "").split(/[,\s]+/).filter(Boolean);
+    const jpTokens = (word.jyutping ?? "").split(/\s+/).filter(Boolean);
+
+    const hanCharCount = (hanLookup ?? "").length;
+    const maxTokens = Math.max(svTokens.length, pyTokens.length, jpTokens.length);
+
+    // Diff between trad/simp for highlighting
+    const hanDiff = diffHanChars({
+        traditional: hanDisplay.traditional,
+        simplified: hanDisplay.simplified,
+    });
+
+    // Number of reading variants. For single-char, each token = one variant.
+    // For compound words, tokens come in groups of hanCharCount per variant.
+    const variantCount = hanCharCount > 1 && maxTokens > 0 ? Math.round(maxTokens / hanCharCount) : maxTokens;
+
+    // Single-char: vertical when multiple pronunciations.
+    // Multi-char: vertical when multiple reading variants exist.
+    const useVertical = variantCount > 1;
+
+    const pairCount = useVertical ? Math.max(variantCount, 1) : 1;
+
+    // For a given row index (variant), collect tokens for all chars in that variant.
+    // e.g. 丈夫 with 2 chars, 2 variants: variant 0 → tokens[0,1], variant 1 → tokens[2,3]
+    function variantTokens(tokens, variantIdx) {
+        if (hanCharCount === 1) return tokens[variantIdx] || "";
+        const start = variantIdx * hanCharCount;
+        const slice = tokens.slice(start, start + hanCharCount);
+        return slice.join(" ");
+    }
 
     return (
         <tr
             data-word-id={String(word.id)}
             className={cn(
                 rowClass,
-                pickerMode ? "cursor-pointer hover:bg-bg" : "cursor-pointer hover:bg-accent-bg",
+                pickerMode && "cursor-pointer hover:bg-bg",
                 pickerMode && selected && "bg-accent-bg hover:bg-accent-bg",
                 word.important && "bg-orange-600/[0.04]",
                 word.mastered && "opacity-75",
             )}
-            onClick={handleRowClick}
-            title={pickerMode ? undefined : t.wordBank.clickToView}
+            onClick={pickerMode ? () => onToggleSelect?.(String(word.id)) : undefined}
         >
             {pickerMode ? (
                 <td className="text-center align-middle">
@@ -231,74 +225,216 @@ export const WordRow = memo(function WordRow({
                     </button>
                 </td>
             )}
-            <td className={tdClass}>
-                <WordFieldText word={word} field="hanViet" updatingLabel={t.wordBank.fieldUpdating} />
-            </td>
-            <td className={cn(tdClass, hanTextClassName(word.popularity))} onClick={pickerMode ? undefined : stop}>
-                {pickerMode ? (
-                    hanOrdered.primary || "—"
+            <td className={cn(tdClass, "py-0.5 align-middle")}>
+                {useVertical ? (
+                    Array.from({ length: pairCount }, (_, i) => {
+                        const sv = variantTokens(svTokens, i);
+                        return (
+                            <div key={i} className="leading-snug py-0.5">
+                                <span className="text-viet text-base uppercase">{sv || "\u00A0"}</span>
+                            </div>
+                        );
+                    })
                 ) : (
-                    <HanziiHanCellLink
-                        hanTraditional={hanLookup}
-                        displayText={hanOrdered.primary}
-                        popularity={word.popularity}
-                        emphasis="primary"
-                    />
+                    <div className="leading-snug py-1">
+                        <span className="text-viet text-base uppercase">
+                            <WordFieldText
+                                word={word}
+                                field="sinoVietnamese"
+                                updatingLabel={t.wordBank.fieldUpdating}
+                            />
+                        </span>
+                    </div>
                 )}
             </td>
-            <td className={cn(tdClass, romanClass)}>{romanization || "—"}</td>
-            <td className={cn(tdClass, "text-viet")}>
-                <WordFieldText word={word} field="vietnamese" updatingLabel={t.wordBank.fieldUpdating} />
-            </td>
-            <td className={cn(tdClass, "leading-snug truncate")}>
-                <WordFieldText word={word} field="english" updatingLabel={t.wordBank.fieldUpdating} />
+            <td className="py-1.5 align-middle" colSpan={4}>
+                {useVertical ? (
+                    <div className="flex flex-col gap-0.5">
+                        {Array.from({ length: pairCount }, (_, i) => {
+                            const py = variantTokens(pyTokens, i);
+                            const jp = variantTokens(jpTokens, i);
+                            return hanDisplay.showSimplified ? (
+                                <div key={i} className="grid grid-cols-2 gap-x-3 gap-y-1 py-0.5 items-end">
+                                    <HanVariantCell
+                                        text={hanDisplay.simplified}
+                                        diffChars={hanDiff.simp}
+                                        pickerMode={pickerMode}
+                                        lookupSimp={hanDisplay.simplified}
+                                        className="text-5xl text-center"
+                                    />
+                                    <HanVariantCell
+                                        text={hanDisplay.traditional}
+                                        diffChars={hanDiff.trad}
+                                        pickerMode={pickerMode}
+                                        lookupSimp={hanDisplay.simplified}
+                                        className="text-5xl text-center"
+                                    />
+                                    <span className="text-pinyin text-base text-center font-semibold">
+                                        {py || "\u00A0"}
+                                    </span>
+                                    <span className={cn(romanClass, "text-center")}>{jp || "\u00A0"}</span>
+                                </div>
+                            ) : (
+                                <div key={i} className="flex flex-col items-center gap-1 py-0.5">
+                                    {pickerMode ? (
+                                        <span className="text-han text-5xl font-semibold">
+                                            {hanDisplay.traditional}
+                                        </span>
+                                    ) : (
+                                        <HanziiHanCellLink
+                                            hanTraditional={hanLookup}
+                                            displayText={hanDisplay.traditional}
+                                            emphasis="primary"
+                                            className="text-5xl"
+                                        />
+                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-pinyin text-base font-semibold">{py || "\u00A0"}</span>
+                                        <span className="text-text-muted text-sm">·</span>
+                                        <span className={romanClass}>{jp || "\u00A0"}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : hanDisplay.showSimplified ? (
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 items-end">
+                        <HanVariantCell
+                            text={hanDisplay.simplified}
+                            diffChars={hanDiff.simp}
+                            pickerMode={pickerMode}
+                            lookupSimp={hanDisplay.simplified}
+                            className="text-5xl text-center"
+                        />
+                        <HanVariantCell
+                            text={hanOrdered.primary}
+                            diffChars={hanDiff.trad}
+                            pickerMode={pickerMode}
+                            lookupSimp={hanDisplay.simplified}
+                            className="text-5xl text-center"
+                        />
+                        <span className="text-pinyin text-base text-center font-semibold">
+                            {word.pinyin || <span className="italic text-text-muted">không có pinyin</span>}
+                        </span>
+                        <span className={cn(romanClass, "text-center")}>
+                            {romanization || <span className="italic text-text-muted">không có jyutping</span>}
+                        </span>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center gap-1">
+                        {pickerMode ? (
+                            <span className="text-han text-5xl font-semibold">
+                                {hanOrdered.primary || (
+                                    <span className="italic text-text-muted text-sm">đang cập nhật</span>
+                                )}
+                            </span>
+                        ) : (
+                            <HanziiHanCellLink
+                                hanTraditional={hanLookup}
+                                displayText={hanOrdered.primary}
+                                emphasis="primary"
+                                className="text-5xl"
+                            />
+                        )}
+                        <div className="flex items-center gap-2">
+                            <span className="text-pinyin text-base font-semibold">
+                                {word.pinyin || <span className="italic text-text-muted">không có pinyin</span>}
+                            </span>
+                            <span className="text-text-muted text-sm">·</span>
+                            <span className={romanClass}>
+                                {romanization || <span className="italic text-text-muted">không có jyutping</span>}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </td>
             {canMark && (
-                <td className={flagColClass} onClick={stop}>
-                    <button
-                        type="button"
-                        className={cn(
-                            uiCompactIconButtonClass,
-                            "min-w-5 min-h-5 border border-border rounded-md text-xs px-0.5",
-                            word.mastered ? "text-success-text border-success-border bg-success-bg" : "text-text-muted",
+                <td className="px-5 py-2.5 align-middle max-w-[250px]" onClick={stop}>
+                    <span className="text-viet text-sm line-clamp-2">
+                        {word.vietMeanings ? (
+                            word.vietMeanings
+                        ) : (
+                            <span className="italic text-text-muted">đang cập nhật</span>
                         )}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onToggleMastered(word);
-                        }}
-                        title={word.mastered ? t.wordDetail.unmarkMastered : t.wordDetail.markMastered}
-                        aria-label={word.mastered ? t.wordDetail.unmarkMastered : t.wordDetail.markMastered}
-                    >
-                        ✓
-                    </button>
+                    </span>
                 </td>
             )}
-            {canEdit && (
-                <td className={actionsColClass} onClick={stop}>
-                    <span className="inline-flex items-center justify-center gap-1.5 align-middle">
-                        <button
-                            type="button"
-                            className={cn(
-                                uiCompactIconButtonClass,
-                                "min-w-6 min-h-6 px-1.5 py-1 text-sm text-text-muted rounded hover:bg-bg hover:text-text-h",
-                            )}
-                            onClick={startEdit}
-                            title={t.common.edit}
-                        >
-                            ✎
-                        </button>
-                        <button
-                            type="button"
-                            className={cn(
-                                uiCompactIconButtonClass,
-                                "min-w-6 min-h-6 px-1.5 py-1 text-sm text-text-muted rounded hover:bg-bg hover:text-red-600",
-                            )}
-                            onClick={() => onDelete(word)}
-                            title={t.common.delete}
-                        >
-                            🗑
-                        </button>
+            <td className="px-5 py-2.5 align-middle text-center">
+                {word.hskLevel && /\d/.test(word.hskLevel) && !pickerMode ? (
+                    <span
+                        className={cn(
+                            "inline-flex items-center justify-center h-5 text-xs font-semibold rounded-full border",
+                            hskColorClass(word.hskLevel),
+                        )}
+                        style={{ minWidth: 82 }}
+                    >
+                        {word.hskLevel}
                     </span>
+                ) : (
+                    <span
+                        className="inline-flex items-center justify-center h-5 text-xs text-text-muted"
+                        style={{ minWidth: 82 }}
+                    >
+                        <span className="italic">đang cập nhật</span>
+                    </span>
+                )}
+            </td>
+            {!pickerMode && onView && (
+                <td className="px-0.5 py-1 text-center align-middle" onClick={stop}>
+                    <div className="relative inline-block">
+                        <button
+                            type="button"
+                            className="size-8 inline-flex items-center justify-center rounded-lg text-text-muted hover:bg-bg hover:text-text-h transition-colors"
+                            onClick={() => setMenuOpen(!menuOpen)}
+                            title="Thao tác"
+                        >
+                            •••
+                        </button>
+                        {menuOpen && (
+                            <div
+                                ref={menuRef}
+                                className="absolute right-0 top-8 z-[999] min-w-36 rounded-lg border border-border bg-surface shadow-xl py-1"
+                            >
+                                <button
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent-bg inline-flex items-center gap-2"
+                                    onClick={() => {
+                                        setMenuOpen(false);
+                                        onView(word);
+                                    }}
+                                >
+                                    <IconViewDetail className="shrink-0" />
+                                    Xem chi tiết
+                                </button>
+                                {onEdit && (
+                                    <button
+                                        type="button"
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent-bg inline-flex items-center gap-2"
+                                        onClick={() => {
+                                            setMenuOpen(false);
+                                            onEdit(word);
+                                        }}
+                                    >
+                                        <IconEdit className="shrink-0" />
+                                        Sửa
+                                    </button>
+                                )}
+                                {onDelete && (
+                                    <button
+                                        type="button"
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent-bg text-red-600 inline-flex items-center gap-2"
+                                        onClick={() => {
+                                            setMenuOpen(false);
+                                            onDelete(word);
+                                        }}
+                                    >
+                                        <IconTrash className="shrink-0" />
+                                        Xóa
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </td>
             )}
         </tr>
