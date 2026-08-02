@@ -24,10 +24,9 @@ export function SentenceDetailModal({ item, onClose, onToggleImportant, onToggle
   const romanization = displayRomanization(item)
 
   return (
-    <div className={backdropClass} onClick={onClose} role="presentation">
+    <div className={backdropClass} role="presentation">
       <div
         className={modalClass}
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label={item.hanTraditional}
         aria-modal="true"

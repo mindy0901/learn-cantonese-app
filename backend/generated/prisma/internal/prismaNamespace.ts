@@ -390,10 +390,12 @@ export const ModelName = {
   VocabularyExample: 'VocabularyExample',
   VocabularyCharacter: 'VocabularyCharacter',
   Grammar: 'Grammar',
-  Lesson: 'Lesson',
+  GrammarExample: 'GrammarExample',
   User: 'User',
   UserVocabulary: 'UserVocabulary',
-  SentencePattern: 'SentencePattern'
+  SentencePattern: 'SentencePattern',
+  FlashcardDeck: 'FlashcardDeck',
+  FlashcardDeckVocabulary: 'FlashcardDeckVocabulary'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -409,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "hanCharacter" | "vocabulary" | "vocabularyMeaning" | "vocabularyExample" | "vocabularyCharacter" | "grammar" | "lesson" | "user" | "userVocabulary" | "sentencePattern"
+    modelProps: "hanCharacter" | "vocabulary" | "vocabularyMeaning" | "vocabularyExample" | "vocabularyCharacter" | "grammar" | "grammarExample" | "user" | "userVocabulary" | "sentencePattern" | "flashcardDeck" | "flashcardDeckVocabulary"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -857,77 +859,77 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    Lesson: {
-      payload: Prisma.$LessonPayload<ExtArgs>
-      fields: Prisma.LessonFieldRefs
+    GrammarExample: {
+      payload: Prisma.$GrammarExamplePayload<ExtArgs>
+      fields: Prisma.GrammarExampleFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.LessonFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload> | null
+          args: Prisma.GrammarExampleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.LessonFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload>
+          args: Prisma.GrammarExampleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload>
         }
         findFirst: {
-          args: Prisma.LessonFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload> | null
+          args: Prisma.GrammarExampleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.LessonFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload>
+          args: Prisma.GrammarExampleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload>
         }
         findMany: {
-          args: Prisma.LessonFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload>[]
+          args: Prisma.GrammarExampleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload>[]
         }
         create: {
-          args: Prisma.LessonCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload>
+          args: Prisma.GrammarExampleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload>
         }
         createMany: {
-          args: Prisma.LessonCreateManyArgs<ExtArgs>
+          args: Prisma.GrammarExampleCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.LessonCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload>[]
+          args: Prisma.GrammarExampleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload>[]
         }
         delete: {
-          args: Prisma.LessonDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload>
+          args: Prisma.GrammarExampleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload>
         }
         update: {
-          args: Prisma.LessonUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload>
+          args: Prisma.GrammarExampleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload>
         }
         deleteMany: {
-          args: Prisma.LessonDeleteManyArgs<ExtArgs>
+          args: Prisma.GrammarExampleDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.LessonUpdateManyArgs<ExtArgs>
+          args: Prisma.GrammarExampleUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.LessonUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload>[]
+          args: Prisma.GrammarExampleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload>[]
         }
         upsert: {
-          args: Prisma.LessonUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonPayload>
+          args: Prisma.GrammarExampleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GrammarExamplePayload>
         }
         aggregate: {
-          args: Prisma.LessonAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateLesson>
+          args: Prisma.GrammarExampleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGrammarExample>
         }
         groupBy: {
-          args: Prisma.LessonGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.LessonGroupByOutputType>[]
+          args: Prisma.GrammarExampleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GrammarExampleGroupByOutputType>[]
         }
         count: {
-          args: Prisma.LessonCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.LessonCountAggregateOutputType> | number
+          args: Prisma.GrammarExampleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GrammarExampleCountAggregateOutputType> | number
         }
       }
     }
@@ -1153,6 +1155,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    FlashcardDeck: {
+      payload: Prisma.$FlashcardDeckPayload<ExtArgs>
+      fields: Prisma.FlashcardDeckFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FlashcardDeckFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FlashcardDeckFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload>
+        }
+        findFirst: {
+          args: Prisma.FlashcardDeckFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FlashcardDeckFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload>
+        }
+        findMany: {
+          args: Prisma.FlashcardDeckFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload>[]
+        }
+        create: {
+          args: Prisma.FlashcardDeckCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload>
+        }
+        createMany: {
+          args: Prisma.FlashcardDeckCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FlashcardDeckCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload>[]
+        }
+        delete: {
+          args: Prisma.FlashcardDeckDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload>
+        }
+        update: {
+          args: Prisma.FlashcardDeckUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload>
+        }
+        deleteMany: {
+          args: Prisma.FlashcardDeckDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FlashcardDeckUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FlashcardDeckUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload>[]
+        }
+        upsert: {
+          args: Prisma.FlashcardDeckUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckPayload>
+        }
+        aggregate: {
+          args: Prisma.FlashcardDeckAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFlashcardDeck>
+        }
+        groupBy: {
+          args: Prisma.FlashcardDeckGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FlashcardDeckGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FlashcardDeckCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FlashcardDeckCountAggregateOutputType> | number
+        }
+      }
+    }
+    FlashcardDeckVocabulary: {
+      payload: Prisma.$FlashcardDeckVocabularyPayload<ExtArgs>
+      fields: Prisma.FlashcardDeckVocabularyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FlashcardDeckVocabularyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FlashcardDeckVocabularyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload>
+        }
+        findFirst: {
+          args: Prisma.FlashcardDeckVocabularyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FlashcardDeckVocabularyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload>
+        }
+        findMany: {
+          args: Prisma.FlashcardDeckVocabularyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload>[]
+        }
+        create: {
+          args: Prisma.FlashcardDeckVocabularyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload>
+        }
+        createMany: {
+          args: Prisma.FlashcardDeckVocabularyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FlashcardDeckVocabularyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload>[]
+        }
+        delete: {
+          args: Prisma.FlashcardDeckVocabularyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload>
+        }
+        update: {
+          args: Prisma.FlashcardDeckVocabularyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload>
+        }
+        deleteMany: {
+          args: Prisma.FlashcardDeckVocabularyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FlashcardDeckVocabularyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FlashcardDeckVocabularyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload>[]
+        }
+        upsert: {
+          args: Prisma.FlashcardDeckVocabularyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FlashcardDeckVocabularyPayload>
+        }
+        aggregate: {
+          args: Prisma.FlashcardDeckVocabularyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFlashcardDeckVocabulary>
+        }
+        groupBy: {
+          args: Prisma.FlashcardDeckVocabularyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FlashcardDeckVocabularyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FlashcardDeckVocabularyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FlashcardDeckVocabularyCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1220,6 +1370,11 @@ export const VocabularyScalarFieldEnum = {
   vietMeanings: 'vietMeanings',
   engMeanings: 'engMeanings',
   vietExamples: 'vietExamples',
+  pos: 'pos',
+  frequency: 'frequency',
+  radical: 'radical',
+  classifiers: 'classifiers',
+  pinyinNumeric: 'pinyinNumeric',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1273,7 +1428,12 @@ export const GrammarScalarFieldEnum = {
   userId: 'userId',
   title: 'title',
   content: 'content',
+  details: 'details',
+  notes: 'notes',
+  structure: 'structure',
   hskLevel: 'hskLevel',
+  important: 'important',
+  mastered: 'mastered',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1281,23 +1441,26 @@ export const GrammarScalarFieldEnum = {
 export type GrammarScalarFieldEnum = (typeof GrammarScalarFieldEnum)[keyof typeof GrammarScalarFieldEnum]
 
 
-export const LessonScalarFieldEnum = {
+export const GrammarExampleScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
-  title: 'title',
-  vocabularyIds: 'vocabularyIds',
-  grammarIds: 'grammarIds',
-  hskLevel: 'hskLevel',
+  grammarId: 'grammarId',
+  hanExample: 'hanExample',
+  jyutpingExample: 'jyutpingExample',
+  pinyinExample: 'pinyinExample',
+  vietExample: 'vietExample',
+  engExample: 'engExample',
+  position: 'position',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type LessonScalarFieldEnum = (typeof LessonScalarFieldEnum)[keyof typeof LessonScalarFieldEnum]
+export type GrammarExampleScalarFieldEnum = (typeof GrammarExampleScalarFieldEnum)[keyof typeof GrammarExampleScalarFieldEnum]
 
 
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
+  password: 'password',
   name: 'name',
   isAdmin: 'isAdmin',
   createdAt: 'createdAt',
@@ -1339,6 +1502,30 @@ export const SentencePatternScalarFieldEnum = {
 } as const
 
 export type SentencePatternScalarFieldEnum = (typeof SentencePatternScalarFieldEnum)[keyof typeof SentencePatternScalarFieldEnum]
+
+
+export const FlashcardDeckScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  description: 'description',
+  color: 'color',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FlashcardDeckScalarFieldEnum = (typeof FlashcardDeckScalarFieldEnum)[keyof typeof FlashcardDeckScalarFieldEnum]
+
+
+export const FlashcardDeckVocabularyScalarFieldEnum = {
+  id: 'id',
+  deckId: 'deckId',
+  vocabularyId: 'vocabularyId',
+  position: 'position',
+  createdAt: 'createdAt'
+} as const
+
+export type FlashcardDeckVocabularyScalarFieldEnum = (typeof FlashcardDeckVocabularyScalarFieldEnum)[keyof typeof FlashcardDeckVocabularyScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1549,10 +1736,12 @@ export type GlobalOmitConfig = {
   vocabularyExample?: Prisma.VocabularyExampleOmit
   vocabularyCharacter?: Prisma.VocabularyCharacterOmit
   grammar?: Prisma.GrammarOmit
-  lesson?: Prisma.LessonOmit
+  grammarExample?: Prisma.GrammarExampleOmit
   user?: Prisma.UserOmit
   userVocabulary?: Prisma.UserVocabularyOmit
   sentencePattern?: Prisma.SentencePatternOmit
+  flashcardDeck?: Prisma.FlashcardDeckOmit
+  flashcardDeckVocabulary?: Prisma.FlashcardDeckVocabularyOmit
 }
 
 /* Types for Logging */

@@ -4,7 +4,6 @@ import { useLocale } from "../store/localeStore.js";
 import { cn } from "../lib/cn.js";
 import { uiCompactIconButtonClass } from "./ui/controlStyles.js";
 import { HanziiHanCellLink } from "./HanziiHanCellLink.jsx";
-import { hanPopularityClass, normalizePopularity } from "../lib/wordPopularity.js";
 import { hanCharacterDetailPath } from "../lib/hanCharacterRoutes.js";
 
 const tdClass = "px-3.5 py-2.5 text-left align-middle truncate max-w-[200px]";
@@ -54,20 +53,22 @@ const MultiInput = memo(function MultiInput({ values, onChange, placeholder, add
 export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canEdit, onSave, onDelete }) {
     const { t } = useLocale();
     const [editing, setEditing] = useState(false);
-    const [draftHan, setDraftHan] = useState(item.hanSimplified ?? item.character);
+    // Hán tự chỉ có 1 phiên bản (simplified === traditional) => không có simplified riêng
+    const hasDistinctSimplified = Boolean(item.hanSimplified && item.hanSimplified !== (item.hanTraditional ?? ""));
+    const [draftHan, setDraftHan] = useState(hasDistinctSimplified ? item.hanSimplified : "");
+    const [draftHanTraditional, setDraftHanTraditional] = useState(item.hanTraditional ?? "");
     const initArr = (v) => (Array.isArray(v) && v.length > 0 ? [...v] : [""]);
     const [readings, setReadings] = useState(() => initArr(item.sinoVietnamese));
     const [pinyins, setPinyins] = useState(() => initArr(item.pinyin));
     const [jyutpings, setJyutpings] = useState(() => initArr(item.jyutping));
-    const [draftPopularity, setDraftPopularity] = useState(() => normalizePopularity(item.popularity));
 
     const startEdit = (e) => {
         e.stopPropagation();
-        setDraftHan(item.hanSimplified ?? item.character);
+        setDraftHan(hasDistinctSimplified ? item.hanSimplified : "");
+        setDraftHanTraditional(item.hanTraditional ?? "");
         setReadings(initArr(item.sinoVietnamese));
         setPinyins(initArr(item.pinyin));
         setJyutpings(initArr(item.jyutping));
-        setDraftPopularity(normalizePopularity(item.popularity));
         setEditing(true);
     };
 
@@ -78,14 +79,14 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
 
     const saveEdit = (e) => {
         e.stopPropagation();
-        if (!draftHan.trim()) return;
+        if (!draftHan.trim() && !draftHanTraditional.trim()) return;
         const filterArr = (arr) => arr.map((r) => r.trim()).filter(Boolean);
         onSave(item, {
-            hanSimplified: draftHan.trim(),
+            hanSimplified: draftHan.trim() || undefined,
+            hanTraditional: draftHanTraditional.trim() || draftHan.trim(),
             sinoVietnamese: filterArr(readings).length > 0 ? filterArr(readings) : undefined,
             pinyin: filterArr(pinyins).length > 0 ? filterArr(pinyins) : undefined,
             jyutping: filterArr(jyutpings).length > 0 ? filterArr(jyutpings) : undefined,
-            popularity: draftPopularity,
         });
         setEditing(false);
     };
@@ -108,19 +109,28 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                     {index + 1}
                 </td>
                 <td className={tdEditClass}>
-                    <input
-                        className={cn(cellInputClass, hanCharClass, "!text-red-600 dark:!text-red-400")}
-                        value={draftHan}
-                        onChange={(e) => setDraftHan(e.target.value)}
-                    />
-                </td>
-                <td className={tdEditClass}>
                     <MultiInput
                         values={readings}
                         onChange={setReadings}
                         placeholder={t.hanCharacters.hanVietHint}
                         addLabel={t.hanCharacters.addReading || "Add"}
                     />
+                </td>
+                <td className={tdEditClass}>
+                    <div className="flex flex-col gap-1">
+                        <input
+                            className={cn(cellInputClass, hanCharClass, "!text-red-600 dark:!text-red-400")}
+                            value={draftHanTraditional}
+                            onChange={(e) => setDraftHanTraditional(e.target.value)}
+                            placeholder="Traditional"
+                        />
+                        <input
+                            className={cn(cellInputClass, hanCharClass, "!text-blue-600 dark:!text-blue-400")}
+                            value={draftHan}
+                            onChange={(e) => setDraftHan(e.target.value)}
+                            placeholder="Simplified"
+                        />
+                    </div>
                 </td>
                 <td className={tdEditClass}>
                     <MultiInput
@@ -137,23 +147,6 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                         placeholder="jyutping"
                         addLabel={t.hanCharacters.addReading || "Add"}
                     />
-                </td>
-                <td className={tdEditClass}>
-                    <select
-                        className={cn(cellInputClass, "text-center")}
-                        value={draftPopularity ?? ""}
-                        onChange={(e) => {
-                            const v = e.target.value;
-                            setDraftPopularity(v === "" ? null : Number(v));
-                        }}
-                    >
-                        <option value="">—</option>
-                        {[0, 1, 2, 3, 4].map((n) => (
-                            <option key={n} value={n}>
-                                {t.wordPopularity.levels[n]}
-                            </option>
-                        ))}
-                    </select>
                 </td>
                 <td className="px-0.5 py-1.5 text-center align-top whitespace-nowrap">
                     <span className="inline-flex items-center justify-center gap-1.5 align-middle">
@@ -185,41 +178,10 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
         );
     }
 
-    const toggleImportant = (e) => {
-        e.stopPropagation();
-        onSave(item, { important: !item.important });
-    };
-
-    const toggleMastered = (e) => {
-        e.stopPropagation();
-        onSave(item, { mastered: !item.mastered });
-    };
-
     return (
         <tr className={cn(rowClass, "hover:bg-accent-bg")}>
             <td className="px-1.5 py-2.5 text-center text-text-muted text-[0.8125rem] whitespace-nowrap">
                 {index + 1}
-            </td>
-            <td className={tdClass}>
-                <HanziiHanCellLink
-                    hanTraditional={item.hanSimplified ?? item.character}
-                    displayText={item.hanSimplified ?? item.character}
-                    popularity={item.popularity}
-                    className={cn(hanCharClass, "text-red-600 dark:text-red-400")}
-                />
-                {item.hanTraditional && item.hanTraditional !== (item.hanSimplified ?? item.character) && (
-                    <>
-                        <span className={cn(hanCharClass, "inline align-middle text-red-600 dark:text-red-400")}>
-                            {" "}
-                            /{" "}
-                        </span>
-                        <HanziiHanCellLink
-                            hanTraditional={item.hanTraditional}
-                            displayText={item.hanTraditional}
-                            className={cn(hanCharClass, "text-red-600 dark:text-red-400")}
-                        />
-                    </>
-                )}
             </td>
             <td className={cn(tdClass, "text-text-h text-sm")}>
                 {Array.isArray(item.sinoVietnamese) && item.sinoVietnamese.length > 0
@@ -234,6 +196,23 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                               </span>
                           ))
                     : "—"}
+            </td>
+            <td className={tdClass}>
+                <HanziiHanCellLink
+                    hanTraditional={item.hanTraditional ?? item.hanSimplified ?? item.character}
+                    displayText={item.hanTraditional ?? item.hanSimplified ?? item.character}
+                    className={cn(hanCharClass, "text-red-600 dark:text-red-400")}
+                />
+                {item.hanSimplified && item.hanSimplified !== (item.hanTraditional ?? "") && (
+                    <>
+                        <span className={cn(hanCharClass, "inline align-middle text-text-muted")}> / </span>
+                        <HanziiHanCellLink
+                            hanTraditional={item.hanSimplified}
+                            displayText={item.hanSimplified}
+                            className={cn(hanCharClass, "text-blue-600 dark:text-blue-400")}
+                        />
+                    </>
+                )}
             </td>
             <td className={cn(tdClass, "text-text-h text-sm italic")}>
                 {(() => {
@@ -269,50 +248,10 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                         : "—";
                 })()}
             </td>
-            <td className="px-1.5 py-1 text-center align-middle min-w-[100px]" onClick={stop}>
-                {(() => {
-                    const lvl = normalizePopularity(item.popularity);
-                    if (lvl === null) return <span className="text-text-muted text-sm">—</span>;
-                    const cls = hanPopularityClass(lvl);
-                    return <span className={cn("text-sm font-semibold", cls)}>{t.wordPopularity.levels[lvl]}</span>;
-                })()}
-            </td>
             <td className="px-0.5 py-1.5 text-center align-middle whitespace-nowrap" onClick={stop}>
                 <span className="inline-flex items-center justify-center gap-1 align-middle">
                     {canEdit && (
                         <>
-                            <button
-                                type="button"
-                                className={cn(
-                                    uiCompactIconButtonClass,
-                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-bg",
-                                    item.important ? "text-yellow-500" : "text-text-muted",
-                                )}
-                                onClick={toggleImportant}
-                                title={
-                                    item.important
-                                        ? t.common.unimportant || "Bỏ quan trọng"
-                                        : t.common.important || "Quan trọng"
-                                }
-                            >
-                                ★
-                            </button>
-                            <button
-                                type="button"
-                                className={cn(
-                                    uiCompactIconButtonClass,
-                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-bg",
-                                    item.mastered ? "text-green-500" : "text-text-muted",
-                                )}
-                                onClick={toggleMastered}
-                                title={
-                                    item.mastered
-                                        ? t.common.unmastered || "Bỏ đã thuộc"
-                                        : t.common.mastered || "Đã thuộc"
-                                }
-                            >
-                                ✓
-                            </button>
                             <button
                                 type="button"
                                 className={cn(
@@ -338,7 +277,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                             <Link
                                 to={hanCharacterDetailPath(item.id)}
                                 className="inline-flex items-center justify-center size-8 rounded-lg border border-border bg-surface text-text-muted no-underline transition-colors duration-150 hover:border-accent-border hover:text-accent hover:bg-accent/10"
-                                title={t.hanCharacters?.viewDetail ?? "Xem chi tiết"}
+                                title={t.hanCharacters?.viewDetail ?? "View details"}
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <svg

@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { FlashcardDeck } from "../components/FlashcardDeck.jsx";
 import { FlashcardStatsPanel } from "../components/FlashcardStatsPanel.jsx";
 import { FlashcardSessionSetup } from "../components/FlashcardSessionSetup.jsx";
+import { FlashcardDeckManager } from "../components/FlashcardDeckManager.jsx";
 import { useVocabularyCount, useVocabulariesRevision, useAppActions } from "../store/appStore.js";
-import { useIsAdmin } from "../store/authStore.js";
+import { useIsAdmin, useIsSignedIn } from "../store/authStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { fetchFlashcardVocabularies } from "../lib/flashcardWords.js";
 import { btnClass } from "../components/ui/buttonStyles.js";
@@ -18,10 +19,12 @@ export function FlashcardPage() {
     const { mergeVocabularies } = useAppActions();
     const { t, fmt } = useLocale();
     const isAdmin = useIsAdmin();
+    const isSignedIn = useIsSignedIn();
     const [sessionConfig, setSessionConfig] = useState(null);
     const [sessionWords, setSessionWords] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loadError, setLoadError] = useState(null);
+    const [showDeckManager, setShowDeckManager] = useState(false);
 
     const startSession = useCallback(
         async (config) => {
@@ -31,14 +34,19 @@ export function FlashcardPage() {
                 const words = await fetchFlashcardVocabularies(config.sessionSize, {
                     source: config.source,
                     scope: config.scope,
-                    lessonId: config.lessonId,
-                    lesson: config.lesson,
+                    deckId: config.deckId,
                     mergeVocabularies,
                     revision: wordsRevision,
-                    wordTotal: wordCount,
+                    vocabularyTotal: wordCount,
                 });
                 if (words.length === 0) {
-                    setLoadError(config.source === "due" ? t.flashcard.noDueCards : t.flashcard.noCardsLeft);
+                    if (config.source === "deck") {
+                        setLoadError(t.flashcard.noDeckCards);
+                    } else if (config.source === "due") {
+                        setLoadError(t.flashcard.noDueCards);
+                    } else {
+                        setLoadError(t.flashcard.noCardsLeft);
+                    }
                     return;
                 }
                 setSessionConfig(config);
@@ -49,7 +57,14 @@ export function FlashcardPage() {
                 setLoading(false);
             }
         },
-        [mergeVocabularies, wordsRevision, wordCount, t.flashcard.noDueCards, t.flashcard.noCardsLeft],
+        [
+            mergeVocabularies,
+            wordsRevision,
+            wordCount,
+            t.flashcard.noDueCards,
+            t.flashcard.noCardsLeft,
+            t.flashcard.noDeckCards,
+        ],
     );
 
     const resetSession = useCallback(() => {
@@ -63,9 +78,21 @@ export function FlashcardPage() {
         return startSession(sessionConfig);
     }, [sessionConfig, startSession]);
 
+    if (!isSignedIn) {
+        return (
+            <main className="flex-1 w-full px-5 py-8 pb-12">
+                <EmptyState
+                    icon={<IconFlashcard size={28} />}
+                    title={t.data.signInTitle}
+                    description={t.data.signInBody}
+                />
+            </main>
+        );
+    }
+
     if (wordCount === 0) {
         return (
-            <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
+            <main className="flex-1 w-full px-5 py-8 pb-12">
                 <EmptyState
                     icon={<IconFlashcard size={28} />}
                     title={t.flashcard.empty}
@@ -81,7 +108,7 @@ export function FlashcardPage() {
     }
 
     return (
-        <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
+        <main className="flex-1 w-full px-5 py-8 pb-12">
             <div className="flex items-start justify-between gap-4 mb-6 max-sm:flex-col">
                 <div>
                     <h1>{t.flashcard.title}</h1>
@@ -96,6 +123,16 @@ export function FlashcardPage() {
                         {t.flashcard.newSession}
                     </button>
                 )}
+                {!sessionConfig && !showDeckManager && (
+                    <button type="button" className={btnClass("ghost", "sm")} onClick={() => setShowDeckManager(true)}>
+                        {t.flashcard.manageDecks}
+                    </button>
+                )}
+                {showDeckManager && (
+                    <button type="button" className={btnClass("ghost", "sm")} onClick={() => setShowDeckManager(false)}>
+                        {t.common.close}
+                    </button>
+                )}
             </div>
 
             {loadError && (
@@ -107,7 +144,9 @@ export function FlashcardPage() {
                 </p>
             )}
 
-            {!sessionConfig ? (
+            {showDeckManager ? (
+                <FlashcardDeckManager onClose={() => setShowDeckManager(false)} />
+            ) : !sessionConfig ? (
                 loading ? (
                     <div className="flex flex-col gap-5">
                         <SkeletonStats stats={6} />

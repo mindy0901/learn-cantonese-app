@@ -105,9 +105,9 @@ export function HanCharactersPage() {
             }
             await refreshHanCharacters();
             if (removed > 0) {
-                alert(`Đã xóa ${removed} hán tự trùng lặp.`);
+                alert(`Removed ${removed} duplicate Chinese characters.`);
             } else {
-                alert("Không có hán tự trùng lặp.");
+                alert("No duplicate Chinese characters found.");
             }
         } finally {
             setDeduping(false);
@@ -200,35 +200,14 @@ export function HanCharactersPage() {
     const handleUpdate = useCallback(
         async (existing, patch) => {
             try {
-                const isFlagsOnly =
-                    Object.keys(patch).every((k) => k === "important" || k === "mastered" || k === "popularity") &&
-                    !(
-                        "hanSimplified" in patch ||
-                        "sinoVietnamese" in patch ||
-                        "pinyin" in patch ||
-                        "jyutping" in patch
-                    );
-
-                let updated;
-                if (isFlagsOnly) {
-                    updated = await api.patchHanCharacterFlags(existing.id, patch);
-                } else {
-                    updated = await api.updateHanCharacter(existing.id, {
-                        ...existing,
-                        ...patch,
-                    });
-                }
-
-                const filterChanged =
-                    ("important" in patch && patch.important !== existing.important) ||
-                    ("mastered" in patch && patch.mastered !== existing.mastered);
+                const updated = await api.updateHanCharacter(existing.id, {
+                    ...existing,
+                    ...patch,
+                });
 
                 invalidateHanCharacterBrowseCache();
                 mergeHanCharacters([updated]);
-
-                if (!filterChanged) {
-                    setItems((prev) => prev.map((it) => (it.id === existing.id ? { ...it, ...updated } : it)));
-                }
+                setItems((prev) => prev.map((it) => (it.id === existing.id ? { ...it, ...updated } : it)));
             } catch (err) {
                 logError("Update han character failed", err instanceof Error ? err.message : String(err));
             }
@@ -314,59 +293,27 @@ export function HanCharactersPage() {
         try {
             const result = await api.backfillHanCharVariants();
             setVariantResult(result);
-            logWarn(
-                `Han char variants backfill: updated ${result.updated ?? "?"}, same ${result.same ?? "?"}, skipped ${result.skipped ?? "?"} / ${result.total ?? "?"}`,
-            );
-            invalidateHanCharacterBrowseCache();
-            await refreshHanCharacters();
-        } catch (err) {
-            logError("Han char variants backfill failed", err instanceof Error ? err.message : String(err));
-        } finally {
-            setSyncingVariants(false);
-        }
-    }, [refreshHanCharacters]);
-
-    const [syncingSinoVietnamese, setSyncingSinoVietnamese] = useState(false);
-    const handleBackfillSinoVietnamese = useCallback(async () => {
-        setSyncingSinoVietnamese(true);
-        try {
-            const result = await api.backfillHanCharSinoVietnamese();
-            logWarn(`Han char sino-vietnamese backfill: updated ${result.updated ?? "?"} / ${result.total ?? "?"}`);
-            invalidateHanCharacterBrowseCache();
-            await refreshHanCharacters();
-        } catch (err) {
-            logError("Han char sino-vietnamese backfill failed", err instanceof Error ? err.message : String(err));
-        } finally {
-            setSyncingSinoVietnamese(false);
-        }
-    }, [refreshHanCharacters]);
-
-    const [syncingRelations, setSyncingRelations] = useState(false);
-    const handleBackfillRelations = useCallback(async () => {
-        setSyncingRelations(true);
-        try {
-            const result = await api.backfillWordHanRelations();
-            logWarn(`Word-han relations: ${result.added ?? "?"} links / ${result.total ?? "?"} words`);
-        } catch (err) {
-            logError("Word-han relations backfill failed", err instanceof Error ? err.message : String(err));
-        } finally {
-            setSyncingRelations(false);
-        }
-    }, []);
-
-    const [syncingFromVocab, setSyncingFromVocab] = useState(false);
-    const handleSyncFromVocab = useCallback(async () => {
-        setSyncingFromVocab(true);
-        try {
-            const result = await api.syncHanCharsFromVocab();
-            alert(`Đã tạo ${result.created} hán tự mới, cập nhật ${result.updated}. Tổng: ${result.total} chữ Hán.`);
+            const lines = [];
+            if (result.updated > 0) lines.push(`✅ Updated variants: ${result.updated}`);
+            if (result.merged > 0) lines.push(`🔗 Merged duplicates: ${result.merged}`);
+            if (result.same > 0) lines.push(`= Same (no change): ${result.same}`);
+            if (result.skipped > 0) lines.push(`⏭️ Skipped: ${result.skipped}`);
+            lines.push(`📊 Total: ${result.total}`);
+            if (result.mergedSample?.length > 0) {
+                lines.push(`\nMerged: ${result.mergedSample.join(", ")}`);
+            }
+            if (result.updatedSample?.length > 0) {
+                lines.push(`Updated: ${result.updatedSample.join(", ")}`);
+            }
+            alert(lines.join("\n"));
             invalidateHanCharacterBrowseCache();
             invalidateDataCache();
             await refreshHanCharacters();
         } catch (err) {
-            logError("Sync han chars from vocab failed", err instanceof Error ? err.message : String(err));
+            logError("Han char variants backfill failed", err instanceof Error ? err.message : String(err));
+            alert("Failed: " + (err instanceof Error ? err.message : String(err)));
         } finally {
-            setSyncingFromVocab(false);
+            setSyncingVariants(false);
         }
     }, [refreshHanCharacters]);
 
@@ -381,62 +328,35 @@ export function HanCharactersPage() {
 
     return (
         <main className="flex-1 w-full mx-auto px-5 pt-8 pb-12">
-            <div className="flex gap-6 items-start max-w-[1400px] mx-auto">
+            <div className="flex gap-6 items-start mx-auto">
                 {/* ── Left Sidebar: Sync Tools ── */}
                 {isAdmin && (
                     <aside className="shrink-0 w-56 flex flex-col gap-3 sticky top-20">
                         <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted m-0 px-1">
-                            Đồng bộ dữ liệu
+                            Sync Data
                         </h3>
 
                         <SyncButton
-                            label="Hán-Việt"
-                            desc="Từ phienam.txt"
-                            count={storeHanCharacters.length}
-                            loading={syncingSinoVietnamese}
-                            onClick={handleBackfillSinoVietnamese}
-                        />
-                        <SyncButton
                             label="Pinyin"
-                            desc="Từ pinyin-pro (OpenCC)"
+                            desc="From pinyin-pro (OpenCC)"
                             count={storeHanCharacters.length}
                             loading={syncingPinyin}
                             onClick={handleBackfillPinyin}
                         />
                         <SyncButton
                             label="Jyutping"
-                            desc="Từ jyut6ping3.dict.yaml"
+                            desc="From jyut6ping3.dict.yaml"
                             count={storeHanCharacters.length}
                             loading={syncingJyutping}
                             onClick={handleBackfillJyutping}
                         />
                         <SyncButton
-                            label="Phồn/Giản"
-                            desc="Từ OpenCC (2 chiều)"
+                            label="Traditional/Simplified"
+                            desc="From OpenCC (both ways)"
                             count={storeHanCharacters.length}
                             loading={syncingVariants}
                             onClick={handleBackfillVariants}
                         />
-
-                        <div className="border-t border-border pt-3 mt-1">
-                            <SyncButton
-                                label="Quan hệ Từ-Hán"
-                                desc="Liên kết từ vựng ↔ hán tự"
-                                count={storeHanCharacters.length}
-                                loading={syncingRelations}
-                                onClick={handleBackfillRelations}
-                            />
-                        </div>
-
-                        <div className="border-t border-border pt-3 mt-1">
-                            <SyncButton
-                                label="Từ Kho Từ"
-                                desc="Thu thập chữ Hán + âm đọc từ vựng"
-                                count={storeHanCharacters.length}
-                                loading={syncingFromVocab}
-                                onClick={handleSyncFromVocab}
-                            />
-                        </div>
 
                         <div className="border-t border-border pt-3 mt-1">
                             <MissingHanCharsSync />
@@ -450,10 +370,10 @@ export function HanCharactersPage() {
                                 disabled={deduping}
                             >
                                 <span className="block text-xs font-semibold text-error-text">
-                                    {deduping ? "Đang xóa..." : "Xóa trùng lặp"}
+                                    {deduping ? "Removing..." : "Remove duplicates"}
                                 </span>
                                 <span className="block text-[0.6875rem] text-text-muted mt-0.5">
-                                    Gộp hán tự giống nhau
+                                    Merge duplicate characters
                                 </span>
                             </button>
                         </div>
@@ -524,13 +444,14 @@ export function HanCharactersPage() {
                                     <thead>
                                         <tr className="border-b border-border bg-bg text-left text-text-muted text-xs uppercase tracking-wider">
                                             <th className="px-1.5 py-3 text-center w-10">#</th>
-                                            <th className="px-3.5 py-3">{t.hanCharacters.hanCharacter || "Hán tự"}</th>
-                                            <th className="px-3.5 py-3">{t.hanCharacters.hanViet || "Hán Việt"}</th>
+                                            <th className="px-3.5 py-3">
+                                                {t.hanCharacters.hanViet || "Sino-Vietnamese"}
+                                            </th>
+                                            <th className="px-3.5 py-3">
+                                                {t.hanCharacters.hanCharacter || "Chinese Character"}
+                                            </th>
                                             <th className="px-3.5 py-3">{t.hanCharacters.pinyin || "Pinyin"}</th>
                                             <th className="px-3.5 py-3">{t.hanCharacters.jyutping || "Jyutping"}</th>
-                                            <th className="px-3.5 py-3 text-center">
-                                                {t.wordPopularity.label || "Phổ biến"}
-                                            </th>
                                             <th className="px-3.5 py-3 text-center w-24">{t.common.actions || ""}</th>
                                         </tr>
                                     </thead>
@@ -585,7 +506,7 @@ export function HanCharactersPage() {
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-base font-semibold">Đồng bộ Phồn/Giản (OpenCC)</h3>
+                                    <h3 className="text-base font-semibold">Sync Traditional/Simplified (OpenCC)</h3>
                                     <button
                                         type="button"
                                         className="text-xl text-text-muted hover:text-text-h"
@@ -596,16 +517,16 @@ export function HanCharactersPage() {
                                 </div>
                                 <div className="flex flex-col gap-2 text-sm text-text-h">
                                     <p>
-                                        Tổng: <strong>{variantResult.total}</strong> chữ
+                                        Total: <strong>{variantResult.total}</strong> characters
                                     </p>
                                     <p className="text-green-600">
-                                        Đã cập nhật giản thể: <strong>{variantResult.updated}</strong>
+                                        Updated simplified: <strong>{variantResult.updated}</strong>
                                     </p>
                                     <p className="text-text-muted">
-                                        Giản/Phồn giống nhau: <strong>{variantResult.same}</strong>
+                                        Same simplified/traditional: <strong>{variantResult.same}</strong>
                                     </p>
                                     <p className="text-text-muted">
-                                        Bỏ qua: <strong>{variantResult.skipped}</strong>
+                                        Skipped: <strong>{variantResult.skipped}</strong>
                                     </p>
                                 </div>
                                 <button
@@ -613,7 +534,7 @@ export function HanCharactersPage() {
                                     className={cn(btnClass("primary"), "mt-4 w-full")}
                                     onClick={() => setVariantResult(null)}
                                 >
-                                    Đóng
+                                    Close
                                 </button>
                             </div>
                         </div>
@@ -635,7 +556,7 @@ function SyncButton({ label, desc, count, loading, onClick }) {
             disabled={loading}
         >
             <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-text-h">{loading ? "Đang chạy..." : label}</span>
+                <span className="text-sm font-medium text-text-h">{loading ? "Running..." : label}</span>
                 {loading ? (
                     <span className="text-xs text-text-muted">⏳</span>
                 ) : (

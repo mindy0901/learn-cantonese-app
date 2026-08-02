@@ -1,4 +1,4 @@
-/** Compact frontend logs — "Fetch all Data (Word:2000, Lesson:20)", "Update word: aaa complete" */
+/** Compact frontend logs — "Fetch all Data (Word:2000, Grammar:15)", "Update word: aaa complete" */
 
 function emit(level, message) {
     const line = String(message ?? "").trim();
@@ -27,12 +27,11 @@ function emitGroup(label, payload, level = "info") {
 // --- Structured log helpers ---
 
 /** Log data fetch completion with counts.
- *  Usage: logFetchDone({ words:2000, lessons:20, grammar:15 })
+ *  Usage: logFetchDone({ words:2000, grammar:15 })
  */
 export function logFetchDone(counts) {
     const parts = [];
     if (counts.words != null) parts.push(`Word:${counts.words}`);
-    if (counts.lessons != null) parts.push(`Lesson:${counts.lessons}`);
     if (counts.grammar != null) parts.push(`Grammar:${counts.grammar}`);
     if (counts.sentences != null) parts.push(`Sentence:${counts.sentences}`);
     if (counts.hanCharacters != null) parts.push(`HanChar:${counts.hanCharacters}`);
@@ -92,7 +91,7 @@ export function subjectLabel(subject) {
     if (typeof o.error === "string" && o.error.trim()) return o.error.trim();
     if (typeof o.path === "string" && o.path.trim()) return o.path.trim();
 
-    for (const key of ["wordId", "grammarId", "sentenceId", "lessonId", "id"]) {
+    for (const key of ["wordId", "grammarId", "sentenceId", "id"]) {
         if (o[key] != null && o[key] !== "") return `#${String(o[key]).slice(0, 8)}`;
     }
 

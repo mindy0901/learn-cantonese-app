@@ -102,8 +102,8 @@ export function AddSentenceModal({ onSave, onClose, item: editItem, existingItem
     };
 
     return (
-        <div className={backdropClass} onClick={onClose} role="presentation">
-            <div className={modalClass} onClick={(e) => e.stopPropagation()} role="dialog">
+        <div className={backdropClass} role="presentation">
+            <div className={modalClass} role="dialog">
                 <div className="flex items-center justify-between border-b border-border px-6 py-5">
                     <h2>{isEdit ? t.common.edit : t.sentenceBank.addTitle}</h2>
                     <button

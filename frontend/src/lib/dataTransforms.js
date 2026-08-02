@@ -1,4 +1,4 @@
-import { emptyGrammar, emptyGrammarBankItem, emptySentencePattern } from "../types/word.js";
+import { emptyGrammarBankItem, emptySentencePattern } from "../types/word.js";
 import { normalizeVocabularyFields } from "./wordNormalize.js";
 import { getGrammarSearchBlob } from "./grammarSearch.js";
 import { getSentenceSearchBlob } from "./sentenceSearch.js";
@@ -63,23 +63,6 @@ export function migrateSentencePattern(raw) {
     };
 }
 
-export function migrateLesson(raw) {
-    if (!raw) return null;
-    return {
-        id: raw.id,
-        name: raw.name || raw.title || "",
-        wordIds: raw.wordIds ?? raw.vocabularyIds ?? [],
-        grammar: Array.isArray(raw.grammar)
-            ? raw.grammar.map((g) => ({ ...g, mastered: g.mastered ?? false }))
-            : Array.isArray(raw.grammarIds)
-              ? raw.grammarIds.map((id) => ({ id, title: "", content: "" }))
-              : [],
-        hskLevel: raw.hskLevel ?? raw.hsk_level ?? "",
-        createdAt: raw.createdAt,
-        updatedAt: raw.updatedAt ?? raw.createdAt,
-    };
-}
-
 /** Pre-index for fast search filtering (client-only, not sent to API). */
 export function indexVocabulary(vocab, sortSeq) {
     const migrated = migrateVocabulary(vocab);
@@ -131,11 +114,10 @@ export function indexSentencePatterns(items) {
     return items.map((item, index) => indexSentencePattern(item, index));
 }
 
-export function indexCloudPayload({ vocabularies = [], grammars = [], lessons = [], sentencePatterns = [] }) {
+export function indexCloudPayload({ vocabularies = [], grammars = [], sentencePatterns = [] }) {
     return {
         vocabularies: indexVocabularies(vocabularies),
         grammarBank: indexGrammarBank(grammars),
-        lessons: lessons.map(migrateLesson),
         sentencePatterns: indexSentencePatterns(sentencePatterns),
     };
 }
@@ -150,14 +132,8 @@ export function toggleVocabularyField(vocabularies, id, field) {
     return vocabularies.map((w) => (w.id === id ? indexVocabulary({ ...w, [field]: !w[field] }, w._sortSeq) : w));
 }
 
-export function deleteVocabularyFromList(vocabularies, lessons, id) {
-    return {
-        vocabularies: vocabularies.filter((w) => w.id !== id),
-        lessons: lessons.map((l) => ({
-            ...l,
-            wordIds: l.wordIds.filter((wid) => wid !== id),
-        })),
-    };
+export function deleteVocabularyFromList(vocabularies, id) {
+    return vocabularies.filter((w) => w.id !== id);
 }
 
 export function updateGrammarInList(items, id, patch) {
@@ -184,36 +160,3 @@ export function deleteSentenceFromList(items, id) {
     return items.filter((s) => s.id !== id);
 }
 
-export function toggleLessonGrammarMasteredInList(lessons, lessonId, grammarId) {
-    const now = new Date().toISOString();
-    return lessons.map((l) =>
-        l.id !== lessonId
-            ? l
-            : {
-                  ...l,
-                  grammar: l.grammar.map((g) => (g.id === grammarId ? { ...g, mastered: !g.mastered } : g)),
-                  updatedAt: now,
-              },
-    );
-}
-
-export function createLessonEntity(name, wordIds, grammar = []) {
-    const now = new Date().toISOString();
-    return {
-        id: crypto.randomUUID(),
-        name,
-        wordIds,
-        grammar: grammar.length > 0 ? grammar : [emptyGrammar()],
-        createdAt: now,
-        updatedAt: now,
-    };
-}
-
-export function updateLessonInList(lessons, id, patch) {
-    const now = new Date().toISOString();
-    return lessons.map((l) => (l.id === id ? { ...l, ...patch, updatedAt: now } : l));
-}
-
-export function deleteLessonFromList(lessons, id) {
-    return lessons.filter((l) => l.id !== id);
-}

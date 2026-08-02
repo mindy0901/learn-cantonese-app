@@ -1,35 +1,30 @@
 import { Link } from "react-router-dom";
 import {
     useVocabularyCount,
-    useLessonCount,
     useMasteredVocabularyCount,
     useGrammarCount,
     useSentenceCount,
-    useLessons,
 } from "../store/appStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { FlashcardStatsPanel } from "../components/FlashcardStatsPanel.jsx";
 import { btnClass } from "../components/ui/buttonStyles.js";
-import { IconWordBank, IconGrammar, IconSentences, IconLessons, IconFlashcard } from "../components/NavIcons.jsx";
+import { IconWordBank, IconGrammar, IconSentences, IconFlashcard } from "../components/NavIcons.jsx";
 
 export function HomePage() {
     const wordCount = useVocabularyCount();
     const grammarCount = useGrammarCount();
     const sentenceCount = useSentenceCount();
-    const lessonCount = useLessonCount();
     const masteredCount = useMasteredVocabularyCount();
-    const lessons = useLessons();
     const { t, fmt } = useLocale();
 
     const remaining = wordCount - masteredCount;
-    const recentLessons = [...lessons].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4);
     const pct = wordCount > 0 ? Math.round((masteredCount / wordCount) * 100) : 0;
 
     return (
         <main className="flex-1 w-full">
             {/* ── Hero Section ── */}
             <section className="relative overflow-hidden bg-gradient-to-br from-accent/8 via-surface to-accent/5 border-b border-border">
-                <div className="max-w-[1800px] w-full mx-auto px-5 py-10 sm:py-14">
+                <div className="w-full px-5 py-10 sm:py-14">
                     <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
                         <div className="max-w-2xl">
                             <p className="text-xs font-semibold tracking-widest uppercase text-accent mb-2">
@@ -91,7 +86,7 @@ export function HomePage() {
                 </div>
             </section>
 
-            <div className="max-w-[1800px] w-full mx-auto px-5 pb-12">
+            <div className="w-full px-5 pb-12">
                 {/* ── Stats ── */}
                 <section className="mt-7 mb-7">
                     <FlashcardStatsPanel />
@@ -143,19 +138,6 @@ export function HomePage() {
                             </span>
                         </Link>
                         <Link
-                            to="/lessons"
-                            className="group flex flex-col gap-1.5 p-4 bg-surface border border-border rounded-xl no-underline text-text-h shadow-sm transition-all duration-200 hover:border-accent-border hover:shadow-theme hover:-translate-y-0.5"
-                        >
-                            <IconLessons
-                                className="text-accent transition-transform duration-200 group-hover:scale-110"
-                                size={22}
-                            />
-                            <span className="font-semibold text-sm">{t.home.goLessons}</span>
-                            <span className="text-[0.75rem] text-text-muted">
-                                {fmt(t.home.lessonCountMeta, { count: lessonCount })}
-                            </span>
-                        </Link>
-                        <Link
                             to="/flashcard"
                             className="group flex flex-col gap-1.5 p-4 border-2 border-accent-border rounded-xl no-underline text-text-h bg-accent-bg/60 shadow-sm transition-all duration-200 hover:border-accent hover:shadow-theme hover:-translate-y-0.5"
                         >
@@ -170,38 +152,6 @@ export function HomePage() {
                         </Link>
                     </div>
                 </section>
-
-                {/* ── Recent Lessons ── */}
-                {recentLessons.length > 0 && (
-                    <section className="mb-7">
-                        <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-3">
-                            {t.home.recentLessons}
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            {recentLessons.map((lesson) => (
-                                <Link
-                                    key={lesson.id}
-                                    to={`/lessons/${lesson.id}`}
-                                    className="group flex flex-col gap-2 p-4 bg-surface border border-border rounded-xl no-underline text-text-h shadow-sm transition-all duration-200 hover:border-accent-border hover:shadow-theme hover:-translate-y-0.5"
-                                >
-                                    <span className="font-semibold text-sm leading-snug group-hover:text-accent transition-colors">
-                                        {lesson.name}
-                                    </span>
-                                    <div className="flex items-center gap-3 text-[0.75rem] text-text-muted">
-                                        <span>
-                                            {lesson.wordIds.length} {t.lessons.newWords}
-                                        </span>
-                                        <span className="text-border">·</span>
-                                        <span>
-                                            {lesson.grammar.filter((g) => g.title || g.content).length}{" "}
-                                            {t.lessons.grammar}
-                                        </span>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </section>
-                )}
 
                 {/* ── CTA ── */}
                 <section className="flex justify-center gap-3 mt-2 flex-wrap">

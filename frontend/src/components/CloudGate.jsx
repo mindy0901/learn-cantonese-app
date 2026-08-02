@@ -6,7 +6,7 @@ import { useAuthInitialized } from "../store/authStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { cn } from "../lib/cn.js";
 
-const pageClass = "flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12";
+const pageClass = "flex-1 w-full px-5 py-8 pb-12";
 
 const emptyStateClass = "text-center py-12 px-6 text-text-muted flex flex-col items-center gap-4";
 

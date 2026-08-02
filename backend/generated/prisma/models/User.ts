@@ -27,6 +27,7 @@ export type AggregateUser = {
 export type UserMinAggregateOutputType = {
   id: string | null
   email: string | null
+  password: string | null
   name: string | null
   isAdmin: boolean | null
   createdAt: Date | null
@@ -36,6 +37,7 @@ export type UserMinAggregateOutputType = {
 export type UserMaxAggregateOutputType = {
   id: string | null
   email: string | null
+  password: string | null
   name: string | null
   isAdmin: boolean | null
   createdAt: Date | null
@@ -45,6 +47,7 @@ export type UserMaxAggregateOutputType = {
 export type UserCountAggregateOutputType = {
   id: number
   email: number
+  password: number
   name: number
   isAdmin: number
   createdAt: number
@@ -56,6 +59,7 @@ export type UserCountAggregateOutputType = {
 export type UserMinAggregateInputType = {
   id?: true
   email?: true
+  password?: true
   name?: true
   isAdmin?: true
   createdAt?: true
@@ -65,6 +69,7 @@ export type UserMinAggregateInputType = {
 export type UserMaxAggregateInputType = {
   id?: true
   email?: true
+  password?: true
   name?: true
   isAdmin?: true
   createdAt?: true
@@ -74,6 +79,7 @@ export type UserMaxAggregateInputType = {
 export type UserCountAggregateInputType = {
   id?: true
   email?: true
+  password?: true
   name?: true
   isAdmin?: true
   createdAt?: true
@@ -156,6 +162,7 @@ export type UserGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
 export type UserGroupByOutputType = {
   id: string
   email: string
+  password: string | null
   name: string | null
   isAdmin: boolean
   createdAt: Date
@@ -186,21 +193,25 @@ export type UserWhereInput = {
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   id?: Prisma.UuidFilter<"User"> | string
   email?: Prisma.StringFilter<"User"> | string
+  password?: Prisma.StringNullableFilter<"User"> | string | null
   name?: Prisma.StringNullableFilter<"User"> | string | null
   isAdmin?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   userVocabularies?: Prisma.UserVocabularyListRelationFilter
+  flashcardDecks?: Prisma.FlashcardDeckListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
+  password?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   isAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userVocabularies?: Prisma.UserVocabularyOrderByRelationAggregateInput
+  flashcardDecks?: Prisma.FlashcardDeckOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -209,16 +220,19 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
+  password?: Prisma.StringNullableFilter<"User"> | string | null
   name?: Prisma.StringNullableFilter<"User"> | string | null
   isAdmin?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   userVocabularies?: Prisma.UserVocabularyListRelationFilter
+  flashcardDecks?: Prisma.FlashcardDeckListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
+  password?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   isAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -234,6 +248,7 @@ export type UserScalarWhereWithAggregatesInput = {
   NOT?: Prisma.UserScalarWhereWithAggregatesInput | Prisma.UserScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"User"> | string
   email?: Prisma.StringWithAggregatesFilter<"User"> | string
+  password?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   name?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   isAdmin?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
@@ -243,46 +258,55 @@ export type UserScalarWhereWithAggregatesInput = {
 export type UserCreateInput = {
   id?: string
   email: string
+  password?: string | null
   name?: string | null
   isAdmin?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutUserInput
+  flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
   id?: string
   email: string
+  password?: string | null
   name?: string | null
   isAdmin?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutUserInput
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutUserNestedInput
+  flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
   id?: string
   email: string
+  password?: string | null
   name?: string | null
   isAdmin?: boolean
   createdAt?: Date | string
@@ -292,6 +316,7 @@ export type UserCreateManyInput = {
 export type UserUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -301,6 +326,7 @@ export type UserUpdateManyMutationInput = {
 export type UserUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -310,6 +336,7 @@ export type UserUncheckedUpdateManyInput = {
 export type UserCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
+  password?: Prisma.SortOrder
   name?: Prisma.SortOrder
   isAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -319,6 +346,7 @@ export type UserCountOrderByAggregateInput = {
 export type UserMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
+  password?: Prisma.SortOrder
   name?: Prisma.SortOrder
   isAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -328,6 +356,7 @@ export type UserMaxOrderByAggregateInput = {
 export type UserMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
+  password?: Prisma.SortOrder
   name?: Prisma.SortOrder
   isAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -337,10 +366,6 @@ export type UserMinOrderByAggregateInput = {
 export type UserScalarRelationFilter = {
   is?: Prisma.UserWhereInput
   isNot?: Prisma.UserWhereInput
-}
-
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
 }
 
 export type UserCreateNestedOneWithoutUserVocabulariesInput = {
@@ -357,22 +382,40 @@ export type UserUpdateOneRequiredWithoutUserVocabulariesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutUserVocabulariesInput, Prisma.UserUpdateWithoutUserVocabulariesInput>, Prisma.UserUncheckedUpdateWithoutUserVocabulariesInput>
 }
 
+export type UserCreateNestedOneWithoutFlashcardDecksInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFlashcardDecksInput, Prisma.UserUncheckedCreateWithoutFlashcardDecksInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFlashcardDecksInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutFlashcardDecksNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFlashcardDecksInput, Prisma.UserUncheckedCreateWithoutFlashcardDecksInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFlashcardDecksInput
+  upsert?: Prisma.UserUpsertWithoutFlashcardDecksInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutFlashcardDecksInput, Prisma.UserUpdateWithoutFlashcardDecksInput>, Prisma.UserUncheckedUpdateWithoutFlashcardDecksInput>
+}
+
 export type UserCreateWithoutUserVocabulariesInput = {
   id?: string
   email: string
+  password?: string | null
   name?: string | null
   isAdmin?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutUserVocabulariesInput = {
   id?: string
   email: string
+  password?: string | null
   name?: string | null
   isAdmin?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutUserVocabulariesInput = {
@@ -394,19 +437,83 @@ export type UserUpdateToOneWithWhereWithoutUserVocabulariesInput = {
 export type UserUpdateWithoutUserVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutUserVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutFlashcardDecksInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutFlashcardDecksInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutFlashcardDecksInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutFlashcardDecksInput, Prisma.UserUncheckedCreateWithoutFlashcardDecksInput>
+}
+
+export type UserUpsertWithoutFlashcardDecksInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutFlashcardDecksInput, Prisma.UserUncheckedUpdateWithoutFlashcardDecksInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutFlashcardDecksInput, Prisma.UserUncheckedCreateWithoutFlashcardDecksInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutFlashcardDecksInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutFlashcardDecksInput, Prisma.UserUncheckedUpdateWithoutFlashcardDecksInput>
+}
+
+export type UserUpdateWithoutFlashcardDecksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutFlashcardDecksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -416,10 +523,12 @@ export type UserUncheckedUpdateWithoutUserVocabulariesInput = {
 
 export type UserCountOutputType = {
   userVocabularies: number
+  flashcardDecks: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   userVocabularies?: boolean | UserCountOutputTypeCountUserVocabulariesArgs
+  flashcardDecks?: boolean | UserCountOutputTypeCountFlashcardDecksArgs
 }
 
 /**
@@ -439,21 +548,31 @@ export type UserCountOutputTypeCountUserVocabulariesArgs<ExtArgs extends runtime
   where?: Prisma.UserVocabularyWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountFlashcardDecksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FlashcardDeckWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   email?: boolean
+  password?: boolean
   name?: boolean
   isAdmin?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userVocabularies?: boolean | Prisma.User$userVocabulariesArgs<ExtArgs>
+  flashcardDecks?: boolean | Prisma.User$flashcardDecksArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   email?: boolean
+  password?: boolean
   name?: boolean
   isAdmin?: boolean
   createdAt?: boolean
@@ -463,6 +582,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   email?: boolean
+  password?: boolean
   name?: boolean
   isAdmin?: boolean
   createdAt?: boolean
@@ -472,15 +592,17 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
 export type UserSelectScalar = {
   id?: boolean
   email?: boolean
+  password?: boolean
   name?: boolean
   isAdmin?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "isAdmin" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "password" | "name" | "isAdmin" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   userVocabularies?: boolean | Prisma.User$userVocabulariesArgs<ExtArgs>
+  flashcardDecks?: boolean | Prisma.User$flashcardDecksArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -490,10 +612,12 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "User"
   objects: {
     userVocabularies: Prisma.$UserVocabularyPayload<ExtArgs>[]
+    flashcardDecks: Prisma.$FlashcardDeckPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     email: string
+    password: string | null
     name: string | null
     isAdmin: boolean
     createdAt: Date
@@ -893,6 +1017,7 @@ readonly fields: UserFieldRefs;
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   userVocabularies<T extends Prisma.User$userVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$userVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  flashcardDecks<T extends Prisma.User$flashcardDecksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$flashcardDecksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -924,6 +1049,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
 export interface UserFieldRefs {
   readonly id: Prisma.FieldRef<"User", 'String'>
   readonly email: Prisma.FieldRef<"User", 'String'>
+  readonly password: Prisma.FieldRef<"User", 'String'>
   readonly name: Prisma.FieldRef<"User", 'String'>
   readonly isAdmin: Prisma.FieldRef<"User", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
@@ -1342,6 +1468,30 @@ export type User$userVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.UserVocabularyScalarFieldEnum | Prisma.UserVocabularyScalarFieldEnum[]
+}
+
+/**
+ * User.flashcardDecks
+ */
+export type User$flashcardDecksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the FlashcardDeck
+   */
+  select?: Prisma.FlashcardDeckSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the FlashcardDeck
+   */
+  omit?: Prisma.FlashcardDeckOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FlashcardDeckInclude<ExtArgs> | null
+  where?: Prisma.FlashcardDeckWhereInput
+  orderBy?: Prisma.FlashcardDeckOrderByWithRelationInput | Prisma.FlashcardDeckOrderByWithRelationInput[]
+  cursor?: Prisma.FlashcardDeckWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FlashcardDeckScalarFieldEnum | Prisma.FlashcardDeckScalarFieldEnum[]
 }
 
 /**

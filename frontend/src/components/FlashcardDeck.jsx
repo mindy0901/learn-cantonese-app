@@ -156,7 +156,6 @@ function buildSessionSummary(initialVocabularies, sessionLog) {
 
 export function FlashcardDeck({
     vocabularies,
-    lessonName,
     cardMode = "hanToMeaning",
     hideJyutping = false,
     onNewSession,
@@ -457,7 +456,6 @@ export function FlashcardDeck({
                 />
             </div>
             <p className="text-sm text-text-muted text-center">
-                {lessonName ? `${lessonName} · ` : ""}
                 {fmt(t.flashcard.progress, { current: index + 1, total })}
             </p>
 

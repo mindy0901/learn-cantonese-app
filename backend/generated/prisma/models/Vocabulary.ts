@@ -20,8 +20,18 @@ export type VocabularyModel = runtime.Types.Result.DefaultSelection<Prisma.$Voca
 
 export type AggregateVocabulary = {
   _count: VocabularyCountAggregateOutputType | null
+  _avg: VocabularyAvgAggregateOutputType | null
+  _sum: VocabularySumAggregateOutputType | null
   _min: VocabularyMinAggregateOutputType | null
   _max: VocabularyMaxAggregateOutputType | null
+}
+
+export type VocabularyAvgAggregateOutputType = {
+  frequency: number | null
+}
+
+export type VocabularySumAggregateOutputType = {
+  frequency: number | null
 }
 
 export type VocabularyMinAggregateOutputType = {
@@ -36,6 +46,11 @@ export type VocabularyMinAggregateOutputType = {
   vietMeanings: string | null
   engMeanings: string | null
   vietExamples: string | null
+  pos: string | null
+  frequency: number | null
+  radical: string | null
+  classifiers: string | null
+  pinyinNumeric: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -52,6 +67,11 @@ export type VocabularyMaxAggregateOutputType = {
   vietMeanings: string | null
   engMeanings: string | null
   vietExamples: string | null
+  pos: string | null
+  frequency: number | null
+  radical: string | null
+  classifiers: string | null
+  pinyinNumeric: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -68,11 +88,24 @@ export type VocabularyCountAggregateOutputType = {
   vietMeanings: number
   engMeanings: number
   vietExamples: number
+  pos: number
+  frequency: number
+  radical: number
+  classifiers: number
+  pinyinNumeric: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
+
+export type VocabularyAvgAggregateInputType = {
+  frequency?: true
+}
+
+export type VocabularySumAggregateInputType = {
+  frequency?: true
+}
 
 export type VocabularyMinAggregateInputType = {
   id?: true
@@ -86,6 +119,11 @@ export type VocabularyMinAggregateInputType = {
   vietMeanings?: true
   engMeanings?: true
   vietExamples?: true
+  pos?: true
+  frequency?: true
+  radical?: true
+  classifiers?: true
+  pinyinNumeric?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -102,6 +140,11 @@ export type VocabularyMaxAggregateInputType = {
   vietMeanings?: true
   engMeanings?: true
   vietExamples?: true
+  pos?: true
+  frequency?: true
+  radical?: true
+  classifiers?: true
+  pinyinNumeric?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -118,6 +161,11 @@ export type VocabularyCountAggregateInputType = {
   vietMeanings?: true
   engMeanings?: true
   vietExamples?: true
+  pos?: true
+  frequency?: true
+  radical?: true
+  classifiers?: true
+  pinyinNumeric?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -161,6 +209,18 @@ export type VocabularyAggregateArgs<ExtArgs extends runtime.Types.Extensions.Int
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: VocabularyAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: VocabularySumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: VocabularyMinAggregateInputType
@@ -191,6 +251,8 @@ export type VocabularyGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   _count?: VocabularyCountAggregateInputType | true
+  _avg?: VocabularyAvgAggregateInputType
+  _sum?: VocabularySumAggregateInputType
   _min?: VocabularyMinAggregateInputType
   _max?: VocabularyMaxAggregateInputType
 }
@@ -207,9 +269,16 @@ export type VocabularyGroupByOutputType = {
   vietMeanings: string | null
   engMeanings: string | null
   vietExamples: string | null
+  pos: string | null
+  frequency: number | null
+  radical: string | null
+  classifiers: string | null
+  pinyinNumeric: string | null
   createdAt: Date
   updatedAt: Date
   _count: VocabularyCountAggregateOutputType | null
+  _avg: VocabularyAvgAggregateOutputType | null
+  _sum: VocabularySumAggregateOutputType | null
   _min: VocabularyMinAggregateOutputType | null
   _max: VocabularyMaxAggregateOutputType | null
 }
@@ -244,12 +313,18 @@ export type VocabularyWhereInput = {
   vietMeanings?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   engMeanings?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   vietExamples?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  pos?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  frequency?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
+  radical?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  classifiers?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  pinyinNumeric?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningListRelationFilter
   vocabularyExamples?: Prisma.VocabularyExampleListRelationFilter
   vocabularyCharacters?: Prisma.VocabularyCharacterListRelationFilter
   userVocabularies?: Prisma.UserVocabularyListRelationFilter
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyListRelationFilter
 }
 
 export type VocabularyOrderByWithRelationInput = {
@@ -264,12 +339,18 @@ export type VocabularyOrderByWithRelationInput = {
   vietMeanings?: Prisma.SortOrderInput | Prisma.SortOrder
   engMeanings?: Prisma.SortOrderInput | Prisma.SortOrder
   vietExamples?: Prisma.SortOrderInput | Prisma.SortOrder
+  pos?: Prisma.SortOrderInput | Prisma.SortOrder
+  frequency?: Prisma.SortOrderInput | Prisma.SortOrder
+  radical?: Prisma.SortOrderInput | Prisma.SortOrder
+  classifiers?: Prisma.SortOrderInput | Prisma.SortOrder
+  pinyinNumeric?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   vocabularyMeanings?: Prisma.VocabularyMeaningOrderByRelationAggregateInput
   vocabularyExamples?: Prisma.VocabularyExampleOrderByRelationAggregateInput
   vocabularyCharacters?: Prisma.VocabularyCharacterOrderByRelationAggregateInput
   userVocabularies?: Prisma.UserVocabularyOrderByRelationAggregateInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyOrderByRelationAggregateInput
 }
 
 export type VocabularyWhereUniqueInput = Prisma.AtLeast<{
@@ -287,12 +368,18 @@ export type VocabularyWhereUniqueInput = Prisma.AtLeast<{
   vietMeanings?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   engMeanings?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   vietExamples?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  pos?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  frequency?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
+  radical?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  classifiers?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  pinyinNumeric?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningListRelationFilter
   vocabularyExamples?: Prisma.VocabularyExampleListRelationFilter
   vocabularyCharacters?: Prisma.VocabularyCharacterListRelationFilter
   userVocabularies?: Prisma.UserVocabularyListRelationFilter
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyListRelationFilter
 }, "id">
 
 export type VocabularyOrderByWithAggregationInput = {
@@ -307,11 +394,18 @@ export type VocabularyOrderByWithAggregationInput = {
   vietMeanings?: Prisma.SortOrderInput | Prisma.SortOrder
   engMeanings?: Prisma.SortOrderInput | Prisma.SortOrder
   vietExamples?: Prisma.SortOrderInput | Prisma.SortOrder
+  pos?: Prisma.SortOrderInput | Prisma.SortOrder
+  frequency?: Prisma.SortOrderInput | Prisma.SortOrder
+  radical?: Prisma.SortOrderInput | Prisma.SortOrder
+  classifiers?: Prisma.SortOrderInput | Prisma.SortOrder
+  pinyinNumeric?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.VocabularyCountOrderByAggregateInput
+  _avg?: Prisma.VocabularyAvgOrderByAggregateInput
   _max?: Prisma.VocabularyMaxOrderByAggregateInput
   _min?: Prisma.VocabularyMinOrderByAggregateInput
+  _sum?: Prisma.VocabularySumOrderByAggregateInput
 }
 
 export type VocabularyScalarWhereWithAggregatesInput = {
@@ -329,6 +423,11 @@ export type VocabularyScalarWhereWithAggregatesInput = {
   vietMeanings?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   engMeanings?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   vietExamples?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
+  pos?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
+  frequency?: Prisma.IntNullableWithAggregatesFilter<"Vocabulary"> | number | null
+  radical?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
+  classifiers?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
+  pinyinNumeric?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Vocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Vocabulary"> | Date | string
 }
@@ -345,12 +444,18 @@ export type VocabularyCreateInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
   vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUncheckedCreateInput = {
@@ -365,12 +470,18 @@ export type VocabularyUncheckedCreateInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUpdateInput = {
@@ -385,12 +496,18 @@ export type VocabularyUpdateInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
   vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyUncheckedUpdateInput = {
@@ -405,12 +522,18 @@ export type VocabularyUncheckedUpdateInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyCreateManyInput = {
@@ -425,6 +548,11 @@ export type VocabularyCreateManyInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -441,6 +569,11 @@ export type VocabularyUpdateManyMutationInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -457,6 +590,11 @@ export type VocabularyUncheckedUpdateManyInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -473,8 +611,17 @@ export type VocabularyCountOrderByAggregateInput = {
   vietMeanings?: Prisma.SortOrder
   engMeanings?: Prisma.SortOrder
   vietExamples?: Prisma.SortOrder
+  pos?: Prisma.SortOrder
+  frequency?: Prisma.SortOrder
+  radical?: Prisma.SortOrder
+  classifiers?: Prisma.SortOrder
+  pinyinNumeric?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type VocabularyAvgOrderByAggregateInput = {
+  frequency?: Prisma.SortOrder
 }
 
 export type VocabularyMaxOrderByAggregateInput = {
@@ -489,6 +636,11 @@ export type VocabularyMaxOrderByAggregateInput = {
   vietMeanings?: Prisma.SortOrder
   engMeanings?: Prisma.SortOrder
   vietExamples?: Prisma.SortOrder
+  pos?: Prisma.SortOrder
+  frequency?: Prisma.SortOrder
+  radical?: Prisma.SortOrder
+  classifiers?: Prisma.SortOrder
+  pinyinNumeric?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -505,13 +657,30 @@ export type VocabularyMinOrderByAggregateInput = {
   vietMeanings?: Prisma.SortOrder
   engMeanings?: Prisma.SortOrder
   vietExamples?: Prisma.SortOrder
+  pos?: Prisma.SortOrder
+  frequency?: Prisma.SortOrder
+  radical?: Prisma.SortOrder
+  classifiers?: Prisma.SortOrder
+  pinyinNumeric?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type VocabularySumOrderByAggregateInput = {
+  frequency?: Prisma.SortOrder
 }
 
 export type VocabularyScalarRelationFilter = {
   is?: Prisma.VocabularyWhereInput
   isNot?: Prisma.VocabularyWhereInput
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type VocabularyCreateNestedOneWithoutVocabularyMeaningsInput = {
@@ -570,6 +739,20 @@ export type VocabularyUpdateOneRequiredWithoutUserVocabulariesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.VocabularyUpdateToOneWithWhereWithoutUserVocabulariesInput, Prisma.VocabularyUpdateWithoutUserVocabulariesInput>, Prisma.VocabularyUncheckedUpdateWithoutUserVocabulariesInput>
 }
 
+export type VocabularyCreateNestedOneWithoutFlashcardDeckVocabulariesInput = {
+  create?: Prisma.XOR<Prisma.VocabularyCreateWithoutFlashcardDeckVocabulariesInput, Prisma.VocabularyUncheckedCreateWithoutFlashcardDeckVocabulariesInput>
+  connectOrCreate?: Prisma.VocabularyCreateOrConnectWithoutFlashcardDeckVocabulariesInput
+  connect?: Prisma.VocabularyWhereUniqueInput
+}
+
+export type VocabularyUpdateOneRequiredWithoutFlashcardDeckVocabulariesNestedInput = {
+  create?: Prisma.XOR<Prisma.VocabularyCreateWithoutFlashcardDeckVocabulariesInput, Prisma.VocabularyUncheckedCreateWithoutFlashcardDeckVocabulariesInput>
+  connectOrCreate?: Prisma.VocabularyCreateOrConnectWithoutFlashcardDeckVocabulariesInput
+  upsert?: Prisma.VocabularyUpsertWithoutFlashcardDeckVocabulariesInput
+  connect?: Prisma.VocabularyWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.VocabularyUpdateToOneWithWhereWithoutFlashcardDeckVocabulariesInput, Prisma.VocabularyUpdateWithoutFlashcardDeckVocabulariesInput>, Prisma.VocabularyUncheckedUpdateWithoutFlashcardDeckVocabulariesInput>
+}
+
 export type VocabularyCreateWithoutVocabularyMeaningsInput = {
   id?: string
   sinoVietnamese?: string | null
@@ -582,11 +765,17 @@ export type VocabularyCreateWithoutVocabularyMeaningsInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUncheckedCreateWithoutVocabularyMeaningsInput = {
@@ -601,11 +790,17 @@ export type VocabularyUncheckedCreateWithoutVocabularyMeaningsInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyCreateOrConnectWithoutVocabularyMeaningsInput = {
@@ -636,11 +831,17 @@ export type VocabularyUpdateWithoutVocabularyMeaningsInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyUncheckedUpdateWithoutVocabularyMeaningsInput = {
@@ -655,11 +856,17 @@ export type VocabularyUncheckedUpdateWithoutVocabularyMeaningsInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyCreateWithoutVocabularyExamplesInput = {
@@ -674,11 +881,17 @@ export type VocabularyCreateWithoutVocabularyExamplesInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUncheckedCreateWithoutVocabularyExamplesInput = {
@@ -693,11 +906,17 @@ export type VocabularyUncheckedCreateWithoutVocabularyExamplesInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyCreateOrConnectWithoutVocabularyExamplesInput = {
@@ -728,11 +947,17 @@ export type VocabularyUpdateWithoutVocabularyExamplesInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyUncheckedUpdateWithoutVocabularyExamplesInput = {
@@ -747,11 +972,17 @@ export type VocabularyUncheckedUpdateWithoutVocabularyExamplesInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyCreateWithoutVocabularyCharactersInput = {
@@ -766,11 +997,17 @@ export type VocabularyCreateWithoutVocabularyCharactersInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
   vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUncheckedCreateWithoutVocabularyCharactersInput = {
@@ -785,11 +1022,17 @@ export type VocabularyUncheckedCreateWithoutVocabularyCharactersInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyCreateOrConnectWithoutVocabularyCharactersInput = {
@@ -820,11 +1063,17 @@ export type VocabularyUpdateWithoutVocabularyCharactersInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
   vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyUncheckedUpdateWithoutVocabularyCharactersInput = {
@@ -839,11 +1088,17 @@ export type VocabularyUncheckedUpdateWithoutVocabularyCharactersInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyCreateWithoutUserVocabulariesInput = {
@@ -858,11 +1113,17 @@ export type VocabularyCreateWithoutUserVocabulariesInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
   vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUncheckedCreateWithoutUserVocabulariesInput = {
@@ -877,11 +1138,17 @@ export type VocabularyUncheckedCreateWithoutUserVocabulariesInput = {
   vietMeanings?: string | null
   engMeanings?: string | null
   vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyCreateOrConnectWithoutUserVocabulariesInput = {
@@ -912,11 +1179,17 @@ export type VocabularyUpdateWithoutUserVocabulariesInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
   vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyUncheckedUpdateWithoutUserVocabulariesInput = {
@@ -931,11 +1204,133 @@ export type VocabularyUncheckedUpdateWithoutUserVocabulariesInput = {
   vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+}
+
+export type VocabularyCreateWithoutFlashcardDeckVocabulariesInput = {
+  id?: string
+  sinoVietnamese?: string | null
+  hanSimplified?: string | null
+  pinyin?: string | null
+  hanTraditional?: string
+  jyutping?: string | null
+  hskLevel?: string | null
+  searchKey?: string | null
+  vietMeanings?: string | null
+  engMeanings?: string | null
+  vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
+  vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
+  vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
+  userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
+}
+
+export type VocabularyUncheckedCreateWithoutFlashcardDeckVocabulariesInput = {
+  id?: string
+  sinoVietnamese?: string | null
+  hanSimplified?: string | null
+  pinyin?: string | null
+  hanTraditional?: string
+  jyutping?: string | null
+  hskLevel?: string | null
+  searchKey?: string | null
+  vietMeanings?: string | null
+  engMeanings?: string | null
+  vietExamples?: string | null
+  pos?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  pinyinNumeric?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
+  vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
+  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
+  userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+}
+
+export type VocabularyCreateOrConnectWithoutFlashcardDeckVocabulariesInput = {
+  where: Prisma.VocabularyWhereUniqueInput
+  create: Prisma.XOR<Prisma.VocabularyCreateWithoutFlashcardDeckVocabulariesInput, Prisma.VocabularyUncheckedCreateWithoutFlashcardDeckVocabulariesInput>
+}
+
+export type VocabularyUpsertWithoutFlashcardDeckVocabulariesInput = {
+  update: Prisma.XOR<Prisma.VocabularyUpdateWithoutFlashcardDeckVocabulariesInput, Prisma.VocabularyUncheckedUpdateWithoutFlashcardDeckVocabulariesInput>
+  create: Prisma.XOR<Prisma.VocabularyCreateWithoutFlashcardDeckVocabulariesInput, Prisma.VocabularyUncheckedCreateWithoutFlashcardDeckVocabulariesInput>
+  where?: Prisma.VocabularyWhereInput
+}
+
+export type VocabularyUpdateToOneWithWhereWithoutFlashcardDeckVocabulariesInput = {
+  where?: Prisma.VocabularyWhereInput
+  data: Prisma.XOR<Prisma.VocabularyUpdateWithoutFlashcardDeckVocabulariesInput, Prisma.VocabularyUncheckedUpdateWithoutFlashcardDeckVocabulariesInput>
+}
+
+export type VocabularyUpdateWithoutFlashcardDeckVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
+  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
+  vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
+  vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
+  userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
+}
+
+export type VocabularyUncheckedUpdateWithoutFlashcardDeckVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
+  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
+  vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
+  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
+  userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
 }
 
 
@@ -948,6 +1343,7 @@ export type VocabularyCountOutputType = {
   vocabularyExamples: number
   vocabularyCharacters: number
   userVocabularies: number
+  flashcardDeckVocabularies: number
 }
 
 export type VocabularyCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -955,6 +1351,7 @@ export type VocabularyCountOutputTypeSelect<ExtArgs extends runtime.Types.Extens
   vocabularyExamples?: boolean | VocabularyCountOutputTypeCountVocabularyExamplesArgs
   vocabularyCharacters?: boolean | VocabularyCountOutputTypeCountVocabularyCharactersArgs
   userVocabularies?: boolean | VocabularyCountOutputTypeCountUserVocabulariesArgs
+  flashcardDeckVocabularies?: boolean | VocabularyCountOutputTypeCountFlashcardDeckVocabulariesArgs
 }
 
 /**
@@ -995,6 +1392,13 @@ export type VocabularyCountOutputTypeCountUserVocabulariesArgs<ExtArgs extends r
   where?: Prisma.UserVocabularyWhereInput
 }
 
+/**
+ * VocabularyCountOutputType without action
+ */
+export type VocabularyCountOutputTypeCountFlashcardDeckVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FlashcardDeckVocabularyWhereInput
+}
+
 
 export type VocabularySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1008,12 +1412,18 @@ export type VocabularySelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   vietMeanings?: boolean
   engMeanings?: boolean
   vietExamples?: boolean
+  pos?: boolean
+  frequency?: boolean
+  radical?: boolean
+  classifiers?: boolean
+  pinyinNumeric?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   vocabularyMeanings?: boolean | Prisma.Vocabulary$vocabularyMeaningsArgs<ExtArgs>
   vocabularyExamples?: boolean | Prisma.Vocabulary$vocabularyExamplesArgs<ExtArgs>
   vocabularyCharacters?: boolean | Prisma.Vocabulary$vocabularyCharactersArgs<ExtArgs>
   userVocabularies?: boolean | Prisma.Vocabulary$userVocabulariesArgs<ExtArgs>
+  flashcardDeckVocabularies?: boolean | Prisma.Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.VocabularyCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["vocabulary"]>
 
@@ -1029,6 +1439,11 @@ export type VocabularySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   vietMeanings?: boolean
   engMeanings?: boolean
   vietExamples?: boolean
+  pos?: boolean
+  frequency?: boolean
+  radical?: boolean
+  classifiers?: boolean
+  pinyinNumeric?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["vocabulary"]>
@@ -1045,6 +1460,11 @@ export type VocabularySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   vietMeanings?: boolean
   engMeanings?: boolean
   vietExamples?: boolean
+  pos?: boolean
+  frequency?: boolean
+  radical?: boolean
+  classifiers?: boolean
+  pinyinNumeric?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["vocabulary"]>
@@ -1061,16 +1481,22 @@ export type VocabularySelectScalar = {
   vietMeanings?: boolean
   engMeanings?: boolean
   vietExamples?: boolean
+  pos?: boolean
+  frequency?: boolean
+  radical?: boolean
+  classifiers?: boolean
+  pinyinNumeric?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type VocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sinoVietnamese" | "hanSimplified" | "pinyin" | "hanTraditional" | "jyutping" | "hskLevel" | "searchKey" | "vietMeanings" | "engMeanings" | "vietExamples" | "createdAt" | "updatedAt", ExtArgs["result"]["vocabulary"]>
+export type VocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sinoVietnamese" | "hanSimplified" | "pinyin" | "hanTraditional" | "jyutping" | "hskLevel" | "searchKey" | "vietMeanings" | "engMeanings" | "vietExamples" | "pos" | "frequency" | "radical" | "classifiers" | "pinyinNumeric" | "createdAt" | "updatedAt", ExtArgs["result"]["vocabulary"]>
 export type VocabularyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   vocabularyMeanings?: boolean | Prisma.Vocabulary$vocabularyMeaningsArgs<ExtArgs>
   vocabularyExamples?: boolean | Prisma.Vocabulary$vocabularyExamplesArgs<ExtArgs>
   vocabularyCharacters?: boolean | Prisma.Vocabulary$vocabularyCharactersArgs<ExtArgs>
   userVocabularies?: boolean | Prisma.Vocabulary$userVocabulariesArgs<ExtArgs>
+  flashcardDeckVocabularies?: boolean | Prisma.Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.VocabularyCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type VocabularyIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1083,6 +1509,7 @@ export type $VocabularyPayload<ExtArgs extends runtime.Types.Extensions.Internal
     vocabularyExamples: Prisma.$VocabularyExamplePayload<ExtArgs>[]
     vocabularyCharacters: Prisma.$VocabularyCharacterPayload<ExtArgs>[]
     userVocabularies: Prisma.$UserVocabularyPayload<ExtArgs>[]
+    flashcardDeckVocabularies: Prisma.$FlashcardDeckVocabularyPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1096,6 +1523,11 @@ export type $VocabularyPayload<ExtArgs extends runtime.Types.Extensions.Internal
     vietMeanings: string | null
     engMeanings: string | null
     vietExamples: string | null
+    pos: string | null
+    frequency: number | null
+    radical: string | null
+    classifiers: string | null
+    pinyinNumeric: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["vocabulary"]>
@@ -1496,6 +1928,7 @@ export interface Prisma__VocabularyClient<T, Null = never, ExtArgs extends runti
   vocabularyExamples<T extends Prisma.Vocabulary$vocabularyExamplesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$vocabularyExamplesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularyExamplePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   vocabularyCharacters<T extends Prisma.Vocabulary$vocabularyCharactersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$vocabularyCharactersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularyCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   userVocabularies<T extends Prisma.Vocabulary$userVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$userVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  flashcardDeckVocabularies<T extends Prisma.Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1536,6 +1969,11 @@ export interface VocabularyFieldRefs {
   readonly vietMeanings: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly engMeanings: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly vietExamples: Prisma.FieldRef<"Vocabulary", 'String'>
+  readonly pos: Prisma.FieldRef<"Vocabulary", 'String'>
+  readonly frequency: Prisma.FieldRef<"Vocabulary", 'Int'>
+  readonly radical: Prisma.FieldRef<"Vocabulary", 'String'>
+  readonly classifiers: Prisma.FieldRef<"Vocabulary", 'String'>
+  readonly pinyinNumeric: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly createdAt: Prisma.FieldRef<"Vocabulary", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Vocabulary", 'DateTime'>
 }
@@ -2024,6 +2462,30 @@ export type Vocabulary$userVocabulariesArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   distinct?: Prisma.UserVocabularyScalarFieldEnum | Prisma.UserVocabularyScalarFieldEnum[]
+}
+
+/**
+ * Vocabulary.flashcardDeckVocabularies
+ */
+export type Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the FlashcardDeckVocabulary
+   */
+  select?: Prisma.FlashcardDeckVocabularySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the FlashcardDeckVocabulary
+   */
+  omit?: Prisma.FlashcardDeckVocabularyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FlashcardDeckVocabularyInclude<ExtArgs> | null
+  where?: Prisma.FlashcardDeckVocabularyWhereInput
+  orderBy?: Prisma.FlashcardDeckVocabularyOrderByWithRelationInput | Prisma.FlashcardDeckVocabularyOrderByWithRelationInput[]
+  cursor?: Prisma.FlashcardDeckVocabularyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FlashcardDeckVocabularyScalarFieldEnum | Prisma.FlashcardDeckVocabularyScalarFieldEnum[]
 }
 
 /**

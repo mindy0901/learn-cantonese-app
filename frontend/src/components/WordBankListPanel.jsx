@@ -40,7 +40,7 @@ export const WordBankListPanel = memo(function WordBankListPanel({
     const handleTotalChange = useCallback((total) => setFilteredTotal(total), []);
 
     const hskLevels = [
-        { value: "all", label: t.wordBank.levelAll || "Tất cả cấp" },
+        { value: "all", label: t.wordBank.levelAll || "All levels" },
         { value: "1", label: "HSK 1" },
         { value: "2", label: "HSK 2" },
         { value: "3", label: "HSK 3" },

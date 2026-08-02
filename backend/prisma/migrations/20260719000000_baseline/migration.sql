@@ -81,20 +81,6 @@ CREATE TABLE "grammars" (
 );
 
 -- CreateTable
-CREATE TABLE "lessons" (
-    "id" UUID NOT NULL,
-    "user_id" UUID NOT NULL,
-    "title" VARCHAR NOT NULL DEFAULT '',
-    "vocabulary_ids" UUID[],
-    "grammar_ids" UUID[],
-    "hsk_level" VARCHAR DEFAULT '',
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "lessons_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "users" (
     "id" UUID NOT NULL,
     "email" TEXT NOT NULL,
@@ -166,12 +152,6 @@ CREATE INDEX "grammars_user_id_idx" ON "grammars"("user_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "grammars_id_user_id_key" ON "grammars"("id", "user_id");
-
--- CreateIndex
-CREATE INDEX "lessons_user_id_title_idx" ON "lessons"("user_id", "title");
-
--- CreateIndex
-CREATE UNIQUE INDEX "lessons_id_user_id_key" ON "lessons"("id", "user_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");

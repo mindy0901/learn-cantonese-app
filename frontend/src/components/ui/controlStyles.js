@@ -3,13 +3,13 @@ import { cn } from '../../lib/cn.js'
 const controlShellClass =
   'box-border m-0 shrink-0 rounded-lg border border-border bg-surface'
 
-/** Standard 40px field shell — inputs, selects. */
-export const controlBoxClass = cn(controlShellClass, 'h-10 min-h-10 py-0')
+/** Standard 44px field shell — inputs, selects. */
+export const controlBoxClass = cn(controlShellClass, 'h-11 min-h-11 py-0')
 
-/** Standard 40px button shell — matches Button size="md". */
+/** Standard 44px button shell — matches Button size="md". */
 export const controlButtonClass = cn(
   controlShellClass,
-  'inline-flex h-10 min-h-10 items-center justify-center px-5 py-0',
+  'inline-flex h-11 min-h-11 items-center justify-center px-5 py-0',
 )
 
 export const uiSelectClass = cn(
@@ -19,7 +19,7 @@ export const uiSelectClass = cn(
 
 export const uiInputClass = cn(
   controlBoxClass,
-  'w-full px-4 text-sm leading-5 text-text-h outline-none transition-colors focus:border-accent-border py-[0.625rem]',
+  'w-full px-4 text-sm leading-6 text-text-h outline-none transition-colors focus:border-accent-border py-3',
 )
 
 export const uiTextareaClass = cn(

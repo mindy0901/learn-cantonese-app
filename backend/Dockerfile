@@ -1,4 +1,7 @@
 FROM node:22-alpine AS base
+RUN apk add --no-cache python3 py3-pip gcc musl-dev libffi-dev && \
+    python3 -m venv /opt/pycantonese-venv && \
+    /opt/pycantonese-venv/bin/pip install --no-cache-dir pycantonese deep-translator psycopg2-binary
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 

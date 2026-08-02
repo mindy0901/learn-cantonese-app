@@ -138,11 +138,11 @@ export function HanCharacterDetailPage() {
 
     if (!item) {
         return (
-            <main className="flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12">
+            <main className="flex-1 w-full px-5 py-8 pb-12">
                 <div className="text-center py-12 px-6 text-text-muted flex flex-col items-center gap-4">
-                    <p>{t.hanCharacters?.notFound ?? "Không tìm thấy hán tự."}</p>
+                    <p>{t.hanCharacters?.notFound ?? "Chinese character not found."}</p>
                     <Link to="/han-characters" className="text-accent underline">
-                        {t.hanCharacters?.backToList ?? "Quay lại kho hán tự"}
+                        {t.hanCharacters?.backToList ?? "Back to Chinese Characters"}
                     </Link>
                 </div>
             </main>
@@ -180,10 +180,7 @@ export function HanCharacterDetailPage() {
     const inputClass = `${uiInputClass} w-full`;
 
     return (
-        <main
-            className="han-detail-page flex-1 max-w-[1800px] w-full mx-auto px-5 py-8 pb-12"
-            onKeyDown={handleKeyDown}
-        >
+        <main className="han-detail-page flex-1 w-full px-5 py-8 pb-12" onKeyDown={handleKeyDown}>
             <div className="flex flex-col items-stretch gap-8">
                 {/* Character display */}
                 <div className="flex flex-col items-center gap-3">
@@ -221,7 +218,7 @@ export function HanCharacterDetailPage() {
                                         onClick={cancelEdit}
                                         className="px-3 py-1.5 rounded-md border border-border text-sm font-medium text-text-h bg-surface hover:bg-bg transition-colors"
                                     >
-                                        {t.common?.cancel ?? "Huỷ"}
+                                        {t.common?.cancel ?? "Cancel"}
                                     </button>
                                     <button
                                         type="button"
@@ -229,7 +226,7 @@ export function HanCharacterDetailPage() {
                                         disabled={saving}
                                         className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-accent hover:bg-accent-hover disabled:opacity-50 transition-colors"
                                     >
-                                        {saving ? (t.common?.saving ?? "Đang lưu...") : (t.common?.save ?? "Lưu")}
+                                        {saving ? (t.common?.saving ?? "Saving...") : (t.common?.save ?? "Save")}
                                     </button>
                                 </>
                             ) : (
@@ -238,7 +235,7 @@ export function HanCharacterDetailPage() {
                                     onClick={startEdit}
                                     className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 transition-colors"
                                 >
-                                    {t.common?.edit ?? "Sửa"}
+                                    {t.common?.edit ?? "Edit"}
                                 </button>
                             )}
                         </div>
@@ -246,15 +243,7 @@ export function HanCharacterDetailPage() {
                     {editing ? (
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-col gap-1">
-                                <label className={labelClass}>{t.wordBank.colHanSimplified ?? "Giản thể"}</label>
-                                <input
-                                    className={`${inputClass} font-semibold text-han text-lg`}
-                                    value={draft?.hanSimplified ?? ""}
-                                    onChange={(e) => setDraft((d) => ({ ...d, hanSimplified: e.target.value }))}
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <label className={labelClass}>{t.hanLookup?.traditionalHk ?? "Phồn thể HK"}</label>
+                                <label className={labelClass}>{t.hanLookup?.traditionalHk ?? "Traditional"}</label>
                                 <input
                                     className={`${inputClass} text-red-600 dark:text-red-400 text-lg`}
                                     value={draft?.hanTraditional ?? ""}
@@ -266,7 +255,7 @@ export function HanCharacterDetailPage() {
                                 <TagInput
                                     value={draft?.sinoVietnamese ?? ""}
                                     onChange={(v) => setDraft((d) => ({ ...d, sinoVietnamese: v }))}
-                                    placeholder="âm1, âm2"
+                                    placeholder="reading1, reading2"
                                 />
                             </div>
                             <div className="flex flex-col gap-1">
@@ -288,7 +277,7 @@ export function HanCharacterDetailPage() {
                                 />
                             </div>
                             <div className="flex flex-col gap-1">
-                                <label className={labelClass}>{t.wordBank.colPopularity ?? "Phổ biến"}</label>
+                                <label className={labelClass}>{t.wordBank.colPopularity ?? "Popularity"}</label>
                                 <input
                                     className={`${inputClass} text-lg`}
                                     type="number"
@@ -363,7 +352,7 @@ export function HanCharacterDetailPage() {
                 {/* Back link */}
                 <div className="flex items-center">
                     <Link to="/han-characters" className="text-sm text-text-muted hover:text-accent transition-colors">
-                        ← {t.hanCharacters?.backToList ?? "Quay lại kho hán tự"}
+                        ← {t.hanCharacters?.backToList ?? "Back to Chinese Characters"}
                     </Link>
                 </div>
             </div>

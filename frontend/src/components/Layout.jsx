@@ -1,12 +1,11 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { LanguageSwitcher } from "./LanguageSwitcher.jsx";
 import { FontSizeSwitcher } from "./FontSizeSwitcher.jsx";
 import { UiSettings } from "./UiSettings.jsx";
 import { UserMenu } from "./UserMenu.jsx";
 import { useIsAdmin } from "../store/authStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { cn } from "../lib/cn.js";
-import { IconWordBank, IconGrammar, IconSentences, IconLessons, IconFlashcard, IconHanChars } from "./NavIcons.jsx";
+import { IconWordBank, IconGrammar, IconSentences, IconFlashcard, IconHanChars } from "./NavIcons.jsx";
 
 const navLinkClass = ({ isActive, isExternal = false }) =>
     cn(
@@ -49,26 +48,16 @@ export function Layout() {
                     <NavLink to="/sentences" className={({ isActive }) => navLinkClass({ isActive })}>
                         <IconSentences /> {t.nav.sentenceBank}
                     </NavLink>
-                    <NavLink
-                        to="/lessons"
-                        className={({ isActive }) => navLinkClass({ isActive })}
-                        style={{ display: "none" }}
-                    >
-                        <IconLessons /> {t.nav.lessons}
-                    </NavLink>
-                    <NavLink
-                        to="/flashcard"
-                        className={({ isActive }) => navLinkClass({ isActive })}
-                        style={{ display: "none" }}
-                    >
+                    <NavLink to="/flashcard" className={({ isActive }) => navLinkClass({ isActive })}>
                         <IconFlashcard /> {t.nav.flashcard}
                     </NavLink>
-                    <NavLink to="/han-characters" className={({ isActive }) => navLinkClass({ isActive })}>
-                        <IconHanChars /> {t.nav.hanCharacters}
-                    </NavLink>
+                    {isAdmin && (
+                        <NavLink to="/han-characters" className={({ isActive }) => navLinkClass({ isActive })}>
+                            <IconHanChars /> {t.nav.hanCharacters}
+                        </NavLink>
+                    )}
                 </nav>
                 <div className="flex items-center gap-2 shrink-0 ml-auto max-[640px]:ml-auto">
-                    <LanguageSwitcher />
                     <FontSizeSwitcher />
                     <UiSettings />
                     <UserMenu />

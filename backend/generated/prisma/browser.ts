@@ -48,10 +48,10 @@ export type VocabularyCharacter = Prisma.VocabularyCharacterModel
  */
 export type Grammar = Prisma.GrammarModel
 /**
- * Model Lesson
+ * Model GrammarExample
  * 
  */
-export type Lesson = Prisma.LessonModel
+export type GrammarExample = Prisma.GrammarExampleModel
 /**
  * Model User
  * 
@@ -67,3 +67,13 @@ export type UserVocabulary = Prisma.UserVocabularyModel
  * 
  */
 export type SentencePattern = Prisma.SentencePatternModel
+/**
+ * Model FlashcardDeck
+ * 
+ */
+export type FlashcardDeck = Prisma.FlashcardDeckModel
+/**
+ * Model FlashcardDeckVocabulary
+ * 
+ */
+export type FlashcardDeckVocabulary = Prisma.FlashcardDeckVocabularyModel

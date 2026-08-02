@@ -46,14 +46,14 @@ export const GrammarPicker = memo(function GrammarPicker({ selected, onToggle, o
     return (
         <div className="border border-border rounded-[0.625rem] overflow-hidden">
             <div className="p-3 border-b border-border flex flex-col gap-2">
-                <BankSearchInput onChange={handleChange} placeholder={t.lessonEdit.searchGrammarBank} />
+                <BankSearchInput onChange={handleChange} placeholder={t.picker.searchGrammarBank} />
             </div>
 
             <div className="flex justify-between items-center px-3 py-2 bg-bg text-[0.8125rem] text-text-muted">
-                <span>{fmt(t.lessonEdit.selected, { count: selected.size })}</span>
+                <span>{fmt(t.picker.selected, { count: selected.size })}</span>
                 <div className="flex gap-1.5">
                     <button type="button" className={btnClass("ghost", "sm")} onClick={handleClear}>
-                        {t.lessonEdit.clear}
+                        {t.picker.clear}
                     </button>
                 </div>
             </div>
@@ -61,7 +61,7 @@ export const GrammarPicker = memo(function GrammarPicker({ selected, onToggle, o
             <div className="max-h-[280px] overflow-y-auto p-2 flex flex-col gap-1">
                 {items.length === 0 ? (
                     <p className="text-text-muted text-sm">
-                        {hasQuery ? t.lessonEdit.noGrammarMatch : t.lessonEdit.searchGrammarBankHint}
+                        {hasQuery ? t.picker.noGrammarMatch : t.picker.searchGrammarBankHint}
                     </p>
                 ) : (
                     items.map((item) => (

@@ -1,4 +1,3 @@
-import { ensureHanVariants } from "./opencc.js";
 import { isSinoVietnameseNone } from "./sinoVietnameseMarkers.js";
 import { displaySinoVietnamese, hasFilledSinoVietnamese } from "./sinoVietnameseReadings.js";
 
@@ -22,29 +21,18 @@ export function isVocabularyFieldPending(vocab, field) {
 export function vocabularyFieldDisplayText(vocab, field, updatingLabel) {
     if (field === "sinoVietnamese") {
         const sinoVietnamese = String(vocab?.sinoVietnamese ?? "").trim();
-        if (!sinoVietnamese) return updatingLabel || "đang cập nhật";
+        if (!sinoVietnamese) return updatingLabel || "pending";
         if (!isSinoVietnameseNone(sinoVietnamese) && !hasFilledSinoVietnamese(sinoVietnamese)) {
             return updatingLabel;
         }
         return displaySinoVietnamese(sinoVietnamese);
     }
-    return vocabularyFieldSummary(vocab, field) || updatingLabel || "đang cập nhật";
-}
-
-function resolvedHanVariants(vocab) {
-    return ensureHanVariants({
-        hanTraditional: vocab.hanTraditional,
-        hanSimplified: vocab.hanSimplified,
-        hanTrad: vocab.hanTrad,
-        han: vocab.han,
-    });
+    return vocabularyFieldSummary(vocab, field) || updatingLabel || "pending";
 }
 
 /** Traditional Chinese characters for tables and lists. */
 export function displayHan(vocab) {
-    const stored = String(vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han ?? "").trim();
-    if (stored) return stored;
-    return resolvedHanVariants(vocab).hanTraditional.trim();
+    return String(vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han ?? "").trim();
 }
 
 /** Jyutping for tables and lists. */

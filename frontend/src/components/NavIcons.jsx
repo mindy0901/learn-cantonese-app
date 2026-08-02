@@ -54,19 +54,6 @@ export function IconSentences({ className, size }) {
     );
 }
 
-export function IconLessons({ className, size }) {
-    const p = iconProps(className, size);
-    return (
-        <svg {...p}>
-            <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
-            <path d="M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5z" />
-            <path d="M9 7h6" />
-            <path d="M9 11h6" />
-            <path d="M9 15h4" />
-        </svg>
-    );
-}
-
 export function IconFlashcard({ className, size }) {
     const p = iconProps(className, size);
     return (

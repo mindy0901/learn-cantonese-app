@@ -12,15 +12,15 @@ const tdClass = "px-5 py-2.5 text-left align-middle truncate max-w-[200px]";
 
 const rowClass = "border-b border-border";
 
-// Highlight color for characters that differ between trad/simp
-const hanDiffClass = "text-amber-600 dark:text-amber-400";
+// Highlight color for characters that are the same as traditional (not simplified)
+const hanDiffClass = "text-red-600 dark:text-red-400";
 
 /**
  * Renders a han variant (simp or trad) with per-character diff highlighting.
  * Links to Hanzii using the simplified form for lookups.
  */
 function HanVariantCell({ text, diffChars, pickerMode, lookupSimp, className }) {
-    if (!text) return <span className={cn(className, "italic text-text-muted")}>đang cập nhật</span>;
+    if (!text) return <span className={cn(className, "italic text-text-muted")}>pending</span>;
 
     const hasDiff = diffChars && diffChars.length > 0 && text.length > 1;
 
@@ -39,7 +39,7 @@ function HanVariantCell({ text, diffChars, pickerMode, lookupSimp, className }) 
     }
 
     const inner = diffChars.map((c, i) => (
-        <span key={i} className={cn(!c.same && hanDiffClass)}>
+        <span key={i} className={cn(!c.same ? "text-blue-600 dark:text-blue-400" : hanDiffClass)}>
             {c.char}
         </span>
     ));
@@ -88,16 +88,33 @@ export const WordRow = memo(function WordRow({
     const { t, locale } = useLocale();
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
+    const buttonRef = useRef(null);
+    const [menuPos, setMenuPos] = useState(null);
+
+    const updateMenuPos = () => {
+        const rect = buttonRef.current?.getBoundingClientRect();
+        if (rect) {
+            setMenuPos({ top: rect.bottom + 4, left: Math.max(rect.right - 180, 8) });
+        }
+    };
 
     useEffect(() => {
-        if (!menuOpen) return;
-        const handler = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
-                setMenuOpen(false);
-            }
+        if (!menuOpen) {
+            setMenuPos(null);
+            return;
+        }
+        updateMenuPos();
+        const handleClick = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
         };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
+        document.addEventListener("mousedown", handleClick);
+        window.addEventListener("scroll", updateMenuPos, true);
+        window.addEventListener("resize", updateMenuPos);
+        return () => {
+            document.removeEventListener("mousedown", handleClick);
+            window.removeEventListener("scroll", updateMenuPos, true);
+            window.removeEventListener("resize", updateMenuPos);
+        };
     }, [menuOpen]);
 
     const stop = (e) => e.stopPropagation();
@@ -225,7 +242,7 @@ export const WordRow = memo(function WordRow({
                     </button>
                 </td>
             )}
-            <td className={cn(tdClass, "py-0.5 align-middle")}>
+            <td className={cn(tdClass, "py-0.5 align-middle w-[120px]")}>
                 {useVertical ? (
                     Array.from({ length: pairCount }, (_, i) => {
                         const sv = variantTokens(svTokens, i);
@@ -254,20 +271,23 @@ export const WordRow = memo(function WordRow({
                             const py = variantTokens(pyTokens, i);
                             const jp = variantTokens(jpTokens, i);
                             return hanDisplay.showSimplified ? (
-                                <div key={i} className="grid grid-cols-2 gap-x-3 gap-y-1 py-0.5 items-end">
+                                <div
+                                    key={i}
+                                    className="grid grid-cols-2 gap-x-3 gap-y-1 py-0.5 items-end whitespace-nowrap"
+                                >
+                                    <HanVariantCell
+                                        text={hanDisplay.traditional}
+                                        diffChars={undefined}
+                                        pickerMode={pickerMode}
+                                        lookupSimp={hanDisplay.simplified}
+                                        className="text-5xl text-center text-red-600 dark:text-red-400"
+                                    />
                                     <HanVariantCell
                                         text={hanDisplay.simplified}
                                         diffChars={hanDiff.simp}
                                         pickerMode={pickerMode}
                                         lookupSimp={hanDisplay.simplified}
-                                        className="text-5xl text-center"
-                                    />
-                                    <HanVariantCell
-                                        text={hanDisplay.traditional}
-                                        diffChars={hanDiff.trad}
-                                        pickerMode={pickerMode}
-                                        lookupSimp={hanDisplay.simplified}
-                                        className="text-5xl text-center"
+                                        className="text-5xl text-center text-blue-600 dark:text-blue-400"
                                     />
                                     <span className="text-pinyin text-base text-center font-semibold">
                                         {py || "\u00A0"}
@@ -275,9 +295,9 @@ export const WordRow = memo(function WordRow({
                                     <span className={cn(romanClass, "text-center")}>{jp || "\u00A0"}</span>
                                 </div>
                             ) : (
-                                <div key={i} className="flex flex-col items-center gap-1 py-0.5">
+                                <div key={i} className="flex flex-col items-center gap-1 py-0.5 whitespace-nowrap">
                                     {pickerMode ? (
-                                        <span className="text-han text-5xl font-semibold">
+                                        <span className="text-han text-5xl font-semibold text-red-600 dark:text-red-400">
                                             {hanDisplay.traditional}
                                         </span>
                                     ) : (
@@ -298,66 +318,75 @@ export const WordRow = memo(function WordRow({
                         })}
                     </div>
                 ) : hanDisplay.showSimplified ? (
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 items-end">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 items-end whitespace-nowrap">
+                        <HanVariantCell
+                            text={hanOrdered.primary}
+                            diffChars={undefined}
+                            pickerMode={pickerMode}
+                            lookupSimp={hanDisplay.simplified}
+                            className="text-5xl text-center text-red-600 dark:text-red-400"
+                        />
                         <HanVariantCell
                             text={hanDisplay.simplified}
                             diffChars={hanDiff.simp}
                             pickerMode={pickerMode}
                             lookupSimp={hanDisplay.simplified}
-                            className="text-5xl text-center"
-                        />
-                        <HanVariantCell
-                            text={hanOrdered.primary}
-                            diffChars={hanDiff.trad}
-                            pickerMode={pickerMode}
-                            lookupSimp={hanDisplay.simplified}
-                            className="text-5xl text-center"
+                            className="text-5xl text-center text-blue-600 dark:text-blue-400"
                         />
                         <span className="text-pinyin text-base text-center font-semibold">
-                            {word.pinyin || <span className="italic text-text-muted">không có pinyin</span>}
+                            {word.pinyin || <span className="italic text-text-muted">no pinyin</span>}
                         </span>
                         <span className={cn(romanClass, "text-center")}>
-                            {romanization || <span className="italic text-text-muted">không có jyutping</span>}
+                            {romanization || <span className="italic text-text-muted">no jyutping</span>}
                         </span>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center gap-1">
+                    <div className="flex flex-col items-center gap-1 whitespace-nowrap">
                         {pickerMode ? (
-                            <span className="text-han text-5xl font-semibold">
-                                {hanOrdered.primary || (
-                                    <span className="italic text-text-muted text-sm">đang cập nhật</span>
-                                )}
+                            <span className="text-han text-5xl font-semibold text-red-600 dark:text-red-400">
+                                {hanOrdered.primary || <span className="italic text-text-muted text-sm">pending</span>}
                             </span>
                         ) : (
                             <HanziiHanCellLink
                                 hanTraditional={hanLookup}
                                 displayText={hanOrdered.primary}
                                 emphasis="primary"
-                                className="text-5xl"
+                                className="text-5xl text-red-600 dark:text-red-400"
                             />
                         )}
                         <div className="flex items-center gap-2">
                             <span className="text-pinyin text-base font-semibold">
-                                {word.pinyin || <span className="italic text-text-muted">không có pinyin</span>}
+                                {word.pinyin || <span className="italic text-text-muted">no pinyin</span>}
                             </span>
                             <span className="text-text-muted text-sm">·</span>
                             <span className={romanClass}>
-                                {romanization || <span className="italic text-text-muted">không có jyutping</span>}
+                                {romanization || <span className="italic text-text-muted">no jyutping</span>}
                             </span>
                         </div>
                     </div>
                 )}
             </td>
-            {canMark && (
-                <td className="px-5 py-2.5 align-middle max-w-[250px]" onClick={stop}>
-                    <span className="text-viet text-sm line-clamp-2">
-                        {word.vietMeanings ? (
-                            word.vietMeanings
-                        ) : (
-                            <span className="italic text-text-muted">đang cập nhật</span>
-                        )}
-                    </span>
-                </td>
+            {!pickerMode && (
+                <>
+                    <td className="px-5 py-2.5 align-middle max-w-[250px]" onClick={stop}>
+                        <span className="text-viet text-sm line-clamp-2">
+                            {word.vietMeanings ? (
+                                word.vietMeanings
+                            ) : (
+                                <span className="italic text-text-muted">pending</span>
+                            )}
+                        </span>
+                    </td>
+                    <td className="px-5 py-2.5 align-middle max-w-[250px]" onClick={stop}>
+                        <span className="text-sm line-clamp-2">
+                            {word.engMeanings ? (
+                                word.engMeanings
+                            ) : (
+                                <span className="italic text-text-muted">updating</span>
+                            )}
+                        </span>
+                    </td>
+                </>
             )}
             <td className="px-5 py-2.5 align-middle text-center">
                 {word.hskLevel && /\d/.test(word.hskLevel) && !pickerMode ? (
@@ -375,7 +404,7 @@ export const WordRow = memo(function WordRow({
                         className="inline-flex items-center justify-center h-5 text-xs text-text-muted"
                         style={{ minWidth: 82 }}
                     >
-                        <span className="italic">đang cập nhật</span>
+                        <span className="italic">pending</span>
                     </span>
                 )}
             </td>
@@ -383,17 +412,19 @@ export const WordRow = memo(function WordRow({
                 <td className="px-0.5 py-1 text-center align-middle" onClick={stop}>
                     <div className="relative inline-block">
                         <button
+                            ref={buttonRef}
                             type="button"
                             className="size-8 inline-flex items-center justify-center rounded-lg text-text-muted hover:bg-bg hover:text-text-h transition-colors"
                             onClick={() => setMenuOpen(!menuOpen)}
-                            title="Thao tác"
+                            title="Actions"
                         >
                             •••
                         </button>
-                        {menuOpen && (
+                        {menuOpen && menuPos && (
                             <div
                                 ref={menuRef}
-                                className="absolute right-0 top-8 z-[999] min-w-36 rounded-lg border border-border bg-surface shadow-xl py-1"
+                                className="fixed z-[999] min-w-36 rounded-lg border border-border bg-surface shadow-xl py-1"
+                                style={{ top: menuPos.top, left: menuPos.left }}
                             >
                                 <button
                                     type="button"
@@ -404,7 +435,7 @@ export const WordRow = memo(function WordRow({
                                     }}
                                 >
                                     <IconViewDetail className="shrink-0" />
-                                    Xem chi tiết
+                                    View details
                                 </button>
                                 {onEdit && (
                                     <button
@@ -416,7 +447,7 @@ export const WordRow = memo(function WordRow({
                                         }}
                                     >
                                         <IconEdit className="shrink-0" />
-                                        Sửa
+                                        Edit
                                     </button>
                                 )}
                                 {onDelete && (
@@ -429,7 +460,7 @@ export const WordRow = memo(function WordRow({
                                         }}
                                     >
                                         <IconTrash className="shrink-0" />
-                                        Xóa
+                                        Delete
                                     </button>
                                 )}
                             </div>

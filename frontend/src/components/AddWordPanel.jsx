@@ -53,7 +53,7 @@ export function AddWordPanel({ onClose, initialHanTraditional }) {
 
                 <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
                     <section className="flex min-h-0 flex-col rounded-xl bg-surface px-5 py-7 sm:px-8 sm:py-8">
-                        <WordDetailContent word={stubWord} canEdit initialEditing onSave={handleSave} />
+                        <WordDetailContent vocabulary={stubWord} canEdit initialEditing onSave={handleSave} />
                     </section>
                 </div>
             </div>

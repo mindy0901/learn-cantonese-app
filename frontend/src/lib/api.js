@@ -48,6 +48,7 @@ async function request(path, options = {}) {
 export const api = {
     getAuthStatus: () => request("/auth/status"),
     getMe: () => request("/auth/me"),
+    login: (email, password) => request("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
     logout: () => request("/auth/logout", { method: "POST" }),
 
     fetchFromCloud: () => request("/api/data"),
@@ -132,10 +133,6 @@ export const api = {
     deleteSentencePattern: (id) => request(`/api/sentence-patterns/${id}`, { method: "DELETE" }),
     fetchSentencePatternsForWord: (wordId) => request(`/api/sentence-patterns/by-word/${wordId}`),
 
-    createLesson: (lesson) => request("/api/lessons", { method: "POST", body: JSON.stringify(lesson) }),
-    updateLesson: (id, lesson) => request(`/api/lessons/${id}`, { method: "PUT", body: JSON.stringify(lesson) }),
-    deleteLesson: (id) => request(`/api/lessons/${id}`, { method: "DELETE" }),
-
     backfillHanVariants: () => request("/api/data/backfill-han-variants", { method: "POST", body: "{}" }),
 
     backfillPinyin: () => request("/api/data/backfill-pinyin", { method: "POST", body: "{}" }),
@@ -148,24 +145,9 @@ export const api = {
 
     backfillHanCharVariants: () => request("/api/data/backfill-han-char-variants", { method: "POST", body: "{}" }),
 
-    backfillHanCharSinoVietnamese: () =>
-        request("/api/data/backfill-han-char-sinovietnamese", { method: "POST", body: "{}" }),
-
-    dedupHanCharacters: () => request("/api/han-characters/dedup", { method: "POST", body: "{}" }),
-
-    /** Sync han characters from all vocabularies — extract chars with readings */
-    syncHanCharsFromVocab: () => request("/api/han-characters/sync", { method: "POST", body: "{}" }),
-
-    backfillWordHanRelations: () => request("/api/data/backfill-word-han-relations", { method: "POST", body: "{}" }),
-
     getHanCharsForVocabulary: (wordId) => request(`/api/vocabulary/${wordId}/han-characters`),
 
     getVocabulariesForHanChar: (hanCharId) => request(`/api/han-characters/${hanCharId}/vocabulary`),
-
-    searchCedict: ({ q, limit = 30 } = {}) => {
-        const params = new URLSearchParams({ q: String(q ?? "").trim(), limit: String(limit) });
-        return request(`/api/cedict/search?${params}`);
-    },
 
     // Han Characters
     browseHanCharacters: async ({
@@ -219,12 +201,21 @@ export const api = {
     patchHanCharacterFlags: (id, flags) =>
         request(`/api/han-characters/${id}/flags`, { method: "PATCH", body: JSON.stringify(flags) }),
 
-    /** Translate text via DeepL (VI → EN) */
-    translateViToEn: (text) =>
-        request("/api/translate", {
+    // Flashcard Decks
+    fetchFlashcardDecks: () => request("/api/flashcard-decks"),
+    fetchFlashcardDeck: (id) => request(`/api/flashcard-decks/${id}`),
+    createFlashcardDeck: (deck) => request("/api/flashcard-decks", { method: "POST", body: JSON.stringify(deck) }),
+    updateFlashcardDeck: (id, deck) =>
+        request(`/api/flashcard-decks/${id}`, { method: "PUT", body: JSON.stringify(deck) }),
+    deleteFlashcardDeck: (id) => request(`/api/flashcard-decks/${id}`, { method: "DELETE" }),
+    fetchDeckVocabularies: (deckId) => request(`/api/flashcard-decks/${deckId}/vocabularies`),
+    addVocabularyToDeck: (deckId, vocabularyId) =>
+        request(`/api/flashcard-decks/${deckId}/vocabularies`, {
             method: "POST",
-            body: JSON.stringify({ text, sourceLang: "VI", targetLang: "EN-US" }),
+            body: JSON.stringify({ vocabularyId }),
         }),
+    removeVocabularyFromDeck: (deckId, vocabularyId) =>
+        request(`/api/flashcard-decks/${deckId}/vocabularies/${vocabularyId}`, { method: "DELETE" }),
 
     /** Convert Chinese text to Jyutping */
     toJyutping: (text) =>

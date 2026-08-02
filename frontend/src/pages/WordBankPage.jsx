@@ -29,7 +29,7 @@ export function WordBankPage() {
     const handleFilterChange = useCallback((patch) => setWordBankPrefs(patch), [setWordBankPrefs]);
 
     return (
-        <main className="flex-1 max-w-[1400px] w-full mx-auto px-5 pt-8 pb-12">
+        <main className="flex-1 w-full px-5 pt-8 pb-12">
             <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
                     <h1>{t.wordBank.title}</h1>
@@ -61,7 +61,7 @@ export function WordBankPage() {
             />
 
             {addOpen && <AddWordPanel onClose={() => setAddOpen(false)} />}
-            {editWord && <EditWordPanel word={editWord} onClose={() => setEditWord(null)} />}
+            {editWord && <EditWordPanel vocabulary={editWord} onClose={() => setEditWord(null)} />}
         </main>
     );
 }

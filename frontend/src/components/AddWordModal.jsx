@@ -4,7 +4,7 @@ import { btnClass } from "./ui/buttonStyles.js";
 import { uiModalCloseButtonClass } from "./ui/controlStyles.js";
 import { useLocale } from "../store/localeStore.js";
 import { emptyVocabulary } from "../types/word.js";
-import { buildWordDraft, wordDraftPayload, WordEditFields } from "./WordEditFields.jsx";
+import { buildVocabularyDraft, vocabularyDraftPayload, WordEditFields } from "./WordEditFields.jsx";
 import { hanziiWordUrl } from "../lib/hanzii.js";
 import { IconInfo, IconClose } from "./NavIcons.jsx";
 
@@ -18,13 +18,13 @@ export function AddWordModal({ onSave, onClose, word: editWord, initialHanTradit
     const { t, locale } = useLocale();
     const isEdit = Boolean(editWord?.id);
     const [draft, setDraft] = useState(() => {
-        if (editWord) return buildWordDraft(editWord);
+        if (editWord) return buildVocabularyDraft(editWord);
         return emptyVocabulary({ hanTraditional: initialHanTraditional ?? "" });
     });
     const [validationError, setValidationError] = useState("");
 
     useEffect(() => {
-        if (editWord?.id) setDraft(buildWordDraft(editWord));
+        if (editWord?.id) setDraft(buildVocabularyDraft(editWord));
     }, [editWord]);
 
     const handleSave = () => {
@@ -32,7 +32,7 @@ export function AddWordModal({ onSave, onClose, word: editWord, initialHanTradit
             setValidationError(t.addWord.requiredFields);
             return;
         }
-        const payload = wordDraftPayload(draft);
+        const payload = vocabularyDraftPayload(draft);
         if (isEdit) {
             onSave(editWord, payload);
         } else {
@@ -45,8 +45,8 @@ export function AddWordModal({ onSave, onClose, word: editWord, initialHanTradit
     };
 
     return (
-        <div className={backdropClass} onClick={onClose} role="presentation">
-            <div className={modalClass} onClick={(e) => e.stopPropagation()} role="dialog">
+        <div className={backdropClass} role="presentation">
+            <div className={modalClass} role="dialog">
                 <div className="flex items-center justify-between border-b border-border px-6 py-5">
                     <div className="flex items-center gap-2">
                         <h2>{isEdit ? t.common.edit : t.addWord.title}</h2>
@@ -61,7 +61,7 @@ export function AddWordModal({ onSave, onClose, word: editWord, initialHanTradit
                                     "hover:border-accent-border hover:text-accent hover:bg-accent-bg",
                                     "transition-all duration-200",
                                 )}
-                                title={`Tra "${draft.hanTraditional.trim()}" trên Hanzii`}
+                                title={`Look up "${draft.hanTraditional.trim()}" on Hanzii`}
                             >
                                 <IconInfo size={14} />
                             </a>

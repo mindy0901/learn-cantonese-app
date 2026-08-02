@@ -1,5 +1,3 @@
-import { expandHanSearchTerms, ensureHanVariants } from "./opencc.js";
-
 export function normalizeSearchText(text) {
     return String(text ?? "")
         .toLowerCase()
@@ -36,15 +34,13 @@ export function hasToneDiacritics(text) {
     return stripped.toLowerCase() !== String(text ?? "").toLowerCase();
 }
 
-/** Expand a query into normalized variants (OpenCC Han, accent-less, tone-less romanization, tokens). */
+/** Expand a query into normalized variants (accent-less, tone-less romanization, tokens). */
 export function searchQueryVariants(text) {
     const raw = String(text ?? "").trim();
     const normalized = normalizeSearchText(raw);
     const variants = new Set();
 
-    for (const term of expandHanSearchTerms(raw)) {
-        variants.add(term);
-    }
+    if (raw) variants.add(raw);
 
     if (normalized) {
         variants.add(normalized);
@@ -73,17 +69,10 @@ function romanizationTokens(value) {
 }
 
 export function getVocabularySearchBlob(vocab) {
-    const { hanTraditional, hanSimplified } = ensureHanVariants({
-        hanTraditional: vocab.hanTraditional,
-        hanSimplified: vocab.hanSimplified,
-    });
-    const hanTerms = [...new Set([...expandHanSearchTerms(hanTraditional), ...expandHanSearchTerms(hanSimplified)])];
-
     const parts = [
         vocab.engMeanings,
-        hanTraditional,
-        hanSimplified,
-        ...hanTerms,
+        vocab.hanTraditional ?? "",
+        vocab.hanSimplified ?? "",
         vocab.vietMeanings,
         vocab.vietExamples ?? "",
         vocab.sinoVietnamese ?? "",

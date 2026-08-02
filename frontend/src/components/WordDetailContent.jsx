@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/cn.js";
 import { Button, IconButton } from "./ui/Button.jsx";
@@ -8,9 +9,8 @@ import { vocabularyLookupDisplay } from "../lib/hanLookup.js";
 import { diffHanChars } from "../lib/hanScriptDisplay.js";
 import { WordPopularityPicker } from "./WordPopularityPicker.jsx";
 import { WordSentenceSuggestions } from "./WordSentenceSuggestions.jsx";
-import { WordRelatedLessons } from "./WordRelatedLessons.jsx";
 import { WordFieldText } from "./WordFieldText.jsx";
-import { buildWordDraft, wordDraftPayload } from "./WordEditFields.jsx";
+import { buildVocabularyDraft, vocabularyDraftPayload } from "./WordEditFields.jsx";
 import { MeaningsEditor } from "./WordEditFields.jsx";
 import { TagInput } from "./TagInput.jsx";
 import { normalizePopularity } from "../lib/wordPopularity.js";
@@ -23,13 +23,14 @@ import { IconMinus } from "./NavIcons.jsx";
 
 const detailTextClass = "wd-text m-0 max-w-full leading-normal break-normal";
 
-const fieldStackClass = "word-detail-content flex w-full min-w-0 flex-col gap-6";
+const fieldStackClass = "word-detail-content flex w-full min-w-0 flex-col gap-4";
 
 const valueShellClass = "w-full min-w-0";
 
 const subLabelClass = "wd-sub m-0 font-semibold uppercase tracking-wide text-text-muted text-center";
 
-const hanShellClass = "w-full rounded-xl border border-border/80 bg-surface/80 px-6 py-6 sm:px-7 sm:py-7";
+const hanShellClass =
+    "w-full rounded-xl border border-border/80 bg-surface/80 px-6 py-4 sm:px-8 sm:py-4 shadow-theme-sm";
 
 /** Color-coded HSK level badge: green (1-2) → yellow (3-4) → orange (5-6) → red (7-9) */
 function hskLevelBadgeClass(level) {
@@ -44,11 +45,11 @@ function hskLevelBadgeClass(level) {
     return "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800";
 }
 
-const hanGridClass = "grid grid-cols-1 items-stretch sm:grid-cols-2 sm:gap-0";
+const hanGridClass = "grid grid-cols-1 items-stretch sm:grid-cols-2 sm:gap-6";
 
-const hanCellClass = "flex h-full min-h-0 flex-col gap-3 items-center";
+const hanCellClass = "flex h-full min-h-0 flex-col gap-4 items-center";
 
-const hanCellBodyClass = "wd-han-cell-body flex flex-1 flex-col justify-center items-center gap-2.5";
+const hanCellBodyClass = "wd-han-cell-body flex flex-1 flex-col justify-center items-center gap-2";
 
 const hanGlyphClass = "wd-han block text-[clamp(3rem,8vw,7rem)] leading-none";
 
@@ -130,16 +131,26 @@ function DetailField({ valueMinHeight, children }) {
     return <div className={cn(valueShellClass, valueMinHeight, "flex flex-col justify-center")}>{children}</div>;
 }
 
-function HanSubField({ label, children, bordered }) {
+function HanSubField({ label, children }) {
     return (
-        <div className={cn(hanCellClass, bordered && "sm:border-r sm:border-border/60 sm:pr-6")}>
+        <div className={hanCellClass}>
             <p className={subLabelClass}>{label}</p>
             <div className={hanCellBodyClass}>{children}</div>
         </div>
     );
 }
 
-function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, hanTraditional, pinyin, jyutping }) {
+function WordHanRomanBlock({
+    editing,
+    draft,
+    display,
+    onDraftChange,
+    locale,
+    hanTraditional,
+    pinyin,
+    jyutping,
+    sinoVietnamese,
+}) {
     const { t } = useLocale();
     const navigate = useNavigate();
     const hanCharacters = useHanCharacters();
@@ -169,7 +180,7 @@ function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, han
                             e.stopPropagation();
                             navigate(hanCharacterDetailPath(hanId));
                         }}
-                        title={`${ch} — ${t.hanCharacters?.viewDetail ?? "Xem chi tiết"}`}
+                        title={`${ch} — ${t.hanCharacters?.viewDetail ?? "View details"}`}
                     >
                         {ch}
                     </button>
@@ -201,7 +212,7 @@ function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, han
                             e.stopPropagation();
                             navigate(hanCharacterDetailPath(hanId));
                         }}
-                        title={`${ch} — ${t.hanCharacters?.viewDetail ?? "Xem chi tiết"}`}
+                        title={`${ch} — ${t.hanCharacters?.viewDetail ?? "View details"}`}
                     >
                         {ch}
                     </button>
@@ -219,15 +230,15 @@ function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, han
     const same = display.traditional === (display.simplified || display.traditional);
     const hanDiff = same ? null : diffHanChars({ traditional: display.traditional, simplified: display.simplified });
     const gridClass = same ? "grid-cols-1" : "sm:grid-cols-2";
-    const shellClass = same ? "py-6" : hanShellClass;
+    const shellClass = same ? "py-4" : hanShellClass;
 
     if (editing) {
         const hanEditClass =
-            "w-full px-1 py-3 font-semibold text-han bg-transparent border-0 border-b-2 border-border outline-none transition-colors focus:border-accent-border text-center";
+            "w-full px-2 py-4 font-semibold text-han bg-transparent border-0 outline-none transition-colors focus:border-accent-border text-center";
         if (same) {
             return (
                 <div className={shellClass}>
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-4">
                         <input
                             className={hanEditClass}
                             style={{ fontSize: 48 }}
@@ -241,7 +252,7 @@ function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, han
         return (
             <div className={shellClass}>
                 <div className={cn(hanGridClass, gridClass)}>
-                    <HanSubField label={t.wordBank.colHanSimplified} bordered>
+                    <HanSubField label={t.wordBank.colHanSimplified}>
                         <input
                             className={hanEditClass}
                             style={{ fontSize: 48 }}
@@ -249,16 +260,14 @@ function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, han
                             onChange={(e) => onDraftChange("hanSimplified", e.target.value)}
                         />
                     </HanSubField>
-                    <div className="sm:pl-6">
-                        <HanSubField label={t.hanLookup.traditionalHk}>
-                            <input
-                                className={hanEditClass}
-                                style={{ fontSize: 48 }}
-                                value={draft.hanTraditional}
-                                onChange={(e) => onDraftChange("hanTraditional", e.target.value)}
-                            />
-                        </HanSubField>
-                    </div>
+                    <HanSubField label={t.hanLookup.traditionalHk}>
+                        <input
+                            className={hanEditClass}
+                            style={{ fontSize: 48 }}
+                            value={draft.hanTraditional}
+                            onChange={(e) => onDraftChange("hanTraditional", e.target.value)}
+                        />
+                    </HanSubField>
                 </div>
             </div>
         );
@@ -267,55 +276,19 @@ function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, han
     if (same) {
         return (
             <div className={shellClass}>
-                <div className="flex flex-col items-center gap-2.5">
-                    <div className="relative inline-flex">
-                        <span className={cn(hanGlyphClass, "font-semibold text-han")}>
-                            {renderHanText(display.traditional)}
+                <div className="flex flex-col items-center gap-2">
+                    {sinoVietnamese?.trim() && (
+                        <span className={cn(pinyinLineClass, "text-viet font-medium")}>{sinoVietnamese}</span>
+                    )}
+                    <span className={cn(hanGlyphClass, "font-semibold text-han")}>
+                        {renderHanText(display.traditional)}
+                    </span>
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center w-full max-w-xs">
+                        <span className={cn(pinyinLineClass, "text-right")}>
+                            {pinyin || <span className="italic text-text-muted">pending</span>}
                         </span>
-                        <a
-                            href={hanziiWordUrl(hanTraditional, locale) ?? "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="absolute -top-1.5 -right-20 inline-flex items-center justify-center size-8 rounded text-sm font-bold text-accent no-underline leading-none hover:text-accent-hover hover:bg-accent/10"
-                            title={t.wordDetail.openHanzii?.replace("{hanTraditional}", hanTraditional) ?? "Tra Hanzii"}
-                            aria-label={
-                                t.wordDetail.openHanzii?.replace("{hanTraditional}", hanTraditional) ?? "Tra Hanzii"
-                            }
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <svg
-                                width="21"
-                                height="21"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="16" x2="12" y2="12" />
-                                <line x1="12" y1="8" x2="12.01" y2="8" />
-                            </svg>
-                        </a>
-                        <a
-                            href={`https://translate.google.com/?sl=yue&tl=vi&text=${encodeURIComponent(hanTraditional || "")}&op=translate`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="absolute -top-1.5 -right-10 inline-flex items-center justify-center size-8 rounded text-sm font-bold text-blue-600 no-underline leading-none hover:text-blue-700 hover:bg-blue-50"
-                            title={`Dịch "${hanTraditional}" (Cantonese → Việt)`}
-                            aria-label={`Dịch "${hanTraditional}" (Cantonese → Việt)`}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            G
-                        </a>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className={pinyinLineClass}>
-                            {pinyin || <span className="italic text-text-muted">đang cập nhật</span>}
-                        </span>
-                        {jyutping && <span className="text-text-muted text-sm">·</span>}
-                        <span className={romanLineClass}>{jyutping || ""}</span>
+                        <span className="text-text-muted text-sm">|</span>
+                        <span className={cn(romanLineClass, "text-left")}>{jyutping || ""}</span>
                     </div>
                 </div>
             </div>
@@ -324,61 +297,60 @@ function WordHanRomanBlock({ editing, draft, display, onDraftChange, locale, han
 
     return (
         <div className={shellClass}>
+            {sinoVietnamese?.trim() && (
+                <p className={cn(pinyinLineClass, "text-center mb-4 text-viet font-medium")}>{sinoVietnamese}</p>
+            )}
             <div className={cn(hanGridClass, gridClass)}>
-                <div>
-                    <HanSubField label={t.wordBank.colHanSimplified} bordered>
-                        <span className={cn(hanGlyphClass, "font-semibold text-han")}>
-                            {hanDiff
-                                ? renderHanWithDiff(display.simplified || display.traditional, hanDiff.simp)
-                                : renderHanText(display.simplified || display.traditional)}
-                        </span>
-                        <p className={cn(pinyinLineClass, "text-center mt-1")}>
-                            {pinyin || <span className="italic text-text-muted">đang cập nhật</span>}
-                        </p>
-                    </HanSubField>
-                </div>
-                <div className="sm:pl-6">
-                    <HanSubField label={t.hanLookup.traditionalHk}>
-                        <span className={cn(hanGlyphClass, "font-semibold text-han")}>
-                            {hanDiff
-                                ? renderHanWithDiff(display.traditional, hanDiff.trad)
-                                : renderHanText(display.traditional)}
-                        </span>
-                        <p className={cn(romanLineClass, "text-center mt-1")}>{jyutping || ""}</p>
-                    </HanSubField>
-                </div>
+                <HanSubField label={t.wordBank.colHanSimplified}>
+                    <span className={cn(hanGlyphClass, "font-semibold text-han")}>
+                        {hanDiff
+                            ? renderHanWithDiff(display.simplified || display.traditional, hanDiff.simp)
+                            : renderHanText(display.simplified || display.traditional)}
+                    </span>
+                    <p className={cn(pinyinLineClass, "text-center mt-2")}>
+                        {pinyin || <span className="italic text-text-muted">pending</span>}
+                    </p>
+                </HanSubField>
+                <HanSubField label={t.hanLookup.traditionalHk}>
+                    <span className={cn(hanGlyphClass, "font-semibold text-han")}>
+                        {hanDiff
+                            ? renderHanWithDiff(display.traditional, hanDiff.trad)
+                            : renderHanText(display.traditional)}
+                    </span>
+                    <p className={cn(romanLineClass, "text-center mt-2")}>{jyutping || ""}</p>
+                </HanSubField>
             </div>
         </div>
     );
 }
 
 export function WordDetailContent({
-    word,
+    vocabulary,
     onToggleImportant,
     onToggleMastered,
     onSetPopularity,
     canEdit,
     onSave,
     onNextRandom,
-    relatedLessons = [],
     initialEditing = false,
+    footerRef,
 }) {
     const { t, locale } = useLocale();
-    const display = vocabularyLookupDisplay(word);
+    const display = vocabularyLookupDisplay(vocabulary);
     const vocabularies = useVocabularies();
 
     const [editing, setEditing] = useState(initialEditing);
-    const [draft, setDraft] = useState(() => buildWordDraft(word));
+    const [draft, setDraft] = useState(() => buildVocabularyDraft(vocabulary));
     const [validationError, setValidationError] = useState("");
     const [duplicateWarning, setDuplicateWarning] = useState(null);
     const [duplicateDetailOpen, setDuplicateDetailOpen] = useState(false);
-    const [localPopularity, setLocalPopularity] = useState(() => normalizePopularity(word.popularity));
+    const [localPopularity, setLocalPopularity] = useState(() => normalizePopularity(vocabulary.popularity));
     const [pairCount, setPairCount] = useState(() => {
-        const svLen = parseSinoVietnameseTokens(word.sinoVietnamese).length;
-        const pyLen = String(word.pinyin ?? "")
+        const svLen = parseSinoVietnameseTokens(vocabulary.sinoVietnamese).length;
+        const pyLen = String(vocabulary.pinyin ?? "")
             .split(/[,\/、]+/)
             .filter(Boolean).length;
-        const jpLen = String(word.jyutping ?? "")
+        const jpLen = String(vocabulary.jyutping ?? "")
             .split(/\s+/)
             .filter(Boolean).length;
         return Math.max(svLen, pyLen, jpLen, 1);
@@ -387,12 +359,12 @@ export function WordDetailContent({
     const showPopularity = onSetPopularity || localPopularity !== null;
 
     useEffect(() => {
-        setLocalPopularity(normalizePopularity(word.popularity));
-        if (!editing) setDraft(buildWordDraft(word));
-    }, [word, editing]);
+        setLocalPopularity(normalizePopularity(vocabulary.popularity));
+        if (!editing) setDraft(buildVocabularyDraft(vocabulary));
+    }, [vocabulary, editing]);
 
     // Duplicate check for add mode: warn if hanTraditional already exists
-    const isAddMode = !word.hanTraditional?.trim();
+    const isAddMode = !vocabulary.hanTraditional?.trim();
     useEffect(() => {
         if (!isAddMode || !editing) {
             setDuplicateWarning(null);
@@ -421,20 +393,20 @@ export function WordDetailContent({
         const next = normalizePopularity(level);
         const prev = localPopularity;
         setLocalPopularity(next);
-        const result = onSetPopularity?.(word, next);
+        const result = onSetPopularity?.(vocabulary, next);
         if (result?.then) {
             result.catch(() => setLocalPopularity(prev));
         }
     };
 
     const startEdit = () => {
-        setDraft(buildWordDraft(word));
+        setDraft(buildVocabularyDraft(vocabulary));
         setValidationError("");
-        const svLen = parseSinoVietnameseTokens(word.sinoVietnamese).length;
-        const pyLen = String(word.pinyin ?? "")
+        const svLen = parseSinoVietnameseTokens(vocabulary.sinoVietnamese).length;
+        const pyLen = String(vocabulary.pinyin ?? "")
             .split(/[,\/、]+/)
             .filter(Boolean).length;
-        const jpLen = String(word.jyutping ?? "")
+        const jpLen = String(vocabulary.jyutping ?? "")
             .split(/\s+/)
             .filter(Boolean).length;
         setPairCount(Math.max(svLen, pyLen, jpLen, 1));
@@ -442,7 +414,7 @@ export function WordDetailContent({
     };
 
     const cancelEdit = () => {
-        setDraft(buildWordDraft(word));
+        setDraft(buildVocabularyDraft(vocabulary));
         setValidationError("");
         setEditing(false);
     };
@@ -452,13 +424,13 @@ export function WordDetailContent({
             setValidationError(t.addWord.requiredFields);
             return;
         }
-        const payload = wordDraftPayload(draft);
-        if (vocabularyContentEqual(word, normalizeVocabularyFields({ ...word, ...payload }))) {
+        const payload = vocabularyDraftPayload(draft);
+        if (vocabularyContentEqual(vocabulary, normalizeVocabularyFields({ ...vocabulary, ...payload }))) {
             setEditing(false);
             return;
         }
         try {
-            await onSave?.(word, payload);
+            await onSave?.(vocabulary, payload);
             setEditing(false);
         } catch (err) {
             setValidationError(err instanceof Error ? err.message : String(err));
@@ -476,16 +448,16 @@ export function WordDetailContent({
         }
     };
 
-    const important = word.important;
+    const important = vocabulary.important;
 
     return (
-        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3" onKeyDown={handleFormKeyDown}>
+        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4" onKeyDown={handleFormKeyDown}>
             <div className={cn(actionBarClass, "shrink-0")}>
                 <div className="flex justify-start">
                     {onToggleImportant && !editing ? (
                         <IconButton
                             className={important ? "text-yellow-500" : "text-text-muted"}
-                            onClick={() => onToggleImportant(word)}
+                            onClick={() => onToggleImportant(vocabulary)}
                             aria-label={important ? t.wordBank.unmarkImportant : t.wordBank.markImportant}
                             title={important ? t.wordBank.unmarkImportant : t.wordBank.markImportant}
                             aria-pressed={important}
@@ -495,9 +467,9 @@ export function WordDetailContent({
                     ) : null}
                 </div>
                 <div className="flex items-center gap-2">
-                    {editing && word.hanTraditional?.trim() && (
+                    {editing && vocabulary.hanTraditional?.trim() && (
                         <a
-                            href={hanziiWordUrl(word.hanTraditional.trim(), locale)}
+                            href={hanziiWordUrl(vocabulary.hanTraditional.trim(), locale)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={cn(
@@ -507,20 +479,56 @@ export function WordDetailContent({
                                 "hover:border-accent-border hover:text-accent hover:bg-accent-bg",
                                 "transition-all duration-200",
                             )}
-                            title={`Tra "${word.hanTraditional.trim()}" trên Hanzii`}
+                            title={`Look up "${vocabulary.hanTraditional.trim()}" on Hanzii`}
                         >
                             ⓘ
                         </a>
                     )}
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end items-center gap-2">
+                    {!editing && vocabulary.hanTraditional?.trim() && (
+                        <>
+                            <a
+                                href={hanziiWordUrl(vocabulary.hanTraditional.trim(), locale) ?? "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center size-7 rounded-lg text-xs font-bold no-underline bg-surface border border-border text-text-muted hover:border-accent-border hover:text-accent hover:bg-accent-bg transition-all duration-200"
+                                title={
+                                    t.wordDetail.openHanzii?.replace(
+                                        "{hanTraditional}",
+                                        vocabulary.hanTraditional.trim(),
+                                    ) ?? "Tra Hanzii"
+                                }
+                                aria-label={
+                                    t.wordDetail.openHanzii?.replace(
+                                        "{hanTraditional}",
+                                        vocabulary.hanTraditional.trim(),
+                                    ) ?? "Tra Hanzii"
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                ⓘ
+                            </a>
+                            <a
+                                href={`https://translate.google.com/?sl=yue&tl=vi&text=${encodeURIComponent(vocabulary.hanTraditional.trim())}&op=translate`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center size-7 rounded-lg text-xs font-bold no-underline bg-surface border border-border text-blue-600 hover:border-blue-400 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200"
+                                title={`Translate "${vocabulary.hanTraditional.trim()}" (Cantonese → Vietnamese)`}
+                                aria-label={`Translate "${vocabulary.hanTraditional.trim()}" (Cantonese → Vietnamese)`}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                G
+                            </a>
+                        </>
+                    )}
                     {editing ? (
                         <select
-                            className="rounded-full border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-3 py-1 outline-none cursor-pointer"
+                            className="rounded-full border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 outline-none cursor-pointer"
                             value={draft.hskLevel ?? ""}
                             onChange={(e) => setDraftField("hskLevel", e.target.value || undefined)}
                         >
-                            <option value="">— Cấp độ —</option>
+                            <option value="">— Level —</option>
                             <option value="HSK 1">HSK 1</option>
                             <option value="HSK 2">HSK 2</option>
                             <option value="HSK 3">HSK 3</option>
@@ -529,48 +537,36 @@ export function WordDetailContent({
                             <option value="HSK 6">HSK 6</option>
                             <option value="HSK 7-9">HSK 7-9</option>
                         </select>
-                    ) : word.hskLevel ? (
+                    ) : vocabulary.hskLevel ? (
                         <span
                             className={cn(
-                                "inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full border",
-                                hskLevelBadgeClass(word.hskLevel),
+                                "inline-flex items-center px-4 py-2 text-sm font-semibold rounded-full border",
+                                hskLevelBadgeClass(vocabulary.hskLevel),
                             )}
                         >
-                            {word.hskLevel}
+                            {vocabulary.hskLevel}
                         </span>
                     ) : null}
                 </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col gap-3">
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <div
                     className={cn(
-                        "mx-auto flex w-full min-w-0 flex-1 flex-col justify-start items-start",
+                        "mx-auto flex w-full min-w-0 flex-1 flex-col justify-start items-center",
                         fieldStackClass,
                     )}
                 >
-                    {/* Sino-Vietnamese above han characters */}
-                    {!editing && (
-                        <DetailField>
-                            <p className={cn(detailTextClass, "text-viet font-medium text-center")}>
-                                <WordFieldText
-                                    word={word}
-                                    field="sinoVietnamese"
-                                    updatingLabel={t.wordBank.fieldUpdating}
-                                />
-                            </p>
-                        </DetailField>
-                    )}
-
                     <WordHanRomanBlock
                         editing={editing}
                         draft={draft}
                         display={display}
                         onDraftChange={setDraftField}
                         locale={locale}
-                        hanTraditional={word.hanTraditional}
-                        pinyin={display.pinyin}
-                        jyutping={display.jyutping}
+                        hanTraditional={vocabulary.hanTraditional}
+                        pinyin={vocabulary.pinyin}
+                        jyutping={vocabulary.jyutping}
+                        sinoVietnamese={vocabulary.sinoVietnamese}
                     />
 
                     {editing
@@ -624,10 +620,7 @@ export function WordDetailContent({
 
                               return (
                                   <div className="w-full rounded-xl border border-border/80 bg-surface/80 px-4 py-4">
-                                      <div
-                                          className="grid gap-y-1.5"
-                                          style={{ gridTemplateColumns: "1fr 1fr 1fr auto" }}
-                                      >
+                                      <div className="grid gap-y-2" style={{ gridTemplateColumns: "1fr 1fr 1fr auto" }}>
                                           <p className={cn(subLabelClass, "text-center text-xs")}>
                                               {t.wordBank.colSinoVietnamese}
                                           </p>
@@ -669,7 +662,7 @@ export function WordDetailContent({
                                                           type="button"
                                                           className="inline-flex items-center justify-center size-6 rounded border bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900 transition-colors self-center"
                                                           onClick={() => handleRemoveRow(i)}
-                                                          title="Xóa hàng"
+                                                          title="Delete row"
                                                       >
                                                           <IconMinus size={12} />
                                                       </button>
@@ -680,7 +673,7 @@ export function WordDetailContent({
                                       <div className="pt-4 flex justify-center">
                                           <button
                                               type="button"
-                                              className="inline-flex items-center gap-1 rounded-md border bg-success-bg text-success-text border-success-border px-2 py-1 text-xs font-medium transition-colors hover:enabled:bg-success-bg hover:enabled:border-success-text"
+                                              className="inline-flex items-center gap-2 rounded-md border bg-success-bg text-success-text border-success-border px-2 py-2 text-xs font-medium transition-colors hover:enabled:bg-success-bg hover:enabled:border-success-text"
                                               onClick={handleAddRow}
                                           >
                                               <svg
@@ -695,7 +688,7 @@ export function WordDetailContent({
                                                   <line x1="12" y1="5" x2="12" y2="19" />
                                                   <line x1="5" y1="12" x2="19" y2="12" />
                                               </svg>
-                                              Thêm hàng
+                                              Add row
                                           </button>
                                       </div>
                                   </div>
@@ -710,23 +703,26 @@ export function WordDetailContent({
                                 onChange={(newMeanings) => setDraftField("meanings", newMeanings)}
                             />
                         </div>
-                    ) : (word.meanings ?? []).length > 0 ? (
-                        <div className="w-full flex flex-col gap-5 mt-2">
+                    ) : (vocabulary.meanings ?? []).length > 0 ? (
+                        <div className="w-full flex flex-col gap-4">
                             {(() => {
                                 const groups = new Map();
-                                for (const m of word.meanings) {
-                                    const cat = (m.category ?? "").trim() || "Nghĩa";
+                                for (const m of vocabulary.meanings) {
+                                    const cat = (m.category ?? "").trim() || "Meaning";
                                     if (!groups.has(cat)) groups.set(cat, []);
                                     groups.get(cat).push(m);
                                 }
                                 return [...groups.entries()].map(([category, items]) => (
-                                    <div key={category} className="rounded-xl border border-border/60 bg-bg/50 p-4">
-                                        <h3 className="text-sm font-semibold text-violet-600 dark:text-violet-400 mb-3">
+                                    <div
+                                        key={category}
+                                        className="rounded-xl border border-border/60 bg-surface p-4 shadow-theme-sm"
+                                    >
+                                        <h3 className="text-sm font-semibold text-violet-600 dark:text-violet-400 mb-4">
                                             {category}
                                         </h3>
                                         <div className="flex flex-col gap-4">
                                             {items.map((m, i) => (
-                                                <div key={m.id || i} className="pl-3 border-l-2 border-border/40">
+                                                <div key={m.id || i} className="pl-4 border-l-2 border-border/40">
                                                     <div className="flex items-baseline gap-2 mb-1">
                                                         <span className="text-xs font-semibold text-accent">
                                                             {i + 1}.
@@ -747,7 +743,7 @@ export function WordDetailContent({
                                                         <div className="mt-2 ml-4">
                                                             <button
                                                                 type="button"
-                                                                className="inline-flex items-center gap-1 text-xs text-accent font-semibold hover:underline mb-2"
+                                                                className="inline-flex items-center gap-2 text-xs text-accent font-semibold hover:underline mb-2"
                                                                 onClick={() =>
                                                                     setExpandedExamples((prev) => {
                                                                         const next = new Set(prev);
@@ -758,7 +754,7 @@ export function WordDetailContent({
                                                                     })
                                                                 }
                                                             >
-                                                                {expandedExamples.has(m.id || i) ? "▾" : "▸"} Ví dụ (
+                                                                {expandedExamples.has(m.id || i) ? "▾" : "▸"} Examples (
                                                                 {(m.examples ?? []).length})
                                                             </button>
                                                             {expandedExamples.has(m.id || i) && (
@@ -766,13 +762,13 @@ export function WordDetailContent({
                                                                     {m.examples.map((ex, j) => (
                                                                         <div
                                                                             key={ex.id || j}
-                                                                            className="rounded-lg border border-border/40 bg-surface p-2.5"
+                                                                            className="rounded-lg border border-border/40 bg-surface p-4"
                                                                         >
                                                                             {ex.hanExample?.trim() && (
                                                                                 <p className="text-sm text-red-600 dark:text-red-400 mb-1">
                                                                                     {highlightVocabChars(
                                                                                         ex.hanExample,
-                                                                                        word.hanTraditional,
+                                                                                        vocabulary.hanTraditional,
                                                                                     )}
                                                                                 </p>
                                                                             )}
@@ -804,20 +800,41 @@ export function WordDetailContent({
                                 ));
                             })()}
                         </div>
+                    ) : (vocabulary.vietMeanings ?? "").trim() || (vocabulary.engMeanings ?? "").trim() ? (
+                        <div className="w-full flex flex-col gap-4">
+                            <div className="rounded-xl border border-border/60 bg-surface p-4 shadow-theme-sm">
+                                <h3 className="text-sm font-semibold text-violet-600 dark:text-violet-400 mb-4">
+                                    Meaning
+                                </h3>
+                                <div className="flex flex-col gap-4 pl-4 border-l-2 border-border/40">
+                                    {(vocabulary.vietMeanings ?? "").trim() && (
+                                        <span className="text-sm font-semibold text-viet">
+                                            {vocabulary.vietMeanings}
+                                        </span>
+                                    )}
+                                    {(vocabulary.engMeanings ?? "").trim() && (
+                                        <span className="text-sm text-blue-600 dark:text-blue-400">
+                                            {vocabulary.engMeanings}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     ) : canEdit ? (
                         <p className="text-sm text-text-muted italic py-2">
-                            Chưa có nghĩa & ví dụ. Nhấn <strong>Sửa</strong> để thêm.
+                            No meanings or examples yet. Press <strong>Edit</strong> to add.
                         </p>
                     ) : null}
 
                     {duplicateWarning && editing && (
                         <button
                             type="button"
-                            className="m-0 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-left hover:bg-yellow-500/20 transition-colors cursor-pointer"
+                            className="m-0 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-4 text-sm text-left hover:bg-yellow-500/20 transition-colors cursor-pointer"
                             onClick={() => setDuplicateDetailOpen(true)}
                         >
                             <p className="text-yellow-600 dark:text-yellow-400 font-medium">
-                                ⚠ Từ này đã có trong kho ({duplicateWarning.length} bản ghi) — Nhấn để xem chi tiết
+                                ⚠ This entry already exists in the bank ({duplicateWarning.length} records) — Click to
+                                view details
                             </p>
                         </button>
                     )}
@@ -833,8 +850,8 @@ export function WordDetailContent({
                             >
                                 <div className="flex items-center justify-between">
                                     <p className="text-text-h font-semibold">
-                                        Từ "{duplicateWarning[0].hanTraditional}" đã có {duplicateWarning.length} bản
-                                        ghi
+                                        Entry "{duplicateWarning[0].hanTraditional}" has {duplicateWarning.length}{" "}
+                                        records
                                     </p>
                                     <button
                                         className="inline-flex items-center justify-center size-8 rounded-lg text-text-muted hover:bg-bg hover:text-text-h transition-colors"
@@ -843,9 +860,9 @@ export function WordDetailContent({
                                         <IconMinus size={16} />
                                     </button>
                                 </div>
-                                <div className="flex flex-col gap-3">
+                                <div className="flex flex-col gap-4">
                                     {duplicateWarning.map((v, i) => (
-                                        <div key={v.id} className="rounded-lg border border-border bg-bg p-3 text-sm">
+                                        <div key={v.id} className="rounded-lg border border-border bg-bg p-4 text-sm">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="text-xs font-semibold text-text-muted">#{i + 1}</span>
                                                 <span className="text-han font-semibold">{v.hanTraditional}</span>
@@ -870,7 +887,7 @@ export function WordDetailContent({
                                                 )}
                                                 {v.sinoVietnamese && (
                                                     <span>
-                                                        Hán-Việt:{" "}
+                                                        Sino-Vietnamese:{" "}
                                                         <span className="text-viet font-medium">
                                                             {v.sinoVietnamese}
                                                         </span>
@@ -878,13 +895,14 @@ export function WordDetailContent({
                                                 )}
                                             </div>
                                             {v.vietMeanings && (
-                                                <p className="text-viet text-xs mt-1">{v.vietMeanings}</p>
+                                                <p className="text-viet text-xs mt-2">{v.vietMeanings}</p>
                                             )}
                                         </div>
                                     ))}
                                 </div>
                                 <p className="text-sm text-text-muted">
-                                    Bạn vẫn có thể thêm phiên âm mới, hoặc đóng popup này và sửa từ đã có.
+                                    You can still add a new pronunciation, or close this popup and edit the existing
+                                    entry.
                                 </p>
                             </div>
                         </div>
@@ -892,7 +910,7 @@ export function WordDetailContent({
 
                     {validationError && (
                         <p
-                            className="m-0 rounded-lg border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text"
+                            className="m-0 rounded-lg border border-error-border bg-error-bg px-4 py-4 text-sm text-error-text"
                             role="alert"
                         >
                             {validationError}
@@ -901,49 +919,59 @@ export function WordDetailContent({
                 </div>
 
                 <div className="mx-auto flex w-full min-w-0 flex-col gap-6">
-                    <WordSentenceSuggestions word={word} />
-                    <WordRelatedLessons lessons={relatedLessons} />
+                    <WordSentenceSuggestions word={vocabulary} />
                 </div>
             </div>
 
-            <div className={cn(actionBarClass, "mt-auto shrink-0")}>
-                <div className="flex justify-start">
-                    {canEdit && onSave && !editing && (
-                        <Button variant="warning" onClick={startEdit}>
-                            {t.common.edit}
-                        </Button>
-                    )}
-                    {canEdit && onSave && editing && (
-                        <Button variant="danger" onClick={cancelEdit}>
-                            {t.common.cancel}
-                        </Button>
-                    )}
-                </div>
+            {(() => {
+                const actionBar = (
+                    <div
+                        className={cn(
+                            actionBarClass,
+                            "shrink-0 bg-surface pt-4 pb-4 px-4 sm:px-8 border-t border-border/40",
+                        )}
+                    >
+                        <div className="flex justify-start">
+                            {canEdit && onSave && !editing && (
+                                <Button variant="warning" onClick={startEdit}>
+                                    {t.common.edit}
+                                </Button>
+                            )}
+                            {canEdit && onSave && editing && (
+                                <Button variant="danger" onClick={cancelEdit}>
+                                    {t.common.cancel}
+                                </Button>
+                            )}
+                        </div>
 
-                <div className="flex justify-center">
-                    {showPopularity && !editing && (
-                        <WordPopularityPicker
-                            value={localPopularity}
-                            disabled={!onSetPopularity}
-                            onChange={handlePopularityChange}
-                            compact
-                        />
-                    )}
-                </div>
+                        <div className="flex justify-center">
+                            {showPopularity && !editing && (
+                                <WordPopularityPicker
+                                    value={localPopularity}
+                                    disabled={!onSetPopularity}
+                                    onChange={handlePopularityChange}
+                                    compact
+                                />
+                            )}
+                        </div>
 
-                <div className="flex justify-end">
-                    {canEdit && onSave && editing && (
-                        <Button variant="success" onClick={saveEdit}>
-                            {t.common.save}
-                        </Button>
-                    )}
-                    {onNextRandom && !editing && (
-                        <Button variant="ghost" onClick={onNextRandom}>
-                            {t.wordDetail.nextWord} →
-                        </Button>
-                    )}
-                </div>
-            </div>
+                        <div className="flex justify-end">
+                            {canEdit && onSave && editing && (
+                                <Button variant="success" onClick={saveEdit}>
+                                    {t.common.save}
+                                </Button>
+                            )}
+                            {onNextRandom && !editing && (
+                                <Button variant="ghost" onClick={onNextRandom}>
+                                    {t.wordDetail.nextWord} →
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                );
+                if (footerRef?.current) return createPortal(actionBar, footerRef.current);
+                return actionBar;
+            })()}
         </div>
     );
 }

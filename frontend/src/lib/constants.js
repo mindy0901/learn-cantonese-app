@@ -21,9 +21,3 @@ export const LOOKUP_FETCH_PAGE_SIZE = 50;
 
 /** Han lookup: max matches loaded before client pagination. */
 export const LOOKUP_MAX_TOTAL = 500;
-
-/** CC-CEDICT dictionary: results shown per page. */
-export const CEDICT_PAGE_SIZE = 5;
-
-/** CC-CEDICT dictionary: max matches fetched. */
-export const CEDICT_MAX_RESULTS = 30;

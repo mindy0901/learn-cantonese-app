@@ -4,11 +4,9 @@ import {
     fetchSentencePatternRows,
     grammarToRow,
     hanCharacterToRow,
-    lessonToRow,
     replacePartialData,
     rowToGrammar,
     rowToHanCharacter,
-    rowToLesson,
     rowToSentencePattern,
     rowToVocabulary,
     sentencePatternToRow,
@@ -28,13 +26,19 @@ import {
     createSentence,
     updateSentence,
     deleteSentence,
-    createLesson,
-    updateLesson,
-    deleteLesson,
     createHanChar,
     updateHanChar,
     patchHanCharFlags,
     deleteHanChar,
+    // Flashcard Deck CRUD
+    getFlashcardDecks,
+    getFlashcardDeck,
+    createFlashcardDeck,
+    updateFlashcardDeck,
+    deleteFlashcardDeck,
+    addVocabularyToDeck,
+    removeVocabularyFromDeck,
+    getDeckVocabularies,
 } from "../lib/prismaService.js";
 import { getUserId, requireAuth } from "../middleware/auth.js";
 import { requireAppAdmin } from "../middleware/appAdmin.js";
@@ -82,10 +86,9 @@ export async function dataRoutes(fastify) {
     // ── Replace cloud data ──
     fastify.put("/data", { preHandler: [requireAuth, requireAppAdmin] }, async (request) => {
         const {
-            types = ["words", "grammar", "lessons"],
+            types = ["words", "grammar"],
             words = [],
             grammarBank = [],
-            lessons = [],
             sentencePatterns = [],
         } = request.body ?? {};
         if (!Array.isArray(types) || types.length === 0) {
@@ -95,7 +98,6 @@ export async function dataRoutes(fastify) {
             types,
             words,
             grammarBank,
-            lessons,
             sentencePatterns,
         });
         return { ok: true, ...counts };
@@ -186,28 +188,6 @@ export async function dataRoutes(fastify) {
         return { ok: true };
     });
 
-    // ── Lessons CRUD ──
-    fastify.get("/lessons", async (request) => {
-        const userId = await resolveReadUserId(request.session);
-        const data = await fetchAllData(userId);
-        return data.lessons;
-    });
-
-    fastify.post("/lessons", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
-        const lesson = await createLesson(getUserId(request), request.body);
-        return reply.code(201).send(lesson);
-    });
-
-    fastify.put("/lessons/:id", { preHandler: [requireAuth] }, async (request, reply) => {
-        const lesson = await updateLesson(getUserId(request), request.params.id, request.body);
-        return lesson;
-    });
-
-    fastify.delete("/lessons/:id", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
-        await deleteLesson(getUserId(request), request.params.id);
-        return { ok: true };
-    });
-
     // ── Han Characters CRUD ──
     fastify.get("/han-characters", async (request) => {
         const userId = await resolveReadUserId(request.session);
@@ -259,210 +239,185 @@ export async function dataRoutes(fastify) {
         return { ok: true };
     });
 
-    // ── Sync han characters from vocabularies ──
-    fastify.post("/han-characters/sync", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
-        const { prisma } = await import("../lib/prisma.js");
-        const { randomUUID } = await import("crypto");
-
-        // Get all vocabularies — include sinoVietnamese
-        const vocabs = await prisma.vocabulary.findMany({
-            select: { hanTraditional: true, pinyin: true, jyutping: true, hskLevel: true, sinoVietnamese: true },
-        });
-
-        // Extract unique Chinese characters with their readings
-        const charMap = new Map();
-        const HAN = /\p{Script=Han}/u;
-
-        for (const v of vocabs) {
-            const text = v.hanTraditional ?? "";
-            const chars = [...text].filter((ch) => HAN.test(ch));
-            const charCount = chars.length;
-
-            // Split pinyin/jyutping/sinoVietnamese by spaces to match characters
-            const pyParts = (v.pinyin ?? "").split(/[\s,/、]+/).filter(Boolean);
-            const jpParts = (v.jyutping ?? "").split(/\s+/).filter(Boolean);
-            const svPartsRaw = (v.sinoVietnamese ?? "").split(/\s+/).filter(Boolean);
-            const svParts = svPartsRaw.filter((t) => t !== "|" && t !== "/" && t !== "—" && t !== "·" && t !== "•");
-            // Only use SV when tokens align cleanly:
-            // - Single-char word: exactly 1 SV token (avoid incomplete hanTraditional)
-            // - Multi-char word: SV token count is a multiple of char count
-            const svAligned =
-                svParts.length > 0 &&
-                ((charCount === 1 && svParts.length === 1) || (charCount > 1 && svParts.length % charCount === 0));
-
-            for (let i = 0; i < chars.length; i++) {
-                const ch = chars[i];
-                if (!charMap.has(ch)) {
-                    charMap.set(ch, {
-                        pinyin: new Set(),
-                        jyutping: new Set(),
-                        hskLevels: new Set(),
-                        sinoVietnamese: new Set(),
-                    });
-                }
-                const entry = charMap.get(ch);
-                if (pyParts[i]) entry.pinyin.add(pyParts[i]);
-                if (jpParts[i]) entry.jyutping.add(jpParts[i]);
-
-                // Collect sinoVietnamese for this character position across all variants
-                if (svAligned) {
-                    for (let v = i; v < svParts.length; v += charCount) {
-                        entry.sinoVietnamese.add(svParts[v]);
-                    }
-                }
-
-                if (v.hskLevel) entry.hskLevels.add(v.hskLevel);
-            }
-        }
-
-        // Get existing han characters
-        const existing = await prisma.hanCharacter.findMany({
-            select: {
-                hanSimplified: true,
-                hanTraditional: true,
-                id: true,
-                pinyin: true,
-                jyutping: true,
-                hskLevel: true,
-                sinoVietnamese: true,
-            },
-        });
-        const existingBySimp = new Map();
-        const existingByTrad = new Map();
-        for (const h of existing) {
-            if (h.hanSimplified) existingBySimp.set(h.hanSimplified, h);
-            if (h.hanTraditional) existingByTrad.set(h.hanTraditional, h);
-        }
-
-        let created = 0;
-        let updated = 0;
-        let svUpdated = 0;
-
-        for (const [ch, readings] of charMap) {
-            const existingChar = existingBySimp.get(ch) || existingByTrad.get(ch);
-
-            const pyArr = [...readings.pinyin].sort();
-            const jpArr = [...readings.jyutping].sort();
-            const svArr = [...readings.sinoVietnamese].sort();
-            const hsk = [...readings.hskLevels].sort().join(" ") || undefined;
-
-            if (existingChar) {
-                // Merge readings — including sinoVietnamese
-                const existingSv = Array.isArray(existingChar.sinoVietnamese)
-                    ? existingChar.sinoVietnamese
-                    : existingChar.sinoVietnamese
-                      ? [existingChar.sinoVietnamese]
-                      : [];
-                const mergedSv = [...new Set([...existingSv, ...svArr])].sort();
-
-                const mergedPy = [
-                    ...new Set([...(Array.isArray(existingChar.pinyin) ? existingChar.pinyin : []), ...pyArr]),
-                ].sort();
-                const mergedJp = [
-                    ...new Set([...(Array.isArray(existingChar.jyutping) ? existingChar.jyutping : []), ...jpArr]),
-                ].sort();
-                const mergedHsk = existingChar.hskLevel || hsk;
-
-                const hasNewPy = mergedPy.length > (existingChar.pinyin?.length || 0);
-                const hasNewJp = mergedJp.length > (existingChar.jyutping?.length || 0);
-                const hasNewSv = mergedSv.length > existingSv.length;
-                const hasNewHsk = !existingChar.hskLevel && hsk;
-
-                if (hasNewPy || hasNewJp || hasNewSv || hasNewHsk) {
-                    await prisma.hanCharacter.update({
-                        where: { id: existingChar.id },
-                        data: {
-                            pinyin: mergedPy,
-                            jyutping: mergedJp,
-                            hskLevel: mergedHsk,
-                            sinoVietnamese: mergedSv,
-                        },
-                    });
-                    updated++;
-                    if (hasNewSv) svUpdated++;
-                }
-            } else {
-                await prisma.hanCharacter.create({
-                    data: {
-                        id: randomUUID(),
-                        hanSimplified: ch,
-                        hanTraditional: ch,
-                        pinyin: pyArr,
-                        jyutping: jpArr,
-                        hskLevel: hsk,
-                        sinoVietnamese: svArr,
-                    },
-                });
-                created++;
-            }
-        }
-
-        return { created, updated, svUpdated, total: charMap.size };
-    });
-
-    // ── Backfill han character Sino-Vietnamese from HSK data ──
+    // ── Backfill Traditional/Simplified variants using OpenCC + vocabulary pairs ──
     fastify.post(
-        "/data/backfill-han-char-sinovietnamese",
+        "/data/backfill-han-char-variants",
         { preHandler: [requireAuth, requireAppAdmin] },
         async (request, reply) => {
             const { prisma } = await import("../lib/prisma.js");
-            const { readFileSync } = await import("fs");
-            const { resolve, dirname } = await import("path");
-            const { fileURLToPath } = await import("url");
+            const { randomUUID } = await import("crypto");
+            const OpenCC = await import("opencc-js");
 
-            const __dirname = dirname(fileURLToPath(import.meta.url));
-            const hskPath = resolve(__dirname, "..", "hsk_full.json");
-            const raw = readFileSync(hskPath, "utf-8");
-            const hskEntries = JSON.parse(raw);
+            const toSimp = OpenCC.Converter({ from: "hk", to: "cn" });
+            const toTrad = OpenCC.Converter({ from: "cn", to: "hk" });
 
-            // Build map: character → sino_vietnamese readings
-            const svMap = new Map();
-            for (const entry of hskEntries) {
-                const chars = [...(entry.character || "")];
-                if (chars.length !== 1) continue;
-                const ch = chars[0];
-                const prons = entry.pronunciations || [];
-                const svReadings = prons.map((p) => (p.sino_vietnamese || "").trim()).filter(Boolean);
-                if (svReadings.length > 0) {
-                    // Also map traditional/simplified variants
-                    const trad = (entry.forms?.traditional || "").trim();
-                    const simp = (entry.forms?.simplified || "").trim();
-                    const keys = [ch];
-                    if (trad && trad !== ch) keys.push(trad);
-                    if (simp && simp !== ch && simp !== trad) keys.push(simp);
+            // Step 1: Build variant map from vocabularies
+            const vocabs = await prisma.vocabulary.findMany({
+                select: { hanTraditional: true, hanSimplified: true },
+            });
+            const HAN = /\p{Script=Han}/u;
+            const vocabVariantMap = new Map(); // char → { trad, simp }
 
-                    for (const key of keys) {
-                        if (!svMap.has(key)) {
-                            svMap.set(key, svReadings);
-                        }
+            for (const v of vocabs) {
+                const tc = [...(v.hanTraditional ?? "")];
+                const sc = [...(v.hanSimplified ?? "")];
+                if (tc.length === sc.length && tc.length > 0) {
+                    for (let i = 0; i < tc.length; i++) {
+                        if (!HAN.test(tc[i]) && !HAN.test(sc[i])) continue;
+                        if (tc[i] === sc[i]) continue;
+                        // Both directions
+                        if (!vocabVariantMap.has(tc[i])) vocabVariantMap.set(tc[i], { trad: tc[i], simp: sc[i] });
+                        if (!vocabVariantMap.has(sc[i])) vocabVariantMap.set(sc[i], { trad: tc[i], simp: sc[i] });
                     }
                 }
             }
 
-            // Get all han characters with empty sinoVietnamese
-            const chars = await prisma.hanCharacter.findMany({
-                where: { sinoVietnamese: { isEmpty: true } },
-                select: { id: true, hanSimplified: true, hanTraditional: true },
+            // Step 2: Get all han characters
+            const allChars = await prisma.hanCharacter.findMany({
+                select: {
+                    id: true,
+                    hanSimplified: true,
+                    hanTraditional: true,
+                    pinyin: true,
+                    jyutping: true,
+                    sinoVietnamese: true,
+                    hskLevel: true,
+                    searchKey: true,
+                },
             });
 
-            let updated = 0;
-            let skipped = 0;
+            // Step 3: Determine correct trad/simp for each character
+            // Use OpenCC as canonical source for traditional form
+            const canonicalMap = new Map(); // canonicalTrad → [chars]
 
-            for (const ch of chars) {
-                const lookupKey = ch.hanSimplified || ch.hanTraditional || "";
-                const sv = svMap.get(lookupKey);
-                if (sv && sv.length > 0) {
+            for (const ch of allChars) {
+                const key = ch.hanSimplified || ch.hanTraditional || "";
+                if (!key) continue;
+
+                let trad = ch.hanTraditional || key;
+                // Không ép simp = key — single-form (không có simplified riêng) giữ undefined
+                let simp = ch.hanSimplified || undefined;
+
+                // Use OpenCC to get canonical traditional from simplified
+                const ccTrad = simp ? toTrad(simp) : null;
+                if (ccTrad && ccTrad !== simp) {
+                    trad = ccTrad;
+                }
+                // Don't use toSimp(trad) — it can return wrong results for variant chars like隂
+
+                // Vocabulary map can provide the pair if OpenCC didn't help
+                const vocabVar = vocabVariantMap.get(key);
+                if (vocabVar) {
+                    if (trad === key || trad === simp || !trad) trad = vocabVar.trad;
+                    if (!simp) simp = vocabVar.simp;
+                }
+
+                // Group by traditional form
+                if (!canonicalMap.has(trad)) canonicalMap.set(trad, []);
+                canonicalMap.get(trad).push({ ...ch, resolvedTrad: trad, resolvedSimp: simp });
+            }
+
+            // Step 4: Merge duplicates and update variants
+            let updated = 0;
+            let merged = 0;
+            let same = 0;
+            let skipped = 0;
+            const mergedDetails = [];
+            const updatedDetails = [];
+
+            for (const [trad, group] of canonicalMap) {
+                if (group.length > 1) {
+                    // Duplicates found — merge into the one with most data
+                    const score = (h) => {
+                        let s = 0;
+                        const py = Array.isArray(h.pinyin) ? h.pinyin.length : h.pinyin ? 1 : 0;
+                        const jp = Array.isArray(h.jyutping) ? h.jyutping.length : h.jyutping ? 1 : 0;
+                        const sv = Array.isArray(h.sinoVietnamese) ? h.sinoVietnamese.length : h.sinoVietnamese ? 1 : 0;
+                        s += py + jp + sv;
+                        if (h.hanTraditional) s += 2;
+                        if (h.hskLevel) s += 1;
+                        return s;
+                    };
+
+                    group.sort((a, b) => score(b) - score(a));
+                    const keeper = group[0];
+                    const dupes = group.slice(1);
+
+                    // Merge readings from duplicates into keeper
+                    const allPy = new Set(Array.isArray(keeper.pinyin) ? keeper.pinyin : []);
+                    const allJp = new Set(Array.isArray(keeper.jyutping) ? keeper.jyutping : []);
+                    const allSv = new Set(Array.isArray(keeper.sinoVietnamese) ? keeper.sinoVietnamese : []);
+
+                    for (const d of dupes) {
+                        const dPy = Array.isArray(d.pinyin) ? d.pinyin : d.pinyin ? [d.pinyin] : [];
+                        const dJp = Array.isArray(d.jyutping) ? d.jyutping : d.jyutping ? [d.jyutping] : [];
+                        const dSv = Array.isArray(d.sinoVietnamese)
+                            ? d.sinoVietnamese
+                            : d.sinoVietnamese
+                              ? [d.sinoVietnamese]
+                              : [];
+                        for (const p of dPy) allPy.add(p);
+                        for (const j of dJp) allJp.add(j);
+                        for (const s of dSv) allSv.add(s);
+                    }
+
+                    // Update keeper
+                    const simp = keeper.resolvedSimp;
                     await prisma.hanCharacter.update({
-                        where: { id: ch.id },
-                        data: { sinoVietnamese: sv },
+                        where: { id: keeper.id },
+                        data: {
+                            hanTraditional: trad,
+                            hanSimplified: simp,
+                            pinyin: [...allPy].sort(),
+                            jyutping: [...allJp].sort(),
+                            sinoVietnamese: [...allSv].sort(),
+                        },
                     });
-                    updated++;
+
+                    // Delete duplicates
+                    for (const d of dupes) {
+                        // Re-link vocabulary_characters to keeper before deleting
+                        await prisma.vocabularyCharacter.updateMany({
+                            where: { hanCharacterId: d.id },
+                            data: { hanCharacterId: keeper.id },
+                        });
+                        await prisma.hanCharacter.delete({ where: { id: d.id } });
+                    }
+
+                    merged += dupes.length;
+                    mergedDetails.push(`${trad}/${simp} (${dupes.length} dupes merged)`);
                 } else {
-                    skipped++;
+                    // Single character — just update variant
+                    const ch = group[0];
+                    const simp = ch.resolvedSimp;
+                    const needsUpdate = ch.hanTraditional !== trad || (ch.hanSimplified ?? null) !== (simp ?? null);
+
+                    if (needsUpdate) {
+                        await prisma.hanCharacter.update({
+                            where: { id: ch.id },
+                            data: { hanTraditional: trad, hanSimplified: simp },
+                        });
+                        if (trad !== simp) {
+                            updated++;
+                            updatedDetails.push(`${trad}/${simp}`);
+                        } else {
+                            same++;
+                        }
+                    } else {
+                        skipped++;
+                    }
                 }
             }
 
-            return { updated, skipped, total: chars.length };
+            return {
+                updated,
+                merged,
+                same,
+                skipped,
+                total: allChars.length,
+                mergedSample: mergedDetails.slice(0, 20),
+                updatedSample: updatedDetails.slice(0, 20),
+            };
         },
     );
 
@@ -470,7 +425,6 @@ export async function dataRoutes(fastify) {
     fastify.post("/data/backfill-pinyin", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
         const { prisma } = await import("../lib/prisma.js");
         const { pinyin } = await import("pinyin-pro");
-        const { ensureHanVariants } = await import("../lib/opencc.js");
 
         // Only fill rows that have null or empty pinyin — never overwrite existing data
         const vocabs = await prisma.vocabulary.findMany({
@@ -483,11 +437,7 @@ export async function dataRoutes(fastify) {
         let updated = 0;
         const skipped = [];
         for (const v of vocabs) {
-            const { hanSimplified } = ensureHanVariants({
-                hanTraditional: v.hanTraditional,
-                hanSimplified: v.hanSimplified,
-            });
-            const source = hanSimplified.trim();
+            const source = (v.hanSimplified || v.hanTraditional || "").trim();
             if (!source) {
                 skipped.push(v.hanTraditional);
                 continue;
@@ -515,7 +465,24 @@ export async function dataRoutes(fastify) {
     // ── Backfill jyutping for all vocabulary ──
     fastify.post("/data/backfill-jyutping", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
         const { prisma } = await import("../lib/prisma.js");
-        const { toJyutping } = await import("../lib/jyutping.js");
+        const { execFile } = await import("node:child_process");
+        const { promisify } = await import("node:util");
+        const execFileAsync = promisify(execFile);
+
+        const PYTHON_BIN = "/opt/pycantonese-venv/bin/python3";
+        const JYUTPING_SCRIPT = "/app/scripts/jyutping.py";
+
+        const toJyutping = async (text) => {
+            try {
+                const { stdout } = await execFileAsync(PYTHON_BIN, [JYUTPING_SCRIPT, text], {
+                    timeout: 10000,
+                });
+                return stdout.trim();
+            } catch (err) {
+                console.error("pycantonese error:", err.message);
+                return "";
+            }
+        };
 
         // Only fill rows that have null or empty jyutping — never overwrite existing data
         const vocabs = await prisma.vocabulary.findMany({
@@ -532,7 +499,7 @@ export async function dataRoutes(fastify) {
                 continue;
             }
 
-            const jp = toJyutping(source);
+            const jp = await toJyutping(source);
             if (!jp) {
                 skipped.push(v.hanTraditional);
                 continue;
@@ -547,4 +514,77 @@ export async function dataRoutes(fastify) {
 
         return { updated, total: vocabs.length, skipped };
     });
+
+    // ── Flashcard Decks ──
+
+    fastify.get("/flashcard-decks", { preHandler: [requireAuth] }, async (request) => {
+        const userId = getUserId(request);
+        const decks = await getFlashcardDecks(userId);
+        return decks;
+    });
+
+    fastify.get("/flashcard-decks/:id", { preHandler: [requireAuth] }, async (request, reply) => {
+        const userId = getUserId(request);
+        const deck = await getFlashcardDeck(userId, request.params.id);
+        if (!deck) return reply.code(404).send({ error: "Deck not found" });
+        return deck;
+    });
+
+    fastify.post("/flashcard-decks", { preHandler: [requireAuth] }, async (request, reply) => {
+        const userId = getUserId(request);
+        const deck = await createFlashcardDeck(userId, request.body ?? {});
+        return reply.code(201).send(deck);
+    });
+
+    fastify.put("/flashcard-decks/:id", { preHandler: [requireAuth] }, async (request) => {
+        const userId = getUserId(request);
+        const deck = await updateFlashcardDeck(userId, request.params.id, request.body ?? {});
+        return deck;
+    });
+
+    fastify.delete("/flashcard-decks/:id", { preHandler: [requireAuth] }, async (request) => {
+        const userId = getUserId(request);
+        await deleteFlashcardDeck(userId, request.params.id);
+        return { ok: true };
+    });
+
+    fastify.get("/flashcard-decks/:id/vocabularies", { preHandler: [requireAuth] }, async (request, reply) => {
+        const userId = getUserId(request);
+        try {
+            const vocabs = await getDeckVocabularies(userId, request.params.id);
+            return vocabs;
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            throw err;
+        }
+    });
+
+    fastify.post("/flashcard-decks/:id/vocabularies", { preHandler: [requireAuth] }, async (request, reply) => {
+        const userId = getUserId(request);
+        const { vocabularyId } = request.body ?? {};
+        if (!vocabularyId) return reply.code(400).send({ error: "vocabularyId is required" });
+        try {
+            const vocab = await addVocabularyToDeck(userId, request.params.id, vocabularyId);
+            return reply.code(201).send(vocab);
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            if (err.statusCode === 409) return reply.code(409).send({ error: err.message });
+            throw err;
+        }
+    });
+
+    fastify.delete(
+        "/flashcard-decks/:deckId/vocabularies/:vocabularyId",
+        { preHandler: [requireAuth] },
+        async (request, reply) => {
+            const userId = getUserId(request);
+            try {
+                await removeVocabularyFromDeck(userId, request.params.deckId, request.params.vocabularyId);
+                return { ok: true };
+            } catch (err) {
+                if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+                throw err;
+            }
+        },
+    );
 }

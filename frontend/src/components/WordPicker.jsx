@@ -13,7 +13,7 @@ export const WordPicker = memo(function WordPicker({ selected, onToggle, onAddNe
     return (
         <div className="border border-border rounded-[10px] overflow-hidden">
             <div className="p-3 border-b border-border flex flex-col gap-2">
-                <BankSearchInput onChange={handleChange} placeholder={t.lessonEdit.searchBank} />
+                <BankSearchInput onChange={handleChange} placeholder={t.picker.searchBank} />
             </div>
 
             <WordBankBrowseTable
@@ -24,8 +24,8 @@ export const WordPicker = memo(function WordPicker({ selected, onToggle, onAddNe
                 sortDir="desc"
                 selected={selected}
                 onToggleSelect={onToggle}
-                emptyHint={t.lessonEdit.searchBankHint}
-                emptyNoMatch={t.lessonEdit.noMatch}
+                emptyHint={t.picker.searchBankHint}
+                emptyNoMatch={t.picker.noMatch}
                 onAddNew={onAddNew}
             />
         </div>

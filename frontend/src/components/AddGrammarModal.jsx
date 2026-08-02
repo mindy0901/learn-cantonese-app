@@ -1,22 +1,158 @@
-import { useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { btnClass } from "./ui/buttonStyles.js";
 import { uiInputClass, uiModalCloseButtonClass } from "./ui/controlStyles.js";
 import { useLocale } from "../store/localeStore.js";
 import { emptyGrammarBankItem } from "../types/word.js";
+import { api } from "../lib/api.js";
+import { IconPlus, IconTrash, IconClose } from "./NavIcons.jsx";
 
 const backdropClass =
     "fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/40 px-4 py-[max(1.25rem,env(safe-area-inset-top,0px))] pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]";
 
 const modalClass =
-    "m-auto flex w-full max-w-[520px] shrink-0 flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]";
+    "m-auto flex w-full max-w-[780px] shrink-0 flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]";
 
 function buildDraft(item) {
-    if (!item?.id) return { title: "", content: "" };
+    if (!item?.id) return { title: "", details: [""], notes: [], structure: [], examples: [] };
     return {
         title: item.title ?? "",
-        content: item.content ?? "",
+        details: Array.isArray(item.details) && item.details.length > 0 ? [...item.details] : [""],
+        notes: Array.isArray(item.notes) ? [...item.notes] : [],
+        structure: item.structure ? [item.structure] : [],
+        examples: Array.isArray(item.examples) ? item.examples.map((ex) => ({ ...ex })) : [],
     };
 }
+
+// Sub-component for array fields (details, notes, structure)
+const ArrayField = memo(function ArrayField({ label, items, onChange }) {
+    const safeItems = Array.isArray(items) ? items : [];
+    const addItem = () => onChange([...safeItems, ""]);
+    const updateItem = (idx, val) => onChange(safeItems.map((it, i) => (i === idx ? val : it)));
+    const removeItem = (idx) => onChange(safeItems.filter((_, i) => i !== idx));
+
+    return (
+        <div className="flex flex-col gap-2 text-sm font-medium text-text-h">
+            <span>{label}</span>
+            {safeItems.map((val, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                    <input
+                        className="flex-1 min-w-0 h-11 px-4 rounded-lg border border-border bg-surface text-sm text-text-h outline-none transition-colors focus:border-accent-border"
+                        value={val}
+                        onChange={(e) => updateItem(idx, e.target.value)}
+                    />
+                    <button
+                        type="button"
+                        className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-lg border text-sm font-medium transition-colors bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900"
+                        onClick={() => removeItem(idx)}
+                        title="Delete"
+                    >
+                        <IconTrash size={18} />
+                    </button>
+                </div>
+            ))}
+            <button
+                type="button"
+                className="inline-flex items-center gap-1.5 self-start rounded-lg border bg-success-bg text-success-text border-success-border px-3 py-1.5 text-sm font-medium transition-colors hover:enabled:bg-success-bg hover:enabled:border-success-text"
+                onClick={addItem}
+            >
+                <IconPlus size={14} />
+                {label}
+            </button>
+        </div>
+    );
+});
+
+// Sub-component for example editing
+const ExampleField = memo(function ExampleField({ example, index, onChange, onRemove }) {
+    const [autoGenerating, setAutoGenerating] = useState(false);
+    const update = (field, val) => onChange({ ...example, [field]: val });
+
+    const handleAutoGenerate = async () => {
+        const text = example.hanExample?.trim();
+        if (!text) return;
+        setAutoGenerating(true);
+        try {
+            const [pinyinRes, jyutpingRes] = await Promise.all([
+                api.toPinyin(text),
+                api.toJyutping(text),
+            ]);
+            const patch = {};
+            if (pinyinRes?.pinyin) patch.pinyinExample = pinyinRes.pinyin;
+            if (jyutpingRes?.jyutping) patch.jyutpingExample = jyutpingRes.jyutping;
+            if (Object.keys(patch).length > 0) onChange({ ...example, ...patch });
+        } catch { /* ignore */ }
+        finally { setAutoGenerating(false); }
+    };
+
+    return (
+        <div className="rounded-lg border border-border bg-bg/50 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-text-muted">Example {index + 1}</span>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        className="shrink-0 inline-flex items-center justify-center gap-1 rounded-lg border border-accent bg-accent/10 px-2.5 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
+                        onClick={handleAutoGenerate}
+                        disabled={autoGenerating || !example.hanExample?.trim()}
+                        title="Auto generate Pinyin & Jyutping from Chinese"
+                    >
+                        {autoGenerating ? "..." : "Auto Gen"}
+                    </button>
+                    <button
+                        type="button"
+                        className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-lg border text-sm font-medium transition-colors bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900"
+                        onClick={onRemove}
+                        title="Delete example"
+                    >
+                        <IconTrash size={18} />
+                    </button>
+                </div>
+            </div>
+            <div className="flex flex-col gap-2">
+                <label className="flex flex-col gap-1 text-xs text-text-muted">
+                    Chinese
+                    <input
+                        className={uiInputClass}
+                        value={example.hanExample ?? ""}
+                        onChange={(e) => update("hanExample", e.target.value)}
+                    />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-text-muted">
+                    Pinyin
+                    <input
+                        className={uiInputClass}
+                        value={example.pinyinExample ?? ""}
+                        onChange={(e) => update("pinyinExample", e.target.value)}
+                    />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-text-muted">
+                    Jyutping
+                    <input
+                        className={uiInputClass}
+                        value={example.jyutpingExample ?? ""}
+                        onChange={(e) => update("jyutpingExample", e.target.value)}
+                    />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-text-muted">
+                    Vietnamese
+                    <input
+                        className={uiInputClass}
+                        value={example.vietExample ?? ""}
+                        onChange={(e) => update("vietExample", e.target.value)}
+                    />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-text-muted">
+                    English
+                    <input
+                        className={uiInputClass}
+                        value={example.engExample ?? ""}
+                        onChange={(e) => update("engExample", e.target.value)}
+                    />
+                </label>
+            </div>
+        </div>
+    );
+});
 
 export function AddGrammarModal({ onSave, onClose, item: editItem, existingItems }) {
     const { t } = useLocale();
@@ -28,16 +164,48 @@ export function AddGrammarModal({ onSave, onClose, item: editItem, existingItems
         if (editItem?.id) setDraft(buildDraft(editItem));
     }, [editItem]);
 
-    const set = (field, value) => {
+    const set = useCallback((field, value) => {
         setDraft((d) => ({ ...d, [field]: value }));
         if (validationError) setValidationError("");
-    };
+    }, [validationError]);
 
-    const handleSave = () => {
+    const addExample = useCallback(() => {
+        setDraft((d) => ({
+            ...d,
+            examples: [
+                ...(d.examples ?? []),
+                {
+                    _tempId: crypto.randomUUID(),
+                    hanExample: "",
+                    jyutpingExample: "",
+                    pinyinExample: "",
+                    vietExample: "",
+                    engExample: "",
+                },
+            ],
+        }));
+    }, []);
+
+    const updateExample = useCallback((idx, updated) => {
+        setDraft((d) => ({
+            ...d,
+            examples: (d.examples ?? []).map((ex, i) => (i === idx ? updated : ex)),
+        }));
+    }, []);
+
+    const removeExample = useCallback((idx) => {
+        setDraft((d) => ({
+            ...d,
+            examples: (d.examples ?? []).filter((_, i) => i !== idx),
+        }));
+    }, []);
+
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
         const title = draft.title.trim();
-        const content = draft.content.trim();
-        if (!title || !content) {
-            setValidationError(t.grammarBank.requiredFields);
+        if (!title) {
+            setValidationError("Please enter grammar name.");
             return;
         }
         // Check for duplicate title (exclude current item when editing)
@@ -50,33 +218,56 @@ export function AddGrammarModal({ onSave, onClose, item: editItem, existingItems
                 return;
             }
         }
-        const payload = { title, content };
-        if (isEdit) {
-            onSave(editItem.id, payload);
-        } else {
-            onSave(emptyGrammarBankItem(payload));
+        const payload = {
+            title,
+            details: (draft.details ?? []).map((d) => d.trim()).filter(Boolean),
+            notes: (draft.notes ?? []).map((n) => n.trim()).filter(Boolean),
+            structure: (draft.structure ?? []).map((s) => s.trim()).filter(Boolean)[0] ?? "",
+            examples: (draft.examples ?? []).map((ex, i) => ({
+                id: ex.id,
+                hanExample: ex.hanExample ?? "",
+                jyutpingExample: ex.jyutpingExample ?? "",
+                pinyinExample: ex.pinyinExample ?? "",
+                vietExample: ex.vietExample ?? "",
+                engExample: ex.engExample ?? "",
+                position: i,
+            })),
+        };
+        setSaving(true);
+        try {
+            if (isEdit) {
+                await onSave(editItem.id, payload);
+            } else {
+                await onSave(emptyGrammarBankItem(payload));
+            }
+            onClose();
+        } catch (err) {
+            setValidationError(err?.message || "Failed to save grammar. Please try again.");
+        } finally {
+            setSaving(false);
         }
-        onClose();
+    };
+
+    const handleClear = () => {
+        setDraft({ title: "", details: [""], notes: [], structure: [], examples: [] });
+        setValidationError("");
     };
 
     const handleFormKeyDown = (e) => {
         if (e.key === "Escape") {
             e.preventDefault();
             onClose();
-        } else if (e.target.tagName === "TEXTAREA") {
+        } else if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") {
             if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 handleSave();
             }
-        } else if (e.key === "Enter") {
-            e.preventDefault();
-            handleSave();
         }
     };
 
     return (
-        <div className={backdropClass} onClick={onClose} role="presentation">
-            <div className={modalClass} onClick={(e) => e.stopPropagation()} role="dialog">
+        <div className={backdropClass} role="presentation">
+            <div className={modalClass} role="dialog">
                 <div className="flex items-center justify-between border-b border-border px-6 py-5">
                     <h2>{isEdit ? t.common.edit : t.grammarBank.addTitle}</h2>
                     <button
@@ -85,27 +276,63 @@ export function AddGrammarModal({ onSave, onClose, item: editItem, existingItems
                         onClick={onClose}
                         aria-label={t.common.close}
                     >
-                        ×
+                        <IconClose size={16} />
                     </button>
                 </div>
-                <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6" onKeyDown={handleFormKeyDown}>
+                <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-7" onKeyDown={handleFormKeyDown}>
+                    {/* Title */}
                     <label className="flex flex-col gap-1.5 text-sm font-medium text-text-h">
-                        {t.grammarBank.colTitle} *
+                        Grammar Name *
                         <input
                             className={uiInputClass}
                             value={draft.title}
                             onChange={(e) => set("title", e.target.value)}
                         />
                     </label>
-                    <label className="flex flex-col gap-1.5 text-sm font-medium text-text-h">
-                        {t.grammarBank.colContent} *
-                        <textarea
-                            className="min-h-[4.5rem] w-full resize-none overflow-hidden rounded-lg border border-border bg-surface px-3.5 py-2.5 font-inherit text-[0.9375rem] text-text-h outline-none focus:border-accent-border [field-sizing:content]"
-                            rows={5}
-                            value={draft.content}
-                            onChange={(e) => set("content", e.target.value)}
-                        />
-                    </label>
+
+                    {/* Details — always has 1 input ready */}
+                    <ArrayField
+                        label="Details"
+                        items={draft.details ?? [""]}
+                        onChange={(val) => set("details", val)}
+                    />
+
+                    {/* Structure — click "+ Add" to create field */}
+                    <ArrayField
+                        label="Structure"
+                        items={draft.structure ?? []}
+                        onChange={(val) => set("structure", val)}
+                    />
+
+                    {/* Notes */}
+                    <ArrayField
+                        label="Note"
+                        items={draft.notes ?? []}
+                        onChange={(val) => set("notes", val)}
+                    />
+
+                    {/* Examples */}
+                    <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium text-text-h">Examples</span>
+                        {(draft.examples ?? []).map((ex, exIdx) => (
+                            <ExampleField
+                                key={ex.id || ex._tempId || exIdx}
+                                example={ex}
+                                index={exIdx}
+                                onChange={(updated) => updateExample(exIdx, updated)}
+                                onRemove={() => removeExample(exIdx)}
+                            />
+                        ))}
+                        <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 self-start rounded-lg border bg-success-bg text-success-text border-success-border px-3 py-1.5 text-sm font-medium transition-colors hover:enabled:bg-success-bg hover:enabled:border-success-text"
+                            onClick={addExample}
+                        >
+                            <IconPlus size={14} />
+                            Example
+                        </button>
+                    </div>
+
                     {validationError && (
                         <p
                             className="m-0 rounded-lg border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text"
@@ -116,11 +343,16 @@ export function AddGrammarModal({ onSave, onClose, item: editItem, existingItems
                     )}
                 </div>
                 <div className="flex shrink-0 items-center justify-between gap-3 px-6 py-4">
-                    <button type="button" className={btnClass("ghost")} onClick={onClose}>
-                        {t.common.cancel}
+                    <button type="button" className={btnClass("ghost")} onClick={handleClear} disabled={saving}>
+                        Clear
                     </button>
-                    <button type="button" className={btnClass(isEdit ? "warning" : "success")} onClick={handleSave}>
-                        {isEdit ? t.common.save : t.grammarBank.addBtn}
+                    <button
+                        type="button"
+                        className={btnClass(isEdit ? "warning" : "success")}
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
+                        {saving ? "Saving..." : isEdit ? t.common.save : t.grammarBank.addBtn}
                     </button>
                 </div>
             </div>

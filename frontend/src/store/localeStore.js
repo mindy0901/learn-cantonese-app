@@ -1,42 +1,19 @@
 import { create } from 'zustand'
 import { formatMessage, translations } from '../i18n/index.js'
 
-const STORAGE_KEY = 'cantonese-app-locale'
-
-function loadLocale() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved && saved in translations) return saved
-  } catch {
-    /* ignore */
-  }
-  const lang = navigator.language
-  if (lang.startsWith('vi')) return 'vi'
-  if (lang === 'zh-TW' || lang === 'zh-HK') return 'zh-TW'
-  if (lang.startsWith('zh')) return 'zh-CN'
-  return 'en'
-}
-
-const initialLocale = loadLocale()
-document.documentElement.lang = initialLocale
+document.documentElement.lang = 'en'
 
 export const useLocaleStore = create((set) => ({
-  locale: initialLocale,
+  locale: 'en',
 
-  setLocale: (next) => {
-    localStorage.setItem(STORAGE_KEY, next)
-    document.documentElement.lang = next
-    set({ locale: next })
-  },
+  setLocale: () => {},
 }))
 
 export function useLocale() {
-  const locale = useLocaleStore((s) => s.locale)
-  const setLocale = useLocaleStore((s) => s.setLocale)
   return {
-    locale,
-    setLocale,
-    t: translations[locale],
+    locale: 'en',
+    setLocale: () => {},
+    t: translations.en,
     fmt: formatMessage,
   }
 }

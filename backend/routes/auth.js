@@ -1,6 +1,7 @@
 import { log, logWarn } from "../lib/actionLog.js";
 import { ensureUser, ensureUserVocabulary } from "../lib/prismaService.js";
 import { getAdminEmails, isAppAdmin } from "../lib/appAdmin.js";
+import bcrypt from "bcryptjs";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -11,20 +12,25 @@ function googleConfigured() {
     return Boolean(GOOGLE_CLIENT_ID?.trim() && GOOGLE_CLIENT_SECRET?.trim());
 }
 
-function sessionUser(request) {
+async function sessionUser(request) {
     if (!request.session?.userId) return null;
+    const { prisma } = await import("../lib/prisma.js");
+    const user = await prisma.user.findUnique({
+        where: { id: request.session.userId },
+        select: { isAdmin: true },
+    });
     return {
         id: request.session.userId,
         email: request.session.email,
         name: request.session.name,
         picture: request.session.picture ?? null,
-        isAdmin: isAppAdmin(request.session.email),
+        isAdmin: isAppAdmin(request.session.email) || Boolean(user?.isAdmin),
     };
 }
 
 export async function authRoutes(fastify) {
     fastify.get("/status", async (request) => {
-        const user = sessionUser(request);
+        const user = await sessionUser(request);
         return {
             googleReady: googleConfigured(),
             adminConfigured: getAdminEmails().size > 0,
@@ -102,13 +108,55 @@ export async function authRoutes(fastify) {
 
     fastify.get("/me", async (request, reply) => {
         log("Checking auth");
-        const user = sessionUser(request);
+        const user = await sessionUser(request);
         if (!user) {
             log("Not signed in");
             return reply.code(401).send({ error: "Not signed in" });
         }
         log("Getting user", user.email.split("@")[0]);
         return user;
+    });
+
+    fastify.post("/login", async (request, reply) => {
+        const { email, password } = request.body ?? {};
+        if (!email || !password) {
+            return reply.code(400).send({ error: "Username and password are required" });
+        }
+
+        try {
+            const { prisma } = await import("../lib/prisma.js");
+            const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+
+            if (!user || !user.password) {
+                return reply.code(401).send({ error: "Invalid email or password" });
+            }
+
+            const valid = await bcrypt.compare(password, user.password);
+            if (!valid) {
+                return reply.code(401).send({ error: "Invalid email or password" });
+            }
+
+            // Link shared vocabulary to new users
+            await ensureUserVocabulary(user.id);
+
+            request.session.userId = user.id;
+            request.session.email = user.email;
+            request.session.name = user.name ?? user.email;
+            request.session.picture = null;
+
+            log("Sign in (password)", user.email.split("@")[0]);
+
+            return {
+                id: user.id,
+                email: user.email,
+                name: user.name ?? user.email,
+                picture: null,
+                isAdmin: isAppAdmin(user.email) || user.isAdmin,
+            };
+        } catch (err) {
+            logWarn("Password sign in failed", err.message);
+            return reply.code(500).send({ error: "Sign in failed" });
+        }
     });
 
     fastify.post("/logout", async (request) => {

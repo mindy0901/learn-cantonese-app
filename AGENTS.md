@@ -1,10 +1,28 @@
 # Agent Guidelines — Learn Cantonese App
 
 > Dành cho các AI agent khi làm việc với project này. Đọc kỹ trước khi thực hiện bất kỳ thay đổi nào.
+>
+> ⚠️ **QUAN TRỌNG:** Database PostgreSQL là nguồn dữ liệu duy nhất. Tuyệt đối không xóa, ghi đè, hay chạy seed/migration mà không có sự đồng ý rõ ràng của user. Phải hỏi user và chờ xác nhận trước khi thực hiện bất kỳ thao tác nào liên quan đến database.
 
 ---
 
-## 0. Quy ước đặt tên
+## 0. Agent Login (để tự động đăng nhập khi test)
+
+| Field    | Value   |
+| -------- | ------- |
+| Username | `admin` |
+| Password | `admin` |
+
+**Cách đăng nhập tự động:**
+
+1. Mở trang `http://localhost:5173`
+2. Click nút 🔑 (bên cạnh "Sign in")
+3. Nhập `admin` / `admin` → click "Sign in"
+4. Hoặc gọi API trực tiếp: `POST /auth/login` với body `{ "email": "admin", "password": "admin" }`
+
+---
+
+## 1. Quy ước đặt tên
 
 | Domain                        | Dùng                                    | Không dùng       |
 | ----------------------------- | --------------------------------------- | ---------------- |
@@ -30,30 +48,29 @@
 
 ---
 
-## 1. Kiến trúc dữ liệu
+## 1. Nguồn dữ liệu duy nhất — Database
 
-### 1.1 File nguồn duy nhất
+### 1.1 ⚠️ QUY TẮC BẢO VỆ DATABASE — BẮT BUỘC
 
-- **`backend/vocabularies.json`** — file JSON chứa toàn bộ từ vựng HSK (12,614 entries, 13,218 pronunciations).
-- Không còn file `hsk_full.json` nào khác. Đã xóa.
-- File này được export từ database, là bản backup chính xác của dữ liệu hiện tại.
+| Quy tắc                                       | Chi tiết                                                                      |
+| --------------------------------------------- | ----------------------------------------------------------------------------- |
+| ❌ **Không được xóa** dữ liệu trong database  | Không chạy `deleteMany`, `DELETE`, hay bất kỳ lệnh xóa nào                    |
+| ❌ **Không được ghi đè** dữ liệu hiện tại     | Không chạy `updateMany` không có điều kiện, không chạy seed/migration tự ý    |
+| ❌ **Không được chạy seed** mà không hỏi      | Seed script có thể thay đổi dữ liệu — phải hỏi user trước                     |
+| ❌ **Không được chạy migration** mà không hỏi | Migration có thể thay đổi schema — phải hỏi user trước                        |
+| ✅ **Phải hỏi user trước**                    | Trước khi thực hiện BẤT KỲ thao tác nào ghi/đổi/xóa dữ liệu trong DB          |
+| ✅ **Chỉ được đọc** (SELECT)                  | Các thao tác đọc dữ liệu (query, count, search) được phép tự do thực hiện     |
+| ✅ **Tạo mới được phép** (sau khi hỏi)        | `INSERT` / `create` — nhưng phải hỏi user xác nhận trước                      |
+| ✅ **Cập nhật được phép** (sau khi hỏi)       | `UPDATE` / `update` trên 1 record cụ thể — nhưng phải hỏi user xác nhận trước |
 
-### 1.2 Cấu trúc JSON
+**Luôn hỏi user và chờ xác nhận trước khi thực hiện bất kỳ thao tác nào ngoài SELECT.**
 
-```json
-{
-    "character": "啊",
-    "forms": { "simplified": "啊", "traditional": "啊" },
-    "level": "HSK 2",
-    "pronunciations": [
-        { "pinyin": "a", "jyutping": "aa3", "sino_vietnamese": "A" },
-        { "pinyin": "à", "jyutping": "", "sino_vietnamese": "A" }
-    ]
-}
-```
+### 1.2 Database là nguồn duy nhất
 
-- Mỗi entry có thể có **nhiều pronunciations** (các phiên âm khác nhau của cùng một từ).
-- Mỗi pronunciation → **một dòng riêng** trong database.
+- **PostgreSQL** trong Docker (`docker-compose.dev.yml`)
+- User/pass/db: `cantonese` / `cantonese` / `cantonese`
+- Tổng: ~13,286 từ (13,218 HSK + ~68 custom của user)
+- `backend/vocabularies.json` chỉ là file backup/export, **không phải source of truth**
 
 ### 1.3 Quy tắc chuẩn hóa phiên âm (Pinyin & Jyutping)
 
@@ -66,22 +83,7 @@ Khi so sánh, tìm kiếm, hoặc tạo ID cố định, luôn chuẩn hóa:
 
 **Quy tắc quan trọng nhất:** `"qǔ xiāo"` và `"qǔxiāo"` là **cùng một pronunciation**. Đây là 2 cách viết khác nhau của cùng một phiên âm (có dấu cách vs không dấu cách). **Không được tạo 2 entry riêng cho chúng.**
 
-### 1.4 Mapping: JSON entry → DB rows
-
-Mỗi pronunciation trong mảng `pronunciations` → 1 dòng trong bảng `vocabularies`:
-
-```
-JSON entry "啊" có 5 pronunciations:
-  ├─ { pinyin: "a",  jyutping: "aa3" } → DB row #1
-  ├─ { pinyin: "à",  jyutping: ""    } → DB row #2
-  ├─ { pinyin: "ǎ",  jyutping: ""    } → DB row #3
-  ├─ { pinyin: "ā",  jyutping: ""    } → DB row #4
-  └─ { pinyin: "á",  jyutping: ""    } → DB row #5
-```
-
-Các field `character`, `forms`, `level` được copy giống nhau cho tất cả các dòng của cùng một entry.
-
-### 1.5 ID cố định (stable UUID)
+### 1.4 ID cố định (stable UUID)
 
 Mỗi DB row có UUID được sinh từ hash MD5:
 
@@ -91,19 +93,25 @@ stableUUID = MD5( hanTraditional | hanSimplified | normPinyin | normJyutping )
 
 Trong đó `normPinyin` và `normJyutping` đã được chuẩn hóa (bỏ khoảng trắng, lowercase).
 
-**Ví dụ:**
+→ Cùng một từ + phiên âm luôn có cùng ID, bất kể seed bao nhiêu lần.
 
-- Entry "取消" + pinyin `"qǔ xiāo"` + jyutping `"ceoi2 siu1"`
-- Key: `取消||qǔxiāo|ceoi2siu1`
-- UUID: `md5("取消||qǔxiāo|ceoi2siu1")` → luôn ra cùng một UUID
+### 1.5 Quy tắc Hán tự: Traditional là mặc định
 
-→ Dù seed bao nhiêu lần, cùng một từ + phiên âm luôn có cùng ID.
+Khi một hán tự chỉ có 1 phiên bản (giản thể và phồn thể giống nhau, hoặc chỉ có 1 form), **mặc định là traditional (phồn thể)**.
 
-### 1.3 Database
+| Trường hợp                             | hanTraditional                             | hanSimplified       |
+| -------------------------------------- | ------------------------------------------ | ------------------- |
+| Chữ chỉ có 1 form (VD: 人, 大, 山)     | Giữ nguyên                                 | Giữ nguyên (= trad) |
+| Chữ có giản/phồn khác nhau (VD: 学/學) | **Phồn thể** (學)                          | **Giản thể** (学)   |
+| Chữ có nhiều variant traditional       | Dùng variant phổ biến nhất (VD: 臺 cho 台) | Dùng giản thể chuẩn |
 
-- PostgreSQL trong Docker (`docker-compose.dev.yml`)
-- User/pass/db: `cantonese` / `cantonese` / `cantonese`
-- Tổng: ~13,286 từ (13,218 HSK + ~68 custom của user)
+**Quy tắc bắt buộc:**
+
+- ✅ `hanTraditional` luôn là phồn thể
+- ✅ `hanSimplified` luôn là giản thể
+- ❌ Không được đảo ngược (traditional ≠ simplified)
+- ✅ Khi unsure, tra cứu OpenCC hoặc Hanzii để xác định đúng form
+- ✅ Màu hiển thị: **🔵 xanh = simplified**, **🔴 đỏ = traditional**
 
 ---
 
@@ -137,35 +145,27 @@ model Vocabulary {
 
 ---
 
-## 3. Seed script (`backend/prisma/seed.ts`)
+## 3. Seed script
+
+Seed script (`backend/prisma/seed.ts`) chỉ được chạy khi có sự đồng ý của user.
 
 ### 3.1 Hành vi
 
-| Trường hợp                                | Hành động                                            |
-| ----------------------------------------- | ---------------------------------------------------- |
-| Entry đã tồn tại trong DB (khớp ID)       | **Bỏ qua hoàn toàn** — không ghi đè bất kỳ field nào |
-| Entry mới (ID chưa có trong DB)           | **Tạo mới**                                          |
-| Entry trong DB không còn trong file nguồn | **Xóa** (dọn rác)                                    |
-| `userVocabulary` (study progress)         | **Upsert với `update: {}`** — giữ nguyên progress    |
+| Trường hợp                          | Hành động                                            |
+| ----------------------------------- | ---------------------------------------------------- |
+| Entry đã tồn tại trong DB (khớp ID) | **Bỏ qua hoàn toàn** — không ghi đè bất kỳ field nào |
+| Entry mới (ID chưa có trong DB)     | **Tạo mới**                                          |
+| `userVocabulary` (study progress)   | **Upsert với `update: {}`** — giữ nguyên progress    |
 
-### 3.2 Cơ chế ID cố định
-
-Mỗi vocabulary row có ID được tạo từ hash:
-
-```
-MD5(hanTraditional | hanSimplified | normPinyin | normJyutping)
-```
-
-→ Cùng một từ + phiên âm luôn có cùng ID, bất kể seed bao nhiêu lần.
-
-### 3.3 KHÔNG BAO GIỜ
+### 3.2 KHÔNG BAO GIỜ
 
 - ❌ Dùng `deleteMany` cho vocabulary trong seed
 - ❌ Dùng `skipDuplicates` khi tạo vocabulary
 - ❌ Ghi đè field user đã chỉnh sửa
 - ❌ Thay đổi ID vocabulary đã tồn tại
+- ❌ Tự ý chạy seed mà không hỏi user trước
 
-### 3.4 Cách chạy
+### 3.3 Cách chạy (chỉ khi user đồng ý)
 
 ```bash
 docker compose -f docker-compose.dev.yml exec -T backend npx prisma db seed
@@ -173,82 +173,34 @@ docker compose -f docker-compose.dev.yml exec -T backend npx prisma db seed
 
 ---
 
-## 4. Merge / Bổ sung từ vựng mới
+## 4. Thao tác database — Quy tắc hỏi trước
 
-### 4.1 Quy trình
+### 4.1 Luôn hỏi user trước khi thực hiện
 
-1. **Chỉnh sửa `vocabularies.json`** — thêm entry mới hoặc thêm pronunciation vào entry có sẵn.
-2. **Chạy seed** — các entry mới sẽ được thêm, entry cũ không bị ảnh hưởng.
-3. Nếu muốn xóa entry khỏi DB, **xóa nó khỏi `vocabularies.json`** rồi chạy seed.
+Bất kỳ thao tác nào ngoài SELECT đều phải hỏi user:
 
-### 4.2 Merge từ file khác
+| Loại thao tác   | Ví dụ                                      | Cần hỏi? |
+| --------------- | ------------------------------------------ | :------: |
+| Đọc dữ liệu     | `findMany`, `findUnique`, `SELECT`, search |    ❌    |
+| Tạo mới         | `create`, `INSERT`                         |    ✅    |
+| Cập nhật        | `update`, `UPDATE`                         |    ✅    |
+| Xóa             | `delete`, `DELETE`                         |    ✅    |
+| Chạy seed       | `npx prisma db seed`                       |    ✅    |
+| Chạy migration  | `npx prisma migrate`                       |    ✅    |
+| Thay đổi schema | Sửa `schema.prisma`                        |    ✅    |
 
-Nếu cần merge từ file ngoài vào:
+### 4.2 Quy trình hỏi
 
-- Dùng `vocabularies.json` làm gốc.
-- So sánh pronunciation bằng **pinyin đã chuẩn hóa** (bỏ khoảng trắng, lowercase).
-- `"qǔ xiāo"` và `"qǔxiāo"` → cùng một pronunciation → không thêm trùng.
-- Các pronunciation không có trong gốc mới được thêm vào.
-
-### 4.3 Thuật toán merge chi tiết
-
-```
-1. Load vocabularies.json (gốc)  —  build Map<"trad|simp", entry>
-2. Load file bổ sung              —  duyệt từng entry
-3. Với mỗi entry từ file bổ sung:
-   a. Tìm entry tương ứng trong gốc (theo traditional + simplified)
-   b. Nếu tìm thấy:
-      - So sánh từng pronunciation bằng normPinyin (bỏ space, lowercase)
-      - Nếu normPinyin đã tồn tại → BỎ QUA (không thêm trùng)
-      - Nếu normPinyin chưa có → THÊM vào mảng pronunciations
-   c. Nếu không tìm thấy → THÊM toàn bộ entry mới vào gốc
-4. Ghi đè vocabularies.json
-5. Chạy seed
-```
-
-**Lưu ý dedup:** Chỉ so sánh bằng `normPinyin`, không dùng jyutping làm key.
-Vì trong file bổ sung, split-pinyin có thể có jyutping, còn unsplit-pinyin thì jyutping rỗng.
-Nếu so sánh cả jyutping sẽ tạo ra 2 entry trùng lặp.
+1. Mô tả rõ thao tác muốn thực hiện
+2. Nêu lý do cần thao tác
+3. Chờ user xác nhận ("có" / "không" / điều chỉnh)
+4. Chỉ thực hiện sau khi có đồng ý rõ ràng
 
 ---
 
-## 5. Export database → JSON (backup)
+## 5. Backup database
 
-Khi cần cập nhật `vocabularies.json` từ database hiện tại:
-
-```bash
-# Tạo file export script (backend/export-db.mjs) rồi chạy trong container:
-docker compose -f docker-compose.dev.yml exec -T backend node -e "
-const { PrismaClient } = require('./generated/prisma/client.js');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const pg = require('pg');
-const fs = require('fs');
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
-(async () => {
-  const rows = await prisma.vocabulary.findMany({
-    where: { hsk_level: { not: null, not: '' } },
-    orderBy: { han_traditional: 'asc' }
-  });
-  // Group by (hanTraditional, hanSimplified)
-  const map = new Map();
-  for (const r of rows) {
-    const k = r.hanTraditional + '|' + (r.hanSimplified || '');
-    if (!map.has(k)) map.set(k, { character: r.hanTraditional, forms: { simplified: r.hanSimplified || '', traditional: r.hanTraditional }, level: r.hskLevel || '', pronunciations: [] });
-    map.get(k).pronunciations.push({ pinyin: r.pinyin || '', jyutping: r.jyutping || '', sino_vietnamese: r.sinoVietnamese || '' });
-  }
-  fs.writeFileSync('vocabularies.json', JSON.stringify([...map.values()], null, 2));
-  console.log('Done: ' + [...map.values()].length + ' entries');
-  await prisma.\$disconnect(); await pool.end();
-})();
-"
-```
-
-**Quy tắc export:**
-
-- Chỉ export từ có `hsk_level IS NOT NULL AND hsk_level != ''` (từ HSK).
-- Không export custom entries (hsk_level = NULL) — đó là dữ liệu của user.
-- Group theo `(hanTraditional, hanSimplified)` để gộp pronunciations vào cùng 1 entry.
+File `backend/vocabularies.json` là bản backup/export từ database, **không phải source of truth**.
 
 ---
 
@@ -311,6 +263,7 @@ User action → Optimistic update (store) → API call → Store sync ← UI syn
 - ❌ **Không được** chỉ xóa khỏi store mà quên gọi API.
 - ❌ **Không được** giữ lại item đã xóa trong local `items` array. Khi `fromStore` là `undefined` → **phải loại bỏ** item đó.
 - ❌ **Không được** dùng `items.map()` mà không filter. Dùng `for...of` + `continue` khi item không còn trong store.
+- ❌ **Không được** tự ý thao tác database mà không hỏi user trước (xem Section 4).
 - ✅ **Luôn** gọi `syncMutation()` để bọc API call — nếu API fail sẽ rollback store.
 - ✅ **Luôn** kiểm tra `fromStore` có tồn tại trước khi merge dữ liệu.
 
@@ -412,3 +365,43 @@ Khi tạo UI, ưu tiên dùng các component có sẵn:
 - ✅ **Focus states visible** (`focus-visible:outline-accent`)
 - ✅ **`prefers-reduced-motion`** respected
 - ✅ **`active:enabled:scale-[0.97]`** cho tất cả buttons
+
+### 8.6 Quy tắc Spacing — BẮT BUỘC
+
+**Thang đo cố định (root font-size = 20px):**
+
+| Token Tailwind          | Pixels   | Dùng khi                              |
+| ----------------------- | -------- | ------------------------------------- |
+| `gap-2` / `p-2` / `m-2` | **10px** | Khoảng cách nhỏ, inline elements      |
+| `gap-4` / `p-4` / `m-4` | **20px** | Khoảng cách mặc định giữa các section |
+| `gap-6` / `p-6` / `m-6` | **30px** | Khoảng cách lớn giữa nhóm section     |
+| `gap-8` / `p-8` / `m-8` | **40px** | Page padding, section cách xa nhau    |
+
+**⚠️ KHÔNG dùng các giá trị lẻ:** `gap-1` (5px), `gap-3` (15px), `gap-5` (25px), `gap-7` (35px) — trừ khi thật sự cần thiết cho inline elements nhỏ.
+
+**Quy tắc theo vùng:**
+
+| Vùng                    | Spacing                           | Giá trị                           |
+| ----------------------- | --------------------------------- | --------------------------------- |
+| **Page content**        | `px-4 py-8 pb-12`                 | 20px sides, 40px top, 60px bottom |
+| **Section lớn**         | `gap-4` giữa các section          | 20px                              |
+| **Card / Block**        | `p-4` padding, `gap-4` giữa cards | 20px                              |
+| **Popup header**        | `px-6 py-4 mb-2` cách body        | 10px margin-bottom                |
+| **Popup footer**        | `px-6 py-4 mt-2` cách body        | 10px margin-top                   |
+| **Popup body**          | `px-4 py-6 sm:px-8`               | 20px/30px/40px                    |
+| **Nội dung trong card** | `gap-4` giữa các phần tử          | 20px                              |
+| **Inline elements**     | `gap-2` giữa các phần tử nhỏ      | 10px                              |
+| **Buttons**             | `gap-2` giữa các nút              | 10px                              |
+| **Form fields**         | `mb-2` giữa các field             | 10px                              |
+| **Table cell**          | `py-2 px-3`                       | 10px/15px                         |
+
+**Quy tắc bắt buộc:**
+
+- ✅ **Luôn dùng `gap`** trong flex/grid — không bao giờ `gap-0`
+- ✅ **Section liền kề** = `gap-4` (20px)
+- ✅ **Card nội dung** = `p-4` (20px) padding
+- ✅ **Popup header/footer** cách body = `mb-2`/`mt-2` (10px)
+- ✅ **Inline elements** = `gap-2` (10px)
+- ❌ **Không dùng** `gap-1`, `gap-3`, `gap-5` trừ inline elements nhỏ
+- ❌ **Không bao giờ** để nội dung chạm viền (phải có padding ≥ `p-4`)
+- ❌ **Không bao giờ** để 2 phần tử liền kề không có gap/margin

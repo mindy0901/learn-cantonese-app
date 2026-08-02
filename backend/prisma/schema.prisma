@@ -41,14 +41,20 @@ model Vocabulary {
     vietMeanings   String? @default("") @map("viet_meanings") @db.VarChar
     engMeanings    String? @default("") @map("eng_meanings") @db.VarChar
     vietExamples   String? @default("") @map("viet_examples") @db.Text
+    pos            String? @default("") @db.VarChar
+    frequency      Int?    @map("frequency")
+    radical        String? @default("") @db.VarChar
+    classifiers    String? @default("") @db.VarChar
+    pinyinNumeric  String? @default("") @map("pinyin_numeric") @db.VarChar
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 
-    vocabularyMeanings   VocabularyMeaning[]
-    vocabularyExamples   VocabularyExample[]
-    vocabularyCharacters VocabularyCharacter[]
-    userVocabularies     UserVocabulary[]
+    vocabularyMeanings        VocabularyMeaning[]
+    vocabularyExamples        VocabularyExample[]
+    vocabularyCharacters      VocabularyCharacter[]
+    userVocabularies          UserVocabulary[]
+    flashcardDeckVocabularies FlashcardDeckVocabulary[]
 
     @@index([searchKey, hskLevel])
     @@map("vocabularies")
@@ -104,44 +110,55 @@ model VocabularyCharacter {
 }
 
 model Grammar {
-    id       String  @id @default(uuid()) @db.Uuid
-    userId   String  @map("user_id") @db.Uuid
-    title    String  @default("") @db.VarChar
-    content  String  @default("") @db.Text
-    hskLevel String? @default("") @map("hsk_level") @db.VarChar
+    id        String   @id @default(uuid()) @db.Uuid
+    userId    String   @map("user_id") @db.Uuid
+    title     String   @default("") @db.VarChar
+    content   String   @default("") @db.Text
+    details   String[] @default([]) @db.VarChar
+    notes     String[] @default([]) @db.VarChar
+    structure String?  @default("") @db.Text
+    hskLevel  String?  @default("") @map("hsk_level") @db.VarChar
+    important Boolean  @default(false)
+    mastered  Boolean  @default(false)
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
+
+    grammarExamples GrammarExample[]
 
     @@unique([id, userId])
     @@index([userId])
     @@map("grammars")
 }
 
-model Lesson {
-    id            String   @id @default(uuid()) @db.Uuid
-    userId        String   @map("user_id") @db.Uuid
-    title         String   @default("") @db.VarChar
-    vocabularyIds String[] @map("vocabulary_ids") @db.Uuid
-    grammarIds    String[] @map("grammar_ids") @db.Uuid
-    hskLevel      String?  @default("") @map("hsk_level") @db.VarChar
+model GrammarExample {
+    id              String  @id @default(uuid()) @db.Uuid
+    grammarId       String  @map("grammar_id") @db.Uuid
+    hanExample      String? @default("") @map("han_example") @db.Text
+    jyutpingExample String? @default("") @map("jyutping_example") @db.VarChar
+    pinyinExample   String? @default("") @map("pinyin_example") @db.VarChar
+    vietExample     String? @default("") @map("viet_example") @db.VarChar
+    engExample      String? @default("") @map("eng_example") @db.VarChar
+    position        Int     @default(0) @db.SmallInt
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 
-    @@unique([id, userId])
-    @@index([userId, title])
-    @@map("lessons")
+    grammar Grammar @relation(fields: [grammarId], references: [id], onDelete: Cascade)
+
+    @@map("grammar_examples")
 }
 
 model User {
     id               String           @id @default(uuid()) @db.Uuid
     email            String           @unique
+    password         String?          @db.VarChar
     name             String?
     isAdmin          Boolean          @default(false) @map("is_admin")
     createdAt        DateTime         @default(now()) @map("created_at")
     updatedAt        DateTime         @updatedAt @map("updated_at")
     userVocabularies UserVocabulary[]
+    flashcardDecks   FlashcardDeck[]
 
     @@map("users")
 }
@@ -184,4 +201,38 @@ model SentencePattern {
     @@unique([id, userId])
     @@index([userId])
     @@map("sentence_patterns")
+}
+
+model FlashcardDeck {
+    id          String  @id @default(uuid()) @db.Uuid
+    userId      String  @map("user_id") @db.Uuid
+    name        String  @default("") @db.VarChar
+    description String? @default("") @db.Text
+    color       String? @default("") @db.VarChar
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    vocabularies FlashcardDeckVocabulary[]
+
+    @@unique([id, userId])
+    @@index([userId])
+    @@map("flashcard_decks")
+}
+
+model FlashcardDeckVocabulary {
+    id           String @id @default(uuid()) @db.Uuid
+    deckId       String @map("deck_id") @db.Uuid
+    vocabularyId String @map("vocabulary_id") @db.Uuid
+    position     Int    @default(0) @db.SmallInt
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    deck       FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+    vocabulary Vocabulary    @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+    @@unique([deckId, vocabularyId])
+    @@index([vocabularyId])
+    @@map("flashcard_deck_vocabularies")
 }

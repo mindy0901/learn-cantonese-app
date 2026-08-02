@@ -11,7 +11,6 @@ import cookie from "@fastify/cookie";
 import session from "@fastify/session";
 import formbody from "@fastify/formbody";
 import { authRoutes } from "./routes/auth.js";
-import { cedictRoutes } from "./routes/cedict.js";
 import { dataRoutes } from "./routes/data.js";
 import { translateRoutes } from "./routes/translate.js";
 
@@ -68,7 +67,6 @@ export async function buildApp(opts = {}) {
 
     // Routes
     await app.register(authRoutes, { prefix: "/auth" });
-    await app.register(cedictRoutes, { prefix: "/api/cedict" });
     await app.register(dataRoutes, { prefix: "/api" });
     await app.register(translateRoutes, { prefix: "/api" });
 

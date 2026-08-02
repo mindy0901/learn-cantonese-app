@@ -15,7 +15,14 @@ const hanCharInputClass = "text-[clamp(1.75rem,5vw,2.5rem)] font-semibold text-h
 export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
     const { t } = useLocale();
     const isEdit = Boolean(editItem?.id);
-    const [character, setCharacter] = useState(editItem?.hanSimplified ?? editItem?.character ?? "");
+    // Hán tự chỉ có 1 phiên bản (simplified === traditional) => simplified để trống
+    const hasDistinctSimplified = Boolean(
+        editItem?.hanSimplified && editItem?.hanSimplified !== (editItem?.hanTraditional ?? ""),
+    );
+    const [character, setCharacter] = useState(
+        hasDistinctSimplified ? editItem?.hanSimplified : (editItem?.character ?? ""),
+    );
+    const [hanTraditional, setHanTraditional] = useState(editItem?.hanTraditional ?? "");
     const [pinyin, setPinyin] = useState(editItem?.pinyin ?? "");
     const [readings, setReadings] = useState(() => {
         const existing = editItem?.sinoVietnamese;
@@ -48,7 +55,8 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
         const filtered = readings.map((r) => r.trim()).filter(Boolean);
         onSave({
             ...(isEdit ? editItem : {}),
-            hanSimplified: character.trim(),
+            hanSimplified: character.trim() || undefined,
+            hanTraditional: hanTraditional.trim() || character.trim(),
             sinoVietnamese: filtered.length > 0 ? filtered : undefined,
             pinyin: pinyin.trim() || undefined,
         });
@@ -63,8 +71,8 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
     };
 
     return (
-        <div className={backdropClass} onClick={onClose} role="presentation">
-            <div className={modalClass} onClick={(e) => e.stopPropagation()} role="dialog" onKeyDown={handleKeyDown}>
+        <div className={backdropClass} role="presentation">
+            <div className={modalClass} role="dialog" onKeyDown={handleKeyDown}>
                 <div className="flex items-center justify-between border-b border-border px-6 py-5">
                     <h2>{isEdit ? t.common.edit : t.hanCharacters.addTitle}</h2>
                     <button
@@ -78,9 +86,18 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
                     <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
-                        {t.hanCharacters.colHanSimplified} *
+                        {t.hanCharacters.colHanTraditional}
                         <input
                             className={cn(uiInputClass, hanCharInputClass, "text-red-600 dark:text-red-400")}
+                            value={hanTraditional}
+                            onChange={(e) => setHanTraditional(e.target.value)}
+                            placeholder={character || ""}
+                        />
+                    </label>
+                    <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
+                        {t.hanCharacters.colHanSimplified} *
+                        <input
+                            className={cn(uiInputClass, hanCharInputClass, "text-blue-600 dark:text-blue-400")}
                             value={character}
                             onChange={(e) => {
                                 setCharacter(e.target.value);
@@ -95,7 +112,7 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
                             className={uiInputClass}
                             value={pinyin}
                             onChange={(e) => setPinyin(e.target.value)}
-                            placeholder="vd: zhōng, ài, rén…"
+                            placeholder="e.g. zhōng, ài, rén…"
                         />
                     </label>
                     <fieldset className="flex flex-col gap-2 border-0 p-0">

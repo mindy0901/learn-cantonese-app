@@ -57,10 +57,12 @@ export const ModelName = {
   VocabularyExample: 'VocabularyExample',
   VocabularyCharacter: 'VocabularyCharacter',
   Grammar: 'Grammar',
-  Lesson: 'Lesson',
+  GrammarExample: 'GrammarExample',
   User: 'User',
   UserVocabulary: 'UserVocabulary',
-  SentencePattern: 'SentencePattern'
+  SentencePattern: 'SentencePattern',
+  FlashcardDeck: 'FlashcardDeck',
+  FlashcardDeckVocabulary: 'FlashcardDeckVocabulary'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -107,6 +109,11 @@ export const VocabularyScalarFieldEnum = {
   vietMeanings: 'vietMeanings',
   engMeanings: 'engMeanings',
   vietExamples: 'vietExamples',
+  pos: 'pos',
+  frequency: 'frequency',
+  radical: 'radical',
+  classifiers: 'classifiers',
+  pinyinNumeric: 'pinyinNumeric',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -160,7 +167,12 @@ export const GrammarScalarFieldEnum = {
   userId: 'userId',
   title: 'title',
   content: 'content',
+  details: 'details',
+  notes: 'notes',
+  structure: 'structure',
   hskLevel: 'hskLevel',
+  important: 'important',
+  mastered: 'mastered',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -168,23 +180,26 @@ export const GrammarScalarFieldEnum = {
 export type GrammarScalarFieldEnum = (typeof GrammarScalarFieldEnum)[keyof typeof GrammarScalarFieldEnum]
 
 
-export const LessonScalarFieldEnum = {
+export const GrammarExampleScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
-  title: 'title',
-  vocabularyIds: 'vocabularyIds',
-  grammarIds: 'grammarIds',
-  hskLevel: 'hskLevel',
+  grammarId: 'grammarId',
+  hanExample: 'hanExample',
+  jyutpingExample: 'jyutpingExample',
+  pinyinExample: 'pinyinExample',
+  vietExample: 'vietExample',
+  engExample: 'engExample',
+  position: 'position',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type LessonScalarFieldEnum = (typeof LessonScalarFieldEnum)[keyof typeof LessonScalarFieldEnum]
+export type GrammarExampleScalarFieldEnum = (typeof GrammarExampleScalarFieldEnum)[keyof typeof GrammarExampleScalarFieldEnum]
 
 
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
+  password: 'password',
   name: 'name',
   isAdmin: 'isAdmin',
   createdAt: 'createdAt',
@@ -226,6 +241,30 @@ export const SentencePatternScalarFieldEnum = {
 } as const
 
 export type SentencePatternScalarFieldEnum = (typeof SentencePatternScalarFieldEnum)[keyof typeof SentencePatternScalarFieldEnum]
+
+
+export const FlashcardDeckScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  description: 'description',
+  color: 'color',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FlashcardDeckScalarFieldEnum = (typeof FlashcardDeckScalarFieldEnum)[keyof typeof FlashcardDeckScalarFieldEnum]
+
+
+export const FlashcardDeckVocabularyScalarFieldEnum = {
+  id: 'id',
+  deckId: 'deckId',
+  vocabularyId: 'vocabularyId',
+  position: 'position',
+  createdAt: 'createdAt'
+} as const
+
+export type FlashcardDeckVocabularyScalarFieldEnum = (typeof FlashcardDeckVocabularyScalarFieldEnum)[keyof typeof FlashcardDeckVocabularyScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -29,7 +29,10 @@ export type GrammarMinAggregateOutputType = {
   userId: string | null
   title: string | null
   content: string | null
+  structure: string | null
   hskLevel: string | null
+  important: boolean | null
+  mastered: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -39,7 +42,10 @@ export type GrammarMaxAggregateOutputType = {
   userId: string | null
   title: string | null
   content: string | null
+  structure: string | null
   hskLevel: string | null
+  important: boolean | null
+  mastered: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -49,7 +55,12 @@ export type GrammarCountAggregateOutputType = {
   userId: number
   title: number
   content: number
+  details: number
+  notes: number
+  structure: number
   hskLevel: number
+  important: number
+  mastered: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -61,7 +72,10 @@ export type GrammarMinAggregateInputType = {
   userId?: true
   title?: true
   content?: true
+  structure?: true
   hskLevel?: true
+  important?: true
+  mastered?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -71,7 +85,10 @@ export type GrammarMaxAggregateInputType = {
   userId?: true
   title?: true
   content?: true
+  structure?: true
   hskLevel?: true
+  important?: true
+  mastered?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -81,7 +98,12 @@ export type GrammarCountAggregateInputType = {
   userId?: true
   title?: true
   content?: true
+  details?: true
+  notes?: true
+  structure?: true
   hskLevel?: true
+  important?: true
+  mastered?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -164,7 +186,12 @@ export type GrammarGroupByOutputType = {
   userId: string
   title: string
   content: string
+  details: string[]
+  notes: string[]
+  structure: string | null
   hskLevel: string | null
+  important: boolean
+  mastered: boolean
   createdAt: Date
   updatedAt: Date
   _count: GrammarCountAggregateOutputType | null
@@ -195,9 +222,15 @@ export type GrammarWhereInput = {
   userId?: Prisma.UuidFilter<"Grammar"> | string
   title?: Prisma.StringFilter<"Grammar"> | string
   content?: Prisma.StringFilter<"Grammar"> | string
+  details?: Prisma.StringNullableListFilter<"Grammar">
+  notes?: Prisma.StringNullableListFilter<"Grammar">
+  structure?: Prisma.StringNullableFilter<"Grammar"> | string | null
   hskLevel?: Prisma.StringNullableFilter<"Grammar"> | string | null
+  important?: Prisma.BoolFilter<"Grammar"> | boolean
+  mastered?: Prisma.BoolFilter<"Grammar"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Grammar"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Grammar"> | Date | string
+  grammarExamples?: Prisma.GrammarExampleListRelationFilter
 }
 
 export type GrammarOrderByWithRelationInput = {
@@ -205,9 +238,15 @@ export type GrammarOrderByWithRelationInput = {
   userId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  details?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
+  structure?: Prisma.SortOrderInput | Prisma.SortOrder
   hskLevel?: Prisma.SortOrderInput | Prisma.SortOrder
+  important?: Prisma.SortOrder
+  mastered?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  grammarExamples?: Prisma.GrammarExampleOrderByRelationAggregateInput
 }
 
 export type GrammarWhereUniqueInput = Prisma.AtLeast<{
@@ -219,9 +258,15 @@ export type GrammarWhereUniqueInput = Prisma.AtLeast<{
   userId?: Prisma.UuidFilter<"Grammar"> | string
   title?: Prisma.StringFilter<"Grammar"> | string
   content?: Prisma.StringFilter<"Grammar"> | string
+  details?: Prisma.StringNullableListFilter<"Grammar">
+  notes?: Prisma.StringNullableListFilter<"Grammar">
+  structure?: Prisma.StringNullableFilter<"Grammar"> | string | null
   hskLevel?: Prisma.StringNullableFilter<"Grammar"> | string | null
+  important?: Prisma.BoolFilter<"Grammar"> | boolean
+  mastered?: Prisma.BoolFilter<"Grammar"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Grammar"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Grammar"> | Date | string
+  grammarExamples?: Prisma.GrammarExampleListRelationFilter
 }, "id" | "id_userId">
 
 export type GrammarOrderByWithAggregationInput = {
@@ -229,7 +274,12 @@ export type GrammarOrderByWithAggregationInput = {
   userId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  details?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
+  structure?: Prisma.SortOrderInput | Prisma.SortOrder
   hskLevel?: Prisma.SortOrderInput | Prisma.SortOrder
+  important?: Prisma.SortOrder
+  mastered?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.GrammarCountOrderByAggregateInput
@@ -245,7 +295,12 @@ export type GrammarScalarWhereWithAggregatesInput = {
   userId?: Prisma.UuidWithAggregatesFilter<"Grammar"> | string
   title?: Prisma.StringWithAggregatesFilter<"Grammar"> | string
   content?: Prisma.StringWithAggregatesFilter<"Grammar"> | string
+  details?: Prisma.StringNullableListFilter<"Grammar">
+  notes?: Prisma.StringNullableListFilter<"Grammar">
+  structure?: Prisma.StringNullableWithAggregatesFilter<"Grammar"> | string | null
   hskLevel?: Prisma.StringNullableWithAggregatesFilter<"Grammar"> | string | null
+  important?: Prisma.BoolWithAggregatesFilter<"Grammar"> | boolean
+  mastered?: Prisma.BoolWithAggregatesFilter<"Grammar"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Grammar"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Grammar"> | Date | string
 }
@@ -255,9 +310,15 @@ export type GrammarCreateInput = {
   userId: string
   title?: string
   content?: string
+  details?: Prisma.GrammarCreatedetailsInput | string[]
+  notes?: Prisma.GrammarCreatenotesInput | string[]
+  structure?: string | null
   hskLevel?: string | null
+  important?: boolean
+  mastered?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  grammarExamples?: Prisma.GrammarExampleCreateNestedManyWithoutGrammarInput
 }
 
 export type GrammarUncheckedCreateInput = {
@@ -265,9 +326,15 @@ export type GrammarUncheckedCreateInput = {
   userId: string
   title?: string
   content?: string
+  details?: Prisma.GrammarCreatedetailsInput | string[]
+  notes?: Prisma.GrammarCreatenotesInput | string[]
+  structure?: string | null
   hskLevel?: string | null
+  important?: boolean
+  mastered?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  grammarExamples?: Prisma.GrammarExampleUncheckedCreateNestedManyWithoutGrammarInput
 }
 
 export type GrammarUpdateInput = {
@@ -275,9 +342,15 @@ export type GrammarUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  details?: Prisma.GrammarUpdatedetailsInput | string[]
+  notes?: Prisma.GrammarUpdatenotesInput | string[]
+  structure?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  important?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mastered?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  grammarExamples?: Prisma.GrammarExampleUpdateManyWithoutGrammarNestedInput
 }
 
 export type GrammarUncheckedUpdateInput = {
@@ -285,9 +358,15 @@ export type GrammarUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  details?: Prisma.GrammarUpdatedetailsInput | string[]
+  notes?: Prisma.GrammarUpdatenotesInput | string[]
+  structure?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  important?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mastered?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  grammarExamples?: Prisma.GrammarExampleUncheckedUpdateManyWithoutGrammarNestedInput
 }
 
 export type GrammarCreateManyInput = {
@@ -295,7 +374,12 @@ export type GrammarCreateManyInput = {
   userId: string
   title?: string
   content?: string
+  details?: Prisma.GrammarCreatedetailsInput | string[]
+  notes?: Prisma.GrammarCreatenotesInput | string[]
+  structure?: string | null
   hskLevel?: string | null
+  important?: boolean
+  mastered?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -305,7 +389,12 @@ export type GrammarUpdateManyMutationInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  details?: Prisma.GrammarUpdatedetailsInput | string[]
+  notes?: Prisma.GrammarUpdatenotesInput | string[]
+  structure?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  important?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mastered?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -315,7 +404,12 @@ export type GrammarUncheckedUpdateManyInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
+  details?: Prisma.GrammarUpdatedetailsInput | string[]
+  notes?: Prisma.GrammarUpdatenotesInput | string[]
+  structure?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  important?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mastered?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -330,7 +424,12 @@ export type GrammarCountOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  details?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
+  structure?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
+  important?: Prisma.SortOrder
+  mastered?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -340,7 +439,10 @@ export type GrammarMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  structure?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
+  important?: Prisma.SortOrder
+  mastered?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -350,11 +452,160 @@ export type GrammarMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  structure?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
+  important?: Prisma.SortOrder
+  mastered?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
+export type GrammarScalarRelationFilter = {
+  is?: Prisma.GrammarWhereInput
+  isNot?: Prisma.GrammarWhereInput
+}
+
+export type GrammarCreatedetailsInput = {
+  set: string[]
+}
+
+export type GrammarCreatenotesInput = {
+  set: string[]
+}
+
+export type GrammarUpdatedetailsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type GrammarUpdatenotesInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type GrammarCreateNestedOneWithoutGrammarExamplesInput = {
+  create?: Prisma.XOR<Prisma.GrammarCreateWithoutGrammarExamplesInput, Prisma.GrammarUncheckedCreateWithoutGrammarExamplesInput>
+  connectOrCreate?: Prisma.GrammarCreateOrConnectWithoutGrammarExamplesInput
+  connect?: Prisma.GrammarWhereUniqueInput
+}
+
+export type GrammarUpdateOneRequiredWithoutGrammarExamplesNestedInput = {
+  create?: Prisma.XOR<Prisma.GrammarCreateWithoutGrammarExamplesInput, Prisma.GrammarUncheckedCreateWithoutGrammarExamplesInput>
+  connectOrCreate?: Prisma.GrammarCreateOrConnectWithoutGrammarExamplesInput
+  upsert?: Prisma.GrammarUpsertWithoutGrammarExamplesInput
+  connect?: Prisma.GrammarWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.GrammarUpdateToOneWithWhereWithoutGrammarExamplesInput, Prisma.GrammarUpdateWithoutGrammarExamplesInput>, Prisma.GrammarUncheckedUpdateWithoutGrammarExamplesInput>
+}
+
+export type GrammarCreateWithoutGrammarExamplesInput = {
+  id?: string
+  userId: string
+  title?: string
+  content?: string
+  details?: Prisma.GrammarCreatedetailsInput | string[]
+  notes?: Prisma.GrammarCreatenotesInput | string[]
+  structure?: string | null
+  hskLevel?: string | null
+  important?: boolean
+  mastered?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type GrammarUncheckedCreateWithoutGrammarExamplesInput = {
+  id?: string
+  userId: string
+  title?: string
+  content?: string
+  details?: Prisma.GrammarCreatedetailsInput | string[]
+  notes?: Prisma.GrammarCreatenotesInput | string[]
+  structure?: string | null
+  hskLevel?: string | null
+  important?: boolean
+  mastered?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type GrammarCreateOrConnectWithoutGrammarExamplesInput = {
+  where: Prisma.GrammarWhereUniqueInput
+  create: Prisma.XOR<Prisma.GrammarCreateWithoutGrammarExamplesInput, Prisma.GrammarUncheckedCreateWithoutGrammarExamplesInput>
+}
+
+export type GrammarUpsertWithoutGrammarExamplesInput = {
+  update: Prisma.XOR<Prisma.GrammarUpdateWithoutGrammarExamplesInput, Prisma.GrammarUncheckedUpdateWithoutGrammarExamplesInput>
+  create: Prisma.XOR<Prisma.GrammarCreateWithoutGrammarExamplesInput, Prisma.GrammarUncheckedCreateWithoutGrammarExamplesInput>
+  where?: Prisma.GrammarWhereInput
+}
+
+export type GrammarUpdateToOneWithWhereWithoutGrammarExamplesInput = {
+  where?: Prisma.GrammarWhereInput
+  data: Prisma.XOR<Prisma.GrammarUpdateWithoutGrammarExamplesInput, Prisma.GrammarUncheckedUpdateWithoutGrammarExamplesInput>
+}
+
+export type GrammarUpdateWithoutGrammarExamplesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  details?: Prisma.GrammarUpdatedetailsInput | string[]
+  notes?: Prisma.GrammarUpdatenotesInput | string[]
+  structure?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  important?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mastered?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type GrammarUncheckedUpdateWithoutGrammarExamplesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  details?: Prisma.GrammarUpdatedetailsInput | string[]
+  notes?: Prisma.GrammarUpdatenotesInput | string[]
+  structure?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  important?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mastered?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+
+/**
+ * Count Type GrammarCountOutputType
+ */
+
+export type GrammarCountOutputType = {
+  grammarExamples: number
+}
+
+export type GrammarCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  grammarExamples?: boolean | GrammarCountOutputTypeCountGrammarExamplesArgs
+}
+
+/**
+ * GrammarCountOutputType without action
+ */
+export type GrammarCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GrammarCountOutputType
+   */
+  select?: Prisma.GrammarCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * GrammarCountOutputType without action
+ */
+export type GrammarCountOutputTypeCountGrammarExamplesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.GrammarExampleWhereInput
+}
 
 
 export type GrammarSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -362,9 +613,16 @@ export type GrammarSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   userId?: boolean
   title?: boolean
   content?: boolean
+  details?: boolean
+  notes?: boolean
+  structure?: boolean
   hskLevel?: boolean
+  important?: boolean
+  mastered?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  grammarExamples?: boolean | Prisma.Grammar$grammarExamplesArgs<ExtArgs>
+  _count?: boolean | Prisma.GrammarCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["grammar"]>
 
 export type GrammarSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -372,7 +630,12 @@ export type GrammarSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   userId?: boolean
   title?: boolean
   content?: boolean
+  details?: boolean
+  notes?: boolean
+  structure?: boolean
   hskLevel?: boolean
+  important?: boolean
+  mastered?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["grammar"]>
@@ -382,7 +645,12 @@ export type GrammarSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   userId?: boolean
   title?: boolean
   content?: boolean
+  details?: boolean
+  notes?: boolean
+  structure?: boolean
   hskLevel?: boolean
+  important?: boolean
+  mastered?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["grammar"]>
@@ -392,22 +660,40 @@ export type GrammarSelectScalar = {
   userId?: boolean
   title?: boolean
   content?: boolean
+  details?: boolean
+  notes?: boolean
+  structure?: boolean
   hskLevel?: boolean
+  important?: boolean
+  mastered?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type GrammarOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "title" | "content" | "hskLevel" | "createdAt" | "updatedAt", ExtArgs["result"]["grammar"]>
+export type GrammarOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "title" | "content" | "details" | "notes" | "structure" | "hskLevel" | "important" | "mastered" | "createdAt" | "updatedAt", ExtArgs["result"]["grammar"]>
+export type GrammarInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  grammarExamples?: boolean | Prisma.Grammar$grammarExamplesArgs<ExtArgs>
+  _count?: boolean | Prisma.GrammarCountOutputTypeDefaultArgs<ExtArgs>
+}
+export type GrammarIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type GrammarIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
 
 export type $GrammarPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Grammar"
-  objects: {}
+  objects: {
+    grammarExamples: Prisma.$GrammarExamplePayload<ExtArgs>[]
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     userId: string
     title: string
     content: string
+    details: string[]
+    notes: string[]
+    structure: string | null
     hskLevel: string | null
+    important: boolean
+    mastered: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["grammar"]>
@@ -804,6 +1090,7 @@ readonly fields: GrammarFieldRefs;
  */
 export interface Prisma__GrammarClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  grammarExamples<T extends Prisma.Grammar$grammarExamplesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Grammar$grammarExamplesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GrammarExamplePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -837,7 +1124,12 @@ export interface GrammarFieldRefs {
   readonly userId: Prisma.FieldRef<"Grammar", 'String'>
   readonly title: Prisma.FieldRef<"Grammar", 'String'>
   readonly content: Prisma.FieldRef<"Grammar", 'String'>
+  readonly details: Prisma.FieldRef<"Grammar", 'String[]'>
+  readonly notes: Prisma.FieldRef<"Grammar", 'String[]'>
+  readonly structure: Prisma.FieldRef<"Grammar", 'String'>
   readonly hskLevel: Prisma.FieldRef<"Grammar", 'String'>
+  readonly important: Prisma.FieldRef<"Grammar", 'Boolean'>
+  readonly mastered: Prisma.FieldRef<"Grammar", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Grammar", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Grammar", 'DateTime'>
 }
@@ -857,6 +1149,10 @@ export type GrammarFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.Inter
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
+  /**
    * Filter, which Grammar to fetch.
    */
   where: Prisma.GrammarWhereUniqueInput
@@ -875,6 +1171,10 @@ export type GrammarFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extension
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
+  /**
    * Filter, which Grammar to fetch.
    */
   where: Prisma.GrammarWhereUniqueInput
@@ -892,6 +1192,10 @@ export type GrammarFindFirstArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Omit specific fields from the Grammar
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
   /**
    * Filter, which Grammar to fetch.
    */
@@ -941,6 +1245,10 @@ export type GrammarFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensions
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
+  /**
    * Filter, which Grammar to fetch.
    */
   where?: Prisma.GrammarWhereInput
@@ -988,6 +1296,10 @@ export type GrammarFindManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Omit specific fields from the Grammar
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
   /**
    * Filter, which Grammars to fetch.
    */
@@ -1037,6 +1349,10 @@ export type GrammarCreateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
+  /**
    * The data needed to create a Grammar.
    */
   data: Prisma.XOR<Prisma.GrammarCreateInput, Prisma.GrammarUncheckedCreateInput>
@@ -1084,6 +1400,10 @@ export type GrammarUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Omit specific fields from the Grammar
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
   /**
    * The data needed to update a Grammar.
    */
@@ -1151,6 +1471,10 @@ export type GrammarUpsertArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
+  /**
    * The filter to search for the Grammar to update in case it exists.
    */
   where: Prisma.GrammarWhereUniqueInput
@@ -1177,6 +1501,10 @@ export type GrammarDeleteArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
+  /**
    * Filter which Grammar to delete.
    */
   where: Prisma.GrammarWhereUniqueInput
@@ -1197,6 +1525,30 @@ export type GrammarDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
 }
 
 /**
+ * Grammar.grammarExamples
+ */
+export type Grammar$grammarExamplesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GrammarExample
+   */
+  select?: Prisma.GrammarExampleSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GrammarExample
+   */
+  omit?: Prisma.GrammarExampleOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarExampleInclude<ExtArgs> | null
+  where?: Prisma.GrammarExampleWhereInput
+  orderBy?: Prisma.GrammarExampleOrderByWithRelationInput | Prisma.GrammarExampleOrderByWithRelationInput[]
+  cursor?: Prisma.GrammarExampleWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.GrammarExampleScalarFieldEnum | Prisma.GrammarExampleScalarFieldEnum[]
+}
+
+/**
  * Grammar without action
  */
 export type GrammarDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1208,4 +1560,8 @@ export type GrammarDefaultArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Omit specific fields from the Grammar
    */
   omit?: Prisma.GrammarOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GrammarInclude<ExtArgs> | null
 }

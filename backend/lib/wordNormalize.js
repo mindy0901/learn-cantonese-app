@@ -1,5 +1,4 @@
 /** Trailing sentence punctuation (Latin + CJK). Does not strip internal dots. */
-import { ensureHanVariants } from "./opencc.js";
 import { SINO_VIETNAMESE_NONE, isSinoVietnameseNone } from "./sinoVietnameseMarkers.js";
 import { normalizeSinoVietnameseValue } from "./sinoVietnameseReadings.js";
 
@@ -58,19 +57,17 @@ export function vocabularyKeyIsEmpty(key) {
 }
 
 export function normalizeVocabularyFields(vocab) {
-    const hanVariants = ensureHanVariants({
-        hanTraditional: resolveHanTraditional(vocab),
-        hanSimplified: stripTrailingPunctuation(vocab.hanSimplified),
-    });
+    const hanTraditional = resolveHanTraditional(vocab);
+    const hanSimplified = stripTrailingPunctuation(vocab.hanSimplified);
     const next = {
         ...vocab,
         engMeanings: toDisplayCase(stripTrailingPunctuation(vocab.engMeanings)),
-        hanTraditional: hanVariants.hanTraditional,
-        hanSimplified: hanVariants.hanSimplified || undefined,
+        hanTraditional,
+        hanSimplified: hanSimplified || undefined,
         vietMeanings: toDisplayCase(stripTrailingPunctuation(vocab.vietMeanings)),
     };
     delete next.han;
-    if (!hanVariants.hanSimplified) {
+    if (!hanSimplified) {
         delete next.hanSimplified;
     }
     if (vocab.sinoVietnamese != null && vocab.sinoVietnamese !== "") {

@@ -3,7 +3,7 @@ import { hanziiWordUrl } from "../lib/hanzii.js";
 import { hanPopularityClass } from "../lib/wordPopularity.js";
 import { cn } from "../lib/cn.js";
 
-const baseClass = "inline leading-tight align-middle";
+const baseClass = "inline leading-tight align-middle whitespace-nowrap";
 
 const emphasisClasses = {
     primary: (popularity) => {

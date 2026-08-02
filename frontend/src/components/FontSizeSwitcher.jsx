@@ -32,7 +32,7 @@ export function FontSizeSwitcher() {
         sizeScale[fontSize],
         fontSize !== 'sm' && 'font-bold text-accent',
       )}
-      title={`Font: ${fontSize === 'sm' ? 'Nhỏ' : fontSize === 'md' ? 'Vừa' : 'Lớn'}`}
+      title={`Font: ${fontSize === 'sm' ? 'Small' : fontSize === 'md' ? 'Medium' : 'Large'}`}
       aria-label={`Font size: ${fontSize}`}
     >
       {SIZE_LABELS[fontSize]}

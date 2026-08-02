@@ -1,5 +1,4 @@
 /** Strip accents / normalize for accent-insensitive search (matches frontend wordSearch.js). */
-import { expandHanSearchTerms } from "./opencc.js";
 
 export function normalizeSearchText(text) {
     return String(text ?? "")
@@ -18,9 +17,7 @@ export function searchQueryVariants(text) {
     const normalized = normalizeSearchText(raw);
     const variants = new Set();
 
-    for (const term of expandHanSearchTerms(raw)) {
-        variants.add(term);
-    }
+    if (raw) variants.add(raw);
 
     if (normalized) {
         variants.add(normalized);

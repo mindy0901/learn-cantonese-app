@@ -20,10 +20,6 @@ export const DEFAULT_PREFS = {
         sortDir: "asc",
     },
     flashcard: {},
-    lessons: {
-        sortKey: "name",
-        sortDir: "asc",
-    },
 };
 
 function mergeSection(defaults, saved) {
@@ -49,7 +45,6 @@ export function loadPrefs() {
             grammarBank: mergeSection(DEFAULT_PREFS.grammarBank, parsed.grammarBank),
             sentenceBank: mergeSection(DEFAULT_PREFS.sentenceBank, parsed.sentenceBank),
             flashcard: mergeSection(DEFAULT_PREFS.flashcard, parsed.flashcard ?? parsed.study),
-            lessons: mergeSection(DEFAULT_PREFS.lessons, parsed.lessons),
         };
     } catch {
         return structuredClone(DEFAULT_PREFS);

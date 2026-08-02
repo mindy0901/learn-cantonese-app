@@ -1,23 +1,18 @@
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import {
-    createLessonEntity,
     deleteGrammarFromList,
-    deleteLessonFromList,
     deleteSentenceFromList,
     deleteVocabularyFromList,
     indexCloudPayload,
     indexGrammarItem,
     indexSentencePattern,
     indexVocabulary,
-    migrateLesson,
     stripSearchIndex,
     toggleGrammarField,
-    toggleLessonGrammarMasteredInList,
     toggleSentenceField,
     toggleVocabularyField,
     updateGrammarInList,
-    updateLessonInList,
     updateSentenceInList,
     updateVocabularyInList,
 } from "../lib/dataTransforms.js";
@@ -101,23 +96,20 @@ async function migrateLegacyLocalIfNeeded() {
         const parsed = JSON.parse(raw);
         const hasLocal =
             (parsed.words?.length ?? 0) > 0 ||
-            (parsed.grammarBank?.length ?? 0) > 0 ||
-            (parsed.lessons?.length ?? 0) > 0;
+            (parsed.grammarBank?.length ?? 0) > 0;
 
         if (hasLocal) {
             log("Migrate legacy data");
             const remote = await api.fetchFromCloud();
             const cloudEmpty =
-                (remote.words?.length ?? 0) === 0 &&
-                (remote.grammarBank?.length ?? 0) === 0 &&
-                (remote.lessons?.length ?? 0) === 0;
+                (remote.vocabularies?.length ?? 0) === 0 &&
+                (remote.grammars?.length ?? 0) === 0;
 
             if (cloudEmpty) {
                 await api.uploadToCloud({
-                    types: ["vocabularies", "grammar", "lessons"],
+                    types: ["vocabularies", "grammar"],
                     words: parsed.words ?? [],
                     grammarBank: parsed.grammarBank ?? [],
-                    lessons: parsed.lessons ?? [],
                 });
             }
         }
@@ -135,7 +127,6 @@ export const useAppStore = create((set, get) => ({
     vocabulariesRevision: 0,
     grammarBank: [],
     sentencePatterns: [],
-    lessons: [],
     hanCharacters: [],
     hanCharacterTotal: 0,
     hanCharactersRevision: 0,
@@ -153,7 +144,6 @@ export const useAppStore = create((set, get) => ({
             vocabulariesRevision: 0,
             grammarBank: [],
             sentencePatterns: [],
-            lessons: [],
             hanCharacters: [],
             hanCharacterTotal: 0,
             hanCharactersRevision: 0,
@@ -174,9 +164,8 @@ export const useAppStore = create((set, get) => ({
             if (cached) {
                 try {
                     const indexed = indexCloudPayload({
-                        words: cached.words ?? [],
-                        grammarBank: cached.grammarBank ?? [],
-                        lessons: cached.lessons ?? [],
+                        vocabularies: cached.vocabularies ?? [],
+                        grammars: cached.grammars ?? [],
                         sentencePatterns: cached.sentencePatterns ?? [],
                     });
                     set({
@@ -202,8 +191,7 @@ export const useAppStore = create((set, get) => ({
                 const remote = await api.fetchFullData();
                 logFetchDone({
                     vocabularies: remote.vocabularies?.length ?? 0,
-                    lessons: remote.lessons?.length ?? 0,
-                    grammar: remote.grammarBank?.length ?? 0,
+                    grammar: remote.grammars?.length ?? 0,
                     sentences: remote.sentencePatterns?.length ?? 0,
                     hanCharacters: remote.hanCharacterTotal ?? remote.hanCharacters?.length ?? 0,
                 });
@@ -211,8 +199,7 @@ export const useAppStore = create((set, get) => ({
                 saveDataCache(remote);
                 const indexed = indexCloudPayload({
                     vocabularies: remote.vocabularies ?? [],
-                    grammarBank: remote.grammarBank ?? [],
-                    lessons: remote.lessons ?? [],
+                    grammars: remote.grammars ?? [],
                     sentencePatterns: remote.sentencePatterns ?? [],
                 });
                 set({
@@ -297,15 +284,17 @@ export const useAppStore = create((set, get) => ({
         const entry = indexGrammarItem(item);
         const prev = get().grammarBank;
         set({ grammarBank: [...prev, entry] });
-        syncMutation(() => api.createGrammar(stripSearchIndex(entry))).catch(() => set({ grammarBank: prev }));
+        return syncMutation(() => api.createGrammar(stripSearchIndex(entry))).catch((err) => {
+            set({ grammarBank: prev });
+            throw err;
+        });
     },
 
     createGrammarAwait: async (item) => {
         assertAdmin();
         const title = item.title?.trim() ?? "";
-        const content = item.content?.trim() ?? "";
         const prev = get().grammarBank;
-        const existing = prev.find((g) => g.title?.trim() === title && g.content?.trim() === content);
+        const existing = prev.find((g) => g.title?.trim() === title);
         if (existing) return existing;
 
         const entry = indexGrammarItem(item, prev.length);
@@ -416,23 +405,31 @@ export const useAppStore = create((set, get) => ({
         if (!existing) return;
 
         const title = (patch.title ?? existing.title).trim();
-        const content = (patch.content ?? existing.content).trim();
+        const details = patch.details ?? existing.details ?? [];
+        const notes = patch.notes ?? existing.notes ?? [];
+        const structure = (patch.structure ?? existing.structure ?? "").trim();
+        const examples = patch.examples ?? existing.examples ?? [];
         const important = "important" in patch ? Boolean(patch.important) : Boolean(existing.important);
         const mastered = "mastered" in patch ? Boolean(patch.mastered) : Boolean(existing.mastered);
-        if (
-            title === existing.title.trim() &&
-            content === existing.content.trim() &&
-            important === Boolean(existing.important) &&
-            mastered === Boolean(existing.mastered)
-        )
-            return;
 
         log("Update grammar", existing);
-        const grammarBank = updateGrammarInList(prev, id, { ...patch, title, content, important, mastered });
+        const grammarBank = updateGrammarInList(prev, id, {
+            ...patch,
+            title,
+            details,
+            notes,
+            structure,
+            examples,
+            important,
+            mastered,
+        });
         const item = grammarBank.find((g) => g.id === id);
         set({ grammarBank });
         if (item) {
-            syncMutation(() => api.updateGrammar(id, stripSearchIndex(item))).catch(() => set({ grammarBank: prev }));
+            return syncMutation(() => api.updateGrammar(id, stripSearchIndex(item))).catch((err) => {
+                set({ grammarBank: prev });
+                throw err;
+            });
         }
     },
 
@@ -554,34 +551,19 @@ export const useAppStore = create((set, get) => ({
         }
     },
 
-    toggleLessonGrammarMastered: (lessonId, grammarId) => {
-        log("Toggle lesson grammar mastered", grammarId);
-        assertSignedIn();
-        const prev = get().lessons;
-        const lessons = toggleLessonGrammarMasteredInList(prev, lessonId, grammarId);
-        const lesson = lessons.find((l) => l.id === lessonId);
-        set({ lessons });
-        if (lesson) {
-            syncMutation(() => api.updateLesson(lessonId, lesson), { requireAdmin: false }).catch(() =>
-                set({ lessons: prev }),
-            );
-        }
-    },
-
     removeVocabulary: (id) => {
         assertAdmin();
-        const { vocabularies: prevVocabularies, lessons: prevLessons } = get();
+        const prevVocabularies = get().vocabularies;
         const removed = prevVocabularies.find((w) => w.id === id);
         const label =
             removed?.hanTraditional || removed?.vietMeanings || removed?.engMeanings || `#${String(id).slice(0, 8)}`;
         logMutStart("Delete vocabulary", label);
-        const next = deleteVocabularyFromList(prevVocabularies, prevLessons, id);
+        const nextVocabularies = deleteVocabularyFromList(prevVocabularies, id);
         const prevVocabularyTotal = get().vocabularyTotal;
         const prevMastered = get().masteredVocabularyCount;
         const prevRevision = get().vocabulariesRevision;
         set({
-            vocabularies: next.vocabularies,
-            lessons: next.lessons,
+            vocabularies: nextVocabularies,
             vocabularyTotal: Math.max(0, prevVocabularyTotal - 1),
             masteredVocabularyCount: removed?.mastered ? Math.max(0, prevMastered - 1) : prevMastered,
             vocabulariesRevision: prevRevision + 1,
@@ -594,7 +576,6 @@ export const useAppStore = create((set, get) => ({
         ).catch(() =>
             set({
                 vocabularies: prevVocabularies,
-                lessons: prevLessons,
                 vocabularyTotal: prevVocabularyTotal,
                 masteredVocabularyCount: prevMastered,
                 vocabulariesRevision: prevRevision,
@@ -656,8 +637,7 @@ export const useAppStore = create((set, get) => ({
         const remote = await api.fetchFullData();
         const indexed = indexCloudPayload({
             vocabularies: remote.vocabularies ?? [],
-            grammarBank: [],
-            lessons: [],
+            grammars: [],
             sentencePatterns: [],
         });
         set({
@@ -903,82 +883,11 @@ export const useAppStore = create((set, get) => ({
         syncMutation(() => api.deleteSentencePattern(id)).catch(() => set({ sentencePatterns: prev }));
     },
 
-    addLesson: (name, wordIds, grammar) => {
-        log("Create lesson", name);
-        assertAdmin();
-        const lesson = createLessonEntity(name, wordIds, grammar);
-        const prev = get().lessons;
-        set({ lessons: [...prev, lesson] });
-        syncMutation(() => api.createLesson(lesson)).catch(() => set({ lessons: prev }));
-        return lesson;
-    },
-
-    addLessonAwait: async (name, wordIds, grammar) => {
-        log("Create lesson", name);
-        assertAdmin();
-        const lesson = createLessonEntity(name, wordIds, grammar);
-        const prev = get().lessons;
-        set({ lessons: [...prev, lesson] });
-        try {
-            const saved = await syncMutation(() => api.createLesson(lesson));
-            if (!saved) return lesson;
-            const migrated = migrateLesson(saved);
-            set({ lessons: updateLessonInList(get().lessons, lesson.id, migrated) });
-            return migrated;
-        } catch (err) {
-            set({ lessons: prev });
-            throw err;
-        }
-    },
-
-    editLesson: (id, patch) => {
-        log("Update lesson", patch?.name ?? id);
-        assertAdmin();
-        const prev = get().lessons;
-        const lessons = updateLessonInList(prev, id, patch);
-        const lesson = lessons.find((l) => l.id === id);
-        set({ lessons });
-        if (lesson) {
-            syncMutation(() => api.updateLesson(id, lesson)).catch(() => set({ lessons: prev }));
-        }
-    },
-
-    editLessonAwait: async (id, patch) => {
-        log("Update lesson", patch?.name ?? id);
-        assertAdmin();
-        const prev = get().lessons;
-        const lessons = updateLessonInList(prev, id, patch);
-        const lesson = lessons.find((l) => l.id === id);
-        if (!lesson) return;
-        set({ lessons });
-        try {
-            const saved = await syncMutation(() => api.updateLesson(id, lesson));
-            if (!saved) return lesson;
-            const migrated = migrateLesson(saved);
-            set({ lessons: updateLessonInList(get().lessons, id, migrated) });
-            return migrated;
-        } catch (err) {
-            set({ lessons: prev });
-            throw err;
-        }
-    },
-
-    removeLesson: (id) => {
-        assertAdmin();
-        const prev = get().lessons;
-        log("Delete lesson", prev.find((l) => l.id === id) ?? id);
-        const lessons = deleteLessonFromList(prev, id);
-        set({ lessons });
-        syncMutation(() => api.deleteLesson(id)).catch(() => set({ lessons: prev }));
-    },
-
-    getLesson: (id) => get().lessons.find((l) => l.id === id),
 }));
 
 export const useVocabularies = () => useAppStore((s) => s.vocabularies);
 export const useGrammarBank = () => useAppStore((s) => s.grammarBank);
 export const useSentencePatterns = () => useAppStore((s) => s.sentencePatterns);
-export const useLessons = () => useAppStore((s) => s.lessons);
 export const useDataLoading = () => useAppStore((s) => s.dataLoading);
 export const useDataError = () => useAppStore((s) => s.dataError);
 export const useDataHydrated = () => useAppStore((s) => s.hydrated);
@@ -989,9 +898,7 @@ export const useHanCharacterTotal = () => useAppStore((s) => s.hanCharacterTotal
 export const useHanCharactersRevision = () => useAppStore((s) => s.hanCharactersRevision);
 export const useGrammarCount = () => useAppStore((s) => s.grammarBank.length);
 export const useSentenceCount = () => useAppStore((s) => s.sentencePatterns.length);
-export const useLessonCount = () => useAppStore((s) => s.lessons.length);
 export const useMasteredVocabularyCount = () => useAppStore((s) => s.masteredVocabularyCount);
-export const useLesson = (id) => useAppStore((s) => (id ? s.lessons.find((l) => l.id === id) : undefined));
 
 export const useAppActions = () =>
     useAppStore(
@@ -1013,18 +920,11 @@ export const useAppActions = () =>
             setVocabularyStudyProgress: s.setVocabularyStudyProgress,
             toggleGrammarMastered: s.toggleGrammarMastered,
             toggleSentenceMastered: s.toggleSentenceMastered,
-            toggleLessonGrammarMastered: s.toggleLessonGrammarMastered,
             removeVocabulary: s.removeVocabulary,
             removeGrammar: s.removeGrammar,
             removeSentence: s.removeSentence,
-            addLesson: s.addLesson,
-            addLessonAwait: s.addLessonAwait,
-            editLesson: s.editLesson,
-            editLessonAwait: s.editLessonAwait,
-            removeLesson: s.removeLesson,
             hydrateFromCloud: s.hydrateFromCloud,
             clearData: s.clearData,
-            getLesson: s.getLesson,
             mergeVocabularies: s.mergeVocabularies,
             ensureVocabulariesByIds: s.ensureVocabulariesByIds,
             syncHanVariantsAll: s.syncHanVariantsAll,

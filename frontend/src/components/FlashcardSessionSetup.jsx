@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale } from "../store/localeStore.js";
-import { useLessons, useVocabulariesRevision } from "../store/appStore.js";
+import { useVocabulariesRevision } from "../store/appStore.js";
 import {
     FLASHCARD_CARD_MODES,
     FLASHCARD_SCOPES,
@@ -10,6 +10,7 @@ import {
     saveFlashcardPrefs,
 } from "../lib/flashcardPrefs.js";
 import { countDueFlashcardVocabularies } from "../lib/flashcardWords.js";
+import { api } from "../lib/api.js";
 import { cn } from "../lib/cn.js";
 import { btnClass } from "./ui/buttonStyles.js";
 
@@ -20,7 +21,6 @@ const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide t
 
 export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = null }) {
     const { t, fmt } = useLocale();
-    const lessons = useLessons();
     const wordsRevision = useVocabulariesRevision();
     const [prefs, setPrefs] = useState(() => loadFlashcardPrefs());
     const [dueTotal, setDueTotal] = useState(dueCount);
@@ -31,7 +31,7 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
             return;
         }
         let cancelled = false;
-        countDueFlashcardWords({ revision: wordsRevision })
+        countDueFlashcardVocabularies({ revision: wordsRevision })
             .then((total) => {
                 if (!cancelled) setDueTotal(total);
             })
@@ -43,8 +43,6 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
         };
     }, [dueCount, wordsRevision]);
 
-    const lessonOptions = useMemo(() => lessons.filter((lesson) => (lesson.wordIds?.length ?? 0) > 0), [lessons]);
-
     const updatePref = (patch) => {
         const next = saveFlashcardPrefs(patch);
         setPrefs(next);
@@ -53,7 +51,31 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
     const sourceLabels = {
         due: t.flashcard.sourceDue,
         random: t.flashcard.sourceRandom,
+        deck: t.flashcard.sourceDeck,
     };
+
+    const [decks, setDecks] = useState([]);
+    const [decksLoading, setDecksLoading] = useState(false);
+
+    // Load decks when source is 'deck'
+    useEffect(() => {
+        if (prefs.source !== "deck") return;
+        let cancelled = false;
+        setDecksLoading(true);
+        api.fetchFlashcardDecks()
+            .then((data) => {
+                if (!cancelled) setDecks(data ?? []);
+            })
+            .catch(() => {
+                if (!cancelled) setDecks([]);
+            })
+            .finally(() => {
+                if (!cancelled) setDecksLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [prefs.source]);
 
     const scopeLabels = {
         all: t.flashcard.scopeAll,
@@ -70,7 +92,6 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
     const handleStart = () => {
         onStart?.({
             ...prefs,
-            lesson: prefs.lessonId ? (lessons.find((l) => l.id === prefs.lessonId) ?? null) : null,
         });
     };
 
@@ -109,36 +130,37 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
                         <label className={labelClass} htmlFor="flashcard-scope">
                             {t.flashcard.scopeLabel}
                         </label>
-                        <select
-                            id="flashcard-scope"
-                            className={fieldClass}
-                            value={prefs.scope}
-                            onChange={(e) => updatePref({ scope: e.target.value })}
-                        >
-                            {FLASHCARD_SCOPES.map((value) => (
-                                <option key={value} value={value}>
-                                    {scopeLabels[value]}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="sm:col-span-2">
-                        <label className={labelClass} htmlFor="flashcard-lesson">
-                            {t.flashcard.lessonLabel}
-                        </label>
-                        <select
-                            id="flashcard-lesson"
-                            className={fieldClass}
-                            value={prefs.lessonId}
-                            onChange={(e) => updatePref({ lessonId: e.target.value })}
-                        >
-                            <option value="">{t.flashcard.lessonAll}</option>
-                            {lessonOptions.map((lesson) => (
-                                <option key={lesson.id} value={lesson.id}>
-                                    {lesson.name || t.flashcard.lessonUntitled}
-                                </option>
-                            ))}
-                        </select>
+                        {prefs.source !== "deck" ? (
+                            <select
+                                id="flashcard-scope"
+                                className={fieldClass}
+                                value={prefs.scope}
+                                onChange={(e) => updatePref({ scope: e.target.value })}
+                            >
+                                {FLASHCARD_SCOPES.map((value) => (
+                                    <option key={value} value={value}>
+                                        {scopeLabels[value]}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <>
+                                <select
+                                    id="flashcard-deck"
+                                    className={fieldClass}
+                                    value={prefs.deckId ?? ""}
+                                    onChange={(e) => updatePref({ deckId: e.target.value || null })}
+                                >
+                                    <option value="">{t.flashcard.deckPlaceholder}</option>
+                                    {decks.map((deck) => (
+                                        <option key={deck.id} value={deck.id}>
+                                            {deck.name} ({deck.vocabularyCount ?? 0})
+                                        </option>
+                                    ))}
+                                </select>
+                                {decksLoading && <p className="m-0 mt-1 text-xs text-text-muted">{t.common.loading}</p>}
+                            </>
+                        )}
                     </div>
                 </div>
             </section>

@@ -57,12 +57,33 @@ export const useAuthStore = create((set, get) => ({
         redirectGoogleSignIn();
     },
 
+    signInWithPassword: async (email, password) => {
+        log("Password sign-in");
+        set({ authError: null, loading: true });
+        try {
+            const user = await api.login(email, password);
+            setVocabularyBrowseCacheOwner(user.id);
+            set({ user, loading: false });
+            log("Getting user", user.email.split("@")[0]);
+            // Re-hydrate data
+            const { useAppStore } = await import("./appStore.js");
+            await useAppStore.getState().hydrateFromCloud();
+            return user;
+        } catch (err) {
+            set({ loading: false });
+            const msg = err?.message || "Sign in failed";
+            set({ authError: msg });
+            log("Password sign-in failed", msg);
+            throw err;
+        }
+    },
+
     signOut: async () => {
         log("Sign out");
         set({ signingOut: true });
         try {
             await api.logout();
-            setWordBrowseCacheOwner(null);
+            setVocabularyBrowseCacheOwner(null);
             set({ user: null, authError: null });
             const { useAppStore } = await import("./appStore.js");
             useAppStore.getState().clearData();

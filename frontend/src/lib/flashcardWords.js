@@ -34,23 +34,6 @@ function browseParamsForConfig(config, page, pageSize) {
     return params;
 }
 
-async function fetchLessonVocabulariesByLesson(lesson, { mergeVocabularies } = {}) {
-    const ids = lesson?.wordIds ?? [];
-    if (!ids.length) return [];
-    const vocabularies = await api.fetchVocabulariesByIds(ids);
-    mergeVocabularies?.(vocabularies);
-    return vocabularies ?? [];
-}
-
-function filterLessonPool(vocabularies, config) {
-    return vocabularies.filter((vocab) => {
-        if (vocab.mastered) return false;
-        if (!matchesFlashcardScope(vocab, config.scope)) return false;
-        if (config.source === "due") return isWordDueForReview(vocab);
-        return true;
-    });
-}
-
 export async function countDueFlashcardVocabularies({ revision, mergeVocabularies } = {}) {
     try {
         const result = await fetchVocabularyBrowsePage(
@@ -121,8 +104,6 @@ async function collectRandomVocabularies(count, config, { mergeVocabularies, rev
  * @param {{
  *   source?: string,
  *   scope?: string,
- *   lessonId?: string,
- *   lesson?: { wordIds?: string[] },
  *   mergeVocabularies?: Function,
  *   revision?: number,
  *   vocabularyTotal?: number,
@@ -130,22 +111,12 @@ async function collectRandomVocabularies(count, config, { mergeVocabularies, rev
  */
 export async function fetchFlashcardVocabularies(
     count,
-    {
-        source = "random",
-        scope = "all",
-        lessonId = "",
-        lesson = null,
-        mergeVocabularies,
-        revision,
-        vocabularyTotal,
-    } = {},
+    { source = "random", scope = "all", deckId = null, mergeVocabularies, revision, vocabularyTotal } = {},
 ) {
-    const config = { source, scope, lessonId };
+    const config = { source, scope };
 
-    if (lessonId && lesson) {
-        const pool = filterLessonPool(await fetchLessonVocabulariesByLesson(lesson, { mergeVocabularies }), config);
-        const ordered = source === "due" ? [...pool].sort(compareDueWords) : shuffleArray(pool);
-        return ordered.slice(0, count);
+    if (source === "deck" && deckId) {
+        return collectDeckVocabularies(count, deckId);
     }
 
     if (source === "due") {
@@ -153,6 +124,18 @@ export async function fetchFlashcardVocabularies(
     }
 
     return collectRandomVocabularies(count, config, { mergeVocabularies, revision, vocabularyTotal });
+}
+
+async function collectDeckVocabularies(count, deckId) {
+    try {
+        const items = await api.fetchDeckVocabularies(deckId);
+        if (!Array.isArray(items) || items.length === 0) return [];
+        // Shuffle and take up to count
+        const shuffled = shuffleArray(items);
+        return shuffled.slice(0, count);
+    } catch {
+        return [];
+    }
 }
 
 /** @deprecated Use fetchFlashcardVocabularies */

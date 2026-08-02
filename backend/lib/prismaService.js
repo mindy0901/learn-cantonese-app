@@ -102,6 +102,9 @@ export function grammarToRow(item, userId, { includeCreatedAt = true } = {}) {
         userId,
         title: item.title ?? "",
         content: item.content ?? "",
+        details: Array.isArray(item.details) ? item.details : [],
+        notes: Array.isArray(item.notes) ? item.notes : [],
+        structure: item.structure ?? "",
         important: item.important ?? false,
         mastered: item.mastered ?? false,
         createdAt: includeCreatedAt ? (item.createdAt ?? now) : undefined,
@@ -114,39 +117,22 @@ export function rowToGrammar(row) {
         id: row.id,
         title: row.title ?? "",
         content: row.content ?? "",
+        details: row.details ?? [],
+        notes: row.notes ?? [],
+        structure: row.structure ?? "",
         important: row.important ?? false,
         mastered: row.mastered ?? false,
         createdAt: row.createdAt ?? row.updatedAt,
         updatedAt: row.updatedAt ?? row.createdAt,
-    };
-}
-
-export function lessonToRow(lesson, userId) {
-    const now = new Date().toISOString();
-    return {
-        id: lesson.id,
-        userId,
-        title: lesson.title ?? lesson.name ?? "",
-        vocabularyIds: lesson.vocabularyIds ?? lesson.wordIds ?? [],
-        grammarIds: lesson.grammarIds ?? [],
-        hskLevel: lesson.hskLevel ?? "",
-        createdAt: lesson.createdAt ?? now,
-        updatedAt: lesson.updatedAt ?? now,
-    };
-}
-
-export function rowToLesson(row) {
-    const grammarRaw = Array.isArray(row.grammar) ? row.grammar : Array.isArray(row.grammarIds) ? row.grammarIds : [];
-    return {
-        id: row.id,
-        name: row.title ?? row.name ?? "",
-        wordIds: row.vocabularyIds ?? row.wordIds ?? [],
-        grammar: grammarRaw.map((g) =>
-            typeof g === "object" ? { ...g, mastered: g.mastered ?? false } : { id: g, title: "", content: "" },
-        ),
-        hskLevel: row.hskLevel ?? row.hsk_level ?? "",
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt ?? row.createdAt,
+        examples: (row.grammarExamples ?? []).map((ex) => ({
+            id: ex.id,
+            hanExample: ex.hanExample ?? "",
+            jyutpingExample: ex.jyutpingExample ?? "",
+            pinyinExample: ex.pinyinExample ?? "",
+            vietExample: ex.vietExample ?? "",
+            engExample: ex.engExample ?? "",
+            position: ex.position ?? 0,
+        })),
     };
 }
 
@@ -202,8 +188,9 @@ export function hanCharacterToRow(item, userId, { includeCreatedAt = true } = {}
     return {
         id: item.id,
         userId,
-        hanSimplified: item.hanSimplified ?? ch,
-        hanTraditional: item.hanTraditional ?? null,
+        // Giữ undefined khi không có simplified riêng (single-form) — không ép thành ""
+        hanSimplified: item.hanSimplified ?? undefined,
+        hanTraditional: item.hanTraditional || item.hanSimplified || ch || "",
         sinoVietnamese: readings.length > 0 ? readings : [],
         jyutping: parseArr(item.jyutping),
         pinyin: parseArr(item.pinyin),
@@ -251,10 +238,12 @@ export async function fetchAppData(userId) {
         }
     }
 
-    const [vocabularies, grammars, lessons, sentencePatterns, hanCharacters] = await Promise.all([
+    const [vocabularies, grammars, sentencePatterns, hanCharacters] = await Promise.all([
         vocabQuery,
-        prisma.grammar.findMany({ orderBy: { createdAt: "desc" } }),
-        prisma.lesson.findMany({ orderBy: { createdAt: "desc" } }),
+        prisma.grammar.findMany({
+            orderBy: { createdAt: "desc" },
+            include: { grammarExamples: { orderBy: { position: "asc" } } },
+        }),
         prisma.sentencePattern.findMany({ orderBy: { createdAt: "desc" } }),
         prisma.hanCharacter.findMany({ orderBy: { createdAt: "desc" } }),
     ]);
@@ -277,16 +266,6 @@ export async function fetchAppData(userId) {
     return {
         vocabularies: mergedVocab,
         grammars: grammars.map(rowToGrammar),
-        lessons: lessons.map(rowToLesson).map((lesson) => ({
-            ...lesson,
-            grammar: lesson.grammar.map((g) => {
-                if (typeof g === "string" || !g.content) {
-                    const full = grammars.find((gr) => gr.id === (typeof g === "string" ? g : g.id));
-                    if (full) return rowToGrammar(full);
-                }
-                return g;
-            }),
-        })),
         sentencePatterns: sentencePatterns.map(rowToSentencePattern),
         hanCharacters: hanCharacters.map(rowToHanCharacter),
     };
@@ -518,7 +497,7 @@ export async function ensureUserVocabulary(userId) {
 
 // ── Replace data (upload) ──
 
-export async function replacePartialData(userId, { types, words, grammarBank, lessons, sentencePatterns }) {
+export async function replacePartialData(userId, { types, words, grammarBank, sentencePatterns }) {
     const counts = {};
 
     if (types.includes("vocabularies") || types.includes("words")) {
@@ -554,19 +533,30 @@ export async function replacePartialData(userId, { types, words, grammarBank, le
     if (types.includes("grammar")) {
         await prisma.grammar.deleteMany({ where: { userId } });
         if (grammarBank.length) {
-            const rows = grammarBank.map((g) => grammarToRow({ ...g, id: g.id || randomUUID() }, userId));
-            await prisma.grammar.createMany({ data: rows.map(({ createdAt, updatedAt, ...r }) => ({ ...r })) });
+            for (const g of grammarBank) {
+                const row = grammarToRow({ ...g, id: g.id || randomUUID() }, userId);
+                const { id, createdAt, updatedAt, examples, ...data } = row;
+                await prisma.grammar.create({ data: { id, ...data } });
+                if (Array.isArray(g.examples) && g.examples.length > 0) {
+                    for (let i = 0; i < g.examples.length; i++) {
+                        const ex = g.examples[i];
+                        await prisma.grammarExample.create({
+                            data: {
+                                id: ex.id || randomUUID(),
+                                grammarId: id,
+                                hanExample: ex.hanExample ?? "",
+                                jyutpingExample: ex.jyutpingExample ?? "",
+                                pinyinExample: ex.pinyinExample ?? "",
+                                vietExample: ex.vietExample ?? "",
+                                engExample: ex.engExample ?? "",
+                                position: ex.position ?? i,
+                            },
+                        });
+                    }
+                }
+            }
         }
         counts.grammarBank = grammarBank.length;
-    }
-
-    if (types.includes("lessons")) {
-        await prisma.lesson.deleteMany({ where: { userId } });
-        if (lessons.length) {
-            const rows = lessons.map((l) => lessonToRow({ ...l, id: l.id || randomUUID() }, userId));
-            await prisma.lesson.createMany({ data: rows.map(({ createdAt, updatedAt, ...r }) => ({ ...r })) });
-        }
-        counts.lessons = lessons.length;
     }
 
     if (types.includes("sentencePatterns")) {
@@ -770,21 +760,57 @@ export async function deleteVocabulary(userId, id) {
 }
 
 // Grammar CRUD
+async function upsertGrammarExamples(grammarId, examples) {
+    // Delete existing examples, then recreate
+    await prisma.grammarExample.deleteMany({ where: { grammarId } });
+
+    if (Array.isArray(examples) && examples.length > 0) {
+        for (let i = 0; i < examples.length; i++) {
+            const ex = examples[i];
+            await prisma.grammarExample.create({
+                data: {
+                    id: ex.id || randomUUID(),
+                    grammarId,
+                    hanExample: ex.hanExample ?? "",
+                    jyutpingExample: ex.jyutpingExample ?? "",
+                    pinyinExample: ex.pinyinExample ?? "",
+                    vietExample: ex.vietExample ?? "",
+                    engExample: ex.engExample ?? "",
+                    position: ex.position ?? i,
+                },
+            });
+        }
+    }
+}
+
 export async function createGrammar(userId, body) {
     const row = grammarToRow(body, userId);
-    const { id, createdAt, updatedAt, ...data } = row;
-    const created = await prisma.grammar.create({ data: { id, ...data } });
-    return rowToGrammar(created);
+    const { id, createdAt, updatedAt, examples, ...data } = row;
+    const created = await prisma.grammar.create({
+        data: { id, ...data },
+        include: { grammarExamples: { orderBy: { position: "asc" } } },
+    });
+    await upsertGrammarExamples(id, body.examples);
+    const full = await prisma.grammar.findUnique({
+        where: { id },
+        include: { grammarExamples: { orderBy: { position: "asc" } } },
+    });
+    return rowToGrammar(full);
 }
 
 export async function updateGrammar(userId, id, body) {
     const row = grammarToRow({ ...body, id }, userId, { includeCreatedAt: false });
-    const { createdAt, ...data } = row;
+    const { createdAt, examples, ...data } = row;
     const updated = await prisma.grammar.update({
         where: { id_userId: { id, userId } },
         data,
     });
-    return rowToGrammar(updated);
+    await upsertGrammarExamples(id, body.examples);
+    const full = await prisma.grammar.findUnique({
+        where: { id },
+        include: { grammarExamples: { orderBy: { position: "asc" } } },
+    });
+    return rowToGrammar(full);
 }
 
 export async function deleteGrammar(userId, id) {
@@ -813,41 +839,40 @@ export async function deleteSentence(userId, id) {
     await prisma.sentencePattern.delete({ where: { id_userId: { id, userId } } });
 }
 
-// Lesson CRUD
-export async function createLesson(userId, body) {
-    const row = lessonToRow(body, userId);
-    const { id, createdAt, updatedAt, ...data } = row;
-    const created = await prisma.lesson.create({ data: { id, ...data } });
-    return rowToLesson(created);
-}
-
-export async function updateLesson(userId, id, body) {
-    const row = lessonToRow({ ...body, id }, userId);
-    const { id: _id, createdAt, updatedAt, ...data } = row;
-    const updated = await prisma.lesson.update({
-        where: { id_userId: { id, userId } },
-        data,
-    });
-    return rowToLesson(updated);
-}
-
-export async function deleteLesson(userId, id) {
-    await prisma.lesson.delete({ where: { id_userId: { id, userId } } });
-}
-
 // Han character CRUD
 export async function createHanChar(userId, body) {
+    const { randomUUID } = await import("crypto");
     const row = hanCharacterToRow(body, userId);
-    const { id, createdAt, updatedAt, ...data } = row;
-    const created = await prisma.hanCharacter.create({ data: { id, ...data } });
+    const { id, createdAt, updatedAt, userId: _uid, popularity, important, mastered, ...rest } = row;
+    const data = {
+        id: id || randomUUID(),
+        hanSimplified: rest.hanSimplified || null,
+        hanTraditional: rest.hanTraditional || rest.hanSimplified || "",
+        sinoVietnamese: rest.sinoVietnamese || [],
+        jyutping: rest.jyutping || [],
+        pinyin: rest.pinyin || [],
+        hskLevel: rest.hskLevel || null,
+        searchKey: rest.searchKey || null,
+    };
+    const created = await prisma.hanCharacter.create({ data });
     return rowToHanCharacter(created);
 }
 
 export async function updateHanChar(userId, id, body) {
     const row = hanCharacterToRow({ ...body, id }, userId, { includeCreatedAt: false });
-    const { createdAt, ...data } = row;
+    const { createdAt, userId: _uid, popularity, important, mastered, ...rest } = row;
+    const data = {};
+    // undefined = không đổi; rỗng "" = clear về NULL (single-form)
+    if (rest.hanSimplified !== undefined) data.hanSimplified = rest.hanSimplified || null;
+    if (rest.hanTraditional !== undefined) data.hanTraditional = rest.hanTraditional;
+    if (rest.sinoVietnamese !== undefined) data.sinoVietnamese = rest.sinoVietnamese;
+    if (rest.jyutping !== undefined) data.jyutping = rest.jyutping;
+    if (rest.pinyin !== undefined) data.pinyin = rest.pinyin;
+    if (rest.hskLevel !== undefined) data.hskLevel = rest.hskLevel;
+    if (rest.searchKey !== undefined) data.searchKey = rest.searchKey;
+    data.updatedAt = new Date();
     const updated = await prisma.hanCharacter.update({
-        where: { id_userId: { id, userId } },
+        where: { id },
         data,
     });
     return rowToHanCharacter(updated);
@@ -859,14 +884,180 @@ export async function patchHanCharFlags(userId, id, flags) {
     if ("mastered" in flags) data.mastered = flags.mastered;
     if ("popularity" in flags) data.popularity = flags.popularity;
     const updated = await prisma.hanCharacter.update({
-        where: { id_userId: { id, userId } },
+        where: { id },
         data,
     });
     return rowToHanCharacter(updated);
 }
 
 export async function deleteHanChar(userId, id) {
-    await prisma.hanCharacter.delete({ where: { id_userId: { id, userId } } });
+    await prisma.hanCharacter.delete({ where: { id } });
+}
+
+// ── Flashcard Deck CRUD ──
+
+function rowToFlashcardDeck(row) {
+    return {
+        id: row.id,
+        name: row.name ?? "",
+        description: row.description ?? "",
+        color: row.color ?? "",
+        vocabularyCount: row._count?.vocabularies ?? row.vocabularies?.length ?? 0,
+        vocabularies: row.vocabularies
+            ? row.vocabularies.map((dv) => ({
+                  id: dv.vocabulary?.id ?? dv.vocabularyId,
+                  position: dv.position,
+                  hanTraditional: dv.vocabulary?.hanTraditional ?? "",
+                  hanSimplified: dv.vocabulary?.hanSimplified ?? undefined,
+                  sinoVietnamese: dv.vocabulary?.sinoVietnamese ?? undefined,
+                  jyutping: dv.vocabulary?.jyutping ?? undefined,
+                  pinyin: dv.vocabulary?.pinyin ?? undefined,
+                  vietMeanings: dv.vocabulary?.vietMeanings ?? "",
+                  engMeanings: dv.vocabulary?.engMeanings ?? "",
+                  hskLevel: dv.vocabulary?.hskLevel ?? undefined,
+              }))
+            : undefined,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+    };
+}
+
+export async function getFlashcardDecks(userId) {
+    const decks = await prisma.flashcardDeck.findMany({
+        where: { userId },
+        include: { _count: { select: { vocabularies: true } } },
+        orderBy: { createdAt: "desc" },
+    });
+    return decks.map(rowToFlashcardDeck);
+}
+
+export async function getFlashcardDeck(userId, id) {
+    const deck = await prisma.flashcardDeck.findUnique({
+        where: { id_userId: { id, userId } },
+        include: {
+            vocabularies: {
+                orderBy: { position: "asc" },
+                include: { vocabulary: true },
+            },
+        },
+    });
+    if (!deck) return null;
+    return rowToFlashcardDeck(deck);
+}
+
+export async function createFlashcardDeck(userId, body) {
+    const id = body.id ?? randomUUID();
+    const created = await prisma.flashcardDeck.create({
+        data: {
+            id,
+            userId,
+            name: body.name ?? "",
+            description: body.description ?? "",
+            color: body.color ?? "",
+        },
+        include: { _count: { select: { vocabularies: true } } },
+    });
+    return rowToFlashcardDeck(created);
+}
+
+export async function updateFlashcardDeck(userId, id, body) {
+    const updated = await prisma.flashcardDeck.update({
+        where: { id_userId: { id, userId } },
+        data: {
+            ...(body.name !== undefined && { name: body.name }),
+            ...(body.description !== undefined && { description: body.description }),
+            ...(body.color !== undefined && { color: body.color }),
+            updatedAt: new Date(),
+        },
+        include: { _count: { select: { vocabularies: true } } },
+    });
+    return rowToFlashcardDeck(updated);
+}
+
+export async function deleteFlashcardDeck(userId, id) {
+    await prisma.flashcardDeck.delete({ where: { id_userId: { id, userId } } });
+}
+
+export async function addVocabularyToDeck(userId, deckId, vocabularyId) {
+    // Verify deck belongs to user
+    const deck = await prisma.flashcardDeck.findUnique({
+        where: { id_userId: { id: deckId, userId } },
+    });
+    if (!deck) throw Object.assign(new Error("Deck not found"), { statusCode: 404 });
+
+    // Get next position
+    const lastItem = await prisma.flashcardDeckVocabulary.findFirst({
+        where: { deckId },
+        orderBy: { position: "desc" },
+    });
+    const nextPosition = (lastItem?.position ?? -1) + 1;
+
+    try {
+        const created = await prisma.flashcardDeckVocabulary.create({
+            data: {
+                deckId,
+                vocabularyId,
+                position: nextPosition,
+            },
+            include: { vocabulary: true },
+        });
+        return {
+            id: created.vocabulary.id,
+            position: created.position,
+            hanTraditional: created.vocabulary.hanTraditional,
+            hanSimplified: created.vocabulary.hanSimplified ?? undefined,
+            sinoVietnamese: created.vocabulary.sinoVietnamese ?? undefined,
+            jyutping: created.vocabulary.jyutping ?? undefined,
+            pinyin: created.vocabulary.pinyin ?? undefined,
+            vietMeanings: created.vocabulary.vietMeanings ?? "",
+            engMeanings: created.vocabulary.engMeanings ?? "",
+            hskLevel: created.vocabulary.hskLevel ?? undefined,
+        };
+    } catch (err) {
+        // Unique constraint violation → already in deck
+        if (err?.code === "P2002") {
+            throw Object.assign(new Error("Vocabulary already in deck"), { statusCode: 409 });
+        }
+        throw err;
+    }
+}
+
+export async function removeVocabularyFromDeck(userId, deckId, vocabularyId) {
+    // Verify deck belongs to user
+    const deck = await prisma.flashcardDeck.findUnique({
+        where: { id_userId: { id: deckId, userId } },
+    });
+    if (!deck) throw Object.assign(new Error("Deck not found"), { statusCode: 404 });
+
+    await prisma.flashcardDeckVocabulary.delete({
+        where: { deckId_vocabularyId: { deckId, vocabularyId } },
+    });
+}
+
+export async function getDeckVocabularies(userId, deckId) {
+    const deck = await prisma.flashcardDeck.findUnique({
+        where: { id_userId: { id: deckId, userId } },
+    });
+    if (!deck) throw Object.assign(new Error("Deck not found"), { statusCode: 404 });
+
+    const items = await prisma.flashcardDeckVocabulary.findMany({
+        where: { deckId },
+        orderBy: { position: "asc" },
+        include: { vocabulary: true },
+    });
+
+    return items.map((dv) => ({
+        id: dv.vocabulary.id,
+        position: dv.position,
+        hanTraditional: dv.vocabulary.hanTraditional ?? "",
+        hanSimplified: dv.vocabulary.hanSimplified ?? undefined,
+        sinoVietnamese: dv.vocabulary.sinoVietnamese ?? undefined,
+        jyutping: dv.vocabulary.jyutping ?? undefined,
+        pinyin: dv.vocabulary.pinyin ?? undefined,
+        vietMeanings: dv.vocabulary.vietMeanings ?? "",
+        engMeanings: dv.vocabulary.engMeanings ?? "",
+        hskLevel: dv.vocabulary.hskLevel ?? undefined,
+    }));
 }
 
 // ── Resolve user ──

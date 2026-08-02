@@ -1,12 +1,25 @@
 import { isAppAdmin } from "../lib/appAdmin.js";
 import { log, logWarn } from "../lib/actionLog.js";
 
-export function requireAppAdmin(request, reply, done) {
-  log("Checking admin");
-  if (!isAppAdmin(request.session?.email)) {
-    logWarn("Admin required", request.session?.email?.split("@")[0] ?? "guest");
-    reply.code(403).send({ error: "Admin only" });
-    return;
-  }
-  done();
+export async function requireAppAdmin(request, reply) {
+    log("Checking admin");
+    const email = request.session?.email;
+
+    // Admin theo env (ADMIN_EMAILS)
+    if (isAppAdmin(email)) return;
+
+    // Fallback: user có cờ isAdmin trong DB (nhất quán với login/sessionUser)
+    try {
+        const { prisma } = await import("../lib/prisma.js");
+        const user = await prisma.user.findUnique({
+            where: { id: request.session?.userId },
+            select: { isAdmin: true },
+        });
+        if (user?.isAdmin) return;
+    } catch {
+        // bỏ qua và từ chối bên dưới
+    }
+
+    logWarn("Admin required", email?.split("@")[0] ?? "guest");
+    return reply.code(403).send({ error: "Admin only" });
 }

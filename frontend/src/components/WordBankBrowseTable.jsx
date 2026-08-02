@@ -343,7 +343,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
     const safePage = Math.min(page, totalPages);
     const startIndex = (safePage - 1) * PAGE_SIZE;
     const showEmpty = !loading && displayItems.length === 0;
-    const colCount = isPicker ? 7 : 8 + (canMark ? 2 : 0);
+    const colCount = isPicker ? 7 : 10 + (canMark ? 1 : 0);
     const placeholderCount = Math.max(0, PAGE_SIZE - (showEmpty ? 1 : displayItems.length));
 
     const placeholderRows = useMemo(
@@ -364,7 +364,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
         if (loadError) return null;
         if (hasQuery && isPicker && onAddNew) return "ADD_NEW_PROMPT";
         if (hasQuery) return emptyNoMatch ?? t.wordBank.noSearchMatch;
-        if (isPicker) return emptyHint ?? t.lessonEdit.searchBankHint;
+        if (isPicker) return emptyHint ?? t.picker.searchBankHint;
         return t.wordBank.empty;
     }, [loadError, hasQuery, emptyNoMatch, emptyHint, isPicker, t, onAddNew]);
 
@@ -433,12 +433,15 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                         {!isPicker && canMark && <col className="w-8" />}
                         <col />
                         <col />
-                        {!isPicker && canMark && <col className="w-32" />}
+                        {!isPicker && <col />}
+                        {!isPicker && <col />}
+                        {!isPicker && <col />}
+                        {!isPicker && <col />}
                     </colgroup>
                     <thead>
                         <tr>
                             {isPicker ? (
-                                <th className={cn(th, "text-center align-middle")} aria-label={t.lessonEdit.selected} />
+                                <th className={cn(th, "text-center align-middle")} aria-label={t.picker.selected} />
                             ) : (
                                 <th className={numHeadClass}>{t.wordBank.colNum}</th>
                             )}
@@ -447,19 +450,29 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                                     {t.wordBank.colStar}
                                 </th>
                             )}
-                            <th className={th}>{t.wordBank.colSinoVietnamese}</th>
+                            <th className={cn(th, "w-[120px]")}>{t.wordBank.colSinoVietnamese}</th>
                             <th className={cn(th, "text-center")} colSpan={4}>
                                 {t.wordBank.colHanChars}
                             </th>
-                            {!isPicker && canMark && (
-                                <th
-                                    className={cn(
-                                        th,
-                                        "px-5 py-1.5 text-left align-middle text-[0.6875rem] font-semibold leading-tight whitespace-nowrap tracking-wide",
-                                    )}
-                                >
-                                    {t.wordBank.colVietMeanings}
-                                </th>
+                            {!isPicker && (
+                                <>
+                                    <th
+                                        className={cn(
+                                            th,
+                                            "px-5 py-1.5 text-left align-middle text-[0.6875rem] font-semibold leading-tight whitespace-nowrap tracking-wide",
+                                        )}
+                                    >
+                                        {t.wordBank.colVietMeanings}
+                                    </th>
+                                    <th
+                                        className={cn(
+                                            th,
+                                            "px-5 py-1.5 text-left align-middle text-[0.6875rem] font-semibold leading-tight whitespace-nowrap tracking-wide",
+                                        )}
+                                    >
+                                        {t.wordBank.colEngMeanings}
+                                    </th>
+                                </>
                             )}
                             <th className={cn(th, "text-center")}>{t.wordBank.colLevel}</th>
                             {!isPicker && <th className={cn(th, "px-0 text-center w-10")} />}
@@ -494,7 +507,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                                                 className="text-sm font-medium text-accent hover:text-accent-hover underline underline-offset-2 transition-colors"
                                                 onClick={() => onAddNew(search)}
                                             >
-                                                {fmt(t.lessonEdit.addToLessonAndBank, { word: search })}
+                                                {fmt(t.picker.addNew, { word: search })}
                                             </button>
                                         </div>
                                     ) : (

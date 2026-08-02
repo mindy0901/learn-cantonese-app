@@ -11,12 +11,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      opencc-js:
-        specifier: 1.0.5
-        version: 1.0.5
       pinyin-pro:
-        specifier: 3.27.0
-        version: 3.27.0
+        specifier: ^3.28.0
+        version: 3.28.2
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -767,9 +764,6 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  opencc-js@1.0.5:
-    resolution: {integrity: sha512-LD+1SoNnZdlRwtYTjnQdFrSVCAaYpuDqL5CkmOaHOkKoKh7mFxUicLTRVNLU5C+Jmi1vXQ3QL4jWdgSaa4sKjg==}
-
   oxlint@1.72.0:
     resolution: {integrity: sha512-1rhdZIP/EvoI91ABIwNU5Q8+bWf8mjrS5UzIOZld4d4bXxJvtlUhlQvaoTogIGin/qdErMOrwaIJvCSIAKTLhA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -793,8 +787,8 @@ packages:
     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
     engines: {node: '>=12'}
 
-  pinyin-pro@3.27.0:
-    resolution: {integrity: sha512-Osdgjwe7Rm17N2paDMM47yW+jUIUH3+0RGo8QP39ZTLpTaJVDK0T58hOLaMQJbcMmAebVuK2ePunTEVEx1clNQ==}
+  pinyin-pro@3.28.2:
+    resolution: {integrity: sha512-jV38yxXHLfidirMC4hrXasLDozLCSq/4DfX88GnHcSEJ2+GpSedG6I9VOiEXJu6iQ5dbJC/RjmzyMuS5h/wH5A==}
 
   postcss@8.5.16:
     resolution: {integrity: sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==}
@@ -1751,8 +1745,6 @@ snapshots:
 
   nanoid@3.3.15: {}
 
-  opencc-js@1.0.5: {}
-
   oxlint@1.72.0:
     optionalDependencies:
       '@oxlint/binding-android-arm-eabi': 1.72.0
@@ -1789,7 +1781,7 @@ snapshots:
 
   picomatch@4.0.5: {}
 
-  pinyin-pro@3.27.0: {}
+  pinyin-pro@3.28.2: {}
 
   postcss@8.5.16:
     dependencies:
