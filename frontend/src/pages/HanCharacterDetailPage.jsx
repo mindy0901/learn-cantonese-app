@@ -190,7 +190,7 @@ export function HanCharacterDetailPage() {
                             displayText={char}
                             popularity={item.popularity}
                             emphasis="primary"
-                            className="text-6xl sm:text-7xl"
+                            className="text-6xl sm:text-7xl text-blue-600 dark:text-blue-400"
                         />
                         {showTrad && (
                             <>
@@ -200,7 +200,7 @@ export function HanCharacterDetailPage() {
                                     displayText={trad}
                                     popularity={item.popularity}
                                     emphasis="primary"
-                                    className="text-6xl sm:text-7xl"
+                                    className="text-6xl sm:text-7xl text-red-600 dark:text-red-400"
                                 />
                             </>
                         )}
@@ -335,7 +335,7 @@ export function HanCharacterDetailPage() {
                                     to={vocabularyDetailPath(w.id)}
                                     className="grid grid-cols-[1fr_1.5fr_1.5fr_1fr] items-center gap-3 px-3 py-3 text-sm no-underline rounded hover:bg-bg/60"
                                 >
-                                    <span className="font-semibold text-han text-2xl truncate">
+                                    <span className="font-semibold text-red-600 dark:text-red-400 text-2xl truncate">
                                         {highlightChar(w.hanTraditional || w.hanSimplified)}
                                     </span>
                                     <span className="text-jyutping font-medium text-sm truncate">

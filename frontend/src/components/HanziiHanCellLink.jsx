@@ -8,11 +8,11 @@ const baseClass = "inline leading-tight align-middle whitespace-nowrap";
 const emphasisClasses = {
     primary: (popularity) => {
         const popClass = hanPopularityClass(popularity);
-        return cn("font-semibold", popClass || "text-han");
+        return cn("font-semibold", popClass || "text-red-600 dark:text-red-400");
     },
     secondary: (popularity) => {
         const popClass = hanPopularityClass(popularity);
-        return cn("font-medium", popClass || "text-han/50");
+        return cn("font-medium", popClass || "text-blue-600 dark:text-blue-400");
     },
 };
 

@@ -111,7 +111,7 @@ export function WordDetailPage() {
                                     onClick={() => navigate(vocabularyDetailPath(v.id))}
                                 >
                                     <span className="font-semibold text-pinyin">{v.pinyin || "—"}</span>
-                                    {v.jyutping && <span className="text-jyutping text-xs">· {v.jyutping}</span>}
+                                    {v.jyutping && <span className="text-jyutping text-xs">| {v.jyutping}</span>}
                                     {v.hskLevel && (
                                         <span className="text-xs text-text-muted border border-border rounded-full px-2 py-1">
                                             {v.hskLevel}

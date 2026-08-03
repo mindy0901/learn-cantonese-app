@@ -11,7 +11,7 @@ const tdEditClass = "px-3.5 py-2.5 text-left align-top truncate max-w-[200px]";
 const rowClass = "border-b border-border";
 const cellInputClass =
     "w-full min-w-20 px-2 py-1.5 border border-accent-border rounded-md bg-surface text-sm outline-none focus:border-accent";
-const hanCharClass = "font-semibold leading-tight align-middle text-[calc(1em*var(--han-scale))] text-han";
+const hanCharClass = "font-semibold leading-tight align-middle text-[calc(1em*var(--han-scale))]";
 
 const MultiInput = memo(function MultiInput({ values, onChange, placeholder, addLabel }) {
     return (

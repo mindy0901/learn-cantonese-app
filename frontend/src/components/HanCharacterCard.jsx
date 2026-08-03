@@ -7,13 +7,21 @@ import { hanCharacterDetailPath } from "../lib/hanCharacterRoutes.js";
 export const HanCharacterCard = memo(function HanCharacterCard({ item, index, canEdit, onSave, onDelete }) {
     const readings = Array.isArray(item.pinyin) ? item.pinyin : item.pinyin ? [item.pinyin] : [];
     const jyutpings = Array.isArray(item.jyutping) ? item.jyutping : item.jyutping ? [item.jyutping] : [];
-    const han = item.hanSimplified || item.hanTraditional || "?";
+    const hasDistinctSimplified = Boolean(item.hanSimplified && item.hanSimplified !== (item.hanTraditional ?? ""));
+    // Convention: 🔵 xanh = simplified, 🔴 đỏ = traditional
+    const han = hasDistinctSimplified ? item.hanSimplified : item.hanTraditional || "?";
+    const hanTone = hasDistinctSimplified ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400";
 
     return (
         <div className="group relative flex flex-col items-center rounded-xl border border-border bg-surface p-5 transition-shadow duration-200 hover:shadow-lg hover:border-accent-border/50">
             {/* Character - large, centered */}
             <Link to={hanCharacterDetailPath(item.id)} className="no-underline">
-                <span className="block text-[clamp(2.5rem,6vw,4rem)] font-semibold leading-none text-han py-3 transition-transform duration-200 group-hover:scale-110">
+                <span
+                    className={cn(
+                        "block text-[clamp(2.5rem,6vw,4rem)] font-semibold leading-none py-3 transition-transform duration-200 group-hover:scale-110",
+                        hanTone,
+                    )}
+                >
                     {han}
                 </span>
             </Link>

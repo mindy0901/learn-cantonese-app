@@ -46,6 +46,12 @@ model Vocabulary {
     radical        String? @default("") @db.VarChar
     classifiers    String? @default("") @db.VarChar
     pinyinNumeric  String? @default("") @map("pinyin_numeric") @db.VarChar
+    movieWordRank  Int?    @map("movie_word_rank")
+    bookWordRank   Int?    @map("book_word_rank")
+    relatedWords   Json?   @map("related_words") @db.JsonB
+    hanCharacters  Json?   @map("han_characters") @db.JsonB
+    boost          Float?  @db.Real
+    searchPinyin   String? @default("") @map("search_pinyin") @db.VarChar
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")

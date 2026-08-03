@@ -26,7 +26,7 @@ function HanVariantCell({ text, diffChars, pickerMode, lookupSimp, className }) 
 
     if (!hasDiff) {
         if (pickerMode) {
-            return <span className={cn("text-han font-semibold", className)}>{text}</span>;
+            return <span className={cn("font-semibold", className)}>{text}</span>;
         }
         return (
             <HanziiHanCellLink
@@ -45,7 +45,7 @@ function HanVariantCell({ text, diffChars, pickerMode, lookupSimp, className }) 
     ));
 
     if (pickerMode) {
-        return <span className={cn("text-han font-semibold", className)}>{inner}</span>;
+        return <span className={cn("font-semibold", className)}>{inner}</span>;
     }
     return (
         <HanziiHanCellLink
@@ -297,7 +297,7 @@ export const WordRow = memo(function WordRow({
                             ) : (
                                 <div key={i} className="flex flex-col items-center gap-1 py-0.5 whitespace-nowrap">
                                     {pickerMode ? (
-                                        <span className="text-han text-5xl font-semibold text-red-600 dark:text-red-400">
+                                        <span className="text-5xl font-semibold text-red-600 dark:text-red-400">
                                             {hanDisplay.traditional}
                                         </span>
                                     ) : (
@@ -308,10 +308,14 @@ export const WordRow = memo(function WordRow({
                                             className="text-5xl"
                                         />
                                     )}
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-pinyin text-base font-semibold">{py || "\u00A0"}</span>
-                                        <span className="text-text-muted text-sm">·</span>
-                                        <span className={romanClass}>{jp || "\u00A0"}</span>
+                                    <div className="flex items-center justify-center gap-2">
+                                        <span className="text-pinyin text-base font-semibold text-right min-w-[4rem]">
+                                            {py || "\u00A0"}
+                                        </span>
+                                        <span className="text-text-muted text-sm">|</span>
+                                        <span className={cn(romanClass, "text-left min-w-[4rem]")}>
+                                            {jp || "\u00A0"}
+                                        </span>
                                     </div>
                                 </div>
                             );
@@ -334,17 +338,17 @@ export const WordRow = memo(function WordRow({
                             className="text-5xl text-center text-blue-600 dark:text-blue-400"
                         />
                         <span className="text-pinyin text-base text-center font-semibold">
-                            {word.pinyin || <span className="italic text-text-muted">no pinyin</span>}
+                            {word.pinyin || <span className="italic text-text-muted">-</span>}
                         </span>
                         <span className={cn(romanClass, "text-center")}>
-                            {romanization || <span className="italic text-text-muted">no jyutping</span>}
+                            {romanization || <span className="italic text-text-muted">-</span>}
                         </span>
                     </div>
                 ) : (
                     <div className="flex flex-col items-center gap-1 whitespace-nowrap">
                         {pickerMode ? (
-                            <span className="text-han text-5xl font-semibold text-red-600 dark:text-red-400">
-                                {hanOrdered.primary || <span className="italic text-text-muted text-sm">pending</span>}
+                            <span className="text-5xl font-semibold text-red-600 dark:text-red-400">
+                                {hanOrdered.primary || <span className="italic text-text-muted text-sm">-</span>}
                             </span>
                         ) : (
                             <HanziiHanCellLink
@@ -354,13 +358,13 @@ export const WordRow = memo(function WordRow({
                                 className="text-5xl text-red-600 dark:text-red-400"
                             />
                         )}
-                        <div className="flex items-center gap-2">
-                            <span className="text-pinyin text-base font-semibold">
-                                {word.pinyin || <span className="italic text-text-muted">no pinyin</span>}
+                        <div className="flex items-center justify-center gap-2">
+                            <span className="text-pinyin text-base font-semibold text-right min-w-[4rem]">
+                                {word.pinyin || <span className="italic text-text-muted">-</span>}
                             </span>
-                            <span className="text-text-muted text-sm">·</span>
-                            <span className={romanClass}>
-                                {romanization || <span className="italic text-text-muted">no jyutping</span>}
+                            <span className="text-text-muted text-sm">|</span>
+                            <span className={cn(romanClass, "text-left min-w-[4rem]")}>
+                                {romanization || <span className="italic text-text-muted">-</span>}
                             </span>
                         </div>
                     </div>
@@ -370,20 +374,12 @@ export const WordRow = memo(function WordRow({
                 <>
                     <td className="px-5 py-2.5 align-middle max-w-[250px]" onClick={stop}>
                         <span className="text-viet text-sm line-clamp-2">
-                            {word.vietMeanings ? (
-                                word.vietMeanings
-                            ) : (
-                                <span className="italic text-text-muted">pending</span>
-                            )}
+                            {word.vietMeanings ? word.vietMeanings : <span className="italic text-text-muted">-</span>}
                         </span>
                     </td>
                     <td className="px-5 py-2.5 align-middle max-w-[250px]" onClick={stop}>
                         <span className="text-sm line-clamp-2">
-                            {word.engMeanings ? (
-                                word.engMeanings
-                            ) : (
-                                <span className="italic text-text-muted">updating</span>
-                            )}
+                            {word.engMeanings ? word.engMeanings : <span className="italic text-text-muted">-</span>}
                         </span>
                     </td>
                 </>
@@ -404,7 +400,7 @@ export const WordRow = memo(function WordRow({
                         className="inline-flex items-center justify-center h-5 text-xs text-text-muted"
                         style={{ minWidth: 82 }}
                     >
-                        <span className="italic">pending</span>
+                        <span className="italic">-</span>
                     </span>
                 )}
             </td>

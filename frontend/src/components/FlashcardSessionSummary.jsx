@@ -76,7 +76,9 @@ export function FlashcardSessionSummary({ entries, onPlayAgain, onNewSession, lo
                             {entries.map((entry) => (
                                 <tr key={entry.id} className="border-b border-border last:border-b-0">
                                     <td className="px-4 py-2.5 align-middle">
-                                        <span className="font-semibold">{entry.hanTraditional || "—"}</span>
+                                        <span className="font-semibold text-red-600 dark:text-red-400">
+                                            {entry.hanTraditional || "—"}
+                                        </span>
                                         <WordFieldText
                                             word={entry}
                                             field="sinoVietnamese"

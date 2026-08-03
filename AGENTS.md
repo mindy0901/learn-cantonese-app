@@ -4,6 +4,13 @@
 >
 > ⚠️ **QUAN TRỌNG:** Database PostgreSQL là nguồn dữ liệu duy nhất. Tuyệt đối không xóa, ghi đè, hay chạy seed/migration mà không có sự đồng ý rõ ràng của user. Phải hỏi user và chờ xác nhận trước khi thực hiện bất kỳ thao tác nào liên quan đến database.
 
+### ✂️ Rule tiết kiệm chi phí — TRẢ LỜI NGẮN GỌN
+
+- ❌ **Không trả lời quá dài.** Chỉ trả lời đúng trọng tâm câu hỏi/công việc.
+- ✅ Trả lời ngắn gọn, súc tích, đi thẳng vào vấn đề.
+- ✅ Khi xác nhận hoàn thành: chỉ báo ngắn gọn đã làm gì (1-3 dòng), không giải thích dài dòng.
+- ✅ Khi hỏi thông tin: hỏi đúng câu cần thiết, không lan man.
+
 ---
 
 ## 0. Agent Login (để tự động đăng nhập khi test)
@@ -24,17 +31,17 @@
 
 ## 1. Quy ước đặt tên
 
-| Domain                        | Dùng                                    | Không dùng       |
-| ----------------------------- | --------------------------------------- | ---------------- |
-| Từ vựng (variable, prop, key) | `vocabulary` / `vocabularies` / `vocab` | `word` / `words` |
-| Ngữ pháp                      | `grammar` / `grammars`                  |                  |
-| Mẫu câu                       | `sentence` / `sentences`                |                  |
-| Bài học                       | `lesson` / `lessons`                    |                  |
-| Hán tự                        | `hanCharacter` / `hanCharacters`        |                  |
-| Flashcard                     | `flashcard` / `flashcards`              |                  |
+| Domain                        | Dùng                             | Không dùng       |
+| ----------------------------- | -------------------------------- | ---------------- |
+| Từ vựng (variable, prop, key) | `vocabulary` / `vocabularies`    | `word` / `words` |
+| Ngữ pháp                      | `grammar` / `grammars`           |                  |
+| Mẫu câu                       | `sentence` / `sentences`         |                  |
+| Bài học                       | `lesson` / `lessons`             |                  |
+| Hán tự                        | `hanCharacter` / `hanCharacters` |                  |
+| Flashcard                     | `flashcard` / `flashcards`       |                  |
 
 - ❌ **Không** dùng `word` / `words` cho bất kỳ variable, prop, key, hoặc object field nào liên quan đến từ vựng.
-- ✅ Luôn dùng `vocabulary` (số ít) hoặc `vocabularies` (số nhiều) hoặc `vocab` (viết tắt).
+- ✅ Luôn dùng `vocabulary` (số ít) hoặc `vocabularies` (số nhiều).
 - Áp dụng cho: tên biến, tên hàm, object keys, API endpoints, props, state.
 
 ### 0.1 Quy tắc fallback dữ liệu
@@ -69,8 +76,8 @@
 
 - **PostgreSQL** trong Docker (`docker-compose.dev.yml`)
 - User/pass/db: `cantonese` / `cantonese` / `cantonese`
-- Tổng: ~13,286 từ (13,218 HSK + ~68 custom của user)
-- `backend/vocabularies.json` chỉ là file backup/export, **không phải source of truth**
+- Tổng: ~**17,395** từ (HSK 1-6: 913/1027/1701/2457/2782/3091 + HSK 7-9 + custom của user)
+- ⚠️ **`backend/vocabularies.json` ĐÃ BỊ XÓA (2026-08-03)** — không còn tồn tại. DB là source of truth DUY NHẤT, không có file backup nào khác.
 
 ### 1.3 Quy tắc chuẩn hóa phiên âm (Pinyin & Jyutping)
 
@@ -82,6 +89,14 @@ Khi so sánh, tìm kiếm, hoặc tạo ID cố định, luôn chuẩn hóa:
 | Chuẩn hóa jyutping | Bỏ khoảng trắng, lowercase | `"ceoi2 siu1"` → `"ceoi2siu1"` |
 
 **Quy tắc quan trọng nhất:** `"qǔ xiāo"` và `"qǔxiāo"` là **cùng một pronunciation**. Đây là 2 cách viết khác nhau của cùng một phiên âm (có dấu cách vs không dấu cách). **Không được tạo 2 entry riêng cho chúng.**
+
+**Quy tắc case-insensitive (BẮT BUỘC):** Pinyin & jyutping luôn lưu **lowercase**. `"Gāo"` và `"gāo"` là **cùng một reading** — không được coi là 2 reading riêng.
+
+- ✅ `splitPinyinParts` / `splitJyutpingParts` (`backend/lib/hanCharacterBreakdown.js`) → `.toLowerCase()`
+- ✅ `mergeReadings` + `mergeArrCaseInsensitive` → dedupe case-insensitive
+- ✅ Preview `missing()` cho py/jp → `caseInsensitive=true`
+- ❌ **KHÔNG** lowercase `sinoVietnamese` — Hán-Việt viết hoa theo convention (TỊNH, CAO...)
+- ✅ Dữ liệu `vocabularies` và `han_characters` đã chuẩn hóa lowercase (2026-08-02)
 
 ### 1.4 ID cố định (stable UUID)
 
@@ -99,11 +114,11 @@ Trong đó `normPinyin` và `normJyutping` đã được chuẩn hóa (bỏ kho�
 
 Khi một hán tự chỉ có 1 phiên bản (giản thể và phồn thể giống nhau, hoặc chỉ có 1 form), **mặc định là traditional (phồn thể)**.
 
-| Trường hợp                             | hanTraditional                             | hanSimplified       |
-| -------------------------------------- | ------------------------------------------ | ------------------- |
-| Chữ chỉ có 1 form (VD: 人, 大, 山)     | Giữ nguyên                                 | Giữ nguyên (= trad) |
-| Chữ có giản/phồn khác nhau (VD: 学/學) | **Phồn thể** (學)                          | **Giản thể** (学)   |
-| Chữ có nhiều variant traditional       | Dùng variant phổ biến nhất (VD: 臺 cho 台) | Dùng giản thể chuẩn |
+| Trường hợp                             | hanTraditional                             | hanSimplified                                |
+| -------------------------------------- | ------------------------------------------ | -------------------------------------------- |
+| Chữ chỉ có 1 form (VD: 人, 大, 山)     | Giữ nguyên                                 | **NULL / trống** (không có simplified riêng) |
+| Chữ có giản/phồn khác nhau (VD: 学/學) | **Phồn thể** (學)                          | **Giản thể** (学)                            |
+| Chữ có nhiều variant traditional       | Dùng variant phổ biến nhất (VD: 臺 cho 台) | Dùng giản thể chuẩn                          |
 
 **Quy tắc bắt buộc:**
 
@@ -111,7 +126,17 @@ Khi một hán tự chỉ có 1 phiên bản (giản thể và phồn thể gi�
 - ✅ `hanSimplified` luôn là giản thể
 - ❌ Không được đảo ngược (traditional ≠ simplified)
 - ✅ Khi unsure, tra cứu OpenCC hoặc Hanzii để xác định đúng form
-- ✅ Màu hiển thị: **🔵 xanh = simplified**, **🔴 đỏ = traditional**
+- ✅ Màu hiển thị hán tự — **TÔ THEO TỪNG KÝ TỰ (per-character)**, không tô cả cột:
+    - 🔴 **Đỏ = traditional** (`text-red-600 dark:text-red-400`)
+    - 🔵 **Xanh = simplified** (`text-blue-600 dark:text-blue-400`)
+    - ⚠️ **Quy tắc quan trọng:** Ký tự **giống hệt** ở cả 2 form (vd 安, 眠 trong 安眠藥/安眠药) vẫn là **traditional → ĐỎ**, kể cả khi nằm trong cột Simplified. Chỉ ký tự **thật sự khác** (vd 药 = giản thể của 藥) mới **XANH**.
+    - ✅ Cột **Traditional**: toàn bộ ký tự đỏ (render bằng `renderHanText`).
+    - ✅ Cột **Simplified**: dùng `renderHanWithDiff` — ký tự `same` (giống trad) → đỏ, ký tự `diff` (giản thật) → xanh. Đây là logic giống `WordRow` (bảng vocabularies).
+    - Áp dụng toàn app: `WordDetailContent.jsx`, `WordRow.jsx`, `HanCharacterRow.jsx`, `HanCharacterCard.jsx`, `HanCharacterDetailPage.jsx`, `WordEditFields.jsx`, `AddHanCharacterModal.jsx`, `HanVariantsInline.jsx`, `FlashcardDeckManager.jsx`, `FlashcardSessionSummary.jsx`, `HanziiHanCellLink.jsx` (primary = traditional → đỏ, secondary = simplified → xanh)
+    - ❌ Không dùng `text-han` (màu trung tính) cho hiển thị hán tự khi phân biệt được trad/simp — trừ danh sách skipped/không phân biệt
+    - ❌ Không dùng màu amber (`text-amber-600`) để tô ký tự diff — nó ghi đè màu convention; dùng chính đỏ/xanh để thể hiện
+- ✅ **Single-form (chỉ 1 phiên bản):** `hanSimplified = NULL/trống` — **KHÔNG** lưu giá trị giống `hanTraditional`
+- ❌ Mọi nguồn sync (backend `hanCharacterBreakdown.js`) **không được** ghi lại `hanSimplified` trùng `hanTraditional`
 
 ---
 
@@ -145,31 +170,23 @@ model Vocabulary {
 
 ---
 
-## 3. Seed script
+## 3. Seed script — KHÔNG CÒN DÙNG (legacy)
 
-Seed script (`backend/prisma/seed.ts`) chỉ được chạy khi có sự đồng ý của user.
+> ⚠️ **`backend/prisma/seed.ts` KHÔNG còn chạy được** — nguồn `vocabularies.json` đã bị xóa (2026-08-03).
+> Database là nguồn dữ liệu duy nhất, dữ liệu được thêm qua UI hoặc script sync thủ công (xem dưới).
+> Không được tự ý khôi phục file `vocabularies.json` hoặc viết lại seed mà không hỏi user.
 
-### 3.1 Hành vi
+### 3.1 Script sync dữ liệu hiện có (đều phải hỏi user trước khi chạy)
 
-| Trường hợp                          | Hành động                                            |
-| ----------------------------------- | ---------------------------------------------------- |
-| Entry đã tồn tại trong DB (khớp ID) | **Bỏ qua hoàn toàn** — không ghi đè bất kỳ field nào |
-| Entry mới (ID chưa có trong DB)     | **Tạo mới**                                          |
-| `userVocabulary` (study progress)   | **Upsert với `update: {}`** — giữ nguyên progress    |
+| Script                       | Chức năng                                                                                           |
+| ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `sync-xuehanzi-metadata.mjs` | Sync lexicon metadata (mwr/bwr/boost/searchPinyin/relatedWords) từ `data/xue-hanzi-dictionary.json` |
+| `sync-meanings-eng.mjs`      | Điền `engMeanings` vào `vocabulary_meanings` theo index (CVDICT ↔ CC-CEDICT)                        |
+| `import-xuehanzi-common.mjs` | Import từ mới HSK 1-6 phổ biến từ `data/xue-hanzi-dictionary.json`                                  |
+| `sync-jyutping.mjs`          | Điền jyutping từ CC-Canto + pycantonese fallback                                                    |
 
-### 3.2 KHÔNG BAO GIỜ
-
-- ❌ Dùng `deleteMany` cho vocabulary trong seed
-- ❌ Dùng `skipDuplicates` khi tạo vocabulary
-- ❌ Ghi đè field user đã chỉnh sửa
-- ❌ Thay đổi ID vocabulary đã tồn tại
-- ❌ Tự ý chạy seed mà không hỏi user trước
-
-### 3.3 Cách chạy (chỉ khi user đồng ý)
-
-```bash
-docker compose -f docker-compose.dev.yml exec -T backend npx prisma db seed
-```
+- ✅ Tất cả script đều hỗ trợ `--dry` để preview trước khi ghi.
+- ✅ Nguồn dữ liệu nằm trong `backend/data/`: `xue-hanzi-dictionary.json`, `cccanto-webdist.txt`, `cvdict.json`...
 
 ---
 
@@ -200,25 +217,26 @@ Bất kỳ thao tác nào ngoài SELECT đều phải hỏi user:
 
 ## 5. Backup database
 
-File `backend/vocabularies.json` là bản backup/export từ database, **không phải source of truth**.
+- ❌ `backend/vocabularies.json` **đã bị xóa** — không còn file backup nào.
+- ✅ Database là nguồn duy nhất; để export, dùng `backend/export-db.mjs` (cần hỏi user trước khi ghi file).
 
 ---
 
 ## 6. Các trường dữ liệu — ai sở hữu?
 
-| Field                                    | Nguồn     | Bị seed ghi đè? |
-| ---------------------------------------- | --------- | :-------------: |
-| `hanTraditional`, `hanSimplified`        | JSON      |       ❌        |
-| `pinyin`, `jyutping`                     | JSON      |       ❌        |
-| `sinoVietnamese`                         | JSON      |       ❌        |
-| `hskLevel`                               | JSON      |       ❌        |
-| `vietMeanings`, `engMeanings`            | User (UI) |       ❌        |
-| `vietExamples`                           | User (UI) |       ❌        |
-| `important`, `mastered`, `studyProgress` | User (UI) |       ❌        |
-| `vocabularyMeanings` (nested)            | User (UI) |       ❌        |
-| `vocabularyExamples` (nested)            | User (UI) |       ❌        |
+| Field                                    | Nguồn                     | Bị script sync ghi đè? |
+| ---------------------------------------- | ------------------------- | :--------------------: |
+| `hanTraditional`, `hanSimplified`        | Import (OpenCC chuẩn hóa) |           ❌           |
+| `pinyin`, `jyutping`                     | Import / sync             |           ❌           |
+| `sinoVietnamese`                         | Import                    |           ❌           |
+| `hskLevel`                               | Import (HSK 1-6) / cũ     |           ❌           |
+| `vietMeanings`, `engMeanings`            | User (UI)                 |           ❌           |
+| `vietExamples`                           | User (UI)                 |           ❌           |
+| `important`, `mastered`, `studyProgress` | User (UI)                 |           ❌           |
+| `vocabularyMeanings` (nested)            | User (UI) + sync          |           ❌           |
+| `vocabularyExamples` (nested)            | User (UI)                 |           ❌           |
 
-→ **Không field nào bị seed ghi đè.**
+→ **Không field nào bị script sync ghi đè** — tất cả script đều chỉ điền dòng trống/thiếu hoặc tạo mới, không ghi đè user data.
 
 ---
 
@@ -269,6 +287,28 @@ User action → Optimistic update (store) → API call → Store sync ← UI syn
 
 ### 7.5.3 Ví dụ: sync xóa từ đúng cách
 
+### 7.6. `hanCharacters` breakdown (JSON column) — BẮT BUỘC
+
+Mỗi vocabulary có cột `hanCharacters` (JSONB) lưu breakdown từng hán tự theo vị trí:
+
+```json
+[
+    { "character": "挨", "pinyin": "āi", "jyutping": "aai1" },
+    { "character": "家", "pinyin": "jiā", "jyutping": "gaa1" },
+    { "character": "挨", "pinyin": "āi", "jyutping": "aai1" },
+    { "character": "戶", "pinyin": "hù", "jyutping": "wu6" }
+]
+```
+
+**Quy tắc bắt buộc:**
+
+- ✅ Breakdown tính tự động từ `hanTraditional` + `pinyin`/`jyutping` (căn chỉnh theo vị trí), qua `backend/lib/hanCharacterBreakdown.js` (`computeHanCharacters`).
+- ✅ Khi create/update vocabulary (`prismaService.js`): tự ghi `hanCharacters` + sync lên kho HanCharacter (`syncVocabularyHanCharacters`) — find-or-create từng hán tự, **chỉ merge readings mới, không ghi đè**.
+- ✅ Bảng `vocabulary_characters` (join) chỉ link **hán tự duy nhất** (không lặp) — do unique constraint `(vocabularyId, hanCharacterId)`; vị trí = vị trí xuất hiện đầu tiên.
+- ❌ **KHÔNG dùng regex global `/g` + `.test()`** trong vòng lặp để lọc hán tự — `.test()` stateful (lastIndex) gây lọc sai ký tự. Dùng kiểm tra code point (xem `isHanChar`).
+- ✅ Backfill dữ liệu cũ: `backend/backfill-han-characters.mjs`; rebuild readings: `backend/rebuild-han-character-readings.mjs` (ghi đè readings từ breakdown chính xác — phải hỏi user trước khi chạy).
+- ✅ Frontend: `WordDetailContent.jsx` hiển thị `HanCharactersBreakdown` (mỗi chữ + pinyin/jyutping, link tới HanCharacter detail).
+
 ```js
 // ✅ ĐÚNG — WordBankBrowseTable useEffect
 useEffect(() => {
@@ -304,49 +344,34 @@ useEffect(() => {
 
 ## 8. UI/UX Design System
 
-### 8.1 Nguồn tham chiếu bắt buộc
+### 8.1 Nguồn tham chiếu
 
-Khi tạo UI mới hoặc sửa UI hiện có, **luôn đọc file design system trước**:
+Khi tạo UI mới hoặc sửa UI hiện có, **đọc `design-system/learn-cantonese/MASTER.md`** (skill `ui-ux-pro-max` quản lý file này động qua `--persist`).
 
-```
-design-system/learn-cantonese/MASTER.md
-```
-
-Nếu có page-specific override, đọc `design-system/learn-cantonese/pages/[page-name].md` — file này ghi đè MASTER.md.
+> Nếu có page-specific override, đọc `design-system/learn-cantonese/pages/[page-name].md` — file này ghi đè MASTER.md.
 
 ### 8.2 Skill `ui-ux-pro-max` (ƯU TIÊN HÀNG ĐẦU)
 
 > ⚠️ **Trước khi tạo hoặc sửa bất kỳ UI nào**, phải dùng skill `ui-ux-pro-max` để tra cứu guidelines. Đây là nguồn tham chiếu UI/UX chính thức, thay thế mọi rule CSS cứng trước đây.
+> Skill đã cài tại `.github/prompts/ui-ux-pro-max/` (GitHub Copilot). Trên Windows dùng `python` (không phải `python3`).
 
 Khi cần tìm kiếm UX guidelines, color palettes, hoặc style references:
 
 ```bash
 # Tìm UX guidelines
-python .codewhale/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain ux -n 5
+python .github/prompts/ui-ux-pro-max/scripts/search.py "<query>" --domain ux -n 5
 
 # Tìm color palette
-python .codewhale/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain color -n 3
+python .github/prompts/ui-ux-pro-max/scripts/search.py "<query>" --domain color -n 3
 
 # Tìm style
-python .codewhale/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain style -n 5
+python .github/prompts/ui-ux-pro-max/scripts/search.py "<query>" --domain style -n 5
 
 # Tạo/cập nhật design system
-python .codewhale/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "Learn Cantonese"
+python .github/prompts/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "Learn Cantonese"
 ```
 
-### 8.3 Palette hiện tại
-
-| Token                | Light     | Dark      |
-| -------------------- | --------- | --------- |
-| `--accent` (primary) | `#4F46E5` | `#818CF8` |
-| `--accent-hover`     | `#4338CA` | `#A5B4FC` |
-| `--success-text`     | `#16A34A` | `#4ADE80` |
-| `--bg`               | `#EEF2FF` | `#0F0A2E` |
-| `--surface`          | `#ffffff` | `#1E1B4B` |
-| `--border`           | `#C7D2FE` | `#3730A3` |
-| `--text-h`           | `#312E81` | `#E0E7FF` |
-
-### 8.4 Component tái sử dụng
+### 8.3 Component tái sử dụng
 
 Khi tạo UI, ưu tiên dùng các component có sẵn:
 
@@ -357,7 +382,7 @@ Khi tạo UI, ưu tiên dùng các component có sẵn:
 | `NavIcons` (IconWordBank, IconGrammar, ...)         | `NavIcons.jsx`                        | SVG icons cho navigation |
 | `Button` / `btnClass()`                             | `ui/Button.jsx`, `ui/buttonStyles.js` | Nút bấm                  |
 
-### 8.5 Quy tắc bắt buộc
+### 8.4 Quy tắc bắt buộc
 
 - ❌ **Không dùng emoji làm icon** — dùng SVG từ `NavIcons.jsx` hoặc Lucide/Heroicons
 - ✅ **`cursor-pointer`** trên mọi phần tử clickable
@@ -366,7 +391,7 @@ Khi tạo UI, ưu tiên dùng các component có sẵn:
 - ✅ **`prefers-reduced-motion`** respected
 - ✅ **`active:enabled:scale-[0.97]`** cho tất cả buttons
 
-### 8.6 Quy tắc Spacing — BẮT BUỘC
+### 8.5 Quy tắc Spacing — BẮT BUỘC
 
 **Thang đo cố định (root font-size = 20px):**
 
@@ -405,3 +430,26 @@ Khi tạo UI, ưu tiên dùng các component có sẵn:
 - ❌ **Không dùng** `gap-1`, `gap-3`, `gap-5` trừ inline elements nhỏ
 - ❌ **Không bao giờ** để nội dung chạm viền (phải có padding ≥ `p-4`)
 - ❌ **Không bao giờ** để 2 phần tử liền kề không có gap/margin
+
+---
+
+## 9. Ghi chú kỹ thuật đã xác minh (2026-08-02)
+
+### 9.1 Hán tự single-form → `hanSimplified = NULL` (BẮT BUỘC)
+
+- Chỉ 1 phiên bản (giản = phồn, vd 慧, 人, 大, 山, 你, 仇, 熏) → `hanSimplified = NULL`, **không** lưu bằng `hanTraditional`.
+- Edit UI (`HanCharacterRow.jsx`, `AddHanCharacterModal.jsx`): khi `hanSimplified === hanTraditional` → field Simplified **để trống**; lưu `hanSimplified: x || undefined`.
+- Backend `prismaService.js`: `hanCharacterToRow` giữ `undefined` (1không ép `""`); `createHanChar` → `rest.hanSimplified || null`; `updateHanChar` → `rest.hanSimplified || null` (rỗng = clear về NULL).
+- Nếu bị ghi lại, dọn: `UPDATE han_characters SET han_simplified = NULL WHERE han_simplified = han_traditional;` (nhớ hỏi user).
+
+### 9.2 Sync Han Characters (nút duy nhất trên HanCharactersPage)
+
+- **Luồng**: Click "Sync Han Characters" → chọn **mode** → gọi `/api/data/sync-han-characters/preview` (tính trước, KHÔNG ghi DB) → hiện modal liệt kê hán tự mới + hán tự cần update → "Confirm Sync" → tạo job (`POST /data/sync-han-characters` trả `jobId`) → frontend poll `/data/sync-han-characters/progress/:jobId` mỗi 1.5s → hiện tiến trình % + chi tiết (processed/total, created, updated, linked, merged).
+- **2 mode sync** (body API gửi `{mode}`):
+    - **`fast`** (mặc định): chỉ xử lý vocab có `hanCharacters = DbNull` (skip từ đã sync), **không xóa gì**.
+    - **`full`**: xóa hết `vocabulary_characters` + `han_characters` rồi sync lại toàn bộ. Preview báo **New = Total, Update = 0, Same = 0** (vì store bị xóa trước).
+- **Backend**: `backend/lib/hanCharacterBreakdown.js` (`computeHanCharacters` căn chỉnh cả pinyin/jyutping/**sinoVietnamese** theo vị trí; `resolveHanCharacter` dedupe hán tự trùng — merge readings vào keeper, re-link, xóa dupes; `syncVocabularyHanCharacters`; `backfillVocabularyHanCharacters(where, onProgress, mode)`; `previewVocabularyHanCharacters(mode)`). Job manager: `backend/lib/hanCharSyncJob.js` (`runSyncJob(jobId, mode)`, job có `job.mode`, `job.reset`).
+- **Sino-Vietnamese "A | B" = 1 reading**: `"TỊNH | TÍNH"` là **một** reading (đọc TỊNH _hoặc_ TÍNH), KHÔNG phải 2 reading. `splitSinoVietnameseParts` giữ nguyên nhóm `|`; `mergeSinoReadings` gộp (và xóa các alternative standalone cũ như `"TỊNH"`, `"TÍNH"` bị tách sai từ trước).
+- **Preview modal**: mode selector đặt NGOÀI nhánh loading (luôn hiển thị), nút mode `disabled` khi đang load, hiện spinner + "Analyzing vocabularies…". Detail list hiện readings kèm label Pinyin/Jyutping/Sino (không ẩn trong tooltip).
+- **Không có nút riêng để dedupe** — việc dedupe tự xảy ra trong lúc sync (qua `resolveHanCharacter`).
+- **Đã xóa**: `MissingHanCharsSync.jsx`, `hanCharExtract.js` (thay bằng sync backend).

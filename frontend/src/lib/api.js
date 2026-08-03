@@ -145,6 +145,14 @@ export const api = {
 
     backfillHanCharVariants: () => request("/api/data/backfill-han-char-variants", { method: "POST", body: "{}" }),
 
+    // Sync tất cả hán tự từ vocabularies vào bảng han_characters (find-or-create + merge readings + link)
+    // mode: "fast" = chỉ xử lý vocab chưa có hanCharacters; "full" = xóa hết rồi sync lại từ đầu
+    previewSyncHanCharacters: (mode = "fast") =>
+        request("/api/data/sync-han-characters/preview", { method: "POST", body: JSON.stringify({ mode }) }),
+    syncHanCharacters: (mode = "fast") =>
+        request("/api/data/sync-han-characters", { method: "POST", body: JSON.stringify({ mode }) }),
+    syncHanCharactersProgress: (jobId) => request(`/api/data/sync-han-characters/progress/${jobId}`),
+
     getHanCharsForVocabulary: (wordId) => request(`/api/vocabulary/${wordId}/han-characters`),
 
     getVocabulariesForHanChar: (hanCharId) => request(`/api/han-characters/${hanCharId}/vocabulary`),

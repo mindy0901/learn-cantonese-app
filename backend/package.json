@@ -7,8 +7,7 @@
     "scripts": {
         "dev": "tsx --watch index.js",
         "start": "tsx index.js",
-        "prisma": "prisma",
-        "seed": "prisma db seed"
+        "prisma": "prisma"
     },
     "dependencies": {
         "@fastify/cookie": "^11.1.2",

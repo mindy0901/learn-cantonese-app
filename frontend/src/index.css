@@ -397,7 +397,13 @@ code {
 }
 
 .flashcard-han:not([class*="han-popularity--lvl-"]) {
-    color: var(--han-color);
+    color: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+    .flashcard-han:not([class*="han-popularity--lvl-"]) {
+        color: #f87171;
+    }
 }
 
 .flashcard-viet {

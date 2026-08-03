@@ -421,6 +421,40 @@ export async function dataRoutes(fastify) {
         },
     );
 
+    // ── Sync all han characters + their details into han_characters ──
+    // Preview: tính trước những hán tự sẽ tạo mới / cập nhật (không ghi DB).
+    fastify.post(
+        "/data/sync-han-characters/preview",
+        { preHandler: [requireAuth, requireAppAdmin] },
+        async (request) => {
+            const { previewVocabularyHanCharacters } = await import("../lib/hanCharacterBreakdown.js");
+            const mode = request.body?.mode === "full" ? "full" : "fast";
+            const result = await previewVocabularyHanCharacters(mode);
+            return { ok: true, mode, ...result };
+        },
+    );
+
+    // Bắt đầu job sync (trả jobId ngay, chạy background).
+    fastify.post("/data/sync-han-characters", { preHandler: [requireAuth, requireAppAdmin] }, async (request) => {
+        const { createSyncJob, runSyncJob } = await import("../lib/hanCharSyncJob.js");
+        const mode = request.body?.mode === "full" ? "full" : "fast";
+        const job = createSyncJob();
+        runSyncJob(job.id, mode); // fire-and-forget
+        return { ok: true, jobId: job.id, mode };
+    });
+
+    // Poll tiến trình job sync.
+    fastify.get(
+        "/data/sync-han-characters/progress/:jobId",
+        { preHandler: [requireAuth, requireAppAdmin] },
+        async (request) => {
+            const { getSyncJob } = await import("../lib/hanCharSyncJob.js");
+            const job = getSyncJob(request.params.jobId);
+            if (!job) return { ok: true, job: null };
+            return { ok: true, job };
+        },
+    );
+
     // ── Backfill pinyin for all vocabulary ──
     fastify.post("/data/backfill-pinyin", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
         const { prisma } = await import("../lib/prisma.js");

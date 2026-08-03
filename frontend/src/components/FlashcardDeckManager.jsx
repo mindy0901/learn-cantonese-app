@@ -451,7 +451,9 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
                                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-bg transition-colors"
                                 >
                                     <div className="flex-1 min-w-0">
-                                        <span className="font-semibold text-han text-base">{vocab.hanTraditional}</span>
+                                        <span className="font-semibold text-red-600 dark:text-red-400 text-base">
+                                            {vocab.hanTraditional}
+                                        </span>
                                         {vocab.sinoVietnamese && (
                                             <span className="ml-2 text-sm text-viet">{vocab.sinoVietnamese}</span>
                                         )}
@@ -491,7 +493,9 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
                                 className="flex items-center gap-3 px-4 py-2.5 hover:bg-bg transition-colors"
                             >
                                 <div className="flex-1 min-w-0">
-                                    <span className="font-semibold text-han text-base">{vocab.hanTraditional}</span>
+                                    <span className="font-semibold text-red-600 dark:text-red-400 text-base">
+                                        {vocab.hanTraditional}
+                                    </span>
                                     {vocab.sinoVietnamese && (
                                         <span className="ml-2 text-sm text-viet">{vocab.sinoVietnamese}</span>
                                     )}

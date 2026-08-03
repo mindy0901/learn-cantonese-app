@@ -286,6 +286,13 @@ export const en = {
         backToWordBank: "Back to Vocabularies",
         nextWord: "Next word",
         openHanzii: "Look up {hanTraditional} on Hanzii",
+        relatedWords: "Related words",
+        lexiconMetadata: "Lexicon data",
+        pinyinNumeric: "Pinyin (numeric)",
+        searchPinyin: "Pinyin (search)",
+        movieWordRank: "Movie rank",
+        bookWordRank: "Book rank",
+        boost: "Boost",
     },
     wordPopularity: {
         title: "Popularity",

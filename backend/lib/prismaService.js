@@ -4,6 +4,7 @@
  */
 import { prisma } from "./prisma.js";
 import { randomUUID } from "crypto";
+import { computeHanCharacters, syncVocabularyHanCharacters } from "./hanCharacterBreakdown.js";
 
 const PAGE_SIZE = 1000;
 
@@ -24,6 +25,7 @@ export function vocabularyToRow(vocab, userId, { includeCreatedAt = true } = {})
         engMeanings: vocab.engMeanings ?? "",
         hskLevel: vocab.hskLevel?.trim() || null,
         searchKey: vocab.searchKey ?? vocab.search_key ?? null,
+        hanCharacters: vocab.hanCharacters ?? undefined,
         createdAt: includeCreatedAt ? (vocab.createdAt ?? now) : undefined,
         updatedAt: now,
         // Nested meanings & examples for upsert
@@ -59,6 +61,17 @@ export function rowToVocabulary(row) {
         vietExamples: vocab.vietExamples ?? undefined,
         engMeanings: vocab.engMeanings ?? "",
         hskLevel: vocab.hskLevel ?? undefined,
+        pos: vocab.pos ?? undefined,
+        frequency: vocab.frequency ?? undefined,
+        radical: vocab.radical ?? undefined,
+        classifiers: vocab.classifiers ?? undefined,
+        pinyinNumeric: vocab.pinyinNumeric ?? undefined,
+        movieWordRank: vocab.movieWordRank ?? undefined,
+        bookWordRank: vocab.bookWordRank ?? undefined,
+        relatedWords: vocab.relatedWords ?? undefined,
+        boost: vocab.boost ?? undefined,
+        searchPinyin: vocab.searchPinyin ?? undefined,
+        hanCharacters: vocab.hanCharacters ?? undefined,
         important: progress.important ?? false,
         mastered: progress.mastered ?? false,
         studyProgress: progress.studyProgress ?? 0,
@@ -516,6 +529,16 @@ export async function replacePartialData(userId, { types, words, grammarBank, se
                     data: { id: wordId, ...dictData },
                 });
 
+                // Compute + store hanCharacters breakdown, then sync to HanCharacter store
+                const breakdown = computeHanCharacters(dictData);
+                if (breakdown.length > 0) {
+                    await prisma.vocabulary.update({
+                        where: { id: wordId },
+                        data: { hanCharacters: breakdown, updatedAt: new Date() },
+                    });
+                    await syncVocabularyHanCharacters(wordId, breakdown);
+                }
+
                 // Create UserWord link
                 await prisma.userVocabulary.create({
                     data: {
@@ -591,6 +614,16 @@ export async function createVocabulary(userId, body) {
     // Upsert meanings and examples
     await upsertMeaningsAndExamples(vocab.id, meanings, examples);
 
+    // Compute + store hanCharacters breakdown, then sync to HanCharacter store
+    const breakdown = computeHanCharacters(vocab);
+    if (breakdown.length > 0) {
+        await prisma.vocabulary.update({
+            where: { id: vocab.id },
+            data: { hanCharacters: breakdown, updatedAt: new Date() },
+        });
+        await syncVocabularyHanCharacters(vocab.id, breakdown);
+    }
+
     // Create UserWord link (or skip if already exists)
     const userVocab = await prisma.userVocabulary.upsert({
         where: { userId_vocabularyId: { userId, vocabularyId: vocab.id } },
@@ -603,7 +636,8 @@ export async function createVocabulary(userId, body) {
         update: {}, // no-op if already linked
     });
 
-    return rowToVocabulary({ ...userVocab, vocabulary: vocab });
+    const full = { ...userVocab, vocabulary: { ...vocab, hanCharacters: breakdown } };
+    return rowToVocabulary(full);
 }
 
 export async function updateVocabulary(userId, id, body) {
@@ -634,6 +668,21 @@ export async function updateVocabulary(userId, id, body) {
 
         // Upsert meanings and examples
         await upsertMeaningsAndExamples(vocab.id, meanings, examples);
+
+        // Recompute + store hanCharacters breakdown, then sync to HanCharacter store
+        const breakdown = computeHanCharacters(vocab);
+        if (breakdown.length > 0) {
+            await prisma.vocabulary.update({
+                where: { id: vocab.id },
+                data: { hanCharacters: breakdown, updatedAt: new Date() },
+            });
+            await syncVocabularyHanCharacters(vocab.id, breakdown);
+        } else {
+            await prisma.vocabulary.update({
+                where: { id: vocab.id },
+                data: { hanCharacters: null, updatedAt: new Date() },
+            });
+        }
 
         // Also update UserWord progress fields if present
         const progress = userWordFields(body);

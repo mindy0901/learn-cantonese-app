@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { api } from "../lib/api.js";
-import { logError, logWarn } from "../lib/actionLog.js";
+import { logError } from "../lib/actionLog.js";
 import { useDebouncedValue } from "../hooks/useDebouncedValue.js";
 import { AddHanCharacterModal } from "../components/AddHanCharacterModal.jsx";
 import { HanCharacterRow } from "../components/HanCharacterRow.jsx";
-import { MissingHanCharsSync } from "../components/MissingHanCharsSync.jsx";
 import { BankSearchInput } from "../components/BankSearchInput.jsx";
 import { Pagination } from "../components/Pagination.jsx";
 import { useConfirmDialog } from "../hooks/useConfirmDialog.jsx";
 import { cn } from "../lib/cn.js";
 import { useLocale } from "../store/localeStore.js";
 import { useAppActions, useHanCharacters } from "../store/appStore.js";
-import { btnClass, spinnerClass } from "../components/ui/buttonStyles.js";
+import { btnClass } from "../components/ui/buttonStyles.js";
 import { SkeletonTable } from "../components/ui/Skeleton.jsx";
+import { IconSpinner } from "../components/NavIcons.jsx";
 import {
     bankToolbarRowClass,
     bankToolbarSearchClass,
@@ -42,7 +42,7 @@ export function HanCharactersPage() {
     const { ask, dialog } = useConfirmDialog();
 
     const storeHanCharacters = useHanCharacters();
-    const { mergeHanCharacters, removeHanCharacter, bumpHanCharactersRevision, refreshHanCharacters } = useAppActions();
+    const { mergeHanCharacters, removeHanCharacter, refreshHanCharacters } = useAppActions();
 
     const [items, setItems] = useState([]);
     const [total, setTotal] = useState(0);
@@ -58,61 +58,6 @@ export function HanCharactersPage() {
     const [filter, setFilter] = useState("all");
     const [sortKey, setSortKey] = useState("createdAt");
     const [sortDir, setSortDir] = useState("desc");
-    const [deduping, setDeduping] = useState(false);
-
-    const handleDedupHanChars = useCallback(async () => {
-        if (deduping) return;
-        setDeduping(true);
-        try {
-            const groups = new Map();
-            for (const h of storeHanCharacters) {
-                const key = (h.hanSimplified ?? "").trim();
-                if (!key) continue;
-                if (!groups.has(key)) groups.set(key, []);
-                groups.get(key).push(h);
-            }
-            let removed = 0;
-            const toDelete = [];
-            for (const [, group] of groups) {
-                if (group.length <= 1) continue;
-                // Keep the one with most readings, break ties by popularity
-                const score = (h) => {
-                    let s = 0;
-                    const jp = Array.isArray(h.jyutping) ? h.jyutping : h.jyutping ? [h.jyutping] : [];
-                    const py = Array.isArray(h.pinyin) ? h.pinyin : h.pinyin ? [h.pinyin] : [];
-                    const hv = Array.isArray(h.sinoVietnamese)
-                        ? h.sinoVietnamese
-                        : h.sinoVietnamese
-                          ? [h.sinoVietnamese]
-                          : [];
-                    s += jp.length + py.length + hv.length;
-                    if (h.hanTraditional) s += 2;
-                    s += h.popularity ?? 0;
-                    return s;
-                };
-                group.sort((a, b) => score(b) - score(a));
-                const [, ...dupes] = group;
-                for (const d of dupes) {
-                    removeHanCharacter(d.id);
-                    toDelete.push(d.id);
-                    removed++;
-                }
-            }
-            // Delete from backend and wait for all to complete before refreshing
-            if (toDelete.length > 0) {
-                await Promise.all(toDelete.map((id) => api.deleteHanCharacter(id).catch(() => {})));
-                invalidateDataCache();
-            }
-            await refreshHanCharacters();
-            if (removed > 0) {
-                alert(`Removed ${removed} duplicate Chinese characters.`);
-            } else {
-                alert("No duplicate Chinese characters found.");
-            }
-        } finally {
-            setDeduping(false);
-        }
-    }, [storeHanCharacters, removeHanCharacter, refreshHanCharacters, deduping]);
 
     // Reset page when filter/search/sort changes
     useEffect(() => {
@@ -255,67 +200,96 @@ export function HanCharactersPage() {
         setAddOpen(true);
     }, []);
 
-    const [syncingPinyin, setSyncingPinyin] = useState(false);
-    const handleBackfillPinyin = useCallback(async () => {
-        setSyncingPinyin(true);
-        try {
-            const result = await api.backfillHanCharPinyin();
-            logWarn(`Han char pinyin backfill: updated ${result.updated ?? "?"} / ${result.total ?? "?"}`);
-            invalidateHanCharacterBrowseCache();
-            await refreshHanCharacters();
-        } catch (err) {
-            logError("Han char pinyin backfill failed", err instanceof Error ? err.message : String(err));
-        } finally {
-            setSyncingPinyin(false);
-        }
-    }, [refreshHanCharacters]);
+    const [syncingHanChars, setSyncingHanChars] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [preview, setPreview] = useState(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [previewError, setPreviewError] = useState("");
+    const [syncMode, setSyncMode] = useState("fast"); // "fast" | "full"
+    const [progress, setProgress] = useState(null); // { job, percent }
+    const [progressTimer, setProgressTimer] = useState(null);
 
-    const [syncingJyutping, setSyncingJyutping] = useState(false);
-    const handleBackfillJyutping = useCallback(async () => {
-        setSyncingJyutping(true);
-        try {
-            const result = await api.backfillHanCharJyutping();
-            logWarn(`Han char jyutping backfill: updated ${result.updated ?? "?"} / ${result.total ?? "?"}`);
-            invalidateHanCharacterBrowseCache();
-            await refreshHanCharacters();
-        } catch (err) {
-            logError("Han char jyutping backfill failed", err instanceof Error ? err.message : String(err));
-        } finally {
-            setSyncingJyutping(false);
-        }
-    }, [refreshHanCharacters]);
+    // Poll job progress until done
+    const pollProgress = useCallback(
+        async (jobId) => {
+            const poll = async () => {
+                try {
+                    const res = await api.syncHanCharactersProgress(jobId);
+                    const job = res?.job;
+                    if (!job) return;
+                    const percent = job.total > 0 ? Math.round((job.processed / job.total) * 100) : 0;
+                    setProgress({ job, percent });
+                    if (job.done) {
+                        if (progressTimer) clearInterval(progressTimer);
+                        setProgressTimer(null);
+                        setSyncingHanChars(false);
+                        invalidateHanCharacterBrowseCache();
+                        invalidateDataCache();
+                        await refreshHanCharacters();
+                    }
+                } catch (err) {
+                    logError("Poll sync progress failed", err instanceof Error ? err.message : String(err));
+                }
+            };
+            await poll();
+            const timer = setInterval(poll, 1500);
+            setProgressTimer(timer);
+        },
+        [progressTimer, refreshHanCharacters],
+    );
 
-    const [syncingVariants, setSyncingVariants] = useState(false);
-    const [variantResult, setVariantResult] = useState(null);
-    const handleBackfillVariants = useCallback(async () => {
-        setSyncingVariants(true);
-        setVariantResult(null);
+    const openPreview = useCallback(
+        async (mode = "fast") => {
+            if (syncingHanChars) return;
+            setSyncMode(mode);
+            setPreviewOpen(true);
+            setPreviewLoading(true);
+            setPreviewError("");
+            try {
+                const res = await api.previewSyncHanCharacters(mode);
+                setPreview(res);
+            } catch (err) {
+                setPreviewError(err instanceof Error ? err.message : String(err));
+            } finally {
+                setPreviewLoading(false);
+            }
+        },
+        [syncingHanChars],
+    );
+
+    const closePreview = useCallback(() => {
+        setPreviewOpen(false);
+        setPreview(null);
+    }, []);
+
+    const confirmSync = useCallback(async () => {
+        setPreviewOpen(false);
+        setPreview(null);
+        setSyncingHanChars(true);
+        setProgress(null);
         try {
-            const result = await api.backfillHanCharVariants();
-            setVariantResult(result);
-            const lines = [];
-            if (result.updated > 0) lines.push(`✅ Updated variants: ${result.updated}`);
-            if (result.merged > 0) lines.push(`🔗 Merged duplicates: ${result.merged}`);
-            if (result.same > 0) lines.push(`= Same (no change): ${result.same}`);
-            if (result.skipped > 0) lines.push(`⏭️ Skipped: ${result.skipped}`);
-            lines.push(`📊 Total: ${result.total}`);
-            if (result.mergedSample?.length > 0) {
-                lines.push(`\nMerged: ${result.mergedSample.join(", ")}`);
+            const res = await api.syncHanCharacters(syncMode);
+            if (res?.jobId) {
+                await pollProgress(res.jobId);
+            } else {
+                // Fallback: no job → treat as immediate
+                invalidateHanCharacterBrowseCache();
+                invalidateDataCache();
+                await refreshHanCharacters();
+                setSyncingHanChars(false);
             }
-            if (result.updatedSample?.length > 0) {
-                lines.push(`Updated: ${result.updatedSample.join(", ")}`);
-            }
-            alert(lines.join("\n"));
-            invalidateHanCharacterBrowseCache();
-            invalidateDataCache();
-            await refreshHanCharacters();
         } catch (err) {
-            logError("Han char variants backfill failed", err instanceof Error ? err.message : String(err));
-            alert("Failed: " + (err instanceof Error ? err.message : String(err)));
-        } finally {
-            setSyncingVariants(false);
+            logError("Sync han characters failed", err instanceof Error ? err.message : String(err));
+            setSyncingHanChars(false);
         }
-    }, [refreshHanCharacters]);
+    }, [pollProgress, refreshHanCharacters, syncMode]);
+
+    // Clean up timer on unmount
+    useEffect(() => {
+        return () => {
+            if (progressTimer) clearInterval(progressTimer);
+        };
+    }, [progressTimer]);
 
     const sortDirLabel =
         sortKey === "createdAt"
@@ -337,46 +311,12 @@ export function HanCharactersPage() {
                         </h3>
 
                         <SyncButton
-                            label="Pinyin"
-                            desc="From pinyin-pro (OpenCC)"
+                            label={syncingHanChars ? "Syncing..." : "Sync Han Characters"}
+                            desc="Sync all characters + details from vocabularies"
                             count={storeHanCharacters.length}
-                            loading={syncingPinyin}
-                            onClick={handleBackfillPinyin}
+                            loading={syncingHanChars}
+                            onClick={() => openPreview(syncMode)}
                         />
-                        <SyncButton
-                            label="Jyutping"
-                            desc="From jyut6ping3.dict.yaml"
-                            count={storeHanCharacters.length}
-                            loading={syncingJyutping}
-                            onClick={handleBackfillJyutping}
-                        />
-                        <SyncButton
-                            label="Traditional/Simplified"
-                            desc="From OpenCC (both ways)"
-                            count={storeHanCharacters.length}
-                            loading={syncingVariants}
-                            onClick={handleBackfillVariants}
-                        />
-
-                        <div className="border-t border-border pt-3 mt-1">
-                            <MissingHanCharsSync />
-                        </div>
-
-                        <div className="border-t border-border pt-3 mt-1">
-                            <button
-                                type="button"
-                                className="w-full text-left px-3 py-2 rounded-lg border border-border bg-surface text-sm font-medium text-text-h transition-colors duration-150 hover:bg-error-bg hover:border-error-border hover:text-error-text disabled:opacity-50"
-                                onClick={handleDedupHanChars}
-                                disabled={deduping}
-                            >
-                                <span className="block text-xs font-semibold text-error-text">
-                                    {deduping ? "Removing..." : "Remove duplicates"}
-                                </span>
-                                <span className="block text-[0.6875rem] text-text-muted mt-0.5">
-                                    Merge duplicate characters
-                                </span>
-                            </button>
-                        </div>
                     </aside>
                 )}
 
@@ -496,46 +436,297 @@ export function HanCharactersPage() {
                         />
                     )}
 
-                    {variantResult && (
+                    {/* Preview modal: confirm before syncing */}
+                    {previewOpen && (
                         <div
-                            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4"
-                            onClick={() => setVariantResult(null)}
+                            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4"
+                            onClick={previewLoading ? undefined : closePreview}
                         >
                             <div
-                                className="m-auto w-full max-w-[420px] rounded-2xl bg-surface p-6 shadow-lg"
+                                className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl bg-surface shadow-xl p-6 flex flex-col gap-4"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-base font-semibold">Sync Traditional/Simplified (OpenCC)</h3>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-base font-semibold text-text-h">Sync Han Characters</h3>
+                                    {!previewLoading && (
+                                        <button
+                                            type="button"
+                                            className="text-xl leading-none text-text-muted hover:text-text-h"
+                                            onClick={closePreview}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Mode selector: always visible */}
+                                <div className="flex flex-col gap-2">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                                        Sync mode
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={previewLoading}
+                                            className={`rounded-lg border px-3 py-2 text-left flex flex-col gap-1 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                                                syncMode === "fast"
+                                                    ? "border-accent bg-accent/10"
+                                                    : "border-border bg-bg hover:border-accent/50"
+                                            }`}
+                                            onClick={() => openPreview("fast")}
+                                        >
+                                            <span className="text-sm font-semibold text-text-h">Fast sync</span>
+                                            <span className="text-xs text-text-muted leading-snug">
+                                                Chỉ xử lý từ chưa có breakdown. Nhanh, không xóa gì.
+                                            </span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={previewLoading}
+                                            className={`rounded-lg border px-3 py-2 text-left flex flex-col gap-1 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                                                syncMode === "full"
+                                                    ? "border-accent bg-accent/10"
+                                                    : "border-border bg-bg hover:border-accent/50"
+                                            }`}
+                                            onClick={() => openPreview("full")}
+                                        >
+                                            <span className="text-sm font-semibold text-text-h">Full overwrite</span>
+                                            <span className="text-xs text-text-muted leading-snug">
+                                                Xóa hết hán tự cũ rồi sync lại toàn bộ từ đầu.
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {previewLoading ? (
+                                    <div className="flex items-center gap-2 text-sm text-text-muted">
+                                        <IconSpinner size={16} />
+                                        <span>Analyzing vocabularies…</span>
+                                    </div>
+                                ) : previewError ? (
+                                    <p className="text-sm text-error-text">{previewError}</p>
+                                ) : preview ? (
+                                    <>
+                                        <div className="flex flex-col gap-2 text-sm">
+                                            <p className="text-text-h">
+                                                Total unique characters:{" "}
+                                                <strong className="tabular-nums">{preview.total}</strong>
+                                            </p>
+                                            <p className="text-green-600 dark:text-green-400">
+                                                New characters to create:{" "}
+                                                <strong className="tabular-nums">{preview.newCount}</strong>
+                                            </p>
+                                            <p className="text-amber-600 dark:text-amber-400">
+                                                Existing to update:{" "}
+                                                <strong className="tabular-nums">{preview.updateCount}</strong>
+                                            </p>
+                                            <p className="text-text-muted">
+                                                Unchanged: <strong className="tabular-nums">{preview.sameCount}</strong>
+                                            </p>
+                                        </div>
+
+                                        {preview.newChars.length > 0 && (
+                                            <div className="flex flex-col gap-2">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                                                    New characters ({preview.newCount})
+                                                </p>
+                                                <div className="flex flex-col gap-2 max-h-52 overflow-y-auto">
+                                                    {preview.newChars.map((c) => (
+                                                        <div
+                                                            key={c.character}
+                                                            className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+                                                        >
+                                                            <span className="flex items-baseline gap-1.5">
+                                                                <span className="text-lg font-semibold leading-tight text-red-600 dark:text-red-400">
+                                                                    {c.character}
+                                                                </span>
+                                                                {c.hanSimplified && c.hanSimplified !== c.character && (
+                                                                    <span className="text-lg font-semibold leading-tight text-blue-600 dark:text-blue-400">
+                                                                        {c.hanSimplified}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            {c.pinyin?.length > 0 && (
+                                                                <span className="flex items-baseline gap-1">
+                                                                    <span className="text-xs text-text-muted">
+                                                                        Pinyin
+                                                                    </span>
+                                                                    <span className="font-medium not-italic tracking-wide text-pinyin">
+                                                                        {c.pinyin.join(" ")}
+                                                                    </span>
+                                                                </span>
+                                                            )}
+                                                            {c.jyutping?.length > 0 && (
+                                                                <span className="flex items-baseline gap-1">
+                                                                    <span className="text-xs text-text-muted">
+                                                                        Jyutping
+                                                                    </span>
+                                                                    <span className="font-medium not-italic tracking-wide text-jyutping">
+                                                                        {c.jyutping.join(" ")}
+                                                                    </span>
+                                                                </span>
+                                                            )}
+                                                            {c.sinoVietnamese?.length > 0 && (
+                                                                <span className="flex items-baseline gap-1">
+                                                                    <span className="text-xs text-text-muted">
+                                                                        Sino
+                                                                    </span>
+                                                                    <span className="font-medium text-viet">
+                                                                        {c.sinoVietnamese.join(" ")}
+                                                                    </span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {preview.updateChars.length > 0 && (
+                                            <div className="flex flex-col gap-2">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                                                    To update ({preview.updateCount})
+                                                </p>
+                                                <div className="flex flex-col gap-2 max-h-52 overflow-y-auto">
+                                                    {preview.updateChars.map((c) => (
+                                                        <div
+                                                            key={c.character + (c.existingId ?? "")}
+                                                            className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+                                                        >
+                                                            <span className="text-lg font-semibold leading-tight text-red-600 dark:text-red-400">
+                                                                {c.character}
+                                                            </span>
+                                                            <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                                                {c.missing.map((m) => {
+                                                                    const [tag, ...rest] = m.split(":");
+                                                                    const val = rest.join(":");
+                                                                    const cls =
+                                                                        tag === "py"
+                                                                            ? "text-pinyin"
+                                                                            : tag === "jp"
+                                                                              ? "text-jyutping"
+                                                                              : "text-viet";
+                                                                    const label =
+                                                                        tag === "py"
+                                                                            ? "Pinyin"
+                                                                            : tag === "jp"
+                                                                              ? "Jyutping"
+                                                                              : "Sino";
+                                                                    return (
+                                                                        <span
+                                                                            key={m}
+                                                                            className="flex items-baseline gap-1"
+                                                                        >
+                                                                            <span className="text-xs text-text-muted">
+                                                                                +{label}
+                                                                            </span>
+                                                                            <span
+                                                                                className={`font-medium not-italic tracking-wide ${cls}`}
+                                                                            >
+                                                                                {val}
+                                                                            </span>
+                                                                        </span>
+                                                                    );
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {syncMode === "full" && (
+                                            <p className="text-sm text-amber-600 dark:text-amber-400">
+                                                ⚠️ Full overwrite sẽ xóa toàn bộ hán tự hiện có rồi sync lại từ đầu —
+                                                thời gian lâu hơn, chỉ dùng khi cần dựng lại dữ liệu.
+                                            </p>
+                                        )}
+
+                                        <div className="flex justify-end gap-2 border-t border-border pt-4">
+                                            <button type="button" className={btnClass("ghost")} onClick={closePreview}>
+                                                Cancel
+                                            </button>
+                                            <button type="button" className={btnClass("primary")} onClick={confirmSync}>
+                                                Confirm Sync
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : null}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Progress modal while syncing */}
+                    {progress && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4">
+                            <div className="w-full max-w-md rounded-2xl bg-surface shadow-xl p-6 flex flex-col gap-4">
+                                <h3 className="text-base font-semibold text-text-h">Syncing Han Characters…</h3>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-text-muted">
+                                        {progress.job.status === "error"
+                                            ? "Failed"
+                                            : progress.job.done
+                                              ? "Complete"
+                                              : "In progress"}
+                                    </span>
+                                    <span className="text-text-h font-semibold tabular-nums">{progress.percent}%</span>
+                                </div>
+                                {progress.job.mode === "full" && !progress.job.done && (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                                        Full overwrite — đang dựng lại toàn bộ hán tự từ đầu.
+                                    </p>
+                                )}
+                                <div className="h-2 w-full rounded-full bg-bg overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full bg-accent transition-[width] duration-300"
+                                        style={{ width: `${progress.percent}%` }}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1 text-xs text-text-muted">
+                                    <p>
+                                        Vocabularies:{" "}
+                                        <strong className="tabular-nums text-text-h">
+                                            {progress.job.processed} / {progress.job.total}
+                                        </strong>
+                                    </p>
+                                    {progress.job.current && (
+                                        <p>
+                                            Current:{" "}
+                                            <span className="text-red-600 dark:text-red-400">
+                                                {progress.job.current}
+                                            </span>
+                                        </p>
+                                    )}
+                                </div>
+                                {progress.job.done && (
+                                    <div className="flex flex-col gap-1 text-sm">
+                                        <p className="text-green-600 dark:text-green-400">
+                                            Created: <strong className="tabular-nums">{progress.job.created}</strong>
+                                        </p>
+                                        <p className="text-amber-600 dark:text-amber-400">
+                                            Updated: <strong className="tabular-nums">{progress.job.updated}</strong>
+                                        </p>
+                                        <p className="text-text-muted">
+                                            Linked: <strong className="tabular-nums">{progress.job.linked}</strong>
+                                        </p>
+                                        {progress.job.merged > 0 && (
+                                            <p className="text-text-muted">
+                                                Merged duplicates:{" "}
+                                                <strong className="tabular-nums">{progress.job.merged}</strong>
+                                            </p>
+                                        )}
+                                        {progress.job.error && <p className="text-error-text">{progress.job.error}</p>}
+                                    </div>
+                                )}
+                                {progress.job.done && (
                                     <button
                                         type="button"
-                                        className="text-xl text-text-muted hover:text-text-h"
-                                        onClick={() => setVariantResult(null)}
+                                        className={btnClass("primary")}
+                                        onClick={() => setProgress(null)}
                                     >
-                                        ×
+                                        Close
                                     </button>
-                                </div>
-                                <div className="flex flex-col gap-2 text-sm text-text-h">
-                                    <p>
-                                        Total: <strong>{variantResult.total}</strong> characters
-                                    </p>
-                                    <p className="text-green-600">
-                                        Updated simplified: <strong>{variantResult.updated}</strong>
-                                    </p>
-                                    <p className="text-text-muted">
-                                        Same simplified/traditional: <strong>{variantResult.same}</strong>
-                                    </p>
-                                    <p className="text-text-muted">
-                                        Skipped: <strong>{variantResult.skipped}</strong>
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    className={cn(btnClass("primary"), "mt-4 w-full")}
-                                    onClick={() => setVariantResult(null)}
-                                >
-                                    Close
-                                </button>
+                                )}
                             </div>
                         </div>
                     )}

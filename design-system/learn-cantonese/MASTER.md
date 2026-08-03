@@ -123,14 +123,16 @@
 
 ## 4. Han Character Rules
 
-| Rule                              | Value                                                       |
-| --------------------------------- | ----------------------------------------------------------- |
-| Color                             | `text-han` (red tone)                                       |
-| Font weight                       | `font-semibold` (600)                                       |
-| Hover effect                      | `hover:opacity-80 transition-opacity duration-150`          |
-| Diff highlight (trad/simp differ) | `text-amber-600 dark:text-amber-400` (no background)        |
-| Diff highlight scope              | **Both** simplified & traditional sides                     |
-| Click behavior                    | Both sides link to **same** Hanzii page (simplified lookup) |
+| Rule                              | Value                                                         |
+| --------------------------------- | ------------------------------------------------------------- |
+| Color                             | `text-han` (red tone)                                         |
+| Font weight                       | `font-semibold` (600)                                         |
+| Hover effect                      | `hover:opacity-80 transition-opacity duration-150`            |
+| Diff highlight (trad/simp differ) | `text-amber-600 dark:text-amber-400` (no background)          |
+| Diff highlight scope              | **Both** simplified & traditional sides                       |
+| Click behavior                    | Both sides link to **same** Hanzii page (simplified lookup)   |
+| Single-form (1 phiên bản)         | Chỉ hiện **1 form traditional**; KHÔNG hiện simplified trùng  |
+| Màu (trang Han Characters)        | 🔴 đỏ = traditional, 🔵 xanh = simplified (chỉ khi khác nhau) |
 
 ---
 
@@ -173,3 +175,27 @@
 - ✅ `active:enabled:scale-[0.97]` on all buttons
 - ✅ `focus-visible:outline-accent` for focus states
 - ✅ `transition` 150-300ms for hover/active
+
+---
+
+## 8. Han Characters Page — Verified UI Rules (2026-08-02)
+
+> Ghi chú UI/UX đã xác minh, bổ sung cho MASTER.md. Chi tiết kỹ thuật (backend/sync/auth) xem `AGENTS.md` mục 9.
+
+### 8.1 Hán tự single-form (chỉ 1 phiên bản)
+
+- `hanSimplified = NULL` khi không có simplified riêng (vd 慧, 人, 大, 山, 你, 仇, 熏).
+- **Bảng hiển thị:** chỉ hiện **1 form traditional** (🔴 đỏ), KHÔNG hiện `/ simplified` trùng (dùng `item.hanSimplified && item.hanSimplified !== item.hanTraditional`).
+- **Edit form:** khi `hanSimplified === hanTraditional` → field **Simplified để trống** (`HanCharacterRow.jsx`, `AddHanCharacterModal.jsx`); lưu `hanSimplified: x || undefined`.
+- **Detail page:** chỉ hiện traditional khi single-form.
+
+### 8.2 Sidebar "Sync Data" (trang Han Characters)
+
+- Chỉ còn **5 nút**: Pinyin, Jyutping, Traditional/Simplified, Vocabularies → Chinese Characters, Remove duplicates.
+- Nút **"Vocabularies → Chinese Characters"** (`MissingHanCharsSync`): click mở **modal** → nút "Sync N items" trong modal mới chạy; khi không còn item → hiện **"0 — Fully synced"** (disabled).
+- Đã xóa 4 nút dư thừa: Sino-Vietnamese (phienam), Vocab-Han Relations, From Vocabularies, Sino-Vietnamese → Vocabularies.
+
+### 8.3 Màu simplified / traditional
+
+- 🔴 **Đỏ** = traditional (phồn thể)
+- 🔵 **Xanh** = simplified (giản thể) — chỉ hiển thị khi khác traditional

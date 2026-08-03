@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/cn.js";
@@ -52,8 +52,6 @@ const hanCellClass = "flex h-full min-h-0 flex-col gap-4 items-center";
 const hanCellBodyClass = "wd-han-cell-body flex flex-1 flex-col justify-center items-center gap-2";
 
 const hanGlyphClass = "wd-han block text-[clamp(3rem,8vw,7rem)] leading-none";
-
-const hanDiffClass = "text-amber-600 dark:text-amber-400";
 
 const romanLineClass = cn(detailTextClass, "wd-roman font-semibold not-italic tracking-wide text-jyutping");
 
@@ -131,11 +129,176 @@ function DetailField({ valueMinHeight, children }) {
     return <div className={cn(valueShellClass, valueMinHeight, "flex flex-col justify-center")}>{children}</div>;
 }
 
+/**
+ * Per-character breakdown of a vocabulary (from `vocabulary.hanCharacters`).
+ * Renders each han character with its aligned pinyin/jyutping, linking to the
+ * HanCharacter detail page where a matching han character exists.
+ */
+function HanCharactersBreakdown({ vocabulary }) {
+    const { t } = useLocale();
+    const navigate = useNavigate();
+    const hanCharacters = useHanCharacters();
+    const breakdown = vocabulary.hanCharacters;
+
+    const list = useMemo(() => {
+        if (!Array.isArray(breakdown) || breakdown.length === 0) return [];
+        return breakdown.map((item, i) => {
+            const ch = String(item?.character ?? "").trim();
+            if (!ch) return null;
+            const simp = String(item?.hanSimplified ?? "").trim() || undefined;
+            const hanId = hanCharacters.find(
+                (h) =>
+                    (h.hanSimplified ?? "") === ch ||
+                    (h.hanTraditional ?? "") === ch ||
+                    (simp && (h.hanSimplified ?? "") === simp),
+            )?.id;
+            return {
+                key: `${ch}-${i}`,
+                character: ch,
+                hanSimplified: simp && simp !== ch ? simp : undefined,
+                pinyin: String(item?.pinyin ?? "").trim() || null,
+                jyutping: String(item?.jyutping ?? "").trim() || null,
+                hanId,
+            };
+        });
+    }, [breakdown, hanCharacters]);
+
+    if (list.length === 0) return null;
+
+    return (
+        <div className="w-full rounded-xl border border-border/60 bg-surface/80 px-4 py-4 shadow-theme-sm">
+            <p className={cn(subLabelClass, "mb-4")}>{t.wordBank?.colHanCharacters ?? "Han Characters"}</p>
+            <div className="flex flex-wrap justify-center gap-2">
+                {list.map((item) => {
+                    const cell = (
+                        <div className="flex min-w-14 flex-col items-center gap-1 rounded-lg border border-border/70 bg-bg px-3 py-2 transition-colors">
+                            <span className="flex items-baseline justify-center gap-0.5 leading-none">
+                                {item.hanSimplified ? (
+                                    <>
+                                        <span
+                                            className={cn(
+                                                detailTextClass,
+                                                "wd-roman font-semibold not-italic tracking-wide text-3xl leading-none",
+                                                "text-red-600 dark:text-red-400",
+                                            )}
+                                        >
+                                            {item.character}
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                detailTextClass,
+                                                "wd-roman font-semibold not-italic tracking-wide text-2xl leading-none",
+                                                "text-blue-600 dark:text-blue-400",
+                                            )}
+                                        >
+                                            {item.hanSimplified}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span
+                                        className={cn(
+                                            detailTextClass,
+                                            "wd-roman font-semibold not-italic tracking-wide text-3xl leading-none",
+                                            "text-red-600 dark:text-red-400",
+                                        )}
+                                    >
+                                        {item.character}
+                                    </span>
+                                )}
+                            </span>
+                            <span className="text-xs text-pinyin font-medium leading-tight">{item.pinyin || "-"}</span>
+                            <span className="text-xs text-jyutping font-medium leading-tight">
+                                {item.jyutping || "-"}
+                            </span>
+                        </div>
+                    );
+                    return item.hanId ? (
+                        <button
+                            key={item.key}
+                            type="button"
+                            className="cursor-pointer rounded-lg border-0 bg-transparent p-0 transition-opacity duration-150 hover:opacity-80 focus:outline-2 focus:outline-accent focus:outline-offset-2"
+                            title={`${item.character}${item.hanSimplified ? `/${item.hanSimplified}` : ""} — ${t.hanCharacters?.viewDetail ?? "View details"}`}
+                            onClick={() => navigate(hanCharacterDetailPath(item.hanId))}
+                        >
+                            {cell}
+                        </button>
+                    ) : (
+                        <div key={item.key}>{cell}</div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 function HanSubField({ label, children }) {
     return (
         <div className={hanCellClass}>
             <p className={subLabelClass}>{label}</p>
             <div className={hanCellBodyClass}>{children}</div>
+        </div>
+    );
+}
+
+/**
+ * Read-only lexicon metadata sourced from xue-hanzi-dictionary.json:
+ * related words (tw) and numeric stats
+ * (boost, movieWordRank, bookWordRank, pinyinNumeric, searchPinyin).
+ */
+function LexiconInfo({ vocabulary, t }) {
+    const relatedWords = Array.isArray(vocabulary.relatedWords) ? vocabulary.relatedWords : [];
+    const meta = [
+        { label: t.wordDetail.pinyinNumeric, value: vocabulary.pinyinNumeric },
+        { label: t.wordDetail.searchPinyin, value: vocabulary.searchPinyin },
+        { label: t.wordDetail.boost, value: vocabulary.boost },
+        { label: t.wordDetail.movieWordRank, value: vocabulary.movieWordRank },
+        { label: t.wordDetail.bookWordRank, value: vocabulary.bookWordRank },
+    ].filter((m) => m.value !== undefined && m.value !== null && m.value !== "");
+    const hasMeta = meta.length > 0;
+
+    if (relatedWords.length === 0 && !hasMeta) return null;
+
+    return (
+        <div className="w-full flex flex-col gap-4">
+            {relatedWords.length > 0 && (
+                <div className="rounded-xl border border-border/60 bg-surface p-4 shadow-theme-sm">
+                    <h3 className="text-sm font-semibold text-violet-600 dark:text-violet-400 mb-4">
+                        {t.wordDetail.relatedWords}
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                        {relatedWords.map((rw, i) => (
+                            <span
+                                key={i}
+                                className="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-bg px-3 py-2 text-sm"
+                            >
+                                <span className="wd-han text-lg leading-none text-red-600 dark:text-red-400 font-semibold">
+                                    {rw?.trad || rw?.word}
+                                </span>
+                                <span className="text-xs text-text-muted">{rw?.gloss || rw?.word}</span>
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {hasMeta && (
+                <div className="rounded-xl border border-border/60 bg-surface p-4 shadow-theme-sm">
+                    <h3 className="text-sm font-semibold text-violet-600 dark:text-violet-400 mb-4">
+                        {t.wordDetail.lexiconMetadata}
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {meta.map((m) => (
+                            <div
+                                key={m.label}
+                                className="flex flex-col gap-0.5 rounded-lg border border-border/40 bg-bg px-3 py-2"
+                            >
+                                <span className="text-[10px] uppercase tracking-wide text-text-muted">{m.label}</span>
+                                <span className="text-sm font-semibold text-text-h">{m.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -190,7 +353,8 @@ function WordHanRomanBlock({
         });
     }
 
-    /** Render text with per-character diff highlighting */
+    /** Render text with per-character diff coloring (matches WordRow vocab table).
+     *  Rule: same-as-traditional char → red (traditional), differing char → blue (simplified). */
     function renderHanWithDiff(text, diffChars) {
         if (!text) return null;
         const hasDiff = diffChars && diffChars.length > 0 && text.length > 1;
@@ -199,14 +363,15 @@ function WordHanRomanBlock({
             const ch = c.char;
             const hanId = charIdMap.get(ch);
             const isHan = /\p{Script=Han}/u.test(ch);
+            const tone = c.same ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400";
             if (hanId && isHan) {
                 return (
                     <button
                         key={i}
                         type="button"
                         className={cn(
-                            "inline cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit leading-tight rounded transition-opacity duration-150 hover:opacity-80 focus:outline-2 focus:outline-accent focus:outline-offset-2",
-                            !c.same && hanDiffClass,
+                            "inline cursor-pointer border-0 bg-transparent p-0 font-inherit leading-tight rounded transition-opacity duration-150 hover:opacity-80 focus:outline-2 focus:outline-accent focus:outline-offset-2",
+                            tone,
                         )}
                         onClick={(e) => {
                             e.stopPropagation();
@@ -219,7 +384,7 @@ function WordHanRomanBlock({
                 );
             }
             return (
-                <span key={i} className={cn(!c.same && hanDiffClass)}>
+                <span key={i} className={tone}>
                     {ch}
                 </span>
             );
@@ -234,13 +399,13 @@ function WordHanRomanBlock({
 
     if (editing) {
         const hanEditClass =
-            "w-full px-2 py-4 font-semibold text-han bg-transparent border-0 outline-none transition-colors focus:border-accent-border text-center";
+            "w-full px-2 py-4 font-semibold bg-transparent border-0 outline-none transition-colors focus:border-accent-border text-center";
         if (same) {
             return (
                 <div className={shellClass}>
                     <div className="flex flex-col gap-4">
                         <input
-                            className={hanEditClass}
+                            className={cn(hanEditClass, "text-red-600 dark:text-red-400")}
                             style={{ fontSize: 48 }}
                             value={draft.hanTraditional}
                             onChange={(e) => onDraftChange("hanTraditional", e.target.value)}
@@ -252,20 +417,20 @@ function WordHanRomanBlock({
         return (
             <div className={shellClass}>
                 <div className={cn(hanGridClass, gridClass)}>
-                    <HanSubField label={t.wordBank.colHanSimplified}>
-                        <input
-                            className={hanEditClass}
-                            style={{ fontSize: 48 }}
-                            value={draft.hanSimplified ?? ""}
-                            onChange={(e) => onDraftChange("hanSimplified", e.target.value)}
-                        />
-                    </HanSubField>
                     <HanSubField label={t.hanLookup.traditionalHk}>
                         <input
-                            className={hanEditClass}
+                            className={cn(hanEditClass, "text-red-600 dark:text-red-400")}
                             style={{ fontSize: 48 }}
                             value={draft.hanTraditional}
                             onChange={(e) => onDraftChange("hanTraditional", e.target.value)}
+                        />
+                    </HanSubField>
+                    <HanSubField label={t.wordBank.colHanSimplified}>
+                        <input
+                            className={cn(hanEditClass, "text-blue-600 dark:text-blue-400")}
+                            style={{ fontSize: 48 }}
+                            value={draft.hanSimplified ?? ""}
+                            onChange={(e) => onDraftChange("hanSimplified", e.target.value)}
                         />
                     </HanSubField>
                 </div>
@@ -280,15 +445,17 @@ function WordHanRomanBlock({
                     {sinoVietnamese?.trim() && (
                         <span className={cn(pinyinLineClass, "text-viet font-medium")}>{sinoVietnamese}</span>
                     )}
-                    <span className={cn(hanGlyphClass, "font-semibold text-han")}>
+                    <span className={cn(hanGlyphClass, "font-semibold text-red-600 dark:text-red-400")}>
                         {renderHanText(display.traditional)}
                     </span>
-                    <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center w-full max-w-xs">
+                    <div className="grid grid-cols-[auto_auto_auto] gap-4 items-center w-max max-w-full mx-auto">
                         <span className={cn(pinyinLineClass, "text-right")}>
-                            {pinyin || <span className="italic text-text-muted">pending</span>}
+                            {pinyin || <span className="italic text-text-muted">-</span>}
                         </span>
                         <span className="text-text-muted text-sm">|</span>
-                        <span className={cn(romanLineClass, "text-left")}>{jyutping || ""}</span>
+                        <span className={cn(romanLineClass, "text-left")}>
+                            {jyutping || <span className="italic text-text-muted">-</span>}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -301,23 +468,23 @@ function WordHanRomanBlock({
                 <p className={cn(pinyinLineClass, "text-center mb-4 text-viet font-medium")}>{sinoVietnamese}</p>
             )}
             <div className={cn(hanGridClass, gridClass)}>
+                <HanSubField label={t.hanLookup.traditionalHk}>
+                    <span className={cn(hanGlyphClass, "font-semibold text-red-600 dark:text-red-400")}>
+                        {renderHanText(display.traditional)}
+                    </span>
+                    <p className={cn(romanLineClass, "text-center mt-2")}>
+                        {jyutping || <span className="italic text-text-muted">-</span>}
+                    </p>
+                </HanSubField>
                 <HanSubField label={t.wordBank.colHanSimplified}>
-                    <span className={cn(hanGlyphClass, "font-semibold text-han")}>
+                    <span className={cn(hanGlyphClass, "font-semibold")}>
                         {hanDiff
                             ? renderHanWithDiff(display.simplified || display.traditional, hanDiff.simp)
                             : renderHanText(display.simplified || display.traditional)}
                     </span>
                     <p className={cn(pinyinLineClass, "text-center mt-2")}>
-                        {pinyin || <span className="italic text-text-muted">pending</span>}
+                        {pinyin || <span className="italic text-text-muted">-</span>}
                     </p>
-                </HanSubField>
-                <HanSubField label={t.hanLookup.traditionalHk}>
-                    <span className={cn(hanGlyphClass, "font-semibold text-han")}>
-                        {hanDiff
-                            ? renderHanWithDiff(display.traditional, hanDiff.trad)
-                            : renderHanText(display.traditional)}
-                    </span>
-                    <p className={cn(romanLineClass, "text-center mt-2")}>{jyutping || ""}</p>
                 </HanSubField>
             </div>
         </div>
@@ -568,6 +735,8 @@ export function WordDetailContent({
                         jyutping={vocabulary.jyutping}
                         sinoVietnamese={vocabulary.sinoVietnamese}
                     />
+
+                    {!editing && <HanCharactersBreakdown vocabulary={vocabulary} />}
 
                     {editing
                         ? (() => {
@@ -865,7 +1034,9 @@ export function WordDetailContent({
                                         <div key={v.id} className="rounded-lg border border-border bg-bg p-4 text-sm">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="text-xs font-semibold text-text-muted">#{i + 1}</span>
-                                                <span className="text-han font-semibold">{v.hanTraditional}</span>
+                                                <span className="text-red-600 dark:text-red-400 font-semibold">
+                                                    {v.hanTraditional}
+                                                </span>
                                                 {v.hskLevel && (
                                                     <span className="text-xs text-text-muted border border-border rounded-full px-2 py-0.5">
                                                         {v.hskLevel}
@@ -918,6 +1089,8 @@ export function WordDetailContent({
                     )}
                 </div>
 
+                {!editing && <LexiconInfo vocabulary={vocabulary} t={t} />}
+
                 <div className="mx-auto flex w-full min-w-0 flex-col gap-6">
                     <WordSentenceSuggestions word={vocabulary} />
                 </div>
@@ -925,12 +1098,7 @@ export function WordDetailContent({
 
             {(() => {
                 const actionBar = (
-                    <div
-                        className={cn(
-                            actionBarClass,
-                            "shrink-0 bg-surface pt-4 pb-4 px-4 sm:px-8 border-t border-border/40",
-                        )}
-                    >
+                    <div className={cn(actionBarClass, "shrink-0 bg-surface pt-4 pb-4")}>
                         <div className="flex justify-start">
                             {canEdit && onSave && !editing && (
                                 <Button variant="warning" onClick={startEdit}>

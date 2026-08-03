@@ -313,7 +313,7 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
             <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
                 {t.wordBank.colHanTraditional} *
                 <input
-                    className="w-full px-2 py-4 font-semibold text-han bg-transparent border-0 border-b-2 border-border outline-none transition-colors focus:border-accent-border"
+                    className="w-full px-2 py-4 font-semibold text-red-600 dark:text-red-400 bg-transparent border-0 border-b-2 border-border outline-none transition-colors focus:border-accent-border"
                     style={{ fontSize: 48 }}
                     value={draft.hanTraditional}
                     onChange={(e) => handleHanChange(e.target.value)}

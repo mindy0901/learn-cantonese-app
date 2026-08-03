@@ -28,10 +28,16 @@ export type AggregateVocabulary = {
 
 export type VocabularyAvgAggregateOutputType = {
   frequency: number | null
+  movieWordRank: number | null
+  bookWordRank: number | null
+  boost: number | null
 }
 
 export type VocabularySumAggregateOutputType = {
   frequency: number | null
+  movieWordRank: number | null
+  bookWordRank: number | null
+  boost: number | null
 }
 
 export type VocabularyMinAggregateOutputType = {
@@ -51,6 +57,10 @@ export type VocabularyMinAggregateOutputType = {
   radical: string | null
   classifiers: string | null
   pinyinNumeric: string | null
+  movieWordRank: number | null
+  bookWordRank: number | null
+  boost: number | null
+  searchPinyin: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -72,6 +82,10 @@ export type VocabularyMaxAggregateOutputType = {
   radical: string | null
   classifiers: string | null
   pinyinNumeric: string | null
+  movieWordRank: number | null
+  bookWordRank: number | null
+  boost: number | null
+  searchPinyin: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -93,6 +107,12 @@ export type VocabularyCountAggregateOutputType = {
   radical: number
   classifiers: number
   pinyinNumeric: number
+  movieWordRank: number
+  bookWordRank: number
+  relatedWords: number
+  hanCharacters: number
+  boost: number
+  searchPinyin: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -101,10 +121,16 @@ export type VocabularyCountAggregateOutputType = {
 
 export type VocabularyAvgAggregateInputType = {
   frequency?: true
+  movieWordRank?: true
+  bookWordRank?: true
+  boost?: true
 }
 
 export type VocabularySumAggregateInputType = {
   frequency?: true
+  movieWordRank?: true
+  bookWordRank?: true
+  boost?: true
 }
 
 export type VocabularyMinAggregateInputType = {
@@ -124,6 +150,10 @@ export type VocabularyMinAggregateInputType = {
   radical?: true
   classifiers?: true
   pinyinNumeric?: true
+  movieWordRank?: true
+  bookWordRank?: true
+  boost?: true
+  searchPinyin?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -145,6 +175,10 @@ export type VocabularyMaxAggregateInputType = {
   radical?: true
   classifiers?: true
   pinyinNumeric?: true
+  movieWordRank?: true
+  bookWordRank?: true
+  boost?: true
+  searchPinyin?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -166,6 +200,12 @@ export type VocabularyCountAggregateInputType = {
   radical?: true
   classifiers?: true
   pinyinNumeric?: true
+  movieWordRank?: true
+  bookWordRank?: true
+  relatedWords?: true
+  hanCharacters?: true
+  boost?: true
+  searchPinyin?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -274,6 +314,12 @@ export type VocabularyGroupByOutputType = {
   radical: string | null
   classifiers: string | null
   pinyinNumeric: string | null
+  movieWordRank: number | null
+  bookWordRank: number | null
+  relatedWords: runtime.JsonValue | null
+  hanCharacters: runtime.JsonValue | null
+  boost: number | null
+  searchPinyin: string | null
   createdAt: Date
   updatedAt: Date
   _count: VocabularyCountAggregateOutputType | null
@@ -318,6 +364,12 @@ export type VocabularyWhereInput = {
   radical?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   classifiers?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   pinyinNumeric?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  movieWordRank?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
+  bookWordRank?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
+  relatedWords?: Prisma.JsonNullableFilter<"Vocabulary">
+  hanCharacters?: Prisma.JsonNullableFilter<"Vocabulary">
+  boost?: Prisma.FloatNullableFilter<"Vocabulary"> | number | null
+  searchPinyin?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningListRelationFilter
@@ -344,6 +396,12 @@ export type VocabularyOrderByWithRelationInput = {
   radical?: Prisma.SortOrderInput | Prisma.SortOrder
   classifiers?: Prisma.SortOrderInput | Prisma.SortOrder
   pinyinNumeric?: Prisma.SortOrderInput | Prisma.SortOrder
+  movieWordRank?: Prisma.SortOrderInput | Prisma.SortOrder
+  bookWordRank?: Prisma.SortOrderInput | Prisma.SortOrder
+  relatedWords?: Prisma.SortOrderInput | Prisma.SortOrder
+  hanCharacters?: Prisma.SortOrderInput | Prisma.SortOrder
+  boost?: Prisma.SortOrderInput | Prisma.SortOrder
+  searchPinyin?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   vocabularyMeanings?: Prisma.VocabularyMeaningOrderByRelationAggregateInput
@@ -373,6 +431,12 @@ export type VocabularyWhereUniqueInput = Prisma.AtLeast<{
   radical?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   classifiers?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   pinyinNumeric?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  movieWordRank?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
+  bookWordRank?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
+  relatedWords?: Prisma.JsonNullableFilter<"Vocabulary">
+  hanCharacters?: Prisma.JsonNullableFilter<"Vocabulary">
+  boost?: Prisma.FloatNullableFilter<"Vocabulary"> | number | null
+  searchPinyin?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningListRelationFilter
@@ -399,6 +463,12 @@ export type VocabularyOrderByWithAggregationInput = {
   radical?: Prisma.SortOrderInput | Prisma.SortOrder
   classifiers?: Prisma.SortOrderInput | Prisma.SortOrder
   pinyinNumeric?: Prisma.SortOrderInput | Prisma.SortOrder
+  movieWordRank?: Prisma.SortOrderInput | Prisma.SortOrder
+  bookWordRank?: Prisma.SortOrderInput | Prisma.SortOrder
+  relatedWords?: Prisma.SortOrderInput | Prisma.SortOrder
+  hanCharacters?: Prisma.SortOrderInput | Prisma.SortOrder
+  boost?: Prisma.SortOrderInput | Prisma.SortOrder
+  searchPinyin?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.VocabularyCountOrderByAggregateInput
@@ -428,6 +498,12 @@ export type VocabularyScalarWhereWithAggregatesInput = {
   radical?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   classifiers?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   pinyinNumeric?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
+  movieWordRank?: Prisma.IntNullableWithAggregatesFilter<"Vocabulary"> | number | null
+  bookWordRank?: Prisma.IntNullableWithAggregatesFilter<"Vocabulary"> | number | null
+  relatedWords?: Prisma.JsonNullableWithAggregatesFilter<"Vocabulary">
+  hanCharacters?: Prisma.JsonNullableWithAggregatesFilter<"Vocabulary">
+  boost?: Prisma.FloatNullableWithAggregatesFilter<"Vocabulary"> | number | null
+  searchPinyin?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Vocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Vocabulary"> | Date | string
 }
@@ -449,6 +525,12 @@ export type VocabularyCreateInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
@@ -475,6 +557,12 @@ export type VocabularyUncheckedCreateInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
@@ -501,6 +589,12 @@ export type VocabularyUpdateInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
@@ -527,6 +621,12 @@ export type VocabularyUncheckedUpdateInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
@@ -553,6 +653,12 @@ export type VocabularyCreateManyInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -574,6 +680,12 @@ export type VocabularyUpdateManyMutationInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -595,6 +707,12 @@ export type VocabularyUncheckedUpdateManyInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -616,12 +734,21 @@ export type VocabularyCountOrderByAggregateInput = {
   radical?: Prisma.SortOrder
   classifiers?: Prisma.SortOrder
   pinyinNumeric?: Prisma.SortOrder
+  movieWordRank?: Prisma.SortOrder
+  bookWordRank?: Prisma.SortOrder
+  relatedWords?: Prisma.SortOrder
+  hanCharacters?: Prisma.SortOrder
+  boost?: Prisma.SortOrder
+  searchPinyin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type VocabularyAvgOrderByAggregateInput = {
   frequency?: Prisma.SortOrder
+  movieWordRank?: Prisma.SortOrder
+  bookWordRank?: Prisma.SortOrder
+  boost?: Prisma.SortOrder
 }
 
 export type VocabularyMaxOrderByAggregateInput = {
@@ -641,6 +768,10 @@ export type VocabularyMaxOrderByAggregateInput = {
   radical?: Prisma.SortOrder
   classifiers?: Prisma.SortOrder
   pinyinNumeric?: Prisma.SortOrder
+  movieWordRank?: Prisma.SortOrder
+  bookWordRank?: Prisma.SortOrder
+  boost?: Prisma.SortOrder
+  searchPinyin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -662,12 +793,19 @@ export type VocabularyMinOrderByAggregateInput = {
   radical?: Prisma.SortOrder
   classifiers?: Prisma.SortOrder
   pinyinNumeric?: Prisma.SortOrder
+  movieWordRank?: Prisma.SortOrder
+  bookWordRank?: Prisma.SortOrder
+  boost?: Prisma.SortOrder
+  searchPinyin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type VocabularySumOrderByAggregateInput = {
   frequency?: Prisma.SortOrder
+  movieWordRank?: Prisma.SortOrder
+  bookWordRank?: Prisma.SortOrder
+  boost?: Prisma.SortOrder
 }
 
 export type VocabularyScalarRelationFilter = {
@@ -676,6 +814,14 @@ export type VocabularyScalarRelationFilter = {
 }
 
 export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type NullableFloatFieldUpdateOperationsInput = {
   set?: number | null
   increment?: number
   decrement?: number
@@ -770,6 +916,12 @@ export type VocabularyCreateWithoutVocabularyMeaningsInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
@@ -795,6 +947,12 @@ export type VocabularyUncheckedCreateWithoutVocabularyMeaningsInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
@@ -836,6 +994,12 @@ export type VocabularyUpdateWithoutVocabularyMeaningsInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
@@ -861,6 +1025,12 @@ export type VocabularyUncheckedUpdateWithoutVocabularyMeaningsInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
@@ -886,6 +1056,12 @@ export type VocabularyCreateWithoutVocabularyExamplesInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
@@ -911,6 +1087,12 @@ export type VocabularyUncheckedCreateWithoutVocabularyExamplesInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
@@ -952,6 +1134,12 @@ export type VocabularyUpdateWithoutVocabularyExamplesInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
@@ -977,6 +1165,12 @@ export type VocabularyUncheckedUpdateWithoutVocabularyExamplesInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
@@ -1002,6 +1196,12 @@ export type VocabularyCreateWithoutVocabularyCharactersInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
@@ -1027,6 +1227,12 @@ export type VocabularyUncheckedCreateWithoutVocabularyCharactersInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
@@ -1068,6 +1274,12 @@ export type VocabularyUpdateWithoutVocabularyCharactersInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
@@ -1093,6 +1305,12 @@ export type VocabularyUncheckedUpdateWithoutVocabularyCharactersInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
@@ -1118,6 +1336,12 @@ export type VocabularyCreateWithoutUserVocabulariesInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
@@ -1143,6 +1367,12 @@ export type VocabularyUncheckedCreateWithoutUserVocabulariesInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
@@ -1184,6 +1414,12 @@ export type VocabularyUpdateWithoutUserVocabulariesInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
@@ -1209,6 +1445,12 @@ export type VocabularyUncheckedUpdateWithoutUserVocabulariesInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
@@ -1234,6 +1476,12 @@ export type VocabularyCreateWithoutFlashcardDeckVocabulariesInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
@@ -1259,6 +1507,12 @@ export type VocabularyUncheckedCreateWithoutFlashcardDeckVocabulariesInput = {
   radical?: string | null
   classifiers?: string | null
   pinyinNumeric?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  searchPinyin?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
@@ -1300,6 +1554,12 @@ export type VocabularyUpdateWithoutFlashcardDeckVocabulariesInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
@@ -1325,6 +1585,12 @@ export type VocabularyUncheckedUpdateWithoutFlashcardDeckVocabulariesInput = {
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
@@ -1417,6 +1683,12 @@ export type VocabularySelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   radical?: boolean
   classifiers?: boolean
   pinyinNumeric?: boolean
+  movieWordRank?: boolean
+  bookWordRank?: boolean
+  relatedWords?: boolean
+  hanCharacters?: boolean
+  boost?: boolean
+  searchPinyin?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   vocabularyMeanings?: boolean | Prisma.Vocabulary$vocabularyMeaningsArgs<ExtArgs>
@@ -1444,6 +1716,12 @@ export type VocabularySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   radical?: boolean
   classifiers?: boolean
   pinyinNumeric?: boolean
+  movieWordRank?: boolean
+  bookWordRank?: boolean
+  relatedWords?: boolean
+  hanCharacters?: boolean
+  boost?: boolean
+  searchPinyin?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["vocabulary"]>
@@ -1465,6 +1743,12 @@ export type VocabularySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   radical?: boolean
   classifiers?: boolean
   pinyinNumeric?: boolean
+  movieWordRank?: boolean
+  bookWordRank?: boolean
+  relatedWords?: boolean
+  hanCharacters?: boolean
+  boost?: boolean
+  searchPinyin?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["vocabulary"]>
@@ -1486,11 +1770,17 @@ export type VocabularySelectScalar = {
   radical?: boolean
   classifiers?: boolean
   pinyinNumeric?: boolean
+  movieWordRank?: boolean
+  bookWordRank?: boolean
+  relatedWords?: boolean
+  hanCharacters?: boolean
+  boost?: boolean
+  searchPinyin?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type VocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sinoVietnamese" | "hanSimplified" | "pinyin" | "hanTraditional" | "jyutping" | "hskLevel" | "searchKey" | "vietMeanings" | "engMeanings" | "vietExamples" | "pos" | "frequency" | "radical" | "classifiers" | "pinyinNumeric" | "createdAt" | "updatedAt", ExtArgs["result"]["vocabulary"]>
+export type VocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sinoVietnamese" | "hanSimplified" | "pinyin" | "hanTraditional" | "jyutping" | "hskLevel" | "searchKey" | "vietMeanings" | "engMeanings" | "vietExamples" | "pos" | "frequency" | "radical" | "classifiers" | "pinyinNumeric" | "movieWordRank" | "bookWordRank" | "relatedWords" | "hanCharacters" | "boost" | "searchPinyin" | "createdAt" | "updatedAt", ExtArgs["result"]["vocabulary"]>
 export type VocabularyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   vocabularyMeanings?: boolean | Prisma.Vocabulary$vocabularyMeaningsArgs<ExtArgs>
   vocabularyExamples?: boolean | Prisma.Vocabulary$vocabularyExamplesArgs<ExtArgs>
@@ -1528,6 +1818,12 @@ export type $VocabularyPayload<ExtArgs extends runtime.Types.Extensions.Internal
     radical: string | null
     classifiers: string | null
     pinyinNumeric: string | null
+    movieWordRank: number | null
+    bookWordRank: number | null
+    relatedWords: runtime.JsonValue | null
+    hanCharacters: runtime.JsonValue | null
+    boost: number | null
+    searchPinyin: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["vocabulary"]>
@@ -1974,6 +2270,12 @@ export interface VocabularyFieldRefs {
   readonly radical: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly classifiers: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly pinyinNumeric: Prisma.FieldRef<"Vocabulary", 'String'>
+  readonly movieWordRank: Prisma.FieldRef<"Vocabulary", 'Int'>
+  readonly bookWordRank: Prisma.FieldRef<"Vocabulary", 'Int'>
+  readonly relatedWords: Prisma.FieldRef<"Vocabulary", 'Json'>
+  readonly hanCharacters: Prisma.FieldRef<"Vocabulary", 'Json'>
+  readonly boost: Prisma.FieldRef<"Vocabulary", 'Float'>
+  readonly searchPinyin: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly createdAt: Prisma.FieldRef<"Vocabulary", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Vocabulary", 'DateTime'>
 }

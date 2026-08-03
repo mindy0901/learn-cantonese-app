@@ -10,7 +10,7 @@ const backdropClass =
 const modalClass =
     "m-auto flex w-full max-w-[420px] shrink-0 flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]";
 
-const hanCharInputClass = "text-[clamp(1.75rem,5vw,2.5rem)] font-semibold text-han leading-tight text-center";
+const hanCharInputClass = "text-[clamp(1.75rem,5vw,2.5rem)] font-semibold leading-tight text-center";
 
 export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
     const { t } = useLocale();
