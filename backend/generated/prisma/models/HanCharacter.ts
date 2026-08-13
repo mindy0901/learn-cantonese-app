@@ -20,8 +20,20 @@ export type HanCharacterModel = runtime.Types.Result.DefaultSelection<Prisma.$Ha
 
 export type AggregateHanCharacter = {
   _count: HanCharacterCountAggregateOutputType | null
+  _avg: HanCharacterAvgAggregateOutputType | null
+  _sum: HanCharacterSumAggregateOutputType | null
   _min: HanCharacterMinAggregateOutputType | null
   _max: HanCharacterMaxAggregateOutputType | null
+}
+
+export type HanCharacterAvgAggregateOutputType = {
+  frequency: number | null
+  strokeCount: number | null
+}
+
+export type HanCharacterSumAggregateOutputType = {
+  frequency: number | null
+  strokeCount: number | null
 }
 
 export type HanCharacterMinAggregateOutputType = {
@@ -30,6 +42,9 @@ export type HanCharacterMinAggregateOutputType = {
   hanTraditional: string | null
   hskLevel: string | null
   searchKey: string | null
+  frequency: number | null
+  strokeCount: number | null
+  radicalId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +55,9 @@ export type HanCharacterMaxAggregateOutputType = {
   hanTraditional: string | null
   hskLevel: string | null
   searchKey: string | null
+  frequency: number | null
+  strokeCount: number | null
+  radicalId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,11 +71,24 @@ export type HanCharacterCountAggregateOutputType = {
   jyutping: number
   hskLevel: number
   searchKey: number
+  frequency: number
+  strokeCount: number
+  radicalId: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
+
+export type HanCharacterAvgAggregateInputType = {
+  frequency?: true
+  strokeCount?: true
+}
+
+export type HanCharacterSumAggregateInputType = {
+  frequency?: true
+  strokeCount?: true
+}
 
 export type HanCharacterMinAggregateInputType = {
   id?: true
@@ -65,6 +96,9 @@ export type HanCharacterMinAggregateInputType = {
   hanTraditional?: true
   hskLevel?: true
   searchKey?: true
+  frequency?: true
+  strokeCount?: true
+  radicalId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -75,6 +109,9 @@ export type HanCharacterMaxAggregateInputType = {
   hanTraditional?: true
   hskLevel?: true
   searchKey?: true
+  frequency?: true
+  strokeCount?: true
+  radicalId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -88,6 +125,9 @@ export type HanCharacterCountAggregateInputType = {
   jyutping?: true
   hskLevel?: true
   searchKey?: true
+  frequency?: true
+  strokeCount?: true
+  radicalId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -131,6 +171,18 @@ export type HanCharacterAggregateArgs<ExtArgs extends runtime.Types.Extensions.I
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: HanCharacterAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: HanCharacterSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: HanCharacterMinAggregateInputType
@@ -161,6 +213,8 @@ export type HanCharacterGroupByArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   _count?: HanCharacterCountAggregateInputType | true
+  _avg?: HanCharacterAvgAggregateInputType
+  _sum?: HanCharacterSumAggregateInputType
   _min?: HanCharacterMinAggregateInputType
   _max?: HanCharacterMaxAggregateInputType
 }
@@ -174,9 +228,14 @@ export type HanCharacterGroupByOutputType = {
   jyutping: string[]
   hskLevel: string | null
   searchKey: string | null
+  frequency: number | null
+  strokeCount: number | null
+  radicalId: string | null
   createdAt: Date
   updatedAt: Date
   _count: HanCharacterCountAggregateOutputType | null
+  _avg: HanCharacterAvgAggregateOutputType | null
+  _sum: HanCharacterSumAggregateOutputType | null
   _min: HanCharacterMinAggregateOutputType | null
   _max: HanCharacterMaxAggregateOutputType | null
 }
@@ -208,8 +267,12 @@ export type HanCharacterWhereInput = {
   jyutping?: Prisma.StringNullableListFilter<"HanCharacter">
   hskLevel?: Prisma.StringNullableFilter<"HanCharacter"> | string | null
   searchKey?: Prisma.StringNullableFilter<"HanCharacter"> | string | null
+  frequency?: Prisma.IntNullableFilter<"HanCharacter"> | number | null
+  strokeCount?: Prisma.IntNullableFilter<"HanCharacter"> | number | null
+  radicalId?: Prisma.UuidNullableFilter<"HanCharacter"> | string | null
   createdAt?: Prisma.DateTimeFilter<"HanCharacter"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"HanCharacter"> | Date | string
+  radical?: Prisma.XOR<Prisma.RadicalNullableScalarRelationFilter, Prisma.RadicalWhereInput> | null
   vocabularyCharacters?: Prisma.VocabularyCharacterListRelationFilter
 }
 
@@ -222,8 +285,12 @@ export type HanCharacterOrderByWithRelationInput = {
   jyutping?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   searchKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  frequency?: Prisma.SortOrderInput | Prisma.SortOrder
+  strokeCount?: Prisma.SortOrderInput | Prisma.SortOrder
+  radicalId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  radical?: Prisma.RadicalOrderByWithRelationInput
   vocabularyCharacters?: Prisma.VocabularyCharacterOrderByRelationAggregateInput
 }
 
@@ -240,8 +307,12 @@ export type HanCharacterWhereUniqueInput = Prisma.AtLeast<{
   jyutping?: Prisma.StringNullableListFilter<"HanCharacter">
   hskLevel?: Prisma.StringNullableFilter<"HanCharacter"> | string | null
   searchKey?: Prisma.StringNullableFilter<"HanCharacter"> | string | null
+  frequency?: Prisma.IntNullableFilter<"HanCharacter"> | number | null
+  strokeCount?: Prisma.IntNullableFilter<"HanCharacter"> | number | null
+  radicalId?: Prisma.UuidNullableFilter<"HanCharacter"> | string | null
   createdAt?: Prisma.DateTimeFilter<"HanCharacter"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"HanCharacter"> | Date | string
+  radical?: Prisma.XOR<Prisma.RadicalNullableScalarRelationFilter, Prisma.RadicalWhereInput> | null
   vocabularyCharacters?: Prisma.VocabularyCharacterListRelationFilter
 }, "id" | "id_hanSimplified_hanTraditional">
 
@@ -254,11 +325,16 @@ export type HanCharacterOrderByWithAggregationInput = {
   jyutping?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   searchKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  frequency?: Prisma.SortOrderInput | Prisma.SortOrder
+  strokeCount?: Prisma.SortOrderInput | Prisma.SortOrder
+  radicalId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.HanCharacterCountOrderByAggregateInput
+  _avg?: Prisma.HanCharacterAvgOrderByAggregateInput
   _max?: Prisma.HanCharacterMaxOrderByAggregateInput
   _min?: Prisma.HanCharacterMinOrderByAggregateInput
+  _sum?: Prisma.HanCharacterSumOrderByAggregateInput
 }
 
 export type HanCharacterScalarWhereWithAggregatesInput = {
@@ -273,6 +349,9 @@ export type HanCharacterScalarWhereWithAggregatesInput = {
   jyutping?: Prisma.StringNullableListFilter<"HanCharacter">
   hskLevel?: Prisma.StringNullableWithAggregatesFilter<"HanCharacter"> | string | null
   searchKey?: Prisma.StringNullableWithAggregatesFilter<"HanCharacter"> | string | null
+  frequency?: Prisma.IntNullableWithAggregatesFilter<"HanCharacter"> | number | null
+  strokeCount?: Prisma.IntNullableWithAggregatesFilter<"HanCharacter"> | number | null
+  radicalId?: Prisma.UuidNullableWithAggregatesFilter<"HanCharacter"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"HanCharacter"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"HanCharacter"> | Date | string
 }
@@ -286,8 +365,11 @@ export type HanCharacterCreateInput = {
   jyutping?: Prisma.HanCharacterCreatejyutpingInput | string[]
   hskLevel?: string | null
   searchKey?: string | null
+  frequency?: number | null
+  strokeCount?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  radical?: Prisma.RadicalCreateNestedOneWithoutHanCharactersInput
   vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutHanCharacterInput
 }
 
@@ -300,6 +382,9 @@ export type HanCharacterUncheckedCreateInput = {
   jyutping?: Prisma.HanCharacterCreatejyutpingInput | string[]
   hskLevel?: string | null
   searchKey?: string | null
+  frequency?: number | null
+  strokeCount?: number | null
+  radicalId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutHanCharacterInput
@@ -314,8 +399,11 @@ export type HanCharacterUpdateInput = {
   jyutping?: Prisma.HanCharacterUpdatejyutpingInput | string[]
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  strokeCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  radical?: Prisma.RadicalUpdateOneWithoutHanCharactersNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutHanCharacterNestedInput
 }
 
@@ -328,6 +416,9 @@ export type HanCharacterUncheckedUpdateInput = {
   jyutping?: Prisma.HanCharacterUpdatejyutpingInput | string[]
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  strokeCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radicalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutHanCharacterNestedInput
@@ -342,6 +433,9 @@ export type HanCharacterCreateManyInput = {
   jyutping?: Prisma.HanCharacterCreatejyutpingInput | string[]
   hskLevel?: string | null
   searchKey?: string | null
+  frequency?: number | null
+  strokeCount?: number | null
+  radicalId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -355,6 +449,8 @@ export type HanCharacterUpdateManyMutationInput = {
   jyutping?: Prisma.HanCharacterUpdatejyutpingInput | string[]
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  strokeCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -368,6 +464,9 @@ export type HanCharacterUncheckedUpdateManyInput = {
   jyutping?: Prisma.HanCharacterUpdatejyutpingInput | string[]
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  strokeCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radicalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -395,8 +494,16 @@ export type HanCharacterCountOrderByAggregateInput = {
   jyutping?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
   searchKey?: Prisma.SortOrder
+  frequency?: Prisma.SortOrder
+  strokeCount?: Prisma.SortOrder
+  radicalId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type HanCharacterAvgOrderByAggregateInput = {
+  frequency?: Prisma.SortOrder
+  strokeCount?: Prisma.SortOrder
 }
 
 export type HanCharacterMaxOrderByAggregateInput = {
@@ -405,6 +512,9 @@ export type HanCharacterMaxOrderByAggregateInput = {
   hanTraditional?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
   searchKey?: Prisma.SortOrder
+  frequency?: Prisma.SortOrder
+  strokeCount?: Prisma.SortOrder
+  radicalId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -415,8 +525,26 @@ export type HanCharacterMinOrderByAggregateInput = {
   hanTraditional?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
   searchKey?: Prisma.SortOrder
+  frequency?: Prisma.SortOrder
+  strokeCount?: Prisma.SortOrder
+  radicalId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type HanCharacterSumOrderByAggregateInput = {
+  frequency?: Prisma.SortOrder
+  strokeCount?: Prisma.SortOrder
+}
+
+export type HanCharacterListRelationFilter = {
+  every?: Prisma.HanCharacterWhereInput
+  some?: Prisma.HanCharacterWhereInput
+  none?: Prisma.HanCharacterWhereInput
+}
+
+export type HanCharacterOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type HanCharacterScalarRelationFilter = {
@@ -459,8 +587,58 @@ export type HanCharacterUpdatejyutpingInput = {
   push?: string | string[]
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
+}
+
+export type HanCharacterCreateNestedManyWithoutRadicalInput = {
+  create?: Prisma.XOR<Prisma.HanCharacterCreateWithoutRadicalInput, Prisma.HanCharacterUncheckedCreateWithoutRadicalInput> | Prisma.HanCharacterCreateWithoutRadicalInput[] | Prisma.HanCharacterUncheckedCreateWithoutRadicalInput[]
+  connectOrCreate?: Prisma.HanCharacterCreateOrConnectWithoutRadicalInput | Prisma.HanCharacterCreateOrConnectWithoutRadicalInput[]
+  createMany?: Prisma.HanCharacterCreateManyRadicalInputEnvelope
+  connect?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+}
+
+export type HanCharacterUncheckedCreateNestedManyWithoutRadicalInput = {
+  create?: Prisma.XOR<Prisma.HanCharacterCreateWithoutRadicalInput, Prisma.HanCharacterUncheckedCreateWithoutRadicalInput> | Prisma.HanCharacterCreateWithoutRadicalInput[] | Prisma.HanCharacterUncheckedCreateWithoutRadicalInput[]
+  connectOrCreate?: Prisma.HanCharacterCreateOrConnectWithoutRadicalInput | Prisma.HanCharacterCreateOrConnectWithoutRadicalInput[]
+  createMany?: Prisma.HanCharacterCreateManyRadicalInputEnvelope
+  connect?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+}
+
+export type HanCharacterUpdateManyWithoutRadicalNestedInput = {
+  create?: Prisma.XOR<Prisma.HanCharacterCreateWithoutRadicalInput, Prisma.HanCharacterUncheckedCreateWithoutRadicalInput> | Prisma.HanCharacterCreateWithoutRadicalInput[] | Prisma.HanCharacterUncheckedCreateWithoutRadicalInput[]
+  connectOrCreate?: Prisma.HanCharacterCreateOrConnectWithoutRadicalInput | Prisma.HanCharacterCreateOrConnectWithoutRadicalInput[]
+  upsert?: Prisma.HanCharacterUpsertWithWhereUniqueWithoutRadicalInput | Prisma.HanCharacterUpsertWithWhereUniqueWithoutRadicalInput[]
+  createMany?: Prisma.HanCharacterCreateManyRadicalInputEnvelope
+  set?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+  disconnect?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+  delete?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+  connect?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+  update?: Prisma.HanCharacterUpdateWithWhereUniqueWithoutRadicalInput | Prisma.HanCharacterUpdateWithWhereUniqueWithoutRadicalInput[]
+  updateMany?: Prisma.HanCharacterUpdateManyWithWhereWithoutRadicalInput | Prisma.HanCharacterUpdateManyWithWhereWithoutRadicalInput[]
+  deleteMany?: Prisma.HanCharacterScalarWhereInput | Prisma.HanCharacterScalarWhereInput[]
+}
+
+export type HanCharacterUncheckedUpdateManyWithoutRadicalNestedInput = {
+  create?: Prisma.XOR<Prisma.HanCharacterCreateWithoutRadicalInput, Prisma.HanCharacterUncheckedCreateWithoutRadicalInput> | Prisma.HanCharacterCreateWithoutRadicalInput[] | Prisma.HanCharacterUncheckedCreateWithoutRadicalInput[]
+  connectOrCreate?: Prisma.HanCharacterCreateOrConnectWithoutRadicalInput | Prisma.HanCharacterCreateOrConnectWithoutRadicalInput[]
+  upsert?: Prisma.HanCharacterUpsertWithWhereUniqueWithoutRadicalInput | Prisma.HanCharacterUpsertWithWhereUniqueWithoutRadicalInput[]
+  createMany?: Prisma.HanCharacterCreateManyRadicalInputEnvelope
+  set?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+  disconnect?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+  delete?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+  connect?: Prisma.HanCharacterWhereUniqueInput | Prisma.HanCharacterWhereUniqueInput[]
+  update?: Prisma.HanCharacterUpdateWithWhereUniqueWithoutRadicalInput | Prisma.HanCharacterUpdateWithWhereUniqueWithoutRadicalInput[]
+  updateMany?: Prisma.HanCharacterUpdateManyWithWhereWithoutRadicalInput | Prisma.HanCharacterUpdateManyWithWhereWithoutRadicalInput[]
+  deleteMany?: Prisma.HanCharacterScalarWhereInput | Prisma.HanCharacterScalarWhereInput[]
 }
 
 export type HanCharacterCreateNestedOneWithoutVocabularyCharactersInput = {
@@ -477,6 +655,83 @@ export type HanCharacterUpdateOneRequiredWithoutVocabularyCharactersNestedInput 
   update?: Prisma.XOR<Prisma.XOR<Prisma.HanCharacterUpdateToOneWithWhereWithoutVocabularyCharactersInput, Prisma.HanCharacterUpdateWithoutVocabularyCharactersInput>, Prisma.HanCharacterUncheckedUpdateWithoutVocabularyCharactersInput>
 }
 
+export type HanCharacterCreateWithoutRadicalInput = {
+  id?: string
+  sinoVietnamese?: Prisma.HanCharacterCreatesinoVietnameseInput | string[]
+  hanSimplified?: string | null
+  pinyin?: Prisma.HanCharacterCreatepinyinInput | string[]
+  hanTraditional: string
+  jyutping?: Prisma.HanCharacterCreatejyutpingInput | string[]
+  hskLevel?: string | null
+  searchKey?: string | null
+  frequency?: number | null
+  strokeCount?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutHanCharacterInput
+}
+
+export type HanCharacterUncheckedCreateWithoutRadicalInput = {
+  id?: string
+  sinoVietnamese?: Prisma.HanCharacterCreatesinoVietnameseInput | string[]
+  hanSimplified?: string | null
+  pinyin?: Prisma.HanCharacterCreatepinyinInput | string[]
+  hanTraditional: string
+  jyutping?: Prisma.HanCharacterCreatejyutpingInput | string[]
+  hskLevel?: string | null
+  searchKey?: string | null
+  frequency?: number | null
+  strokeCount?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutHanCharacterInput
+}
+
+export type HanCharacterCreateOrConnectWithoutRadicalInput = {
+  where: Prisma.HanCharacterWhereUniqueInput
+  create: Prisma.XOR<Prisma.HanCharacterCreateWithoutRadicalInput, Prisma.HanCharacterUncheckedCreateWithoutRadicalInput>
+}
+
+export type HanCharacterCreateManyRadicalInputEnvelope = {
+  data: Prisma.HanCharacterCreateManyRadicalInput | Prisma.HanCharacterCreateManyRadicalInput[]
+  skipDuplicates?: boolean
+}
+
+export type HanCharacterUpsertWithWhereUniqueWithoutRadicalInput = {
+  where: Prisma.HanCharacterWhereUniqueInput
+  update: Prisma.XOR<Prisma.HanCharacterUpdateWithoutRadicalInput, Prisma.HanCharacterUncheckedUpdateWithoutRadicalInput>
+  create: Prisma.XOR<Prisma.HanCharacterCreateWithoutRadicalInput, Prisma.HanCharacterUncheckedCreateWithoutRadicalInput>
+}
+
+export type HanCharacterUpdateWithWhereUniqueWithoutRadicalInput = {
+  where: Prisma.HanCharacterWhereUniqueInput
+  data: Prisma.XOR<Prisma.HanCharacterUpdateWithoutRadicalInput, Prisma.HanCharacterUncheckedUpdateWithoutRadicalInput>
+}
+
+export type HanCharacterUpdateManyWithWhereWithoutRadicalInput = {
+  where: Prisma.HanCharacterScalarWhereInput
+  data: Prisma.XOR<Prisma.HanCharacterUpdateManyMutationInput, Prisma.HanCharacterUncheckedUpdateManyWithoutRadicalInput>
+}
+
+export type HanCharacterScalarWhereInput = {
+  AND?: Prisma.HanCharacterScalarWhereInput | Prisma.HanCharacterScalarWhereInput[]
+  OR?: Prisma.HanCharacterScalarWhereInput[]
+  NOT?: Prisma.HanCharacterScalarWhereInput | Prisma.HanCharacterScalarWhereInput[]
+  id?: Prisma.UuidFilter<"HanCharacter"> | string
+  sinoVietnamese?: Prisma.StringNullableListFilter<"HanCharacter">
+  hanSimplified?: Prisma.StringNullableFilter<"HanCharacter"> | string | null
+  pinyin?: Prisma.StringNullableListFilter<"HanCharacter">
+  hanTraditional?: Prisma.StringFilter<"HanCharacter"> | string
+  jyutping?: Prisma.StringNullableListFilter<"HanCharacter">
+  hskLevel?: Prisma.StringNullableFilter<"HanCharacter"> | string | null
+  searchKey?: Prisma.StringNullableFilter<"HanCharacter"> | string | null
+  frequency?: Prisma.IntNullableFilter<"HanCharacter"> | number | null
+  strokeCount?: Prisma.IntNullableFilter<"HanCharacter"> | number | null
+  radicalId?: Prisma.UuidNullableFilter<"HanCharacter"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"HanCharacter"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"HanCharacter"> | Date | string
+}
+
 export type HanCharacterCreateWithoutVocabularyCharactersInput = {
   id?: string
   sinoVietnamese?: Prisma.HanCharacterCreatesinoVietnameseInput | string[]
@@ -486,8 +741,11 @@ export type HanCharacterCreateWithoutVocabularyCharactersInput = {
   jyutping?: Prisma.HanCharacterCreatejyutpingInput | string[]
   hskLevel?: string | null
   searchKey?: string | null
+  frequency?: number | null
+  strokeCount?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  radical?: Prisma.RadicalCreateNestedOneWithoutHanCharactersInput
 }
 
 export type HanCharacterUncheckedCreateWithoutVocabularyCharactersInput = {
@@ -499,6 +757,9 @@ export type HanCharacterUncheckedCreateWithoutVocabularyCharactersInput = {
   jyutping?: Prisma.HanCharacterCreatejyutpingInput | string[]
   hskLevel?: string | null
   searchKey?: string | null
+  frequency?: number | null
+  strokeCount?: number | null
+  radicalId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -528,8 +789,11 @@ export type HanCharacterUpdateWithoutVocabularyCharactersInput = {
   jyutping?: Prisma.HanCharacterUpdatejyutpingInput | string[]
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  strokeCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  radical?: Prisma.RadicalUpdateOneWithoutHanCharactersNestedInput
 }
 
 export type HanCharacterUncheckedUpdateWithoutVocabularyCharactersInput = {
@@ -541,6 +805,71 @@ export type HanCharacterUncheckedUpdateWithoutVocabularyCharactersInput = {
   jyutping?: Prisma.HanCharacterUpdatejyutpingInput | string[]
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  strokeCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radicalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type HanCharacterCreateManyRadicalInput = {
+  id?: string
+  sinoVietnamese?: Prisma.HanCharacterCreatesinoVietnameseInput | string[]
+  hanSimplified?: string | null
+  pinyin?: Prisma.HanCharacterCreatepinyinInput | string[]
+  hanTraditional: string
+  jyutping?: Prisma.HanCharacterCreatejyutpingInput | string[]
+  hskLevel?: string | null
+  searchKey?: string | null
+  frequency?: number | null
+  strokeCount?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type HanCharacterUpdateWithoutRadicalInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sinoVietnamese?: Prisma.HanCharacterUpdatesinoVietnameseInput | string[]
+  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyin?: Prisma.HanCharacterUpdatepinyinInput | string[]
+  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
+  jyutping?: Prisma.HanCharacterUpdatejyutpingInput | string[]
+  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  strokeCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutHanCharacterNestedInput
+}
+
+export type HanCharacterUncheckedUpdateWithoutRadicalInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sinoVietnamese?: Prisma.HanCharacterUpdatesinoVietnameseInput | string[]
+  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyin?: Prisma.HanCharacterUpdatepinyinInput | string[]
+  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
+  jyutping?: Prisma.HanCharacterUpdatejyutpingInput | string[]
+  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  strokeCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutHanCharacterNestedInput
+}
+
+export type HanCharacterUncheckedUpdateManyWithoutRadicalInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sinoVietnamese?: Prisma.HanCharacterUpdatesinoVietnameseInput | string[]
+  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pinyin?: Prisma.HanCharacterUpdatepinyinInput | string[]
+  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
+  jyutping?: Prisma.HanCharacterUpdatejyutpingInput | string[]
+  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  strokeCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -585,8 +914,12 @@ export type HanCharacterSelect<ExtArgs extends runtime.Types.Extensions.Internal
   jyutping?: boolean
   hskLevel?: boolean
   searchKey?: boolean
+  frequency?: boolean
+  strokeCount?: boolean
+  radicalId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  radical?: boolean | Prisma.HanCharacter$radicalArgs<ExtArgs>
   vocabularyCharacters?: boolean | Prisma.HanCharacter$vocabularyCharactersArgs<ExtArgs>
   _count?: boolean | Prisma.HanCharacterCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["hanCharacter"]>
@@ -600,8 +933,12 @@ export type HanCharacterSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   jyutping?: boolean
   hskLevel?: boolean
   searchKey?: boolean
+  frequency?: boolean
+  strokeCount?: boolean
+  radicalId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  radical?: boolean | Prisma.HanCharacter$radicalArgs<ExtArgs>
 }, ExtArgs["result"]["hanCharacter"]>
 
 export type HanCharacterSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -613,8 +950,12 @@ export type HanCharacterSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   jyutping?: boolean
   hskLevel?: boolean
   searchKey?: boolean
+  frequency?: boolean
+  strokeCount?: boolean
+  radicalId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  radical?: boolean | Prisma.HanCharacter$radicalArgs<ExtArgs>
 }, ExtArgs["result"]["hanCharacter"]>
 
 export type HanCharacterSelectScalar = {
@@ -626,21 +967,30 @@ export type HanCharacterSelectScalar = {
   jyutping?: boolean
   hskLevel?: boolean
   searchKey?: boolean
+  frequency?: boolean
+  strokeCount?: boolean
+  radicalId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type HanCharacterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sinoVietnamese" | "hanSimplified" | "pinyin" | "hanTraditional" | "jyutping" | "hskLevel" | "searchKey" | "createdAt" | "updatedAt", ExtArgs["result"]["hanCharacter"]>
+export type HanCharacterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sinoVietnamese" | "hanSimplified" | "pinyin" | "hanTraditional" | "jyutping" | "hskLevel" | "searchKey" | "frequency" | "strokeCount" | "radicalId" | "createdAt" | "updatedAt", ExtArgs["result"]["hanCharacter"]>
 export type HanCharacterInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  radical?: boolean | Prisma.HanCharacter$radicalArgs<ExtArgs>
   vocabularyCharacters?: boolean | Prisma.HanCharacter$vocabularyCharactersArgs<ExtArgs>
   _count?: boolean | Prisma.HanCharacterCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type HanCharacterIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type HanCharacterIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type HanCharacterIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  radical?: boolean | Prisma.HanCharacter$radicalArgs<ExtArgs>
+}
+export type HanCharacterIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  radical?: boolean | Prisma.HanCharacter$radicalArgs<ExtArgs>
+}
 
 export type $HanCharacterPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "HanCharacter"
   objects: {
+    radical: Prisma.$RadicalPayload<ExtArgs> | null
     vocabularyCharacters: Prisma.$VocabularyCharacterPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -652,6 +1002,9 @@ export type $HanCharacterPayload<ExtArgs extends runtime.Types.Extensions.Intern
     jyutping: string[]
     hskLevel: string | null
     searchKey: string | null
+    frequency: number | null
+    strokeCount: number | null
+    radicalId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["hanCharacter"]>
@@ -1048,6 +1401,7 @@ readonly fields: HanCharacterFieldRefs;
  */
 export interface Prisma__HanCharacterClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  radical<T extends Prisma.HanCharacter$radicalArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.HanCharacter$radicalArgs<ExtArgs>>): Prisma.Prisma__RadicalClient<runtime.Types.Result.GetResult<Prisma.$RadicalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   vocabularyCharacters<T extends Prisma.HanCharacter$vocabularyCharactersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.HanCharacter$vocabularyCharactersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularyCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1086,6 +1440,9 @@ export interface HanCharacterFieldRefs {
   readonly jyutping: Prisma.FieldRef<"HanCharacter", 'String[]'>
   readonly hskLevel: Prisma.FieldRef<"HanCharacter", 'String'>
   readonly searchKey: Prisma.FieldRef<"HanCharacter", 'String'>
+  readonly frequency: Prisma.FieldRef<"HanCharacter", 'Int'>
+  readonly strokeCount: Prisma.FieldRef<"HanCharacter", 'Int'>
+  readonly radicalId: Prisma.FieldRef<"HanCharacter", 'String'>
   readonly createdAt: Prisma.FieldRef<"HanCharacter", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"HanCharacter", 'DateTime'>
 }
@@ -1342,6 +1699,10 @@ export type HanCharacterCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Ex
    */
   data: Prisma.HanCharacterCreateManyInput | Prisma.HanCharacterCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.HanCharacterIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1412,6 +1773,10 @@ export type HanCharacterUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Ex
    * Limit how many HanCharacters to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.HanCharacterIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1478,6 +1843,25 @@ export type HanCharacterDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.
    * Limit how many HanCharacters to delete.
    */
   limit?: number
+}
+
+/**
+ * HanCharacter.radical
+ */
+export type HanCharacter$radicalArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Radical
+   */
+  select?: Prisma.RadicalSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Radical
+   */
+  omit?: Prisma.RadicalOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RadicalInclude<ExtArgs> | null
+  where?: Prisma.RadicalWhereInput
 }
 
 /**

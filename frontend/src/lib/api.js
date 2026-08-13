@@ -24,7 +24,7 @@ async function request(path, options = {}) {
                 if (body.error) message = body.error;
             } catch {
                 if (res.status === 404 && /Cannot (GET|POST|PUT|PATCH|DELETE)/i.test(raw)) {
-                    message = `API route missing (${path})`;
+                    message = `Thiếu API route (${path})`;
                 }
             }
             const error = new Error(message);
@@ -49,6 +49,8 @@ export const api = {
     getAuthStatus: () => request("/auth/status"),
     getMe: () => request("/auth/me"),
     login: (email, password) => request("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+    register: (email, password) =>
+        request("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) }),
     logout: () => request("/auth/logout", { method: "POST" }),
 
     fetchFromCloud: () => request("/api/data"),
@@ -96,6 +98,9 @@ export const api = {
     },
 
     createVocabulary: (vocab) => request("/api/vocabulary", { method: "POST", body: JSON.stringify(vocab) }),
+    ocrVocabulary: (imageBase64, engine = "local") =>
+        request("/api/ocr-vocabulary", { method: "POST", body: JSON.stringify({ image: imageBase64, engine }) }),
+    ocrDerive: (text) => request("/api/ocr-derive", { method: "POST", body: JSON.stringify({ text }) }),
     updateVocabulary: (id, vocab) => request(`/api/vocabulary/${id}`, { method: "PUT", body: JSON.stringify(vocab) }),
     patchVocabularyFlags: async (id, flags, vocab) => {
         const payload = { ...flags };
@@ -135,10 +140,6 @@ export const api = {
 
     backfillHanVariants: () => request("/api/data/backfill-han-variants", { method: "POST", body: "{}" }),
 
-    backfillPinyin: () => request("/api/data/backfill-pinyin", { method: "POST", body: "{}" }),
-
-    backfillJyutping: () => request("/api/data/backfill-jyutping", { method: "POST", body: "{}" }),
-
     backfillHanCharPinyin: () => request("/api/data/backfill-han-char-pinyin", { method: "POST", body: "{}" }),
 
     backfillHanCharJyutping: () => request("/api/data/backfill-han-char-jyutping", { method: "POST", body: "{}" }),
@@ -152,6 +153,14 @@ export const api = {
     syncHanCharacters: (mode = "fast") =>
         request("/api/data/sync-han-characters", { method: "POST", body: JSON.stringify({ mode }) }),
     syncHanCharactersProgress: (jobId) => request(`/api/data/sync-han-characters/progress/${jobId}`),
+
+    // Sync stroke count cho bảng han_characters (cnchar + Unihan fallback)
+    // mode: "fast" = chỉ fill những ký tự chưa có stroke_count; "full" = tính lại tất cả
+    previewSyncHanCharStrokes: (mode = "fast") =>
+        request("/api/data/sync-han-char-strokes/preview", { method: "POST", body: JSON.stringify({ mode }) }),
+    syncHanCharStrokes: (mode = "fast") =>
+        request("/api/data/sync-han-char-strokes", { method: "POST", body: JSON.stringify({ mode }) }),
+    syncHanCharStrokesProgress: (jobId) => request(`/api/data/sync-han-char-strokes/progress/${jobId}`),
 
     getHanCharsForVocabulary: (wordId) => request(`/api/vocabulary/${wordId}/han-characters`),
 
@@ -199,6 +208,8 @@ export const api = {
 
     fetchHanCharacters: () => request("/api/han-characters"),
 
+    fetchRadicals: () => request("/api/radicals"),
+
     createHanCharacter: (item) => request("/api/han-characters", { method: "POST", body: JSON.stringify(item) }),
 
     updateHanCharacter: (id, item) =>
@@ -225,7 +236,26 @@ export const api = {
     removeVocabularyFromDeck: (deckId, vocabularyId) =>
         request(`/api/flashcard-decks/${deckId}/vocabularies/${vocabularyId}`, { method: "DELETE" }),
 
+    // Vocabulary Sets (custom user groups)
+    fetchVocabularySets: () => request("/api/vocabulary-sets"),
+    createVocabularySet: (set) => request("/api/vocabulary-sets", { method: "POST", body: JSON.stringify(set) }),
+    updateVocabularySet: (id, set) =>
+        request(`/api/vocabulary-sets/${id}`, { method: "PUT", body: JSON.stringify(set) }),
+    deleteVocabularySet: (id) => request(`/api/vocabulary-sets/${id}`, { method: "DELETE" }),
+    addVocabularyToSet: (setId, vocabularyId) =>
+        request(`/api/vocabulary-sets/${setId}/vocabularies`, {
+            method: "POST",
+            body: JSON.stringify({ vocabularyId }),
+        }),
+    removeVocabularyFromSet: (setId, vocabularyId) =>
+        request(`/api/vocabulary-sets/${setId}/vocabularies/${vocabularyId}`, { method: "DELETE" }),
+
     /** Convert Chinese text to Jyutping */
+    translate: (text, source, target) =>
+        request("/api/translate", {
+            method: "POST",
+            body: JSON.stringify({ text, source, target }),
+        }),
     toJyutping: (text) =>
         request("/api/jyutping", {
             method: "POST",

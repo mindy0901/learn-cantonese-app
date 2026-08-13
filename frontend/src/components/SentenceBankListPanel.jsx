@@ -19,7 +19,7 @@ import { Pagination } from "./Pagination.jsx";
 import { SentenceRow } from "./SentenceRow.jsx";
 
 const thClass =
-    "px-3.5 py-2.5 text-left border-b border-border align-middle truncate bg-bg text-text-muted font-medium text-sm uppercase tracking-wide";
+    "px-3.5 py-2.5 text-left border-b border-border align-middle truncate bg-background text-muted-foreground font-medium text-sm uppercase tracking-wide";
 
 const SentenceBankTableResults = memo(function SentenceBankTableResults({ search, filter, sortKey, sortDir, onView }) {
     const { t, fmt } = useLocale();
@@ -121,7 +121,7 @@ const SentenceBankTableResults = memo(function SentenceBankTableResults({ search
                     reserveSpace
                 />
             </div>
-            <div className="w-full max-w-full overflow-x-auto overflow-auto border border-border rounded-xl bg-surface">
+            <div className="w-full max-w-full overflow-x-auto overflow-auto border border-border rounded-xl bg-card">
                 <table className="w-full border-collapse text-base table-auto">
                     <colgroup>
                         <col />
@@ -137,7 +137,7 @@ const SentenceBankTableResults = memo(function SentenceBankTableResults({ search
                             <th
                                 className={cn(
                                     thClass,
-                                    "text-text-muted text-[0.8125rem] whitespace-nowrap text-center px-1.5 pr-0.5",
+                                    "text-muted-foreground text-[0.8125rem] whitespace-nowrap text-center px-1.5 pr-0.5",
                                 )}
                             >
                                 {t.sentenceBank.colNum}
@@ -167,7 +167,7 @@ const SentenceBankTableResults = memo(function SentenceBankTableResults({ search
                         {showEmpty ? (
                             <tr>
                                 <td colSpan={colCount}>
-                                    <p className="m-0 min-h-10 flex items-center justify-center text-center text-sm text-text-muted">
+                                    <p className="m-0 min-h-10 flex items-center justify-center text-center text-sm text-muted-foreground">
                                         {hasQuery
                                             ? t.sentenceBank.noSearchMatch
                                             : withAdminHint(
@@ -234,7 +234,7 @@ export const SentenceBankListPanel = memo(function SentenceBankListPanel({
                             ...(nextKey === "createdAt" && sortKey !== "createdAt" ? { sortDir: "desc" } : {}),
                         });
                     }}
-                    aria-label="Sort by"
+                    aria-label={t.common.sort}
                 >
                     <option value="hanTraditional">{t.sentenceBank.sortHan}</option>
                     <option value="vietnamese">{t.sentenceBank.sortVietnamese}</option>

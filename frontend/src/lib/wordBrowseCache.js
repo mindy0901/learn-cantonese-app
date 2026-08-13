@@ -45,12 +45,6 @@ export function invalidateVocabularyBrowseCache() {
     cache.clear();
 }
 
-export function getCachedVocabularyBrowsePage(params, revision) {
-    const entry = cache.get(buildKey(params));
-    if (!entry || entry.revision !== revision) return null;
-    return entry.result;
-}
-
 export function fetchVocabularyBrowsePage(params, { revision } = {}) {
     const key = buildKey(params);
     const cached = cache.get(key);
@@ -75,27 +69,4 @@ export function fetchVocabularyBrowsePage(params, { revision } = {}) {
 
     inflight.set(key, promise);
     return promise;
-}
-
-export function prefetchVocabularyBrowsePages(
-    baseParams,
-    currentPage,
-    totalPages,
-    { revision, mergeVocabularies } = {},
-) {
-    const prefetchCount = WORD_BROWSE_PREFETCH_PAGES;
-    for (let offset = 1; offset <= prefetchCount; offset++) {
-        const page = currentPage + offset;
-        if (page > totalPages) break;
-
-        const params = { ...baseParams, page };
-        const key = buildKey(params);
-        const cached = cache.get(key);
-        if (cached && cached.revision === revision) continue;
-        if (inflight.has(key)) continue;
-
-        fetchVocabularyBrowsePage(params, { revision })
-            .then((result) => mergeVocabularies?.(result.items ?? []))
-            .catch(() => {});
-    }
 }

@@ -57,7 +57,7 @@ export function logMutDone(action, subject, payload) {
 // --- Legacy log functions ---
 
 /** @param {unknown} subject */
-export function subjectLabel(subject) {
+function subjectLabel(subject) {
     if (subject == null || subject === "") return "";
     if (typeof subject === "string" || typeof subject === "number" || typeof subject === "boolean") {
         return String(subject).trim();
@@ -118,11 +118,6 @@ export function logWarn(message, detail) {
 export function logError(message, detail) {
     const label = subjectLabel(detail);
     emit("error", label ? `${message}: ${label}` : message);
-}
-
-/** @deprecated Prefer `log` */
-export function logAction(message, subject) {
-    log(message, subject);
 }
 
 export function logApiError(method, path, error) {

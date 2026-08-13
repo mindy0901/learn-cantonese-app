@@ -5,7 +5,7 @@ import { GrammarBankListPanel } from "../components/GrammarBankListPanel.jsx";
 import { useGrammarCount, useGrammarBank, useAppActions } from "../store/appStore.js";
 import { usePrefsStore, useGrammarBankPrefs } from "../store/prefsStore.js";
 import { useLocale } from "../store/localeStore.js";
-import { btnClass } from "../components/ui/buttonStyles.js";
+import { Button } from "../components/shadcn/button.jsx";
 import { EmptyState } from "../components/ui/EmptyState.jsx";
 import { IconGrammar } from "../components/NavIcons.jsx";
 
@@ -31,13 +31,11 @@ export function GrammarBankPage() {
                 <div>
                     <h1>{t.grammarBank.title}</h1>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex shrink-0 gap-2">
                     {isAdmin && (
-                        <>
-                            <button type="button" className={btnClass("success")} onClick={() => setAddOpen(true)}>
-                                + {t.grammarBank.addItem}
-                            </button>
-                        </>
+                        <Button type="button" variant="default" onClick={() => setAddOpen(true)}>
+                            + {t.grammarBank.addItem}
+                        </Button>
                     )}
                 </div>
             </div>
@@ -49,9 +47,9 @@ export function GrammarBankPage() {
                     description={isAdmin ? t.grammarBank.emptyAdminHint : undefined}
                     action={
                         isAdmin && (
-                            <button type="button" className={btnClass("primary")} onClick={() => setAddOpen(true)}>
+                            <Button type="button" variant="default" onClick={() => setAddOpen(true)}>
                                 + {t.grammarBank.addItem}
-                            </button>
+                            </Button>
                         )
                     }
                 />

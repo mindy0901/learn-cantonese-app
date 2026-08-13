@@ -1,7 +1,13 @@
-FROM node:22-alpine AS base
-RUN apk add --no-cache python3 py3-pip gcc musl-dev libffi-dev && \
-    python3 -m venv /opt/pycantonese-venv && \
-    /opt/pycantonese-venv/bin/pip install --no-cache-dir pycantonese deep-translator psycopg2-binary
+# Debian base (glibc) — required for manylinux wheels (opencv/onnxruntime) used
+# by RapidOCR. Alpine/musl cannot build opencv-python for the Python 3.14 venv.
+FROM node:22-slim AS base
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-venv python3-pip gcc g++ make \
+        libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv /opt/translate-venv \
+    && /opt/translate-venv/bin/pip install --no-cache-dir \
+        deep-translator psycopg2-binary rapidocr onnxruntime
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 

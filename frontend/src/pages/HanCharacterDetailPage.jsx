@@ -4,9 +4,12 @@ import { useHanCharacters, useVocabularies, useAppActions } from "../store/appSt
 import { useIsAdmin } from "../store/authStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { vocabularyDetailPath } from "../lib/wordRoutes.js";
+import { collectMeaningsField, displayMeaning } from "../lib/wordNormalize.js";
+import { vocabRomanizationField, vocabMeanings } from "../lib/wordDisplay.js";
 import { HanziiHanCellLink } from "../components/HanziiHanCellLink.jsx";
 import { TagInput } from "../components/TagInput.jsx";
-import { uiInputClass } from "../components/ui/controlStyles.js";
+import { Button } from "../components/shadcn/button.jsx";
+import { Input } from "../components/shadcn/input.jsx";
 
 function buildHanDraft(item) {
     return {
@@ -17,7 +20,6 @@ function buildHanDraft(item) {
             : (item.sinoVietnamese ?? ""),
         jyutping: Array.isArray(item.jyutping) ? item.jyutping.join(", ") : (item.jyutping ?? ""),
         pinyin: Array.isArray(item.pinyin) ? item.pinyin.join(", ") : (item.pinyin ?? ""),
-        popularity: item.popularity ?? 0,
     };
 }
 
@@ -37,7 +39,6 @@ function hanDraftPayload(draft) {
         sinoVietnamese: parseArrayField(draft.sinoVietnamese),
         jyutping: parseArrayField(draft.jyutping),
         pinyin: parseArrayField(draft.pinyin),
-        popularity: Number(draft.popularity) || 0,
     };
 }
 
@@ -84,8 +85,7 @@ export function HanCharacterDetailPage() {
             (payload.hanTraditional || "") === (item.hanTraditional ?? "") &&
             payload.sinoVietnamese.join(", ") === currentSinoVietnamese &&
             payload.jyutping.join(", ") === currentJyutping &&
-            payload.pinyin.join(", ") === currentPinyin &&
-            payload.popularity === (item.popularity ?? 0);
+            payload.pinyin.join(", ") === currentPinyin;
         if (noChange) {
             setEditing(false);
             return;
@@ -139,10 +139,10 @@ export function HanCharacterDetailPage() {
     if (!item) {
         return (
             <main className="flex-1 w-full px-5 py-8 pb-12">
-                <div className="text-center py-12 px-6 text-text-muted flex flex-col items-center gap-4">
-                    <p>{t.hanCharacters?.notFound ?? "Chinese character not found."}</p>
-                    <Link to="/han-characters" className="text-accent underline">
-                        {t.hanCharacters?.backToList ?? "Back to Chinese Characters"}
+                <div className="text-center py-12 px-6 text-muted-foreground flex flex-col items-center gap-4">
+                    <p>{t.hanCharacters?.notFound}</p>
+                    <Link to="/han-characters" className="text-primary underline">
+                        {t.hanCharacters?.backToList}
                     </Link>
                 </div>
             </main>
@@ -160,7 +160,7 @@ export function HanCharacterDetailPage() {
         return [...text].map((c, i) => {
             if (targets.has(c)) {
                 return (
-                    <span key={i} className="text-red-600 dark:text-red-400 font-bold">
+                    <span key={i} className="text-han-trad font-bold">
                         {c}
                     </span>
                 );
@@ -176,8 +176,8 @@ export function HanCharacterDetailPage() {
           ? [item.sinoVietnamese]
           : [];
 
-    const labelClass = "text-xs font-semibold uppercase tracking-wide text-text-muted";
-    const inputClass = `${uiInputClass} w-full`;
+    const labelClass = "text-xs font-semibold uppercase tracking-wide text-muted-foreground";
+    const inputClass = "w-full";
 
     return (
         <main className="han-detail-page flex-1 w-full px-5 py-8 pb-12" onKeyDown={handleKeyDown}>
@@ -188,19 +188,17 @@ export function HanCharacterDetailPage() {
                         <HanziiHanCellLink
                             hanTraditional={trad || char}
                             displayText={char}
-                            popularity={item.popularity}
                             emphasis="primary"
-                            className="text-6xl sm:text-7xl text-blue-600 dark:text-blue-400"
+                            className="text-6xl sm:text-7xl text-han-simp"
                         />
                         {showTrad && (
                             <>
-                                <span className="text-2xl text-text-muted">/</span>
+                                <span className="text-2xl text-muted-foreground">/</span>
                                 <HanziiHanCellLink
                                     hanTraditional={trad}
                                     displayText={trad}
-                                    popularity={item.popularity}
                                     emphasis="primary"
-                                    className="text-6xl sm:text-7xl text-red-600 dark:text-red-400"
+                                    className="text-6xl sm:text-7xl text-han-trad"
                                 />
                             </>
                         )}
@@ -208,44 +206,31 @@ export function HanCharacterDetailPage() {
                 </div>
 
                 {/* Readings table */}
-                <div className="relative w-full rounded-xl border border-border/80 bg-surface/80 p-6">
+                <div className="relative w-full rounded-xl border border-border/80 bg-card/80 p-6">
                     {isAdmin && (
                         <div className="absolute top-3 right-3 flex items-center gap-2">
                             {editing ? (
                                 <>
-                                    <button
-                                        type="button"
-                                        onClick={cancelEdit}
-                                        className="px-3 py-1.5 rounded-md border border-border text-sm font-medium text-text-h bg-surface hover:bg-bg transition-colors"
-                                    >
-                                        {t.common?.cancel ?? "Cancel"}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={saveEdit}
-                                        disabled={saving}
-                                        className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-accent hover:bg-accent-hover disabled:opacity-50 transition-colors"
-                                    >
-                                        {saving ? (t.common?.saving ?? "Saving...") : (t.common?.save ?? "Save")}
-                                    </button>
+                                    <Button type="button" variant="outline" onClick={cancelEdit}>
+                                        {t.common?.cancel}
+                                    </Button>
+                                    <Button type="button" variant="default" onClick={saveEdit} disabled={saving}>
+                                        {saving ? t.common?.saving : t.common?.save}
+                                    </Button>
                                 </>
                             ) : (
-                                <button
-                                    type="button"
-                                    onClick={startEdit}
-                                    className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 transition-colors"
-                                >
-                                    {t.common?.edit ?? "Edit"}
-                                </button>
+                                <Button type="button" variant="default" onClick={startEdit}>
+                                    {t.common?.edit}
+                                </Button>
                             )}
                         </div>
                     )}
                     {editing ? (
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-col gap-1">
-                                <label className={labelClass}>{t.hanLookup?.traditionalHk ?? "Traditional"}</label>
-                                <input
-                                    className={`${inputClass} text-red-600 dark:text-red-400 text-lg`}
+                                <label className={labelClass}>{t.hanLookup?.traditionalHk}</label>
+                                <Input
+                                    className="text-lg text-han-trad"
                                     value={draft?.hanTraditional ?? ""}
                                     onChange={(e) => setDraft((d) => ({ ...d, hanTraditional: e.target.value }))}
                                 />
@@ -255,7 +240,7 @@ export function HanCharacterDetailPage() {
                                 <TagInput
                                     value={draft?.sinoVietnamese ?? ""}
                                     onChange={(v) => setDraft((d) => ({ ...d, sinoVietnamese: v }))}
-                                    placeholder="reading1, reading2"
+                                    placeholder={t.hanCharacters.readingPlaceholder}
                                 />
                             </div>
                             <div className="flex flex-col gap-1">
@@ -264,7 +249,7 @@ export function HanCharacterDetailPage() {
                                     value={draft?.jyutping ?? ""}
                                     onChange={(v) => setDraft((d) => ({ ...d, jyutping: v }))}
                                     className="text-jyutping"
-                                    placeholder="reading1, reading2"
+                                    placeholder={t.hanCharacters.readingPlaceholder}
                                 />
                             </div>
                             <div className="flex flex-col gap-1">
@@ -273,18 +258,7 @@ export function HanCharacterDetailPage() {
                                     value={draft?.pinyin ?? ""}
                                     onChange={(v) => setDraft((d) => ({ ...d, pinyin: v }))}
                                     className="text-jyutping"
-                                    placeholder="reading1, reading2"
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <label className={labelClass}>{t.wordBank.colPopularity ?? "Popularity"}</label>
-                                <input
-                                    className={`${inputClass} text-lg`}
-                                    type="number"
-                                    min="0"
-                                    max="3"
-                                    value={draft?.popularity ?? 0}
-                                    onChange={(e) => setDraft((d) => ({ ...d, popularity: Number(e.target.value) }))}
+                                    placeholder={t.hanCharacters.readingPlaceholder}
                                 />
                             </div>
                         </div>
@@ -293,7 +267,7 @@ export function HanCharacterDetailPage() {
                             {sinoVietnamese.length > 0 && (
                                 <div className="flex flex-col gap-1">
                                     <p className={labelClass}>{t.wordBank.colSinoVietnamese}</p>
-                                    <p className="text-lg font-medium text-text-h">{sinoVietnamese.join(" / ")}</p>
+                                    <p className="text-lg font-medium text-foreground">{sinoVietnamese.join(" / ")}</p>
                                 </div>
                             )}
                             {jyutping.length > 0 && (
@@ -308,22 +282,16 @@ export function HanCharacterDetailPage() {
                                     <p className="text-lg font-semibold text-jyutping">{pinyin.join(" / ")}</p>
                                 </div>
                             )}
-                            {item.popularity != null && item.popularity > 0 && (
-                                <div className="flex flex-col gap-1">
-                                    <p className={labelClass}>{t.wordBank.colPopularity ?? "Popularity"}</p>
-                                    <p className="text-lg text-text-h">{item.popularity}</p>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>
 
                 {/* Words containing this character */}
                 {charWords.length > 0 && (
-                    <div className="w-full rounded-xl border border-border/80 bg-surface/80 p-6">
+                    <div className="w-full rounded-xl border border-border/80 bg-card/80 p-6">
                         <div className="flex flex-col divide-y divide-border/60">
                             {/* Column headers */}
-                            <div className="grid grid-cols-[1fr_1.5fr_1.5fr_1fr] items-center gap-3 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
+                            <div className="grid grid-cols-[1fr_1.5fr_1.5fr_1fr] items-center gap-3 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 <span>{t.wordBank.colHanTraditional}</span>
                                 <span>{t.wordBank.colJyutping}</span>
                                 <span>{t.wordBank.colVietMeanings}</span>
@@ -332,17 +300,25 @@ export function HanCharacterDetailPage() {
                             {charWords.map((w) => (
                                 <Link
                                     key={w.id}
-                                    to={vocabularyDetailPath(w.id)}
-                                    className="grid grid-cols-[1fr_1.5fr_1.5fr_1fr] items-center gap-3 px-3 py-3 text-sm no-underline rounded hover:bg-bg/60"
+                                    to={vocabularyDetailPath(w.hanTraditional || w.hanSimplified || w.hanHongKong)}
+                                    className="grid grid-cols-[1fr_1.5fr_1.5fr_1fr] items-center gap-3 px-3 py-3 text-sm no-underline rounded hover:bg-background/60"
                                 >
-                                    <span className="font-semibold text-red-600 dark:text-red-400 text-2xl truncate">
-                                        {highlightChar(w.hanTraditional || w.hanSimplified)}
+                                    <span className="font-semibold text-han-trad text-2xl truncate">
+                                        {highlightChar(w.hanTraditional || w.hanSimplified || w.hanHongKong)}
                                     </span>
                                     <span className="text-jyutping font-medium text-sm truncate">
-                                        {w.jyutping || ""}
+                                        {vocabRomanizationField(w, "jyutping") || w.jyutping || ""}
                                     </span>
-                                    <span className="text-text-h text-sm truncate">{w.vietMeanings || "—"}</span>
-                                    <span className="text-text-h text-sm truncate">{w.engMeanings || "—"}</span>
+                                    <span className="text-foreground text-sm truncate">
+                                        {collectMeaningsField(vocabMeanings(w), "vietMeanings") ||
+                                            displayMeaning(w.vietMeanings) ||
+                                            "—"}
+                                    </span>
+                                    <span className="text-foreground text-sm truncate">
+                                        {collectMeaningsField(vocabMeanings(w), "engMeanings") ||
+                                            displayMeaning(w.engMeanings) ||
+                                            "—"}
+                                    </span>
                                 </Link>
                             ))}
                         </div>
@@ -351,8 +327,11 @@ export function HanCharacterDetailPage() {
 
                 {/* Back link */}
                 <div className="flex items-center">
-                    <Link to="/han-characters" className="text-sm text-text-muted hover:text-accent transition-colors">
-                        ← {t.hanCharacters?.backToList ?? "Back to Chinese Characters"}
+                    <Link
+                        to="/han-characters"
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                        ← {t.hanCharacters?.backToList}
                     </Link>
                 </div>
             </div>

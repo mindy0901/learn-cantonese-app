@@ -117,6 +117,59 @@ export async function authRoutes(fastify) {
         return user;
     });
 
+    fastify.post("/register", async (request, reply) => {
+        const { email, password } = request.body ?? {};
+        const normalizedEmail = typeof email === "string" ? email.toLowerCase().trim() : "";
+
+        if (!normalizedEmail || !password) {
+            return reply.code(400).send({ error: "Email and password are required" });
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            return reply.code(400).send({ error: "Invalid email address" });
+        }
+        if (password.length < 6) {
+            return reply.code(400).send({ error: "Password must be at least 6 characters" });
+        }
+
+        try {
+            const { prisma } = await import("../lib/prisma.js");
+
+            const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+            if (existing) {
+                return reply.code(409).send({ error: "Email already registered" });
+            }
+
+            const hashed = await bcrypt.hash(password, 10);
+            const user = await prisma.user.create({
+                data: {
+                    email: normalizedEmail,
+                    password: hashed,
+                    name: normalizedEmail.split("@")[0],
+                },
+                select: { id: true, email: true, name: true, isAdmin: true },
+            });
+
+            // Auto sign-in after registration
+            request.session.userId = user.id;
+            request.session.email = user.email;
+            request.session.name = user.name ?? user.email;
+            request.session.picture = null;
+
+            log("Sign up", user.email.split("@")[0]);
+
+            return {
+                id: user.id,
+                email: user.email,
+                name: user.name ?? user.email,
+                picture: null,
+                isAdmin: user.isAdmin,
+            };
+        } catch (err) {
+            logWarn("Sign up failed", err.message);
+            return reply.code(500).send({ error: "Sign up failed" });
+        }
+    });
+
     fastify.post("/login", async (request, reply) => {
         const { email, password } = request.body ?? {};
         if (!email || !password) {
@@ -125,7 +178,15 @@ export async function authRoutes(fastify) {
 
         try {
             const { prisma } = await import("../lib/prisma.js");
-            const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+            // Allow bare usernames like "admin": try the exact email first, then
+            // fall back to appending @learn-cantonese.app.
+            const rawEmail = email.toLowerCase().trim();
+            const candidates = rawEmail.includes("@") ? [rawEmail] : [rawEmail, `${rawEmail}@learn-cantonese.app`];
+            let user = null;
+            for (const candidate of candidates) {
+                user = await prisma.user.findUnique({ where: { email: candidate } });
+                if (user) break;
+            }
 
             if (!user || !user.password) {
                 return reply.code(401).send({ error: "Invalid email or password" });

@@ -6,9 +6,9 @@ import { btnClass } from "./ui/buttonStyles.js";
 import { FlashcardStatsPanel } from "./FlashcardStatsPanel.jsx";
 
 const outcomeClass = {
-    mastered: "text-success-text bg-success-bg border-success-border",
-    again: "text-error-text bg-error-bg border-error-border",
-    passed: "text-text-muted bg-bg border-border",
+    mastered: "text-primary bg-primary border-primary",
+    again: "text-destructive bg-destructive/10 border-destructive/30",
+    passed: "text-muted-foreground bg-background border-border",
 };
 
 export function FlashcardSessionSummary({ entries, onPlayAgain, onNewSession, loading = false }) {
@@ -22,52 +22,52 @@ export function FlashcardSessionSummary({ entries, onPlayAgain, onNewSession, lo
 
     return (
         <div className="flex flex-col gap-5">
-            <div className="text-center py-6 px-5 bg-surface border border-border rounded-2xl shadow-theme">
-                <h2 className="m-0 text-xl font-bold text-text-h">{t.flashcard.sessionComplete}</h2>
-                <p className="mt-2 mb-5 text-sm text-text-muted">
+            <div className="text-center py-6 px-5 bg-card border border-border rounded-2xl shadow-md">
+                <h2 className="m-0 text-xl font-bold text-foreground">{t.flashcard.sessionComplete}</h2>
+                <p className="mt-2 mb-5 text-sm text-muted-foreground">
                     {fmt(t.flashcard.summarySubtitle, { count: total })}
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="rounded-xl border border-border bg-bg px-3 py-4">
-                        <p className="m-0 text-2xl font-bold tabular-nums text-text-h">{total}</p>
-                        <p className="mt-1 m-0 text-xs text-text-muted">{t.flashcard.summaryTotal}</p>
+                    <div className="rounded-xl border border-border bg-background px-3 py-4">
+                        <p className="m-0 text-2xl font-bold tabular-nums text-foreground">{total}</p>
+                        <p className="mt-1 m-0 text-xs text-muted-foreground">{t.flashcard.summaryTotal}</p>
                     </div>
-                    <div className="rounded-xl border border-success-border bg-success-bg/50 px-3 py-4">
-                        <p className="m-0 text-2xl font-bold tabular-nums text-success-text">{mastered}</p>
-                        <p className="mt-1 m-0 text-xs text-success-text">{t.flashcard.summaryMastered}</p>
+                    <div className="rounded-xl border border-primary bg-primary/50 px-3 py-4">
+                        <p className="m-0 text-2xl font-bold tabular-nums text-primary">{mastered}</p>
+                        <p className="mt-1 m-0 text-xs text-primary">{t.flashcard.summaryMastered}</p>
                     </div>
-                    <div className="rounded-xl border border-error-border bg-error-bg/50 px-3 py-4">
-                        <p className="m-0 text-2xl font-bold tabular-nums text-error-text">{again}</p>
-                        <p className="mt-1 m-0 text-xs text-error-text">{t.flashcard.summaryAgain}</p>
+                    <div className="rounded-xl border border-destructive/30 bg-destructive/10/50 px-3 py-4">
+                        <p className="m-0 text-2xl font-bold tabular-nums text-destructive">{again}</p>
+                        <p className="mt-1 m-0 text-xs text-destructive">{t.flashcard.summaryAgain}</p>
                     </div>
-                    <div className="rounded-xl border border-border bg-bg px-3 py-4">
-                        <p className="m-0 text-2xl font-bold tabular-nums text-accent">{masteryPct}%</p>
-                        <p className="mt-1 m-0 text-xs text-text-muted">{t.flashcard.summaryMasteryRate}</p>
+                    <div className="rounded-xl border border-border bg-background px-3 py-4">
+                        <p className="m-0 text-2xl font-bold tabular-nums text-primary">{masteryPct}%</p>
+                        <p className="mt-1 m-0 text-xs text-muted-foreground">{t.flashcard.summaryMasteryRate}</p>
                     </div>
                 </div>
             </div>
 
             <FlashcardStatsPanel key={statsKey} compact />
 
-            <section className="bg-surface border border-border rounded-xl overflow-hidden shadow-theme-sm">
+            <section className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <div className="px-5 py-4 border-b border-border">
-                    <h3 className="m-0 text-sm font-semibold text-text-h">{t.flashcard.summaryTableTitle}</h3>
+                    <h3 className="m-0 text-sm font-semibold text-foreground">{t.flashcard.summaryTableTitle}</h3>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
                         <thead>
-                            <tr className="border-b border-border bg-bg">
-                                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-text-muted">
+                            <tr className="border-b border-border bg-background">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                     {t.flashcard.hanTraditional}
                                 </th>
-                                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-text-muted">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                     {t.wordBank.colVietnamese}
                                 </th>
-                                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-text-muted">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                     {t.wordBank.colEnglish}
                                 </th>
-                                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-text-muted">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                     {t.flashcard.summaryResult}
                                 </th>
                             </tr>
@@ -76,14 +76,14 @@ export function FlashcardSessionSummary({ entries, onPlayAgain, onNewSession, lo
                             {entries.map((entry) => (
                                 <tr key={entry.id} className="border-b border-border last:border-b-0">
                                     <td className="px-4 py-2.5 align-middle">
-                                        <span className="font-semibold text-red-600 dark:text-red-400">
-                                            {entry.hanTraditional || "—"}
+                                        <span className="font-semibold text-han-trad">
+                                            {entry.hanSimplified || entry.hanHongKong || entry.hanTraditional || "—"}
                                         </span>
                                         <WordFieldText
                                             word={entry}
                                             field="sinoVietnamese"
                                             updatingLabel={t.wordBank.fieldUpdating}
-                                            className="ml-2 text-xs text-text-muted"
+                                            className="ml-2 text-xs text-muted-foreground"
                                         />
                                     </td>
                                     <td className="px-4 py-2.5 align-middle text-viet">
@@ -93,7 +93,7 @@ export function FlashcardSessionSummary({ entries, onPlayAgain, onNewSession, lo
                                             updatingLabel={t.wordBank.fieldUpdating}
                                         />
                                     </td>
-                                    <td className="px-4 py-2.5 align-middle text-text-muted">
+                                    <td className="px-4 py-2.5 align-middle text-muted-foreground">
                                         <WordFieldText
                                             word={entry}
                                             field="engMeanings"

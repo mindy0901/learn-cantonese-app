@@ -26,7 +26,8 @@ export function orderedHanVariants({ traditional, simplified }) {
     }
 
     if (!trad || !simp || trad === simp) {
-        return { primary: value, secondary: "", primaryIsTraditional: true, same: true };
+        // simplified-only (quảng thuần): traditional rỗng → primary là giản thể
+        return { primary: value, secondary: "", primaryIsTraditional: Boolean(trad), same: true };
     }
 
     return { primary: trad, secondary: simp, primaryIsTraditional: true, same: false };

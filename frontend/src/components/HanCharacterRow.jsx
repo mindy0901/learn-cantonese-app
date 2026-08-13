@@ -10,7 +10,7 @@ const tdClass = "px-3.5 py-2.5 text-left align-middle truncate max-w-[200px]";
 const tdEditClass = "px-3.5 py-2.5 text-left align-top truncate max-w-[200px]";
 const rowClass = "border-b border-border";
 const cellInputClass =
-    "w-full min-w-20 px-2 py-1.5 border border-accent-border rounded-md bg-surface text-sm outline-none focus:border-accent";
+    "w-full min-w-20 px-2 py-1.5 border border-primary/25 rounded-md bg-card text-sm outline-none focus:border-primary";
 const hanCharClass = "font-semibold leading-tight align-middle text-[calc(1em*var(--han-scale))]";
 
 const MultiInput = memo(function MultiInput({ values, onChange, placeholder, addLabel }) {
@@ -31,7 +31,7 @@ const MultiInput = memo(function MultiInput({ values, onChange, placeholder, add
                     {values.length > 1 && (
                         <button
                             type="button"
-                            className="flex shrink-0 size-8 items-center justify-center rounded text-text-muted hover:bg-bg hover:text-error-text transition-colors"
+                            className="flex shrink-0 size-8 items-center justify-center rounded text-muted-foreground hover:bg-background hover:text-destructive transition-colors"
                             onClick={() => onChange(values.filter((_, j) => j !== i))}
                         >
                             ×
@@ -41,7 +41,7 @@ const MultiInput = memo(function MultiInput({ values, onChange, placeholder, add
             ))}
             <button
                 type="button"
-                className="self-start text-sm text-accent hover:underline"
+                className="self-start text-sm text-primary hover:underline"
                 onClick={() => onChange([...values, ""])}
             >
                 + {addLabel}
@@ -53,9 +53,8 @@ const MultiInput = memo(function MultiInput({ values, onChange, placeholder, add
 export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canEdit, onSave, onDelete }) {
     const { t } = useLocale();
     const [editing, setEditing] = useState(false);
-    // Hán tự chỉ có 1 phiên bản (simplified === traditional) => không có simplified riêng
-    const hasDistinctSimplified = Boolean(item.hanSimplified && item.hanSimplified !== (item.hanTraditional ?? ""));
-    const [draftHan, setDraftHan] = useState(hasDistinctSimplified ? item.hanSimplified : "");
+    // Giữ simplified luôn (single-form: simplified === traditional, KHÔNG xóa — 2026-08-13)
+    const [draftHan, setDraftHan] = useState(item.hanSimplified ?? "");
     const [draftHanTraditional, setDraftHanTraditional] = useState(item.hanTraditional ?? "");
     const initArr = (v) => (Array.isArray(v) && v.length > 0 ? [...v] : [""]);
     const [readings, setReadings] = useState(() => initArr(item.sinoVietnamese));
@@ -64,7 +63,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
 
     const startEdit = (e) => {
         e.stopPropagation();
-        setDraftHan(hasDistinctSimplified ? item.hanSimplified : "");
+        setDraftHan(item.hanSimplified ?? "");
         setDraftHanTraditional(item.hanTraditional ?? "");
         setReadings(initArr(item.sinoVietnamese));
         setPinyins(initArr(item.pinyin));
@@ -104,8 +103,8 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
 
     if (editing && canEdit) {
         return (
-            <tr className="bg-accent-bg border-b border-border" onClick={stop} onKeyDown={handleEditKeyDown}>
-                <td className="px-1.5 py-2.5 text-center text-text-muted text-[0.8125rem] whitespace-nowrap align-top">
+            <tr className="bg-primary/10 border-b border-border" onClick={stop} onKeyDown={handleEditKeyDown}>
+                <td className="px-1.5 py-2.5 text-center text-muted-foreground text-[0.8125rem] whitespace-nowrap align-top">
                     {index + 1}
                 </td>
                 <td className={tdEditClass}>
@@ -119,16 +118,16 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                 <td className={tdEditClass}>
                     <div className="flex flex-col gap-1">
                         <input
-                            className={cn(cellInputClass, hanCharClass, "!text-red-600 dark:!text-red-400")}
+                            className={cn(cellInputClass, hanCharClass, "text-han-trad!")}
                             value={draftHanTraditional}
                             onChange={(e) => setDraftHanTraditional(e.target.value)}
-                            placeholder="Traditional"
+                            placeholder={t.hanCharacters.tradPlaceholder}
                         />
                         <input
-                            className={cn(cellInputClass, hanCharClass, "!text-blue-600 dark:!text-blue-400")}
+                            className={cn(cellInputClass, hanCharClass, "text-han-simp!")}
                             value={draftHan}
                             onChange={(e) => setDraftHan(e.target.value)}
-                            placeholder="Simplified"
+                            placeholder={t.hanCharacters.simpPlaceholder}
                         />
                     </div>
                 </td>
@@ -154,7 +153,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                             type="button"
                             className={cn(
                                 uiCompactIconButtonClass,
-                                "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-green-600 rounded hover:bg-bg",
+                                "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-green-600 rounded hover:bg-background",
                             )}
                             onClick={saveEdit}
                             title={t.common.save}
@@ -165,7 +164,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                             type="button"
                             className={cn(
                                 uiCompactIconButtonClass,
-                                "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-text-muted rounded hover:bg-bg",
+                                "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-muted-foreground rounded hover:bg-background",
                             )}
                             onClick={cancelEdit}
                             title={t.common.cancel}
@@ -179,11 +178,11 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
     }
 
     return (
-        <tr className={cn(rowClass, "hover:bg-accent-bg")}>
-            <td className="px-1.5 py-2.5 text-center text-text-muted text-[0.8125rem] whitespace-nowrap">
+        <tr className={cn(rowClass, "hover:bg-primary/10")}>
+            <td className="px-1.5 py-2.5 text-center text-muted-foreground text-[0.8125rem] whitespace-nowrap">
                 {index + 1}
             </td>
-            <td className={cn(tdClass, "text-text-h text-sm")}>
+            <td className={cn(tdClass, "text-foreground text-sm")}>
                 {Array.isArray(item.sinoVietnamese) && item.sinoVietnamese.length > 0
                     ? item.sinoVietnamese
                           .flatMap((r) => String(r).split(/[-–—]/))
@@ -191,7 +190,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                           .filter(Boolean)
                           .map((r, i, arr) => (
                               <span key={i}>
-                                  {i > 0 && <span className="text-text-muted mx-1">/</span>}
+                                  {i > 0 && <span className="text-muted-foreground mx-1">/</span>}
                                   {r.charAt(0).toUpperCase() + r.slice(1).toLowerCase()}
                               </span>
                           ))
@@ -201,20 +200,20 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                 <HanziiHanCellLink
                     hanTraditional={item.hanTraditional ?? item.hanSimplified ?? item.character}
                     displayText={item.hanTraditional ?? item.hanSimplified ?? item.character}
-                    className={cn(hanCharClass, "text-red-600 dark:text-red-400")}
+                    className={cn(hanCharClass, "text-han-trad")}
                 />
                 {item.hanSimplified && item.hanSimplified !== (item.hanTraditional ?? "") && (
                     <>
-                        <span className={cn(hanCharClass, "inline align-middle text-text-muted")}> / </span>
+                        <span className={cn(hanCharClass, "inline align-middle text-muted-foreground")}> / </span>
                         <HanziiHanCellLink
                             hanTraditional={item.hanSimplified}
                             displayText={item.hanSimplified}
-                            className={cn(hanCharClass, "text-blue-600 dark:text-blue-400")}
+                            className={cn(hanCharClass, "text-han-simp")}
                         />
                     </>
                 )}
             </td>
-            <td className={cn(tdClass, "text-text-h text-sm italic")}>
+            <td className={cn(tdClass, "text-foreground text-sm italic")}>
                 {(() => {
                     const arr = Array.isArray(item.pinyin)
                         ? item.pinyin
@@ -224,14 +223,14 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                     return arr.length > 0
                         ? arr.map((r, i) => (
                               <span key={i}>
-                                  {i > 0 && <span className="text-text-muted mx-1">/</span>}
+                                  {i > 0 && <span className="text-muted-foreground mx-1">/</span>}
                                   {r}
                               </span>
                           ))
                         : "—";
                 })()}
             </td>
-            <td className={cn(tdClass, "text-text-h text-sm")}>
+            <td className={cn(tdClass, "text-foreground text-sm")}>
                 {(() => {
                     const arr = Array.isArray(item.jyutping)
                         ? item.jyutping
@@ -241,7 +240,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                     return arr.length > 0
                         ? arr.map((r, i) => (
                               <span key={i}>
-                                  {i > 0 && <span className="text-text-muted mx-1">/</span>}
+                                  {i > 0 && <span className="text-muted-foreground mx-1">/</span>}
                                   {r}
                               </span>
                           ))
@@ -276,7 +275,7 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                             </button>
                             <Link
                                 to={hanCharacterDetailPath(item.id)}
-                                className="inline-flex items-center justify-center size-8 rounded-lg border border-border bg-surface text-text-muted no-underline transition-colors duration-150 hover:border-accent-border hover:text-accent hover:bg-accent/10"
+                                className="inline-flex items-center justify-center size-8 rounded-lg border border-border bg-card text-muted-foreground no-underline transition-colors duration-150 hover:border-primary/25 hover:text-primary hover:bg-primary/10"
                                 title={t.hanCharacters?.viewDetail ?? "View details"}
                                 onClick={(e) => e.stopPropagation()}
                             >

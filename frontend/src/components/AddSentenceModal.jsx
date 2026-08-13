@@ -10,13 +10,13 @@ const backdropClass =
 
 const sentenceTextareaClass = cn(uiTextareaClass, "resize-none overflow-hidden leading-normal [field-sizing:content]");
 
-const hanFieldClass = cn(sentenceTextareaClass, "text-red-600 dark:text-red-400");
+const hanFieldClass = cn(sentenceTextareaClass, "text-han-trad");
 const jyutpingFieldClass = cn(uiInputClass, "font-semibold text-jyutping");
 const vietFieldClass = cn(sentenceTextareaClass, "text-viet");
 const englishFieldClass = uiInputClass;
 
 const modalClass =
-    "m-auto flex w-full max-w-[520px] shrink-0 flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]";
+    "m-auto flex w-full max-w-[520px] shrink-0 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]";
 
 function buildDraft(item) {
     if (!item?.id) {
@@ -116,7 +116,7 @@ export function AddSentenceModal({ onSave, onClose, item: editItem, existingItem
                     </button>
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6" onKeyDown={handleFormKeyDown}>
-                    <label className="flex flex-col gap-1.5 text-sm font-medium text-text-h">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
                         {t.wordDetail.hanTraditional} *
                         <textarea
                             className={hanFieldClass}
@@ -125,7 +125,7 @@ export function AddSentenceModal({ onSave, onClose, item: editItem, existingItem
                             onChange={(e) => set("hanTraditional", e.target.value)}
                         />
                     </label>
-                    <label className="flex flex-col gap-1.5 text-sm font-medium text-text-h">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
                         {t.sentenceBank.colJyutping}
                         <input
                             className={jyutpingFieldClass}
@@ -133,7 +133,7 @@ export function AddSentenceModal({ onSave, onClose, item: editItem, existingItem
                             onChange={(e) => set("jyutping", e.target.value)}
                         />
                     </label>
-                    <label className="flex flex-col gap-1.5 text-sm font-medium text-text-h">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
                         {t.sentenceBank.colVietnamese} *
                         <textarea
                             className={vietFieldClass}
@@ -142,7 +142,7 @@ export function AddSentenceModal({ onSave, onClose, item: editItem, existingItem
                             onChange={(e) => set("vietnamese", e.target.value)}
                         />
                     </label>
-                    <label className="flex flex-col gap-1.5 text-sm font-medium text-text-h">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
                         {t.sentenceBank.colEnglish}
                         <input
                             className={englishFieldClass}
@@ -152,7 +152,7 @@ export function AddSentenceModal({ onSave, onClose, item: editItem, existingItem
                     </label>
                     {validationError && (
                         <p
-                            className="m-0 rounded-lg border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text"
+                            className="m-0 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
                             role="alert"
                         >
                             {validationError}

@@ -1,39 +1,46 @@
-import { create } from 'zustand'
+import { create } from "zustand";
 
-const STORAGE_KEY = 'cantonese-app-ui'
+const STORAGE_KEY = "cantonese-app-ui";
 
-function loadUiState() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      const parsed = JSON.parse(saved)
-      const theme = parsed.theme === 'dark' || parsed.theme === 'light' ? parsed.theme : 'light'
-      return { theme }
-    }
-  } catch {
-    /* ignore */
-  }
-  return { theme: 'light' }
+function normalizeTheme(theme) {
+    return theme === "dark" || theme === "light" ? theme : "light";
 }
 
-const initialUi = loadUiState()
-document.documentElement.dataset.theme = initialUi.theme
+function loadUiState() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            return { theme: normalizeTheme(parsed.theme) };
+        }
+    } catch {
+        /* ignore */
+    }
+    return { theme: "light" };
+}
+
+const initialUi = loadUiState();
+document.documentElement.dataset.theme = initialUi.theme;
 
 export const useUiStore = create((set, get) => ({
-  theme: initialUi.theme,
+    theme: initialUi.theme,
 
-  persistUi: (patch) => {
-    const next = { theme: get().theme, ...patch }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    set(patch)
-  },
+    persistUi: (patch) => {
+        const next = { theme: get().theme, ...patch };
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch {
+            /* ignore quota/private mode */
+        }
+        set(patch);
+    },
 
-  setTheme: (theme) => {
-    document.documentElement.dataset.theme = theme
-    get().persistUi({ theme })
-  },
+    setTheme: (theme) => {
+        document.documentElement.dataset.theme = theme;
+        get().persistUi({ theme });
+    },
 
-  toggleTheme: () => {
-    get().setTheme(get().theme === 'dark' ? 'light' : 'dark')
-  },
-}))
+    toggleTheme: () => {
+        get().setTheme(get().theme === "dark" ? "light" : "dark");
+    },
+}));

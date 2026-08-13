@@ -17,6 +17,7 @@ from datetime import datetime
 
 import psycopg2
 from deep_translator import GoogleTranslator
+from translate_utils import translate_with_fallback
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -208,11 +209,10 @@ def run_batch_translation(batch_size=50, delay=1.0, resume=False, dry_run=False)
 def translate_single(text):
     """
     Translate a single text from Chinese to English.
-    Used by the API endpoint.
+    Used by the API endpoint. Tries multiple deep-translator backends.
     """
-    translator = GoogleTranslator(source='zh-CN', target='en')
     try:
-        translation = translator.translate(text)
+        translation = translate_with_fallback(text, source="zh-CN", target="en", logger=log)
         return translation
     except Exception as e:
         log.error(f"Failed to translate '{text}': {e}")

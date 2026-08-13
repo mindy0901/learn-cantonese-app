@@ -42,77 +42,60 @@ export type VocabularySumAggregateOutputType = {
 
 export type VocabularyMinAggregateOutputType = {
   id: string | null
-  sinoVietnamese: string | null
   hanSimplified: string | null
-  pinyin: string | null
   hanTraditional: string | null
-  jyutping: string | null
+  hanHongKong: string | null
   hskLevel: string | null
+  pureCantonese: boolean | null
   searchKey: string | null
-  vietMeanings: string | null
-  engMeanings: string | null
-  vietExamples: string | null
-  pos: string | null
+  partOfSpeech: string | null
   frequency: number | null
   radical: string | null
   classifiers: string | null
-  pinyinNumeric: string | null
   movieWordRank: number | null
   bookWordRank: number | null
   boost: number | null
-  searchPinyin: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
 
 export type VocabularyMaxAggregateOutputType = {
   id: string | null
-  sinoVietnamese: string | null
   hanSimplified: string | null
-  pinyin: string | null
   hanTraditional: string | null
-  jyutping: string | null
+  hanHongKong: string | null
   hskLevel: string | null
+  pureCantonese: boolean | null
   searchKey: string | null
-  vietMeanings: string | null
-  engMeanings: string | null
-  vietExamples: string | null
-  pos: string | null
+  partOfSpeech: string | null
   frequency: number | null
   radical: string | null
   classifiers: string | null
-  pinyinNumeric: string | null
   movieWordRank: number | null
   bookWordRank: number | null
   boost: number | null
-  searchPinyin: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
 
 export type VocabularyCountAggregateOutputType = {
   id: number
-  sinoVietnamese: number
   hanSimplified: number
-  pinyin: number
   hanTraditional: number
-  jyutping: number
+  hanHongKong: number
   hskLevel: number
+  pureCantonese: number
   searchKey: number
-  vietMeanings: number
-  engMeanings: number
-  vietExamples: number
-  pos: number
+  partOfSpeech: number
   frequency: number
   radical: number
   classifiers: number
-  pinyinNumeric: number
   movieWordRank: number
   bookWordRank: number
   relatedWords: number
   hanCharacters: number
   boost: number
-  searchPinyin: number
+  romanizationJson: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -135,77 +118,60 @@ export type VocabularySumAggregateInputType = {
 
 export type VocabularyMinAggregateInputType = {
   id?: true
-  sinoVietnamese?: true
   hanSimplified?: true
-  pinyin?: true
   hanTraditional?: true
-  jyutping?: true
+  hanHongKong?: true
   hskLevel?: true
+  pureCantonese?: true
   searchKey?: true
-  vietMeanings?: true
-  engMeanings?: true
-  vietExamples?: true
-  pos?: true
+  partOfSpeech?: true
   frequency?: true
   radical?: true
   classifiers?: true
-  pinyinNumeric?: true
   movieWordRank?: true
   bookWordRank?: true
   boost?: true
-  searchPinyin?: true
   createdAt?: true
   updatedAt?: true
 }
 
 export type VocabularyMaxAggregateInputType = {
   id?: true
-  sinoVietnamese?: true
   hanSimplified?: true
-  pinyin?: true
   hanTraditional?: true
-  jyutping?: true
+  hanHongKong?: true
   hskLevel?: true
+  pureCantonese?: true
   searchKey?: true
-  vietMeanings?: true
-  engMeanings?: true
-  vietExamples?: true
-  pos?: true
+  partOfSpeech?: true
   frequency?: true
   radical?: true
   classifiers?: true
-  pinyinNumeric?: true
   movieWordRank?: true
   bookWordRank?: true
   boost?: true
-  searchPinyin?: true
   createdAt?: true
   updatedAt?: true
 }
 
 export type VocabularyCountAggregateInputType = {
   id?: true
-  sinoVietnamese?: true
   hanSimplified?: true
-  pinyin?: true
   hanTraditional?: true
-  jyutping?: true
+  hanHongKong?: true
   hskLevel?: true
+  pureCantonese?: true
   searchKey?: true
-  vietMeanings?: true
-  engMeanings?: true
-  vietExamples?: true
-  pos?: true
+  partOfSpeech?: true
   frequency?: true
   radical?: true
   classifiers?: true
-  pinyinNumeric?: true
   movieWordRank?: true
   bookWordRank?: true
   relatedWords?: true
   hanCharacters?: true
   boost?: true
-  searchPinyin?: true
+  romanizationJson?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -299,27 +265,22 @@ export type VocabularyGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
 
 export type VocabularyGroupByOutputType = {
   id: string
-  sinoVietnamese: string | null
   hanSimplified: string | null
-  pinyin: string | null
   hanTraditional: string
-  jyutping: string | null
+  hanHongKong: string | null
   hskLevel: string | null
+  pureCantonese: boolean | null
   searchKey: string | null
-  vietMeanings: string | null
-  engMeanings: string | null
-  vietExamples: string | null
-  pos: string | null
+  partOfSpeech: string | null
   frequency: number | null
   radical: string | null
   classifiers: string | null
-  pinyinNumeric: string | null
   movieWordRank: number | null
   bookWordRank: number | null
   relatedWords: runtime.JsonValue | null
   hanCharacters: runtime.JsonValue | null
   boost: number | null
-  searchPinyin: string | null
+  romanizationJson: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
   _count: VocabularyCountAggregateOutputType | null
@@ -349,66 +310,54 @@ export type VocabularyWhereInput = {
   OR?: Prisma.VocabularyWhereInput[]
   NOT?: Prisma.VocabularyWhereInput | Prisma.VocabularyWhereInput[]
   id?: Prisma.UuidFilter<"Vocabulary"> | string
-  sinoVietnamese?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   hanSimplified?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  pinyin?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   hanTraditional?: Prisma.StringFilter<"Vocabulary"> | string
-  jyutping?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  hanHongKong?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   hskLevel?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  pureCantonese?: Prisma.BoolNullableFilter<"Vocabulary"> | boolean | null
   searchKey?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  vietMeanings?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  engMeanings?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  vietExamples?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  pos?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  partOfSpeech?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   frequency?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
   radical?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   classifiers?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  pinyinNumeric?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   movieWordRank?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
   bookWordRank?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
   relatedWords?: Prisma.JsonNullableFilter<"Vocabulary">
   hanCharacters?: Prisma.JsonNullableFilter<"Vocabulary">
   boost?: Prisma.FloatNullableFilter<"Vocabulary"> | number | null
-  searchPinyin?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  romanizationJson?: Prisma.JsonNullableFilter<"Vocabulary">
   createdAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningListRelationFilter
-  vocabularyExamples?: Prisma.VocabularyExampleListRelationFilter
   vocabularyCharacters?: Prisma.VocabularyCharacterListRelationFilter
   userVocabularies?: Prisma.UserVocabularyListRelationFilter
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyListRelationFilter
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyListRelationFilter
 }
 
 export type VocabularyOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  sinoVietnamese?: Prisma.SortOrderInput | Prisma.SortOrder
   hanSimplified?: Prisma.SortOrderInput | Prisma.SortOrder
-  pinyin?: Prisma.SortOrderInput | Prisma.SortOrder
   hanTraditional?: Prisma.SortOrder
-  jyutping?: Prisma.SortOrderInput | Prisma.SortOrder
+  hanHongKong?: Prisma.SortOrderInput | Prisma.SortOrder
   hskLevel?: Prisma.SortOrderInput | Prisma.SortOrder
+  pureCantonese?: Prisma.SortOrderInput | Prisma.SortOrder
   searchKey?: Prisma.SortOrderInput | Prisma.SortOrder
-  vietMeanings?: Prisma.SortOrderInput | Prisma.SortOrder
-  engMeanings?: Prisma.SortOrderInput | Prisma.SortOrder
-  vietExamples?: Prisma.SortOrderInput | Prisma.SortOrder
-  pos?: Prisma.SortOrderInput | Prisma.SortOrder
+  partOfSpeech?: Prisma.SortOrderInput | Prisma.SortOrder
   frequency?: Prisma.SortOrderInput | Prisma.SortOrder
   radical?: Prisma.SortOrderInput | Prisma.SortOrder
   classifiers?: Prisma.SortOrderInput | Prisma.SortOrder
-  pinyinNumeric?: Prisma.SortOrderInput | Prisma.SortOrder
   movieWordRank?: Prisma.SortOrderInput | Prisma.SortOrder
   bookWordRank?: Prisma.SortOrderInput | Prisma.SortOrder
   relatedWords?: Prisma.SortOrderInput | Prisma.SortOrder
   hanCharacters?: Prisma.SortOrderInput | Prisma.SortOrder
   boost?: Prisma.SortOrderInput | Prisma.SortOrder
-  searchPinyin?: Prisma.SortOrderInput | Prisma.SortOrder
+  romanizationJson?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  vocabularyMeanings?: Prisma.VocabularyMeaningOrderByRelationAggregateInput
-  vocabularyExamples?: Prisma.VocabularyExampleOrderByRelationAggregateInput
   vocabularyCharacters?: Prisma.VocabularyCharacterOrderByRelationAggregateInput
   userVocabularies?: Prisma.UserVocabularyOrderByRelationAggregateInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyOrderByRelationAggregateInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyOrderByRelationAggregateInput
 }
 
 export type VocabularyWhereUniqueInput = Prisma.AtLeast<{
@@ -416,59 +365,48 @@ export type VocabularyWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.VocabularyWhereInput | Prisma.VocabularyWhereInput[]
   OR?: Prisma.VocabularyWhereInput[]
   NOT?: Prisma.VocabularyWhereInput | Prisma.VocabularyWhereInput[]
-  sinoVietnamese?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   hanSimplified?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  pinyin?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   hanTraditional?: Prisma.StringFilter<"Vocabulary"> | string
-  jyutping?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  hanHongKong?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   hskLevel?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  pureCantonese?: Prisma.BoolNullableFilter<"Vocabulary"> | boolean | null
   searchKey?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  vietMeanings?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  engMeanings?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  vietExamples?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  pos?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  partOfSpeech?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   frequency?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
   radical?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   classifiers?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
-  pinyinNumeric?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
   movieWordRank?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
   bookWordRank?: Prisma.IntNullableFilter<"Vocabulary"> | number | null
   relatedWords?: Prisma.JsonNullableFilter<"Vocabulary">
   hanCharacters?: Prisma.JsonNullableFilter<"Vocabulary">
   boost?: Prisma.FloatNullableFilter<"Vocabulary"> | number | null
-  searchPinyin?: Prisma.StringNullableFilter<"Vocabulary"> | string | null
+  romanizationJson?: Prisma.JsonNullableFilter<"Vocabulary">
   createdAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Vocabulary"> | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningListRelationFilter
-  vocabularyExamples?: Prisma.VocabularyExampleListRelationFilter
   vocabularyCharacters?: Prisma.VocabularyCharacterListRelationFilter
   userVocabularies?: Prisma.UserVocabularyListRelationFilter
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyListRelationFilter
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyListRelationFilter
 }, "id">
 
 export type VocabularyOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  sinoVietnamese?: Prisma.SortOrderInput | Prisma.SortOrder
   hanSimplified?: Prisma.SortOrderInput | Prisma.SortOrder
-  pinyin?: Prisma.SortOrderInput | Prisma.SortOrder
   hanTraditional?: Prisma.SortOrder
-  jyutping?: Prisma.SortOrderInput | Prisma.SortOrder
+  hanHongKong?: Prisma.SortOrderInput | Prisma.SortOrder
   hskLevel?: Prisma.SortOrderInput | Prisma.SortOrder
+  pureCantonese?: Prisma.SortOrderInput | Prisma.SortOrder
   searchKey?: Prisma.SortOrderInput | Prisma.SortOrder
-  vietMeanings?: Prisma.SortOrderInput | Prisma.SortOrder
-  engMeanings?: Prisma.SortOrderInput | Prisma.SortOrder
-  vietExamples?: Prisma.SortOrderInput | Prisma.SortOrder
-  pos?: Prisma.SortOrderInput | Prisma.SortOrder
+  partOfSpeech?: Prisma.SortOrderInput | Prisma.SortOrder
   frequency?: Prisma.SortOrderInput | Prisma.SortOrder
   radical?: Prisma.SortOrderInput | Prisma.SortOrder
   classifiers?: Prisma.SortOrderInput | Prisma.SortOrder
-  pinyinNumeric?: Prisma.SortOrderInput | Prisma.SortOrder
   movieWordRank?: Prisma.SortOrderInput | Prisma.SortOrder
   bookWordRank?: Prisma.SortOrderInput | Prisma.SortOrder
   relatedWords?: Prisma.SortOrderInput | Prisma.SortOrder
   hanCharacters?: Prisma.SortOrderInput | Prisma.SortOrder
   boost?: Prisma.SortOrderInput | Prisma.SortOrder
-  searchPinyin?: Prisma.SortOrderInput | Prisma.SortOrder
+  romanizationJson?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.VocabularyCountOrderByAggregateInput
@@ -483,263 +421,214 @@ export type VocabularyScalarWhereWithAggregatesInput = {
   OR?: Prisma.VocabularyScalarWhereWithAggregatesInput[]
   NOT?: Prisma.VocabularyScalarWhereWithAggregatesInput | Prisma.VocabularyScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"Vocabulary"> | string
-  sinoVietnamese?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   hanSimplified?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
-  pinyin?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   hanTraditional?: Prisma.StringWithAggregatesFilter<"Vocabulary"> | string
-  jyutping?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
+  hanHongKong?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   hskLevel?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
+  pureCantonese?: Prisma.BoolNullableWithAggregatesFilter<"Vocabulary"> | boolean | null
   searchKey?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
-  vietMeanings?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
-  engMeanings?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
-  vietExamples?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
-  pos?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
+  partOfSpeech?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   frequency?: Prisma.IntNullableWithAggregatesFilter<"Vocabulary"> | number | null
   radical?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   classifiers?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
-  pinyinNumeric?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
   movieWordRank?: Prisma.IntNullableWithAggregatesFilter<"Vocabulary"> | number | null
   bookWordRank?: Prisma.IntNullableWithAggregatesFilter<"Vocabulary"> | number | null
   relatedWords?: Prisma.JsonNullableWithAggregatesFilter<"Vocabulary">
   hanCharacters?: Prisma.JsonNullableWithAggregatesFilter<"Vocabulary">
   boost?: Prisma.FloatNullableWithAggregatesFilter<"Vocabulary"> | number | null
-  searchPinyin?: Prisma.StringNullableWithAggregatesFilter<"Vocabulary"> | string | null
+  romanizationJson?: Prisma.JsonNullableWithAggregatesFilter<"Vocabulary">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Vocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Vocabulary"> | Date | string
 }
 
 export type VocabularyCreateInput = {
   id?: string
-  sinoVietnamese?: string | null
   hanSimplified?: string | null
-  pinyin?: string | null
   hanTraditional?: string
-  jyutping?: string | null
+  hanHongKong?: string | null
   hskLevel?: string | null
+  pureCantonese?: boolean | null
   searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
+  partOfSpeech?: string | null
   frequency?: number | null
   radical?: string | null
   classifiers?: string | null
-  pinyinNumeric?: string | null
   movieWordRank?: number | null
   bookWordRank?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: number | null
-  searchPinyin?: string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
-  vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUncheckedCreateInput = {
   id?: string
-  sinoVietnamese?: string | null
   hanSimplified?: string | null
-  pinyin?: string | null
   hanTraditional?: string
-  jyutping?: string | null
+  hanHongKong?: string | null
   hskLevel?: string | null
+  pureCantonese?: boolean | null
   searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
+  partOfSpeech?: string | null
   frequency?: number | null
   radical?: string | null
   classifiers?: string | null
-  pinyinNumeric?: string | null
   movieWordRank?: number | null
   bookWordRank?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: number | null
-  searchPinyin?: string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
-  vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyCreateManyInput = {
   id?: string
-  sinoVietnamese?: string | null
   hanSimplified?: string | null
-  pinyin?: string | null
   hanTraditional?: string
-  jyutping?: string | null
+  hanHongKong?: string | null
   hskLevel?: string | null
+  pureCantonese?: boolean | null
   searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
+  partOfSpeech?: string | null
   frequency?: number | null
   radical?: string | null
   classifiers?: string | null
-  pinyinNumeric?: string | null
   movieWordRank?: number | null
   bookWordRank?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: number | null
-  searchPinyin?: string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type VocabularyUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type VocabularyUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type VocabularyCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  sinoVietnamese?: Prisma.SortOrder
   hanSimplified?: Prisma.SortOrder
-  pinyin?: Prisma.SortOrder
   hanTraditional?: Prisma.SortOrder
-  jyutping?: Prisma.SortOrder
+  hanHongKong?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
+  pureCantonese?: Prisma.SortOrder
   searchKey?: Prisma.SortOrder
-  vietMeanings?: Prisma.SortOrder
-  engMeanings?: Prisma.SortOrder
-  vietExamples?: Prisma.SortOrder
-  pos?: Prisma.SortOrder
+  partOfSpeech?: Prisma.SortOrder
   frequency?: Prisma.SortOrder
   radical?: Prisma.SortOrder
   classifiers?: Prisma.SortOrder
-  pinyinNumeric?: Prisma.SortOrder
   movieWordRank?: Prisma.SortOrder
   bookWordRank?: Prisma.SortOrder
   relatedWords?: Prisma.SortOrder
   hanCharacters?: Prisma.SortOrder
   boost?: Prisma.SortOrder
-  searchPinyin?: Prisma.SortOrder
+  romanizationJson?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -753,50 +642,38 @@ export type VocabularyAvgOrderByAggregateInput = {
 
 export type VocabularyMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  sinoVietnamese?: Prisma.SortOrder
   hanSimplified?: Prisma.SortOrder
-  pinyin?: Prisma.SortOrder
   hanTraditional?: Prisma.SortOrder
-  jyutping?: Prisma.SortOrder
+  hanHongKong?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
+  pureCantonese?: Prisma.SortOrder
   searchKey?: Prisma.SortOrder
-  vietMeanings?: Prisma.SortOrder
-  engMeanings?: Prisma.SortOrder
-  vietExamples?: Prisma.SortOrder
-  pos?: Prisma.SortOrder
+  partOfSpeech?: Prisma.SortOrder
   frequency?: Prisma.SortOrder
   radical?: Prisma.SortOrder
   classifiers?: Prisma.SortOrder
-  pinyinNumeric?: Prisma.SortOrder
   movieWordRank?: Prisma.SortOrder
   bookWordRank?: Prisma.SortOrder
   boost?: Prisma.SortOrder
-  searchPinyin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type VocabularyMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  sinoVietnamese?: Prisma.SortOrder
   hanSimplified?: Prisma.SortOrder
-  pinyin?: Prisma.SortOrder
   hanTraditional?: Prisma.SortOrder
-  jyutping?: Prisma.SortOrder
+  hanHongKong?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
+  pureCantonese?: Prisma.SortOrder
   searchKey?: Prisma.SortOrder
-  vietMeanings?: Prisma.SortOrder
-  engMeanings?: Prisma.SortOrder
-  vietExamples?: Prisma.SortOrder
-  pos?: Prisma.SortOrder
+  partOfSpeech?: Prisma.SortOrder
   frequency?: Prisma.SortOrder
   radical?: Prisma.SortOrder
   classifiers?: Prisma.SortOrder
-  pinyinNumeric?: Prisma.SortOrder
   movieWordRank?: Prisma.SortOrder
   bookWordRank?: Prisma.SortOrder
   boost?: Prisma.SortOrder
-  searchPinyin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -813,12 +690,8 @@ export type VocabularyScalarRelationFilter = {
   isNot?: Prisma.VocabularyWhereInput
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
+export type NullableBoolFieldUpdateOperationsInput = {
+  set?: boolean | null
 }
 
 export type NullableFloatFieldUpdateOperationsInput = {
@@ -827,34 +700,6 @@ export type NullableFloatFieldUpdateOperationsInput = {
   decrement?: number
   multiply?: number
   divide?: number
-}
-
-export type VocabularyCreateNestedOneWithoutVocabularyMeaningsInput = {
-  create?: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularyMeaningsInput, Prisma.VocabularyUncheckedCreateWithoutVocabularyMeaningsInput>
-  connectOrCreate?: Prisma.VocabularyCreateOrConnectWithoutVocabularyMeaningsInput
-  connect?: Prisma.VocabularyWhereUniqueInput
-}
-
-export type VocabularyUpdateOneRequiredWithoutVocabularyMeaningsNestedInput = {
-  create?: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularyMeaningsInput, Prisma.VocabularyUncheckedCreateWithoutVocabularyMeaningsInput>
-  connectOrCreate?: Prisma.VocabularyCreateOrConnectWithoutVocabularyMeaningsInput
-  upsert?: Prisma.VocabularyUpsertWithoutVocabularyMeaningsInput
-  connect?: Prisma.VocabularyWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.VocabularyUpdateToOneWithWhereWithoutVocabularyMeaningsInput, Prisma.VocabularyUpdateWithoutVocabularyMeaningsInput>, Prisma.VocabularyUncheckedUpdateWithoutVocabularyMeaningsInput>
-}
-
-export type VocabularyCreateNestedOneWithoutVocabularyExamplesInput = {
-  create?: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularyExamplesInput, Prisma.VocabularyUncheckedCreateWithoutVocabularyExamplesInput>
-  connectOrCreate?: Prisma.VocabularyCreateOrConnectWithoutVocabularyExamplesInput
-  connect?: Prisma.VocabularyWhereUniqueInput
-}
-
-export type VocabularyUpdateOneRequiredWithoutVocabularyExamplesNestedInput = {
-  create?: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularyExamplesInput, Prisma.VocabularyUncheckedCreateWithoutVocabularyExamplesInput>
-  connectOrCreate?: Prisma.VocabularyCreateOrConnectWithoutVocabularyExamplesInput
-  upsert?: Prisma.VocabularyUpsertWithoutVocabularyExamplesInput
-  connect?: Prisma.VocabularyWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.VocabularyUpdateToOneWithWhereWithoutVocabularyExamplesInput, Prisma.VocabularyUpdateWithoutVocabularyExamplesInput>, Prisma.VocabularyUncheckedUpdateWithoutVocabularyExamplesInput>
 }
 
 export type VocabularyCreateNestedOneWithoutVocabularyCharactersInput = {
@@ -899,346 +744,68 @@ export type VocabularyUpdateOneRequiredWithoutFlashcardDeckVocabulariesNestedInp
   update?: Prisma.XOR<Prisma.XOR<Prisma.VocabularyUpdateToOneWithWhereWithoutFlashcardDeckVocabulariesInput, Prisma.VocabularyUpdateWithoutFlashcardDeckVocabulariesInput>, Prisma.VocabularyUncheckedUpdateWithoutFlashcardDeckVocabulariesInput>
 }
 
-export type VocabularyCreateWithoutVocabularyMeaningsInput = {
-  id?: string
-  sinoVietnamese?: string | null
-  hanSimplified?: string | null
-  pinyin?: string | null
-  hanTraditional?: string
-  jyutping?: string | null
-  hskLevel?: string | null
-  searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
-  frequency?: number | null
-  radical?: string | null
-  classifiers?: string | null
-  pinyinNumeric?: string | null
-  movieWordRank?: number | null
-  bookWordRank?: number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  boost?: number | null
-  searchPinyin?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
-  vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
-  userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
-  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
+export type VocabularyCreateNestedOneWithoutVocabularySetVocabulariesInput = {
+  create?: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularySetVocabulariesInput, Prisma.VocabularyUncheckedCreateWithoutVocabularySetVocabulariesInput>
+  connectOrCreate?: Prisma.VocabularyCreateOrConnectWithoutVocabularySetVocabulariesInput
+  connect?: Prisma.VocabularyWhereUniqueInput
 }
 
-export type VocabularyUncheckedCreateWithoutVocabularyMeaningsInput = {
-  id?: string
-  sinoVietnamese?: string | null
-  hanSimplified?: string | null
-  pinyin?: string | null
-  hanTraditional?: string
-  jyutping?: string | null
-  hskLevel?: string | null
-  searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
-  frequency?: number | null
-  radical?: string | null
-  classifiers?: string | null
-  pinyinNumeric?: string | null
-  movieWordRank?: number | null
-  bookWordRank?: number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  boost?: number | null
-  searchPinyin?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
-  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
-  userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
-  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
-}
-
-export type VocabularyCreateOrConnectWithoutVocabularyMeaningsInput = {
-  where: Prisma.VocabularyWhereUniqueInput
-  create: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularyMeaningsInput, Prisma.VocabularyUncheckedCreateWithoutVocabularyMeaningsInput>
-}
-
-export type VocabularyUpsertWithoutVocabularyMeaningsInput = {
-  update: Prisma.XOR<Prisma.VocabularyUpdateWithoutVocabularyMeaningsInput, Prisma.VocabularyUncheckedUpdateWithoutVocabularyMeaningsInput>
-  create: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularyMeaningsInput, Prisma.VocabularyUncheckedCreateWithoutVocabularyMeaningsInput>
-  where?: Prisma.VocabularyWhereInput
-}
-
-export type VocabularyUpdateToOneWithWhereWithoutVocabularyMeaningsInput = {
-  where?: Prisma.VocabularyWhereInput
-  data: Prisma.XOR<Prisma.VocabularyUpdateWithoutVocabularyMeaningsInput, Prisma.VocabularyUncheckedUpdateWithoutVocabularyMeaningsInput>
-}
-
-export type VocabularyUpdateWithoutVocabularyMeaningsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
-  vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
-  userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
-  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
-}
-
-export type VocabularyUncheckedUpdateWithoutVocabularyMeaningsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
-  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
-  userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
-  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
-}
-
-export type VocabularyCreateWithoutVocabularyExamplesInput = {
-  id?: string
-  sinoVietnamese?: string | null
-  hanSimplified?: string | null
-  pinyin?: string | null
-  hanTraditional?: string
-  jyutping?: string | null
-  hskLevel?: string | null
-  searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
-  frequency?: number | null
-  radical?: string | null
-  classifiers?: string | null
-  pinyinNumeric?: string | null
-  movieWordRank?: number | null
-  bookWordRank?: number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  boost?: number | null
-  searchPinyin?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
-  vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
-  userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
-  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
-}
-
-export type VocabularyUncheckedCreateWithoutVocabularyExamplesInput = {
-  id?: string
-  sinoVietnamese?: string | null
-  hanSimplified?: string | null
-  pinyin?: string | null
-  hanTraditional?: string
-  jyutping?: string | null
-  hskLevel?: string | null
-  searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
-  frequency?: number | null
-  radical?: string | null
-  classifiers?: string | null
-  pinyinNumeric?: string | null
-  movieWordRank?: number | null
-  bookWordRank?: number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  boost?: number | null
-  searchPinyin?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
-  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
-  userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
-  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
-}
-
-export type VocabularyCreateOrConnectWithoutVocabularyExamplesInput = {
-  where: Prisma.VocabularyWhereUniqueInput
-  create: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularyExamplesInput, Prisma.VocabularyUncheckedCreateWithoutVocabularyExamplesInput>
-}
-
-export type VocabularyUpsertWithoutVocabularyExamplesInput = {
-  update: Prisma.XOR<Prisma.VocabularyUpdateWithoutVocabularyExamplesInput, Prisma.VocabularyUncheckedUpdateWithoutVocabularyExamplesInput>
-  create: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularyExamplesInput, Prisma.VocabularyUncheckedCreateWithoutVocabularyExamplesInput>
-  where?: Prisma.VocabularyWhereInput
-}
-
-export type VocabularyUpdateToOneWithWhereWithoutVocabularyExamplesInput = {
-  where?: Prisma.VocabularyWhereInput
-  data: Prisma.XOR<Prisma.VocabularyUpdateWithoutVocabularyExamplesInput, Prisma.VocabularyUncheckedUpdateWithoutVocabularyExamplesInput>
-}
-
-export type VocabularyUpdateWithoutVocabularyExamplesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
-  vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
-  userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
-  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
-}
-
-export type VocabularyUncheckedUpdateWithoutVocabularyExamplesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
-  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
-  userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
-  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+export type VocabularyUpdateOneRequiredWithoutVocabularySetVocabulariesNestedInput = {
+  create?: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularySetVocabulariesInput, Prisma.VocabularyUncheckedCreateWithoutVocabularySetVocabulariesInput>
+  connectOrCreate?: Prisma.VocabularyCreateOrConnectWithoutVocabularySetVocabulariesInput
+  upsert?: Prisma.VocabularyUpsertWithoutVocabularySetVocabulariesInput
+  connect?: Prisma.VocabularyWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.VocabularyUpdateToOneWithWhereWithoutVocabularySetVocabulariesInput, Prisma.VocabularyUpdateWithoutVocabularySetVocabulariesInput>, Prisma.VocabularyUncheckedUpdateWithoutVocabularySetVocabulariesInput>
 }
 
 export type VocabularyCreateWithoutVocabularyCharactersInput = {
   id?: string
-  sinoVietnamese?: string | null
   hanSimplified?: string | null
-  pinyin?: string | null
   hanTraditional?: string
-  jyutping?: string | null
+  hanHongKong?: string | null
   hskLevel?: string | null
+  pureCantonese?: boolean | null
   searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
+  partOfSpeech?: string | null
   frequency?: number | null
   radical?: string | null
   classifiers?: string | null
-  pinyinNumeric?: string | null
   movieWordRank?: number | null
   bookWordRank?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: number | null
-  searchPinyin?: string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
-  vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUncheckedCreateWithoutVocabularyCharactersInput = {
   id?: string
-  sinoVietnamese?: string | null
   hanSimplified?: string | null
-  pinyin?: string | null
   hanTraditional?: string
-  jyutping?: string | null
+  hanHongKong?: string | null
   hskLevel?: string | null
+  pureCantonese?: boolean | null
   searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
+  partOfSpeech?: string | null
   frequency?: number | null
   radical?: string | null
   classifiers?: string | null
-  pinyinNumeric?: string | null
   movieWordRank?: number | null
   bookWordRank?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: number | null
-  searchPinyin?: string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyCreateOrConnectWithoutVocabularyCharactersInput = {
@@ -1259,126 +826,102 @@ export type VocabularyUpdateToOneWithWhereWithoutVocabularyCharactersInput = {
 
 export type VocabularyUpdateWithoutVocabularyCharactersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
-  vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyUncheckedUpdateWithoutVocabularyCharactersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyCreateWithoutUserVocabulariesInput = {
   id?: string
-  sinoVietnamese?: string | null
   hanSimplified?: string | null
-  pinyin?: string | null
   hanTraditional?: string
-  jyutping?: string | null
+  hanHongKong?: string | null
   hskLevel?: string | null
+  pureCantonese?: boolean | null
   searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
+  partOfSpeech?: string | null
   frequency?: number | null
   radical?: string | null
   classifiers?: string | null
-  pinyinNumeric?: string | null
   movieWordRank?: number | null
   bookWordRank?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: number | null
-  searchPinyin?: string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
-  vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUncheckedCreateWithoutUserVocabulariesInput = {
   id?: string
-  sinoVietnamese?: string | null
   hanSimplified?: string | null
-  pinyin?: string | null
   hanTraditional?: string
-  jyutping?: string | null
+  hanHongKong?: string | null
   hskLevel?: string | null
+  pureCantonese?: boolean | null
   searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
+  partOfSpeech?: string | null
   frequency?: number | null
   radical?: string | null
   classifiers?: string | null
-  pinyinNumeric?: string | null
   movieWordRank?: number | null
   bookWordRank?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: number | null
-  searchPinyin?: string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyCreateOrConnectWithoutUserVocabulariesInput = {
@@ -1399,126 +942,102 @@ export type VocabularyUpdateToOneWithWhereWithoutUserVocabulariesInput = {
 
 export type VocabularyUpdateWithoutUserVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
-  vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyUncheckedUpdateWithoutUserVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
   flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyCreateWithoutFlashcardDeckVocabulariesInput = {
   id?: string
-  sinoVietnamese?: string | null
   hanSimplified?: string | null
-  pinyin?: string | null
   hanTraditional?: string
-  jyutping?: string | null
+  hanHongKong?: string | null
   hskLevel?: string | null
+  pureCantonese?: boolean | null
   searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
+  partOfSpeech?: string | null
   frequency?: number | null
   radical?: string | null
   classifiers?: string | null
-  pinyinNumeric?: string | null
   movieWordRank?: number | null
   bookWordRank?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: number | null
-  searchPinyin?: string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningCreateNestedManyWithoutVocabularyInput
-  vocabularyExamples?: Prisma.VocabularyExampleCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyUncheckedCreateWithoutFlashcardDeckVocabulariesInput = {
   id?: string
-  sinoVietnamese?: string | null
   hanSimplified?: string | null
-  pinyin?: string | null
   hanTraditional?: string
-  jyutping?: string | null
+  hanHongKong?: string | null
   hskLevel?: string | null
+  pureCantonese?: boolean | null
   searchKey?: string | null
-  vietMeanings?: string | null
-  engMeanings?: string | null
-  vietExamples?: string | null
-  pos?: string | null
+  partOfSpeech?: string | null
   frequency?: number | null
   radical?: string | null
   classifiers?: string | null
-  pinyinNumeric?: string | null
   movieWordRank?: number | null
   bookWordRank?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: number | null
-  searchPinyin?: string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedCreateNestedManyWithoutVocabularyInput
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedCreateNestedManyWithoutVocabularyInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
 }
 
 export type VocabularyCreateOrConnectWithoutFlashcardDeckVocabulariesInput = {
@@ -1539,64 +1058,168 @@ export type VocabularyUpdateToOneWithWhereWithoutFlashcardDeckVocabulariesInput 
 
 export type VocabularyUpdateWithoutFlashcardDeckVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUpdateManyWithoutVocabularyNestedInput
-  vocabularyExamples?: Prisma.VocabularyExampleUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUpdateManyWithoutVocabularyNestedInput
 }
 
 export type VocabularyUncheckedUpdateWithoutFlashcardDeckVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  sinoVietnamese?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
-  jyutping?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  engMeanings?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  vietExamples?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pos?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyinNumeric?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  searchPinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyMeanings?: Prisma.VocabularyMeaningUncheckedUpdateManyWithoutVocabularyNestedInput
-  vocabularyExamples?: Prisma.VocabularyExampleUncheckedUpdateManyWithoutVocabularyNestedInput
   vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+  vocabularySetVocabularies?: Prisma.VocabularySetVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+}
+
+export type VocabularyCreateWithoutVocabularySetVocabulariesInput = {
+  id?: string
+  hanSimplified?: string | null
+  hanTraditional?: string
+  hanHongKong?: string | null
+  hskLevel?: string | null
+  pureCantonese?: boolean | null
+  searchKey?: string | null
+  partOfSpeech?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  vocabularyCharacters?: Prisma.VocabularyCharacterCreateNestedManyWithoutVocabularyInput
+  userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutVocabularyInput
+}
+
+export type VocabularyUncheckedCreateWithoutVocabularySetVocabulariesInput = {
+  id?: string
+  hanSimplified?: string | null
+  hanTraditional?: string
+  hanHongKong?: string | null
+  hskLevel?: string | null
+  pureCantonese?: boolean | null
+  searchKey?: string | null
+  partOfSpeech?: string | null
+  frequency?: number | null
+  radical?: string | null
+  classifiers?: string | null
+  movieWordRank?: number | null
+  bookWordRank?: number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: number | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedCreateNestedManyWithoutVocabularyInput
+  userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutVocabularyInput
+}
+
+export type VocabularyCreateOrConnectWithoutVocabularySetVocabulariesInput = {
+  where: Prisma.VocabularyWhereUniqueInput
+  create: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularySetVocabulariesInput, Prisma.VocabularyUncheckedCreateWithoutVocabularySetVocabulariesInput>
+}
+
+export type VocabularyUpsertWithoutVocabularySetVocabulariesInput = {
+  update: Prisma.XOR<Prisma.VocabularyUpdateWithoutVocabularySetVocabulariesInput, Prisma.VocabularyUncheckedUpdateWithoutVocabularySetVocabulariesInput>
+  create: Prisma.XOR<Prisma.VocabularyCreateWithoutVocabularySetVocabulariesInput, Prisma.VocabularyUncheckedCreateWithoutVocabularySetVocabulariesInput>
+  where?: Prisma.VocabularyWhereInput
+}
+
+export type VocabularyUpdateToOneWithWhereWithoutVocabularySetVocabulariesInput = {
+  where?: Prisma.VocabularyWhereInput
+  data: Prisma.XOR<Prisma.VocabularyUpdateWithoutVocabularySetVocabulariesInput, Prisma.VocabularyUncheckedUpdateWithoutVocabularySetVocabulariesInput>
+}
+
+export type VocabularyUpdateWithoutVocabularySetVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  vocabularyCharacters?: Prisma.VocabularyCharacterUpdateManyWithoutVocabularyNestedInput
+  userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutVocabularyNestedInput
+}
+
+export type VocabularyUncheckedUpdateWithoutVocabularySetVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  hanSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hanTraditional?: Prisma.StringFieldUpdateOperationsInput | string
+  hanHongKong?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pureCantonese?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  searchKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  partOfSpeech?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  frequency?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  radical?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classifiers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  movieWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bookWordRank?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  hanCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  boost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  romanizationJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  vocabularyCharacters?: Prisma.VocabularyCharacterUncheckedUpdateManyWithoutVocabularyNestedInput
+  userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
+  flashcardDeckVocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutVocabularyNestedInput
 }
 
 
@@ -1605,19 +1228,17 @@ export type VocabularyUncheckedUpdateWithoutFlashcardDeckVocabulariesInput = {
  */
 
 export type VocabularyCountOutputType = {
-  vocabularyMeanings: number
-  vocabularyExamples: number
   vocabularyCharacters: number
   userVocabularies: number
   flashcardDeckVocabularies: number
+  vocabularySetVocabularies: number
 }
 
 export type VocabularyCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  vocabularyMeanings?: boolean | VocabularyCountOutputTypeCountVocabularyMeaningsArgs
-  vocabularyExamples?: boolean | VocabularyCountOutputTypeCountVocabularyExamplesArgs
   vocabularyCharacters?: boolean | VocabularyCountOutputTypeCountVocabularyCharactersArgs
   userVocabularies?: boolean | VocabularyCountOutputTypeCountUserVocabulariesArgs
   flashcardDeckVocabularies?: boolean | VocabularyCountOutputTypeCountFlashcardDeckVocabulariesArgs
+  vocabularySetVocabularies?: boolean | VocabularyCountOutputTypeCountVocabularySetVocabulariesArgs
 }
 
 /**
@@ -1628,20 +1249,6 @@ export type VocabularyCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.E
    * Select specific fields to fetch from the VocabularyCountOutputType
    */
   select?: Prisma.VocabularyCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * VocabularyCountOutputType without action
- */
-export type VocabularyCountOutputTypeCountVocabularyMeaningsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.VocabularyMeaningWhereInput
-}
-
-/**
- * VocabularyCountOutputType without action
- */
-export type VocabularyCountOutputTypeCountVocabularyExamplesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.VocabularyExampleWhereInput
 }
 
 /**
@@ -1665,128 +1272,113 @@ export type VocabularyCountOutputTypeCountFlashcardDeckVocabulariesArgs<ExtArgs 
   where?: Prisma.FlashcardDeckVocabularyWhereInput
 }
 
+/**
+ * VocabularyCountOutputType without action
+ */
+export type VocabularyCountOutputTypeCountVocabularySetVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.VocabularySetVocabularyWhereInput
+}
+
 
 export type VocabularySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  sinoVietnamese?: boolean
   hanSimplified?: boolean
-  pinyin?: boolean
   hanTraditional?: boolean
-  jyutping?: boolean
+  hanHongKong?: boolean
   hskLevel?: boolean
+  pureCantonese?: boolean
   searchKey?: boolean
-  vietMeanings?: boolean
-  engMeanings?: boolean
-  vietExamples?: boolean
-  pos?: boolean
+  partOfSpeech?: boolean
   frequency?: boolean
   radical?: boolean
   classifiers?: boolean
-  pinyinNumeric?: boolean
   movieWordRank?: boolean
   bookWordRank?: boolean
   relatedWords?: boolean
   hanCharacters?: boolean
   boost?: boolean
-  searchPinyin?: boolean
+  romanizationJson?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  vocabularyMeanings?: boolean | Prisma.Vocabulary$vocabularyMeaningsArgs<ExtArgs>
-  vocabularyExamples?: boolean | Prisma.Vocabulary$vocabularyExamplesArgs<ExtArgs>
   vocabularyCharacters?: boolean | Prisma.Vocabulary$vocabularyCharactersArgs<ExtArgs>
   userVocabularies?: boolean | Prisma.Vocabulary$userVocabulariesArgs<ExtArgs>
   flashcardDeckVocabularies?: boolean | Prisma.Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs>
+  vocabularySetVocabularies?: boolean | Prisma.Vocabulary$vocabularySetVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.VocabularyCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["vocabulary"]>
 
 export type VocabularySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  sinoVietnamese?: boolean
   hanSimplified?: boolean
-  pinyin?: boolean
   hanTraditional?: boolean
-  jyutping?: boolean
+  hanHongKong?: boolean
   hskLevel?: boolean
+  pureCantonese?: boolean
   searchKey?: boolean
-  vietMeanings?: boolean
-  engMeanings?: boolean
-  vietExamples?: boolean
-  pos?: boolean
+  partOfSpeech?: boolean
   frequency?: boolean
   radical?: boolean
   classifiers?: boolean
-  pinyinNumeric?: boolean
   movieWordRank?: boolean
   bookWordRank?: boolean
   relatedWords?: boolean
   hanCharacters?: boolean
   boost?: boolean
-  searchPinyin?: boolean
+  romanizationJson?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["vocabulary"]>
 
 export type VocabularySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  sinoVietnamese?: boolean
   hanSimplified?: boolean
-  pinyin?: boolean
   hanTraditional?: boolean
-  jyutping?: boolean
+  hanHongKong?: boolean
   hskLevel?: boolean
+  pureCantonese?: boolean
   searchKey?: boolean
-  vietMeanings?: boolean
-  engMeanings?: boolean
-  vietExamples?: boolean
-  pos?: boolean
+  partOfSpeech?: boolean
   frequency?: boolean
   radical?: boolean
   classifiers?: boolean
-  pinyinNumeric?: boolean
   movieWordRank?: boolean
   bookWordRank?: boolean
   relatedWords?: boolean
   hanCharacters?: boolean
   boost?: boolean
-  searchPinyin?: boolean
+  romanizationJson?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["vocabulary"]>
 
 export type VocabularySelectScalar = {
   id?: boolean
-  sinoVietnamese?: boolean
   hanSimplified?: boolean
-  pinyin?: boolean
   hanTraditional?: boolean
-  jyutping?: boolean
+  hanHongKong?: boolean
   hskLevel?: boolean
+  pureCantonese?: boolean
   searchKey?: boolean
-  vietMeanings?: boolean
-  engMeanings?: boolean
-  vietExamples?: boolean
-  pos?: boolean
+  partOfSpeech?: boolean
   frequency?: boolean
   radical?: boolean
   classifiers?: boolean
-  pinyinNumeric?: boolean
   movieWordRank?: boolean
   bookWordRank?: boolean
   relatedWords?: boolean
   hanCharacters?: boolean
   boost?: boolean
-  searchPinyin?: boolean
+  romanizationJson?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type VocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sinoVietnamese" | "hanSimplified" | "pinyin" | "hanTraditional" | "jyutping" | "hskLevel" | "searchKey" | "vietMeanings" | "engMeanings" | "vietExamples" | "pos" | "frequency" | "radical" | "classifiers" | "pinyinNumeric" | "movieWordRank" | "bookWordRank" | "relatedWords" | "hanCharacters" | "boost" | "searchPinyin" | "createdAt" | "updatedAt", ExtArgs["result"]["vocabulary"]>
+export type VocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "hanSimplified" | "hanTraditional" | "hanHongKong" | "hskLevel" | "pureCantonese" | "searchKey" | "partOfSpeech" | "frequency" | "radical" | "classifiers" | "movieWordRank" | "bookWordRank" | "relatedWords" | "hanCharacters" | "boost" | "romanizationJson" | "createdAt" | "updatedAt", ExtArgs["result"]["vocabulary"]>
 export type VocabularyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  vocabularyMeanings?: boolean | Prisma.Vocabulary$vocabularyMeaningsArgs<ExtArgs>
-  vocabularyExamples?: boolean | Prisma.Vocabulary$vocabularyExamplesArgs<ExtArgs>
   vocabularyCharacters?: boolean | Prisma.Vocabulary$vocabularyCharactersArgs<ExtArgs>
   userVocabularies?: boolean | Prisma.Vocabulary$userVocabulariesArgs<ExtArgs>
   flashcardDeckVocabularies?: boolean | Prisma.Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs>
+  vocabularySetVocabularies?: boolean | Prisma.Vocabulary$vocabularySetVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.VocabularyCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type VocabularyIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1795,35 +1387,29 @@ export type VocabularyIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.E
 export type $VocabularyPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Vocabulary"
   objects: {
-    vocabularyMeanings: Prisma.$VocabularyMeaningPayload<ExtArgs>[]
-    vocabularyExamples: Prisma.$VocabularyExamplePayload<ExtArgs>[]
     vocabularyCharacters: Prisma.$VocabularyCharacterPayload<ExtArgs>[]
     userVocabularies: Prisma.$UserVocabularyPayload<ExtArgs>[]
     flashcardDeckVocabularies: Prisma.$FlashcardDeckVocabularyPayload<ExtArgs>[]
+    vocabularySetVocabularies: Prisma.$VocabularySetVocabularyPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    sinoVietnamese: string | null
     hanSimplified: string | null
-    pinyin: string | null
     hanTraditional: string
-    jyutping: string | null
+    hanHongKong: string | null
     hskLevel: string | null
+    pureCantonese: boolean | null
     searchKey: string | null
-    vietMeanings: string | null
-    engMeanings: string | null
-    vietExamples: string | null
-    pos: string | null
+    partOfSpeech: string | null
     frequency: number | null
     radical: string | null
     classifiers: string | null
-    pinyinNumeric: string | null
     movieWordRank: number | null
     bookWordRank: number | null
     relatedWords: runtime.JsonValue | null
     hanCharacters: runtime.JsonValue | null
     boost: number | null
-    searchPinyin: string | null
+    romanizationJson: runtime.JsonValue | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["vocabulary"]>
@@ -2220,11 +1806,10 @@ readonly fields: VocabularyFieldRefs;
  */
 export interface Prisma__VocabularyClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  vocabularyMeanings<T extends Prisma.Vocabulary$vocabularyMeaningsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$vocabularyMeaningsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularyMeaningPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  vocabularyExamples<T extends Prisma.Vocabulary$vocabularyExamplesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$vocabularyExamplesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularyExamplePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   vocabularyCharacters<T extends Prisma.Vocabulary$vocabularyCharactersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$vocabularyCharactersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularyCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   userVocabularies<T extends Prisma.Vocabulary$userVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$userVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   flashcardDeckVocabularies<T extends Prisma.Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  vocabularySetVocabularies<T extends Prisma.Vocabulary$vocabularySetVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Vocabulary$vocabularySetVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularySetVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2255,27 +1840,22 @@ export interface Prisma__VocabularyClient<T, Null = never, ExtArgs extends runti
  */
 export interface VocabularyFieldRefs {
   readonly id: Prisma.FieldRef<"Vocabulary", 'String'>
-  readonly sinoVietnamese: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly hanSimplified: Prisma.FieldRef<"Vocabulary", 'String'>
-  readonly pinyin: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly hanTraditional: Prisma.FieldRef<"Vocabulary", 'String'>
-  readonly jyutping: Prisma.FieldRef<"Vocabulary", 'String'>
+  readonly hanHongKong: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly hskLevel: Prisma.FieldRef<"Vocabulary", 'String'>
+  readonly pureCantonese: Prisma.FieldRef<"Vocabulary", 'Boolean'>
   readonly searchKey: Prisma.FieldRef<"Vocabulary", 'String'>
-  readonly vietMeanings: Prisma.FieldRef<"Vocabulary", 'String'>
-  readonly engMeanings: Prisma.FieldRef<"Vocabulary", 'String'>
-  readonly vietExamples: Prisma.FieldRef<"Vocabulary", 'String'>
-  readonly pos: Prisma.FieldRef<"Vocabulary", 'String'>
+  readonly partOfSpeech: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly frequency: Prisma.FieldRef<"Vocabulary", 'Int'>
   readonly radical: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly classifiers: Prisma.FieldRef<"Vocabulary", 'String'>
-  readonly pinyinNumeric: Prisma.FieldRef<"Vocabulary", 'String'>
   readonly movieWordRank: Prisma.FieldRef<"Vocabulary", 'Int'>
   readonly bookWordRank: Prisma.FieldRef<"Vocabulary", 'Int'>
   readonly relatedWords: Prisma.FieldRef<"Vocabulary", 'Json'>
   readonly hanCharacters: Prisma.FieldRef<"Vocabulary", 'Json'>
   readonly boost: Prisma.FieldRef<"Vocabulary", 'Float'>
-  readonly searchPinyin: Prisma.FieldRef<"Vocabulary", 'String'>
+  readonly romanizationJson: Prisma.FieldRef<"Vocabulary", 'Json'>
   readonly createdAt: Prisma.FieldRef<"Vocabulary", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Vocabulary", 'DateTime'>
 }
@@ -2671,54 +2251,6 @@ export type VocabularyDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.In
 }
 
 /**
- * Vocabulary.vocabularyMeanings
- */
-export type Vocabulary$vocabularyMeaningsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the VocabularyMeaning
-   */
-  select?: Prisma.VocabularyMeaningSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the VocabularyMeaning
-   */
-  omit?: Prisma.VocabularyMeaningOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.VocabularyMeaningInclude<ExtArgs> | null
-  where?: Prisma.VocabularyMeaningWhereInput
-  orderBy?: Prisma.VocabularyMeaningOrderByWithRelationInput | Prisma.VocabularyMeaningOrderByWithRelationInput[]
-  cursor?: Prisma.VocabularyMeaningWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.VocabularyMeaningScalarFieldEnum | Prisma.VocabularyMeaningScalarFieldEnum[]
-}
-
-/**
- * Vocabulary.vocabularyExamples
- */
-export type Vocabulary$vocabularyExamplesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the VocabularyExample
-   */
-  select?: Prisma.VocabularyExampleSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the VocabularyExample
-   */
-  omit?: Prisma.VocabularyExampleOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.VocabularyExampleInclude<ExtArgs> | null
-  where?: Prisma.VocabularyExampleWhereInput
-  orderBy?: Prisma.VocabularyExampleOrderByWithRelationInput | Prisma.VocabularyExampleOrderByWithRelationInput[]
-  cursor?: Prisma.VocabularyExampleWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.VocabularyExampleScalarFieldEnum | Prisma.VocabularyExampleScalarFieldEnum[]
-}
-
-/**
  * Vocabulary.vocabularyCharacters
  */
 export type Vocabulary$vocabularyCharactersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2788,6 +2320,30 @@ export type Vocabulary$flashcardDeckVocabulariesArgs<ExtArgs extends runtime.Typ
   take?: number
   skip?: number
   distinct?: Prisma.FlashcardDeckVocabularyScalarFieldEnum | Prisma.FlashcardDeckVocabularyScalarFieldEnum[]
+}
+
+/**
+ * Vocabulary.vocabularySetVocabularies
+ */
+export type Vocabulary$vocabularySetVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the VocabularySetVocabulary
+   */
+  select?: Prisma.VocabularySetVocabularySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the VocabularySetVocabulary
+   */
+  omit?: Prisma.VocabularySetVocabularyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.VocabularySetVocabularyInclude<ExtArgs> | null
+  where?: Prisma.VocabularySetVocabularyWhereInput
+  orderBy?: Prisma.VocabularySetVocabularyOrderByWithRelationInput | Prisma.VocabularySetVocabularyOrderByWithRelationInput[]
+  cursor?: Prisma.VocabularySetVocabularyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.VocabularySetVocabularyScalarFieldEnum | Prisma.VocabularySetVocabularyScalarFieldEnum[]
 }
 
 /**

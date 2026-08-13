@@ -200,6 +200,7 @@ export type UserWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   userVocabularies?: Prisma.UserVocabularyListRelationFilter
   flashcardDecks?: Prisma.FlashcardDeckListRelationFilter
+  vocabularySets?: Prisma.VocabularySetListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -212,6 +213,7 @@ export type UserOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   userVocabularies?: Prisma.UserVocabularyOrderByRelationAggregateInput
   flashcardDecks?: Prisma.FlashcardDeckOrderByRelationAggregateInput
+  vocabularySets?: Prisma.VocabularySetOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -227,6 +229,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   userVocabularies?: Prisma.UserVocabularyListRelationFilter
   flashcardDecks?: Prisma.FlashcardDeckListRelationFilter
+  vocabularySets?: Prisma.VocabularySetListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -265,6 +268,7 @@ export type UserCreateInput = {
   updatedAt?: Date | string
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutUserInput
   flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -277,6 +281,7 @@ export type UserUncheckedCreateInput = {
   updatedAt?: Date | string
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutUserInput
   flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -289,6 +294,7 @@ export type UserUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutUserNestedInput
   flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -301,6 +307,7 @@ export type UserUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutUserNestedInput
   flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -396,6 +403,20 @@ export type UserUpdateOneRequiredWithoutFlashcardDecksNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutFlashcardDecksInput, Prisma.UserUpdateWithoutFlashcardDecksInput>, Prisma.UserUncheckedUpdateWithoutFlashcardDecksInput>
 }
 
+export type UserCreateNestedOneWithoutVocabularySetsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVocabularySetsInput, Prisma.UserUncheckedCreateWithoutVocabularySetsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVocabularySetsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutVocabularySetsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVocabularySetsInput, Prisma.UserUncheckedCreateWithoutVocabularySetsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVocabularySetsInput
+  upsert?: Prisma.UserUpsertWithoutVocabularySetsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutVocabularySetsInput, Prisma.UserUpdateWithoutVocabularySetsInput>, Prisma.UserUncheckedUpdateWithoutVocabularySetsInput>
+}
+
 export type UserCreateWithoutUserVocabulariesInput = {
   id?: string
   email: string
@@ -405,6 +426,7 @@ export type UserCreateWithoutUserVocabulariesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutUserVocabulariesInput = {
@@ -416,6 +438,7 @@ export type UserUncheckedCreateWithoutUserVocabulariesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutUserVocabulariesInput = {
@@ -443,6 +466,7 @@ export type UserUpdateWithoutUserVocabulariesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutUserVocabulariesInput = {
@@ -454,6 +478,7 @@ export type UserUncheckedUpdateWithoutUserVocabulariesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFlashcardDecksInput = {
@@ -465,6 +490,7 @@ export type UserCreateWithoutFlashcardDecksInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFlashcardDecksInput = {
@@ -476,6 +502,7 @@ export type UserUncheckedCreateWithoutFlashcardDecksInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFlashcardDecksInput = {
@@ -503,6 +530,7 @@ export type UserUpdateWithoutFlashcardDecksInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFlashcardDecksInput = {
@@ -514,6 +542,71 @@ export type UserUncheckedUpdateWithoutFlashcardDecksInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutVocabularySetsInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userVocabularies?: Prisma.UserVocabularyCreateNestedManyWithoutUserInput
+  flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutVocabularySetsInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userVocabularies?: Prisma.UserVocabularyUncheckedCreateNestedManyWithoutUserInput
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutVocabularySetsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutVocabularySetsInput, Prisma.UserUncheckedCreateWithoutVocabularySetsInput>
+}
+
+export type UserUpsertWithoutVocabularySetsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutVocabularySetsInput, Prisma.UserUncheckedUpdateWithoutVocabularySetsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutVocabularySetsInput, Prisma.UserUncheckedCreateWithoutVocabularySetsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutVocabularySetsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutVocabularySetsInput, Prisma.UserUncheckedUpdateWithoutVocabularySetsInput>
+}
+
+export type UserUpdateWithoutVocabularySetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userVocabularies?: Prisma.UserVocabularyUpdateManyWithoutUserNestedInput
+  flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutVocabularySetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userVocabularies?: Prisma.UserVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -524,11 +617,13 @@ export type UserUncheckedUpdateWithoutFlashcardDecksInput = {
 export type UserCountOutputType = {
   userVocabularies: number
   flashcardDecks: number
+  vocabularySets: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   userVocabularies?: boolean | UserCountOutputTypeCountUserVocabulariesArgs
   flashcardDecks?: boolean | UserCountOutputTypeCountFlashcardDecksArgs
+  vocabularySets?: boolean | UserCountOutputTypeCountVocabularySetsArgs
 }
 
 /**
@@ -555,6 +650,13 @@ export type UserCountOutputTypeCountFlashcardDecksArgs<ExtArgs extends runtime.T
   where?: Prisma.FlashcardDeckWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountVocabularySetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.VocabularySetWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -566,6 +668,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   updatedAt?: boolean
   userVocabularies?: boolean | Prisma.User$userVocabulariesArgs<ExtArgs>
   flashcardDecks?: boolean | Prisma.User$flashcardDecksArgs<ExtArgs>
+  vocabularySets?: boolean | Prisma.User$vocabularySetsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -603,6 +706,7 @@ export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   userVocabularies?: boolean | Prisma.User$userVocabulariesArgs<ExtArgs>
   flashcardDecks?: boolean | Prisma.User$flashcardDecksArgs<ExtArgs>
+  vocabularySets?: boolean | Prisma.User$vocabularySetsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -613,6 +717,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   objects: {
     userVocabularies: Prisma.$UserVocabularyPayload<ExtArgs>[]
     flashcardDecks: Prisma.$FlashcardDeckPayload<ExtArgs>[]
+    vocabularySets: Prisma.$VocabularySetPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1018,6 +1123,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   userVocabularies<T extends Prisma.User$userVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$userVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   flashcardDecks<T extends Prisma.User$flashcardDecksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$flashcardDecksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  vocabularySets<T extends Prisma.User$vocabularySetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$vocabularySetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularySetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1492,6 +1598,30 @@ export type User$flashcardDecksArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.FlashcardDeckScalarFieldEnum | Prisma.FlashcardDeckScalarFieldEnum[]
+}
+
+/**
+ * User.vocabularySets
+ */
+export type User$vocabularySetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the VocabularySet
+   */
+  select?: Prisma.VocabularySetSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the VocabularySet
+   */
+  omit?: Prisma.VocabularySetOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.VocabularySetInclude<ExtArgs> | null
+  where?: Prisma.VocabularySetWhereInput
+  orderBy?: Prisma.VocabularySetOrderByWithRelationInput | Prisma.VocabularySetOrderByWithRelationInput[]
+  cursor?: Prisma.VocabularySetWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.VocabularySetScalarFieldEnum | Prisma.VocabularySetScalarFieldEnum[]
 }
 
 /**

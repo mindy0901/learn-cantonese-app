@@ -63,16 +63,19 @@ function splitSinoVietnameseParts(sinoVietnamese) {
 /**
  * Compute the `hanCharacters` breakdown for a vocabulary.
  * Returns an array aligned by position, e.g. for 挨家挨戶:
- * [{ character: "挨", pinyin: "āi", jyutping: "aai1" }, { character: "家", ... }, { character: "挨", ... }, { character: "戶", hanSimplified: "户", ... }]
+ * [{ sinoVietnamese: "...", hanSimplified: "", hanTraditional: "挨", pinyin: "āi", jyutping: "aai1" }, ...]
  *
- * - `character` is the traditional form (default).
- * - `hanSimplified` is the per-position simplified form, set ONLY when it differs
- *   from the traditional form (variant pair like 戶/户). Same-form chars → absent.
- * - `sinoVietnamese` is the per-position Hán-Việt reading when it can be aligned.
+ * Key order (BẮT BUỘC): `sinoVietnamese` → `hanSimplified` → `hanTraditional` → `pinyin` → `jyutping`.
+ * - `hanTraditional` is the traditional form (default).
+ * - `hanSimplified` ALWAYS present — set to the per-position simplified form when it
+ *   differs from the traditional form (variant pair like 戶/户), else empty string "".
+ * - `sinoVietnamese` is the per-position Hán-Việt reading when it can be aligned (else null).
  * - Reads are aligned by index to the traditional characters.
+ * - Readings are aggregated across ALL pronunciations (the `romanization` array), joined
+ *   with " / " when a character has different readings per pronunciation.
  *
- * @param {{ hanTraditional?: string, hanSimplified?: string, pinyin?: string, jyutping?: string, sinoVietnamese?: string }} vocab
- * @returns {Array<{ character: string, hanSimplified?: string, pinyin: string|null, jyutping: string|null, sinoVietnamese?: string|null }>}
+ * @param {{ hanTraditional?: string, hanSimplified?: string, pinyin?: string, jyutping?: string, sinoVietnamese?: string, romanization?: Array, romanizationJson?: Array }} vocab
+ * @returns {Array<{ sinoVietnamese: string|null, hanSimplified: string, hanTraditional: string, pinyin: string|null, jyutping: string|null }>}
  */
 export function computeHanCharacters(vocab) {
     const trad = (vocab.hanTraditional ?? "").trim();
@@ -83,36 +86,103 @@ export function computeHanCharacters(vocab) {
     const chars = tradChars.length > 0 ? tradChars : simpChars;
     if (chars.length === 0) return [];
 
-    const pyParts = splitPinyinParts(vocab.pinyin);
-    const jpParts = splitJyutpingParts(vocab.jyutping);
-    const svParts = splitSinoVietnameseParts(vocab.sinoVietnamese);
-    const svAligned =
-        svParts.length > 0 && (chars.length === 1 || (chars.length > 1 && svParts.length % chars.length === 0));
+    // Gather readings from ALL pronunciations.
+    // Model mới (2026-08-14): romanization_json = { mandarin, cantonese } blocks;
+    // fallback legacy typed array / flat.
+    let sources = [];
+    const rj = vocab?.romanizationJson;
+    if (rj && typeof rj === "object" && !Array.isArray(rj) && (rj.mandarin || rj.cantonese)) {
+        for (const r of rj.mandarin?.readings ?? []) {
+            sources.push({ pinyin: r?.romanization ?? "", jyutping: "", sinoVietnamese: r?.sino_vietnamese ?? "" });
+        }
+        for (const r of rj.cantonese?.readings ?? []) {
+            sources.push({ pinyin: "", jyutping: r?.romanization ?? "", sinoVietnamese: r?.sino_vietnamese ?? "" });
+        }
+    } else {
+        const romanizations =
+            Array.isArray(vocab?.romanization) && vocab.romanization.length > 0
+                ? vocab.romanization
+                : Array.isArray(rj) && rj.length > 0
+                  ? rj
+                  : null;
+        sources = romanizations
+            ? romanizations.map((r) => ({
+                  pinyin: r?.pinyin ?? "",
+                  jyutping: r?.jyutping ?? "",
+                  sinoVietnamese: r?.sinoVietnamese ?? "",
+              }))
+            : [{ pinyin: vocab.pinyin, jyutping: vocab.jyutping, sinoVietnamese: vocab.sinoVietnamese }];
+    }
+
+    // Per-position aggregated reading sets (dedupe case-insensitive for py/jp)
+    const pyByPos = chars.map(() => new Set());
+    const jpByPos = chars.map(() => new Set());
+    const svByPos = chars.map(() => new Set());
+
+    for (const src of sources) {
+        const pyParts = splitPinyinParts(src.pinyin);
+        const jpParts = splitJyutpingParts(src.jyutping);
+        const svParts = splitSinoVietnameseParts(src.sinoVietnamese);
+        const svAligned =
+            svParts.length > 0 && (chars.length === 1 || (chars.length > 1 && svParts.length % chars.length === 0));
+        for (let i = 0; i < chars.length; i++) {
+            if (pyParts[i]) pyByPos[i].add(pyParts[i]);
+            if (jpParts[i]) jpByPos[i].add(jpParts[i]);
+            if (svAligned) {
+                if (chars.length === 1) {
+                    svByPos[i].add(svParts.join(" "));
+                } else {
+                    const candidates = [];
+                    for (let k = i; k < svParts.length; k += chars.length) candidates.push(svParts[k]);
+                    if (candidates.length > 0) svByPos[i].add(candidates.join(" "));
+                }
+            }
+        }
+    }
+
+    const joinReading = (set) => (set.size > 0 ? [...set].sort().join(" / ") : null);
 
     return chars.map((character, i) => {
         const simpChar = simpChars.length === chars.length ? simpChars[i] : undefined;
-        const item = {
-            character,
-            pinyin: pyParts[i] ? String(pyParts[i]).trim() : null,
-            jyutping: jpParts[i] ? String(jpParts[i]).trim() : null,
+        return {
+            sinoVietnamese: joinReading(svByPos[i]),
+            // Luôn giữ hanSimplified (single-form: simp == trad, không set rỗng — 2026-08-13)
+            hanSimplified: simpChar ?? "",
+            hanTraditional: character,
+            pinyin: joinReading(pyByPos[i]),
+            jyutping: joinReading(jpByPos[i]),
         };
-        // Hán-Việt aligned by position; for multi-char, every nth token maps to this char
-        if (svAligned) {
-            if (chars.length === 1) {
-                item.sinoVietnamese = svParts.join(" ") || null;
-            } else {
-                const candidates = [];
-                for (let k = i; k < svParts.length; k += chars.length) candidates.push(svParts[k]);
-                if (candidates.length > 0) item.sinoVietnamese = candidates.join(" ") || null;
-            }
-        }
-        // Only record simplified form when it genuinely differs (variant pair)
-        if (simpChar && simpChar !== character) item.hanSimplified = simpChar;
-        return item;
     });
 }
 
-/** Score a HanCharacter by data richness (readings, traditional, popularity). */
+/** Split an aggregated breakdown reading (joined with " / ") into individual readings. */
+function splitBreakdownReadings(value) {
+    return String(value ?? "")
+        .split("/")
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
+/**
+ * Normalize one breakdown item to the canonical key order
+ * (sinoVietnamese → hanSimplified → hanTraditional → pinyin → jyutping).
+ * Preserves unknown extra keys; missing ones default to null/"". Used in
+ * rowToVocabulary so the API always emits keys in the canonical order even
+ * though Postgres JSONB re-sorts stored keys.
+ */
+export function normalizeHanCharItem(item) {
+    const simp = String(item?.hanSimplified ?? "").trim();
+    return {
+        sinoVietnamese: item?.sinoVietnamese ?? null,
+        // Giữ hanSimplified luôn (single-form: simp == trad — 2026-08-13)
+        hanSimplified: simp || "",
+        hanTraditional: String(item?.hanTraditional ?? item?.character ?? "").trim(),
+        pinyin: item?.pinyin ?? null,
+        jyutping: item?.jyutping ?? null,
+    };
+}
+
+/** Score a HanCharacter by data richness (readings, traditional). */
 function hanCharScore(h) {
     let s = 0;
     const jp = Array.isArray(h.jyutping) ? h.jyutping : h.jyutping ? [h.jyutping] : [];
@@ -120,7 +190,6 @@ function hanCharScore(h) {
     const hv = Array.isArray(h.sinoVietnamese) ? h.sinoVietnamese : h.sinoVietnamese ? [h.sinoVietnamese] : [];
     s += jp.length + py.length + hv.length;
     if (h.hanTraditional) s += 2;
-    s += h.popularity ?? 0;
     return s;
 }
 
@@ -254,7 +323,7 @@ function mergeSinoReadings(existingArr, newVal) {
  *  2. Link via `vocabulary_characters` with position (unique chars only — join has unique constraint).
  *
  * @param {string} vocabularyId
- * @param {Array<{ character: string, pinyin?: string|null, jyutping?: string|null }>} hanChars
+ * @param {Array<{ hanTraditional?: string, character?: string, pinyin?: string|null, jyutping?: string|null, hanSimplified?: string, sinoVietnamese?: string|null }>} hanChars
  * @returns {Promise<{ created: number, updated: number, linked: number }>}
  */
 export async function syncVocabularyHanCharacters(vocabularyId, hanChars) {
@@ -273,7 +342,7 @@ export async function syncVocabularyHanCharacters(vocabularyId, hanChars) {
 
     for (let i = 0; i < hanChars.length; i++) {
         const item = hanChars[i];
-        const ch = String(item?.character ?? "").trim();
+        const ch = String(item?.hanTraditional ?? item?.character ?? "").trim();
         if (!ch || seenChars.has(ch)) continue; // skip empty & duplicates (join has unique constraint)
         seenChars.add(ch);
 
@@ -283,9 +352,14 @@ export async function syncVocabularyHanCharacters(vocabularyId, hanChars) {
         const resolved = await resolveHanCharacter(ch);
         let han = resolved.han;
         merged += resolved.merged;
+        // Breakdown pinyin/jyutping may aggregate several readings ("jiē / jié")
+        const itemPinyin = splitBreakdownReadings(item.pinyin);
+        const itemJyutping = splitBreakdownReadings(item.jyutping);
         if (han) {
-            const newPinyin = mergeReadings(han.pinyin, item.pinyin);
-            const newJyutping = mergeReadings(han.jyutping, item.jyutping);
+            let newPinyin = Array.isArray(han.pinyin) ? han.pinyin : [];
+            for (const p of itemPinyin) newPinyin = mergeReadings(newPinyin, p);
+            let newJyutping = Array.isArray(han.jyutping) ? han.jyutping : [];
+            for (const j of itemJyutping) newJyutping = mergeReadings(newJyutping, j);
             const newSino = mergeSinoReadings(han.sinoVietnamese, item.sinoVietnamese);
             const pyChanged = newPinyin.join("|") !== (Array.isArray(han.pinyin) ? han.pinyin.join("|") : "");
             const jpChanged = newJyutping.join("|") !== (Array.isArray(han.jyutping) ? han.jyutping.join("|") : "");
@@ -314,8 +388,8 @@ export async function syncVocabularyHanCharacters(vocabularyId, hanChars) {
                     id: randomUUID(),
                     hanTraditional: ch,
                     hanSimplified: simpVariant || null,
-                    pinyin: item.pinyin ? [String(item.pinyin).trim()] : [],
-                    jyutping: item.jyutping ? [String(item.jyutping).trim()] : [],
+                    pinyin: itemPinyin.map((s) => s.toLowerCase()),
+                    jyutping: itemJyutping.map((s) => s.toLowerCase()),
                     sinoVietnamese: mergeSinoReadings([], item.sinoVietnamese),
                     searchKey: null,
                 },
@@ -374,6 +448,7 @@ export async function backfillVocabularyHanCharacters(where = {}, onProgress = n
             pinyin: true,
             jyutping: true,
             sinoVietnamese: true,
+            romanizationJson: true,
         },
         orderBy: { createdAt: "asc" },
     });
@@ -436,6 +511,7 @@ export async function previewVocabularyHanCharacters(mode = "fast") {
             pinyin: true,
             jyutping: true,
             sinoVietnamese: true,
+            romanizationJson: true,
         },
         orderBy: { createdAt: "asc" },
     });
@@ -445,11 +521,11 @@ export async function previewVocabularyHanCharacters(mode = "fast") {
     for (const vocab of vocabs) {
         const breakdown = computeHanCharacters(vocab);
         for (const item of breakdown) {
-            const ch = String(item?.character ?? "").trim();
+            const ch = String(item?.hanTraditional ?? item?.character ?? "").trim();
             if (!ch) continue;
             if (!charMap.has(ch)) {
                 charMap.set(ch, {
-                    character: ch,
+                    hanTraditional: ch,
                     hanSimplified: item.hanSimplified,
                     pinyin: new Set(),
                     jyutping: new Set(),
@@ -459,8 +535,12 @@ export async function previewVocabularyHanCharacters(mode = "fast") {
             }
             const entry = charMap.get(ch);
             entry.count++;
-            if (item.pinyin) entry.pinyin.add(String(item.pinyin).trim().toLowerCase());
-            if (item.jyutping) entry.jyutping.add(String(item.jyutping).trim().toLowerCase());
+            for (const p of splitBreakdownReadings(item.pinyin)) {
+                entry.pinyin.add(p.toLowerCase());
+            }
+            for (const j of splitBreakdownReadings(item.jyutping)) {
+                entry.jyutping.add(j.toLowerCase());
+            }
             if (item.sinoVietnamese) {
                 // "TỊNH | TÍNH" = ONE reading (alternatives), keep whole group
                 for (const t of splitSinoVietnameseParts(item.sinoVietnamese)) {
@@ -474,7 +554,7 @@ export async function previewVocabularyHanCharacters(mode = "fast") {
     // ── Full mode: store is wiped first, so EVERY aggregated char is "new" ──
     if (mode === "full") {
         const all = [...charMap.values()].map((entry) => ({
-            character: entry.character,
+            hanTraditional: entry.hanTraditional,
             hanSimplified: entry.hanSimplified,
             pinyin: [...entry.pinyin].sort(),
             jyutping: [...entry.jyutping].sort(),
@@ -536,11 +616,11 @@ export async function previewVocabularyHanCharacters(mode = "fast") {
     };
 
     for (const entry of charMap.values()) {
-        const ch = entry.character;
+        const ch = entry.hanTraditional;
         const ex = byChar.get(ch);
         if (!ex) {
             newChars.push({
-                character: ch,
+                hanTraditional: ch,
                 hanSimplified: entry.hanSimplified,
                 pinyin: [...entry.pinyin].sort(),
                 jyutping: [...entry.jyutping].sort(),
@@ -554,7 +634,7 @@ export async function previewVocabularyHanCharacters(mode = "fast") {
         const missSv = missing(ex.sinoVietnamese, entry.sinoVietnamese, false);
         if (missPy.length > 0 || missJp.length > 0 || missSv.length > 0) {
             updateChars.push({
-                character: ch,
+                hanTraditional: ch,
                 existingId: ex.id,
                 missing: [
                     ...missPy.map((p) => `py:${p}`),
@@ -601,14 +681,12 @@ export async function rebuildHanCharacterReadings() {
     for (const vocab of vocabs) {
         const breakdown = computeHanCharacters(vocab);
         for (const item of breakdown) {
-            const ch = String(item?.character ?? "").trim();
+            const ch = String(item?.hanTraditional ?? item?.character ?? "").trim();
             if (!ch) continue;
             if (!readingsMap.has(ch)) readingsMap.set(ch, { pinyin: new Set(), jyutping: new Set() });
             const entry = readingsMap.get(ch);
-            const py = String(item?.pinyin ?? "").trim();
-            const jp = String(item?.jyutping ?? "").trim();
-            if (py) entry.pinyin.add(py);
-            if (jp) entry.jyutping.add(jp);
+            for (const py of splitBreakdownReadings(item?.pinyin)) entry.pinyin.add(py);
+            for (const jp of splitBreakdownReadings(item?.jyutping)) entry.jyutping.add(jp);
         }
     }
 

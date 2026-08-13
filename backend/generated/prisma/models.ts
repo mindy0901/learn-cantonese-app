@@ -9,9 +9,8 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/HanCharacter.ts'
+export type * from './models/Radical.ts'
 export type * from './models/Vocabulary.ts'
-export type * from './models/VocabularyMeaning.ts'
-export type * from './models/VocabularyExample.ts'
 export type * from './models/VocabularyCharacter.ts'
 export type * from './models/Grammar.ts'
 export type * from './models/GrammarExample.ts'
@@ -20,4 +19,6 @@ export type * from './models/UserVocabulary.ts'
 export type * from './models/SentencePattern.ts'
 export type * from './models/FlashcardDeck.ts'
 export type * from './models/FlashcardDeckVocabulary.ts'
+export type * from './models/VocabularySet.ts'
+export type * from './models/VocabularySetVocabulary.ts'
 export type * from './commonInputTypes.ts'

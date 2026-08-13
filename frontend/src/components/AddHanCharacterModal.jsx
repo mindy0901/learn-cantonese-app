@@ -8,20 +8,15 @@ const backdropClass =
     "fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/40 px-4 py-[max(1.25rem,env(safe-area-inset-top,0px))] pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]";
 
 const modalClass =
-    "m-auto flex w-full max-w-[420px] shrink-0 flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]";
+    "m-auto flex w-full max-w-[420px] shrink-0 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]";
 
 const hanCharInputClass = "text-[clamp(1.75rem,5vw,2.5rem)] font-semibold leading-tight text-center";
 
 export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
     const { t } = useLocale();
     const isEdit = Boolean(editItem?.id);
-    // Hán tự chỉ có 1 phiên bản (simplified === traditional) => simplified để trống
-    const hasDistinctSimplified = Boolean(
-        editItem?.hanSimplified && editItem?.hanSimplified !== (editItem?.hanTraditional ?? ""),
-    );
-    const [character, setCharacter] = useState(
-        hasDistinctSimplified ? editItem?.hanSimplified : (editItem?.character ?? ""),
-    );
+    // Giữ simplified luôn (single-form: simplified === traditional, KHÔNG xóa — 2026-08-13)
+    const [character, setCharacter] = useState(editItem?.hanSimplified ?? editItem?.character ?? "");
     const [hanTraditional, setHanTraditional] = useState(editItem?.hanTraditional ?? "");
     const [pinyin, setPinyin] = useState(editItem?.pinyin ?? "");
     const [readings, setReadings] = useState(() => {
@@ -85,19 +80,19 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
                     </button>
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
-                    <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
                         {t.hanCharacters.colHanTraditional}
                         <input
-                            className={cn(uiInputClass, hanCharInputClass, "text-red-600 dark:text-red-400")}
+                            className={cn(uiInputClass, hanCharInputClass, "text-han-trad")}
                             value={hanTraditional}
                             onChange={(e) => setHanTraditional(e.target.value)}
                             placeholder={character || ""}
                         />
                     </label>
-                    <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
                         {t.hanCharacters.colHanSimplified} *
                         <input
-                            className={cn(uiInputClass, hanCharInputClass, "text-blue-600 dark:text-blue-400")}
+                            className={cn(uiInputClass, hanCharInputClass, "text-han-simp")}
                             value={character}
                             onChange={(e) => {
                                 setCharacter(e.target.value);
@@ -106,17 +101,19 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
                             autoFocus
                         />
                     </label>
-                    <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
-                        {t.hanCharacters.colPinyin || "Pinyin"}
+                    <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
+                        {t.hanCharacters.colPinyin}
                         <input
                             className={uiInputClass}
                             value={pinyin}
                             onChange={(e) => setPinyin(e.target.value)}
-                            placeholder="e.g. zhōng, ài, rén…"
+                            placeholder={t.hanCharacters.pinyinPlaceholder}
                         />
                     </label>
                     <fieldset className="flex flex-col gap-2 border-0 p-0">
-                        <legend className="text-sm font-medium text-text-h">{t.hanCharacters.colSinoVietnamese}</legend>
+                        <legend className="text-sm font-medium text-foreground">
+                            {t.hanCharacters.colSinoVietnamese}
+                        </legend>
                         {readings.map((r, i) => (
                             <div key={i} className="flex gap-1.5">
                                 <input
@@ -128,9 +125,9 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
                                 {readings.length > 1 && (
                                     <button
                                         type="button"
-                                        className="flex shrink-0 size-10 items-center justify-center rounded-md border border-border text-text-muted hover:bg-bg hover:text-error-text transition-colors"
+                                        className="flex shrink-0 size-10 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-background hover:text-destructive transition-colors"
                                         onClick={() => removeReading(i)}
-                                        aria-label={t.common.remove || "Remove"}
+                                        aria-label={t.common.remove}
                                     >
                                         ×
                                     </button>
@@ -139,15 +136,15 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
                         ))}
                         <button
                             type="button"
-                            className="self-start text-sm text-accent hover:underline"
+                            className="self-start text-sm text-primary hover:underline"
                             onClick={addReading}
                         >
-                            + {t.hanCharacters.addReading || "Add reading"}
+                            + {t.hanCharacters.addReading}
                         </button>
                     </fieldset>
                     {validationError && (
                         <p
-                            className="m-0 rounded-lg border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text"
+                            className="m-0 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
                             role="alert"
                         >
                             {validationError}

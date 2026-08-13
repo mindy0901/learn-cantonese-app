@@ -8,7 +8,7 @@ import { useVocabularyCount, useVocabulariesRevision, useAppActions } from "../s
 import { useIsAdmin, useIsSignedIn } from "../store/authStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { fetchFlashcardVocabularies } from "../lib/flashcardWords.js";
-import { btnClass } from "../components/ui/buttonStyles.js";
+import { Button } from "../components/shadcn/button.jsx";
 import { SkeletonStats, SkeletonBlock } from "../components/ui/Skeleton.jsx";
 import { EmptyState } from "../components/ui/EmptyState.jsx";
 import { IconFlashcard } from "../components/NavIcons.jsx";
@@ -98,9 +98,9 @@ export function FlashcardPage() {
                     title={t.flashcard.empty}
                     description={isAdmin ? t.flashcard.emptyAdminHint : undefined}
                     action={
-                        <Link to="/" className={btnClass("primary")}>
+                        <Button nativeButton={false} render={<Link to="/" />}>
                             {t.flashcard.goHome}
-                        </Link>
+                        </Button>
                     }
                 />
             </main>
@@ -112,32 +112,32 @@ export function FlashcardPage() {
             <div className="flex items-start justify-between gap-4 mb-6 max-sm:flex-col">
                 <div>
                     <h1>{t.flashcard.title}</h1>
-                    <p className="mt-1 text-text-muted text-sm">
+                    <p className="mt-1 text-muted-foreground text-sm">
                         {sessionConfig
                             ? fmt(t.flashcard.sessionSubtitle, { count: sessionWords.length })
                             : t.flashcard.chooseSize}
                     </p>
                 </div>
                 {sessionConfig && (
-                    <button type="button" className={btnClass("ghost", "sm")} onClick={resetSession}>
+                    <Button type="button" variant="ghost" size="sm" onClick={resetSession}>
                         {t.flashcard.newSession}
-                    </button>
+                    </Button>
                 )}
                 {!sessionConfig && !showDeckManager && (
-                    <button type="button" className={btnClass("ghost", "sm")} onClick={() => setShowDeckManager(true)}>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowDeckManager(true)}>
                         {t.flashcard.manageDecks}
-                    </button>
+                    </Button>
                 )}
                 {showDeckManager && (
-                    <button type="button" className={btnClass("ghost", "sm")} onClick={() => setShowDeckManager(false)}>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowDeckManager(false)}>
                         {t.common.close}
-                    </button>
+                    </Button>
                 )}
             </div>
 
             {loadError && (
                 <p
-                    className="px-4 py-3 rounded-lg text-sm bg-error-bg text-error-text border border-error-border mb-4"
+                    className="px-4 py-3 rounded-lg text-sm bg-destructive/10 text-destructive border border-destructive/30 mb-4"
                     role="alert"
                 >
                     {loadError}

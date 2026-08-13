@@ -1,7 +1,7 @@
 /**
  * sync-sv-merged.mjs
  * Sync Sino-Vietnamese to han_characters + vocabularies.
- * Source priority: Unihan kVietnamese (kvietnamese.txt) FIRST, phienam.txt as fallback.
+ * Source: merged backend/data/sino-vietnamese.json (phienam primary — more accurate).
  *
  * Reports, per han character AND per vocabulary, which source (unihan / phienam)
  * supplied each sinoVietnamese reading, so you can audit coverage.
@@ -20,10 +20,8 @@ const HAN = /[\u3400-\u4dbf\u4e00-\u9fff]/;
 
 async function main() {
     const { map, stats } = buildMergedSinoVietnameseMap();
-    console.log("📚 Sino-Vietnamese map (merged, Unihan priority)");
-    console.log("   unihanTotal:", stats.unihanTotal, "| phienamTotal:", stats.phienamTotal);
-    console.log("   mapTotal:", stats.mapTotal, "= usedUnihan:", stats.usedUnihan, "+ usedPhienam:", stats.usedPhienam);
-    console.log("   overlap(both files):", stats.both, "| onlyUnihan:", stats.onlyUnihan, "| onlyPhienam:", stats.onlyPhienam);
+    console.log("📚 Sino-Vietnamese map (merged, phienam priority)");
+    console.log("   total:", stats.total, "| single:", stats.single, "| multiple(objects):", stats.multi);
     console.log("");
 
     // ── [1] han_characters ──
@@ -52,10 +50,9 @@ async function main() {
             where: { id: h.id },
             data: { sinoVietnamese: [entry.value] },
         });
-        if (entry.source === "unihan") huhanCount++;
-        else hphienamCount++;
+        hphienamCount++;
     }
-    console.log(`   -> han_chars new readings: unihan=${huhanCount} phienam=${hphienamCount} | skipped(already-sv/no-map)=${hSkipped}`);
+    console.log(`   -> han_chars new readings: merged=${hphienamCount} | skipped(already-sv/no-map)=${hSkipped}`);
 
     // ── [2/3] Rebuild per-char map from DB (after update) ──
     console.log("[2/4] Rebuilding character map from han_characters...");

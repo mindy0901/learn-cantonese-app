@@ -7,7 +7,7 @@ import { useSentenceCount, useSentencePatterns, useAppActions } from "../store/a
 import { usePrefsStore, useSentenceBankPrefs } from "../store/prefsStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { useIsSignedIn } from "../store/authStore.js";
-import { btnClass } from "../components/ui/buttonStyles.js";
+import { Button } from "../components/shadcn/button.jsx";
 import { EmptyState } from "../components/ui/EmptyState.jsx";
 import { IconSentences } from "../components/NavIcons.jsx";
 
@@ -36,11 +36,11 @@ export function SentencePatternsPage() {
                 <div>
                     <h1>{t.sentenceBank.title}</h1>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex shrink-0 gap-2">
                     {isAdmin && (
-                        <button type="button" className={btnClass("success")} onClick={() => setAddOpen(true)}>
+                        <Button type="button" variant="default" onClick={() => setAddOpen(true)}>
                             + {t.sentenceBank.addItem}
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -52,9 +52,9 @@ export function SentencePatternsPage() {
                     description={isAdmin ? t.sentenceBank.emptyAdminHint : undefined}
                     action={
                         isAdmin && (
-                            <button type="button" className={btnClass("primary")} onClick={() => setAddOpen(true)}>
+                            <Button type="button" variant="default" onClick={() => setAddOpen(true)}>
                                 + {t.sentenceBank.addItem}
-                            </button>
+                            </Button>
                         )
                     }
                 />

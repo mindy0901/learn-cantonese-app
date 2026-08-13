@@ -1,30 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { Outlet, useNavigate, useOutletContext } from "react-router-dom";
-import { BtnSpinner } from "./LoadingButton.jsx";
-import { useAppActions, useDataError, useDataHydrated, useDataLoading } from "../store/appStore.js";
-import { useAuthInitialized } from "../store/authStore.js";
+import { Outlet, useNavigate } from "react-router-dom";
+import { Spinner } from "./shadcn/spinner.jsx";
+import { useAppActions, useDataError, useDataHydrated, useDataLoading, useDataLoadingStep } from "../store/appStore.js";
+import { useAuthInitialized, useIsAdmin } from "../store/authStore.js";
 import { useLocale } from "../store/localeStore.js";
-import { cn } from "../lib/cn.js";
-
-const pageClass = "flex-1 w-full px-5 py-8 pb-12";
-
-const emptyStateClass = "text-center py-12 px-6 text-text-muted flex flex-col items-center gap-4";
 
 export function CloudGate() {
-    const layoutContext = useOutletContext();
     const navigate = useNavigate();
     const { t } = useLocale();
+    const isAdmin = useIsAdmin();
     const authInitialized = useAuthInitialized();
     const dataLoading = useDataLoading();
     const dataError = useDataError();
     const hydrated = useDataHydrated();
+    const dataLoadingStep = useDataLoadingStep();
     const { hydrateFromCloud } = useAppActions();
 
-    // Animated progress 0→90% while loading, then finish to 100%
-    const [progress, setProgress] = useState(0);
-    const progressRef = useRef(0);
     const [showLoading, setShowLoading] = useState(true);
-    const progressDoneRef = useRef(false);
     const finishTimerRef = useRef(null);
 
     useEffect(() => {
@@ -32,45 +24,15 @@ export function CloudGate() {
         hydrateFromCloud().catch(() => {});
     }, [authInitialized, hydrated, dataLoading, dataError, hydrateFromCloud]);
 
-    // Animate progress bar while loading
+    // Once hydration finishes, keep the "all done ✓" checklist visible briefly
+    // before fading the overlay away so users can see the steps complete.
     useEffect(() => {
-        if (!dataLoading) {
-            if (hydrated && !progressDoneRef.current) {
-                progressDoneRef.current = true;
-                // Smooth finish: animate current → 100% over 300ms
-                const startP = progressRef.current;
-                const startT = Date.now();
-                const finish = setInterval(() => {
-                    const elapsed = Date.now() - startT;
-                    const p = Math.min(100, Math.round(startP + (100 - startP) * Math.min(1, elapsed / 300)));
-                    setProgress(p);
-                    progressRef.current = p;
-                    if (p >= 100) {
-                        clearInterval(finish);
-                        finishTimerRef.current = setTimeout(() => setShowLoading(false), 250);
-                    }
-                }, 30);
-                return () => {
-                    clearInterval(finish);
-                    if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
-                };
-            }
-            return;
+        if (hydrated) {
+            clearTimeout(finishTimerRef.current);
+            finishTimerRef.current = setTimeout(() => setShowLoading(false), 500);
         }
-        clearTimeout(finishTimerRef.current);
-        progressDoneRef.current = false;
-        setShowLoading(true);
-        progressRef.current = 0;
-        setProgress(0);
-        const start = Date.now();
-        const timer = setInterval(() => {
-            const elapsed = Date.now() - start;
-            const p = Math.min(90, Math.round(90 * (1 - Math.exp(-elapsed / 2000))));
-            setProgress(p);
-            progressRef.current = p;
-        }, 80);
-        return () => clearInterval(timer);
-    }, [dataLoading, hydrated]);
+        return () => clearTimeout(finishTimerRef.current);
+    }, [hydrated]);
 
     // Redirect to error page on fetch failure
     useEffect(() => {
@@ -80,20 +42,53 @@ export function CloudGate() {
     }, [dataError, navigate]);
 
     if (!authInitialized || !hydrated || showLoading) {
+        // Full-screen overlay covering everything (incl. navbar) so no
+        // interaction is possible during the initial load / hard refresh.
+        // Show a step checklist so users can see what's loading.
+        const steps = [
+            { key: "checking-user", label: t.data.stepCheckingUser },
+            { key: "loading-data", label: t.data.stepLoadingData },
+            { key: "saving-cache", label: t.data.stepSavingCache },
+            { key: "indexing", label: t.data.stepIndexing },
+        ];
+        const activeStep = !authInitialized ? "checking-user" : dataLoadingStep || "loading-data";
+        // When loading finished, mark every step as done (✓) so users see the
+        // full checklist complete before the overlay fades away.
+        const activeIdx = activeStep === "done" ? steps.length : steps.findIndex((s) => s.key === activeStep);
         return (
-            <div className={cn(pageClass, emptyStateClass)} role="status" aria-live="polite" aria-busy="true">
-                <div className="flex flex-col items-center gap-4 w-full max-w-xs">
-                    <p className="inline-flex items-center gap-2">
-                        <BtnSpinner /> {t.data.loading}
-                    </p>
-                    <div className="w-full bg-border rounded-full h-2 overflow-hidden">
-                        <div
-                            className="h-full bg-accent rounded-full transition-all duration-300 ease-out"
-                            style={{ width: `${Math.max(1, progress)}%` }}
-                        />
-                    </div>
-                    <span className="text-xs font-mono tabular-nums text-text-muted">{progress}%</span>
-                </div>
+            <div
+                className="fixed inset-0 z-100 flex items-center justify-center p-8 px-6"
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+            >
+                <ul className="flex list-none flex-col items-center gap-2 text-sm">
+                    {steps.map((step, i) => {
+                        const state = i < activeIdx ? "done" : i === activeIdx ? "active" : "pending";
+                        return (
+                            <li key={step.key} className="flex items-center gap-2">
+                                <span className="flex size-4 items-center justify-center" aria-hidden="true">
+                                    {state === "done" && <span className="text-primary">✓</span>}
+                                    {state === "active" && <Spinner className="size-3.5 text-primary" />}
+                                    {state === "pending" && (
+                                        <span className="size-2 rounded-full bg-muted-foreground/30" />
+                                    )}
+                                </span>
+                                <span
+                                    className={
+                                        state === "active"
+                                            ? "text-foreground"
+                                            : state === "done"
+                                              ? "text-muted-foreground"
+                                              : "text-muted-foreground/60"
+                                    }
+                                >
+                                    {step.label}
+                                </span>
+                            </li>
+                        );
+                    })}
+                </ul>
             </div>
         );
     }
@@ -102,5 +97,5 @@ export function CloudGate() {
         return null;
     }
 
-    return <Outlet context={layoutContext} />;
+    return <Outlet context={{ isAdmin }} />;
 }

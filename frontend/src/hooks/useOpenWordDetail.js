@@ -6,8 +6,9 @@ export function useOpenWordDetail() {
     const navigate = useNavigate();
     return useCallback(
         (vocab) => {
-            const id = typeof vocab === "string" ? vocab : vocab?.id;
-            if (id) navigate(vocabularyDetailPath(id));
+            const han =
+                typeof vocab === "string" ? vocab : vocab?.hanSimplified || vocab?.hanHongKong || vocab?.hanTraditional;
+            if (han) navigate(vocabularyDetailPath(han));
         },
         [navigate],
     );

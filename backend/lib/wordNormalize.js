@@ -4,6 +4,31 @@ import { normalizeSinoVietnameseValue } from "./sinoVietnameseReadings.js";
 
 const TRAILING_PUNCT_RE = /(?:\.{2,}|[\s.,?!…:;，。！？、])+$/u;
 
+/**
+ * Convert CJK/Chinese punctuation to ASCII in GENERATED romanization output
+ * (pinyin/jyutping). The han source keeps its CJK punctuation (。，…), but the
+ * romanization line should use normal ASCII punctuation with no stray spaces.
+ * e.g. "wǒ de bà ba … yuán 。" → "wǒ de bà ba … yuán."
+ */
+export function normalizeRomanizationPunctuation(value) {
+    return (
+        String(value ?? "")
+            .replace(/[。]/g, ".")
+            .replace(/[，、]/g, ",")
+            .replace(/[！]/g, "!")
+            .replace(/[？]/g, "?")
+            .replace(/[；]/g, ";")
+            .replace(/[：]/g, ":")
+            .replace(/[（]/g, "(")
+            .replace(/[）]/g, ")")
+            .replace(/[「」『』“”]/g, '"')
+            .replace(/[‘’]/g, "'")
+            // Remove stray spaces before closing punctuation / after opening punctuation.
+            .replace(/\s+([.,!?;:)])/g, "$1")
+            .replace(/([(])\s+/g, "$1")
+    );
+}
+
 export function stripTrailingPunctuation(value) {
     let s = String(value ?? "").trim();
     while (s.length > 0) {
@@ -42,6 +67,20 @@ export function toDisplayCase(value) {
         .join(" ");
 }
 
+/**
+ * Capitalize the first letter of the whole string and of each item after
+ * `.`, `!`, `?`, `;` and (optionally) `,`. Used for vietMeanings / engMeanings.
+ * Does NOT lowercase the rest — only enforces the leading letter case.
+ * `opts.comma` adds `,` (used for engMeanings).
+ */
+export function capitalizeSentences(value, opts = {}) {
+    const s = String(value ?? "").trim();
+    if (!s) return s;
+    return opts.comma
+        ? s.replace(/(^|[.,!?;/]\s*)(\p{L})/gu, (_m, pre, ch) => pre + ch.toLocaleUpperCase("vi"))
+        : s.replace(/(^|[.!?;/]\s*)(\p{L})/gu, (_m, pre, ch) => pre + ch.toLocaleUpperCase("vi"));
+}
+
 /** @param {{ hanTraditional?: string, hanTrad?: string, han?: string }} vocab */
 function resolveHanTraditional(vocab) {
     return stripTrailingPunctuation(vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han);
@@ -61,10 +100,10 @@ export function normalizeVocabularyFields(vocab) {
     const hanSimplified = stripTrailingPunctuation(vocab.hanSimplified);
     const next = {
         ...vocab,
-        engMeanings: toDisplayCase(stripTrailingPunctuation(vocab.engMeanings)),
+        engMeanings: capitalizeSentences(stripTrailingPunctuation(vocab.engMeanings), { comma: true }),
         hanTraditional,
         hanSimplified: hanSimplified || undefined,
-        vietMeanings: toDisplayCase(stripTrailingPunctuation(vocab.vietMeanings)),
+        vietMeanings: capitalizeSentences(stripTrailingPunctuation(vocab.vietMeanings)),
     };
     delete next.han;
     if (!hanSimplified) {
@@ -78,12 +117,12 @@ export function normalizeVocabularyFields(vocab) {
         }
     }
     if (vocab.jyutping != null && vocab.jyutping !== "") {
-        next.jyutping = stripTrailingPunctuation(vocab.jyutping);
+        next.jyutping = stripTrailingPunctuation(vocab.jyutping).toLowerCase();
     } else {
         delete next.jyutping;
     }
     if (vocab.pinyin != null && vocab.pinyin !== "") {
-        next.pinyin = stripTrailingPunctuation(vocab.pinyin);
+        next.pinyin = stripTrailingPunctuation(vocab.pinyin).toLowerCase();
     } else {
         delete next.pinyin;
     }

@@ -1,6 +1,6 @@
 /**
  * cvdictLoader.js
- * Loads cvdict.json (Chinese-Vietnamese dictionary from CVDICT/CEDICT) and indexes
+ * Loads CVDICT.json (Chinese-Vietnamese dictionary from CVDICT/CEDICT) and indexes
  * it for fast lookup by simplified OR traditional Han form.
  *
  * The Vietnamese dictionary is Mandarin (pinyin)-based but matches on Han characters,
@@ -17,7 +17,7 @@ let cache = null;
 
 export function loadCVDict() {
     if (cache) return cache;
-    const file = resolve(__dirname, "..", "data", "cvdict.json");
+    const file = resolve(__dirname, "..", "data", "CVDICT.json");
     const entries = JSON.parse(readFileSync(file, "utf-8"));
 
     const bySimp = new Map();

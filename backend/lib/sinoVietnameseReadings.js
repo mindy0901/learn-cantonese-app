@@ -30,11 +30,7 @@ function toDisplayCase(value) {
         .trim()
         .split(/\s+/)
         .filter(Boolean)
-        .map((token) => {
-            // Erhua suffix: keep lowercase "r"
-            if (token === "r" || token === "R") return "r";
-            return titleCaseToken(token);
-        })
+        .map((token) => token.toLocaleUpperCase("vi"))
         .join(" ");
 }
 

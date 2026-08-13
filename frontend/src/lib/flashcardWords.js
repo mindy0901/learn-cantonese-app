@@ -137,8 +137,3 @@ async function collectDeckVocabularies(count, deckId) {
         return [];
     }
 }
-
-/** @deprecated Use fetchFlashcardVocabularies */
-export async function fetchRandomFlashcardVocabularies(count, options = {}) {
-    return fetchFlashcardVocabularies(count, { ...options, source: "random", scope: "all" });
-}

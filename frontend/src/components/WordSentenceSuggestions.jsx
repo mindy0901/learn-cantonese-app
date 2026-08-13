@@ -6,7 +6,7 @@ import { useLocale } from '../store/localeStore.js'
 import { useSentencePatterns } from '../store/appStore.js'
 
 const itemClass =
-  'w-full rounded-xl border border-border/70 bg-bg/50 px-4 py-3 text-left'
+  'w-full rounded-xl border border-border/70 bg-background/50 px-4 py-3 text-left'
 
 export function WordSentenceSuggestions({ word }) {
   const { t } = useLocale()
@@ -21,18 +21,18 @@ export function WordSentenceSuggestions({ word }) {
 
   return (
     <section className="w-full min-w-0 pt-4 text-left">
-      <h4 className="m-0 mb-3 text-center text-sm font-semibold uppercase tracking-wide text-text-muted">
+      <h4 className="m-0 mb-3 text-center text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         {t.wordDetail.sentenceSuggestions}
       </h4>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {suggestions.map((item) => (
           <li key={item.id} className={itemClass}>
-            <p className={cn('m-0 font-semibold text-text-h')}>{displayHanPrimary(item)}</p>
+            <p className={cn('m-0 font-semibold text-foreground')}>{displayHanPrimary(item)}</p>
             {item.jyutping && (
               <p className={cn('m-0 mt-1 text-sm font-semibold text-jyutping')}>{item.jyutping}</p>
             )}
             <p className={cn('m-0 mt-1 text-sm text-viet')}>{item.vietnamese}</p>
-            {item.english && <p className={cn('m-0 mt-0.5 text-sm text-text-muted')}>{item.english}</p>}
+            {item.english && <p className={cn('m-0 mt-0.5 text-sm text-muted-foreground')}>{item.english}</p>}
           </li>
         ))}
       </ul>

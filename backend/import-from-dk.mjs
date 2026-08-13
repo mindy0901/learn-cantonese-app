@@ -92,7 +92,6 @@ async function main() {
         const radical = (entry.radical || "").trim();
         const frequency = entry.frequency || null;
         const pos = (entry.pos || []).join(",");
-
         for (const form of entry.forms || []) {
             const trad = (form.traditional || simp).trim();
             const rawPinyin = (form.transcriptions?.pinyin || "").trim();
@@ -164,7 +163,7 @@ async function main() {
         try {
             await prisma.$executeRawUnsafe(
                 `
-                INSERT INTO vocabularies (id, han_traditional, han_simplified, pinyin, eng_meanings, hsk_level, pos, frequency, radical, classifiers, pinyin_numeric, created_at, updated_at)
+                INSERT INTO vocabularies (id, han_traditional, han_simplified, pinyin, eng_meanings, hsk_level, part_of_speech, frequency, radical, classifiers, pinyin_numeric, created_at, updated_at)
                 VALUES ${values.join(", ")}
                 ON CONFLICT (id) DO UPDATE SET
                     han_traditional = EXCLUDED.han_traditional,
@@ -172,7 +171,7 @@ async function main() {
                     pinyin          = EXCLUDED.pinyin,
                     eng_meanings    = EXCLUDED.eng_meanings,
                     hsk_level       = EXCLUDED.hsk_level,
-                    pos             = EXCLUDED.pos,
+                    part_of_speech  = EXCLUDED.part_of_speech,
                     frequency       = EXCLUDED.frequency,
                     radical         = EXCLUDED.radical,
                     classifiers     = EXCLUDED.classifiers,

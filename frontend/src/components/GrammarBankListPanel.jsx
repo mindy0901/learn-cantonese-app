@@ -19,7 +19,7 @@ import { Pagination } from "./Pagination.jsx";
 import { GrammarRow } from "./GrammarRow.jsx";
 
 const thClass =
-    "px-3.5 py-2.5 text-left border-b border-border align-middle truncate bg-bg text-text-muted font-medium text-sm uppercase tracking-wide";
+    "px-3.5 py-2.5 text-left border-b border-border align-middle truncate bg-background text-muted-foreground font-medium text-sm uppercase tracking-wide";
 
 const GrammarBankTableResults = memo(function GrammarBankTableResults({ search, filter, sortKey, sortDir }) {
     const { t, fmt } = useLocale();
@@ -119,7 +119,7 @@ const GrammarBankTableResults = memo(function GrammarBankTableResults({ search, 
                     reserveSpace
                 />
             </div>
-            <div className="w-full max-w-full overflow-x-auto overflow-auto border border-border rounded-xl bg-surface">
+            <div className="w-full max-w-full overflow-x-auto overflow-auto border border-border rounded-xl bg-card">
                 <table className="w-full border-collapse text-base table-auto">
                     <colgroup>
                         <col />
@@ -134,7 +134,7 @@ const GrammarBankTableResults = memo(function GrammarBankTableResults({ search, 
                             <th
                                 className={cn(
                                     thClass,
-                                    "text-text-muted text-[0.8125rem] whitespace-nowrap text-center px-1.5 pr-0.5",
+                                    "text-muted-foreground text-[0.8125rem] whitespace-nowrap text-center px-1.5 pr-0.5",
                                 )}
                             >
                                 {t.grammarBank.colNum}
@@ -163,7 +163,7 @@ const GrammarBankTableResults = memo(function GrammarBankTableResults({ search, 
                         {showEmpty ? (
                             <tr>
                                 <td colSpan={colCount}>
-                                    <p className="m-0 min-h-10 flex items-center justify-center text-center text-sm text-text-muted">
+                                    <p className="m-0 min-h-10 flex items-center justify-center text-center text-sm text-muted-foreground">
                                         {hasQuery
                                             ? t.grammarBank.noSearchMatch
                                             : withAdminHint(t.grammarBank.empty, t.grammarBank.emptyAdminHint, canEdit)}
@@ -220,7 +220,7 @@ export const GrammarBankListPanel = memo(function GrammarBankListPanel({ filter,
                             ...(nextKey === "createdAt" && sortKey !== "createdAt" ? { sortDir: "desc" } : {}),
                         });
                     }}
-                    aria-label="Sort by"
+                    aria-label={t.common.sort}
                 >
                     <option value="title">{t.grammarBank.sortTitle}</option>
                     <option value="content">{t.grammarBank.sortContent}</option>

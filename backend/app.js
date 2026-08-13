@@ -13,6 +13,7 @@ import formbody from "@fastify/formbody";
 import { authRoutes } from "./routes/auth.js";
 import { dataRoutes } from "./routes/data.js";
 import { translateRoutes } from "./routes/translate.js";
+import { ocrRoutes } from "./routes/ocr.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 const cookieSecure =
@@ -69,6 +70,7 @@ export async function buildApp(opts = {}) {
     await app.register(authRoutes, { prefix: "/auth" });
     await app.register(dataRoutes, { prefix: "/api" });
     await app.register(translateRoutes, { prefix: "/api" });
+    await app.register(ocrRoutes, { prefix: "/api" });
 
     // Error handler
     app.setErrorHandler((error, _request, reply) => {

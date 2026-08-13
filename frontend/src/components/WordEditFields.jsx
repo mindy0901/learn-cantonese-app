@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/cn.js";
-import { uiInputClass } from "./ui/controlStyles.js";
 import { useLocale } from "../store/localeStore.js";
 import { vocabularyFieldSummary } from "../lib/wordDisplay.js";
+import { normalizeSinoVietnameseValue } from "../lib/sinoVietnameseReadings.js";
 import { emptyVocabulary } from "../types/word.js";
 import { useHanCharacters } from "../store/appStore.js";
 import { TagInput } from "./TagInput.jsx";
@@ -13,10 +13,15 @@ import {
     IconMinus,
     IconClose,
     IconSpeech,
-    IconSpinner,
+    IconEdit,
     IconChevronDown,
     IconChevronRight,
 } from "./NavIcons.jsx";
+import { Spinner } from "./shadcn/spinner.jsx";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "./shadcn/card.jsx";
+import { Button } from "./shadcn/button.jsx";
+import { Input } from "./shadcn/input.jsx";
+import { Textarea } from "./shadcn/textarea.jsx";
 
 /** Capitalize only the first letter of the string */
 function capitalizeFirst(value) {
@@ -25,8 +30,23 @@ function capitalizeFirst(value) {
     return s.charAt(0).toLocaleUpperCase("vi") + s.slice(1);
 }
 
-const textareaClass =
-    "min-h-[4.5rem] w-full resize-none overflow-hidden rounded-lg border border-border bg-surface px-3.5 py-2.5 font-inherit text-[0.9375rem] text-text-h outline-none focus:border-accent-border [field-sizing:content]";
+/**
+ * Resolve an example's giản/phồn han text. Prefers explicit hanSimplified/hanTraditional
+ * fields; falls back to splitting the legacy single hanExample ("giản\nphồn").
+ */
+function exampleHanParts(ex) {
+    const simp = (ex?.hanSimplified ?? "").trim();
+    const trad = (ex?.hanTraditional ?? "").trim();
+    if (simp || trad) return { hanSimplified: simp, hanTraditional: trad };
+    const lines = String(ex?.hanExample ?? "")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+    return {
+        hanSimplified: lines[0] ?? "",
+        hanTraditional: lines[1] ?? "",
+    };
+}
 
 /** Build a lookup map: character → hanCharacters entries (indexed by both simplified and traditional) */
 function buildCharLookupMap(hanCharacters) {
@@ -107,8 +127,82 @@ function resolveCharReadings(hanText, lookupMap) {
 
 export function buildVocabularyDraft(vocabulary) {
     if (!vocabulary?.id) return emptyVocabulary();
+    // Chuẩn hóa mỗi entry về dạng typed (pinyin | jyutping) — 1 entry = 1 reading.
+    const normalizeEntry = (r) => {
+        const py = (r.pinyin ?? "").trim();
+        const jp = (r.jyutping ?? "").trim();
+        const type =
+            r.type === "pinyin" || r.type === "jyutping"
+                ? r.type
+                : jp && !py
+                  ? "jyutping"
+                  : py && !jp
+                    ? "pinyin"
+                    : null;
+        const meanings = r.meanings ?? [];
+        if (type === "pinyin") {
+            return { id: r.id, type, sinoVietnamese: r.sinoVietnamese ?? "", pinyin: py, jyutping: "", meanings };
+        }
+        if (type === "jyutping") {
+            return { id: r.id, type, sinoVietnamese: r.sinoVietnamese ?? "", pinyin: "", jyutping: jp, meanings };
+        }
+        if (py && jp) {
+            // Legacy entry có cả 2 phiên âm — tách thành 2 reading.
+            return [
+                {
+                    id: undefined,
+                    type: "pinyin",
+                    sinoVietnamese: r.sinoVietnamese ?? "",
+                    pinyin: py,
+                    jyutping: "",
+                    meanings,
+                },
+                {
+                    id: undefined,
+                    type: "jyutping",
+                    sinoVietnamese: r.sinoVietnamese ?? "",
+                    pinyin: "",
+                    jyutping: jp,
+                    meanings,
+                },
+            ];
+        }
+        return null;
+    };
+    const rawRoms =
+        Array.isArray(vocabulary.romanization) && vocabulary.romanization.length > 0 ? vocabulary.romanization : null;
+    const roms = rawRoms
+        ? rawRoms.flatMap((r) => normalizeEntry(r) ?? [])
+        : (() => {
+              const out = [];
+              const py = (vocabulary.pinyin ?? "").trim();
+              const jp = (vocabulary.jyutping ?? "").trim();
+              const sino = (vocabulary.sinoVietnamese ?? "").trim() || undefined;
+              if (py) {
+                  out.push({
+                      id: undefined,
+                      type: "pinyin",
+                      sinoVietnamese: sino,
+                      pinyin: py,
+                      jyutping: "",
+                      meanings: vocabulary.meanings ?? [],
+                  });
+              }
+              if (jp) {
+                  out.push({
+                      id: undefined,
+                      type: "jyutping",
+                      sinoVietnamese: sino,
+                      pinyin: "",
+                      jyutping: jp,
+                      meanings: vocabulary.meanings ?? [],
+                  });
+              }
+              return out;
+          })();
     return {
         ...vocabulary,
+        romanization: roms,
         engMeanings: (vocabulary.engMeanings ?? "").trim() || vocabularyFieldSummary(vocabulary, "engMeanings"),
         engExamples: (vocabulary.engExamples ?? "").trim() || vocabularyFieldSummary(vocabulary, "engExamples"),
         vietMeanings: (vocabulary.vietMeanings ?? "").trim() || vocabularyFieldSummary(vocabulary, "vietMeanings"),
@@ -138,35 +232,11 @@ export function buildVocabularyDraft(vocabulary) {
                     vietMeanings: viet,
                     engMeanings: eng,
                     position: 0,
-                    examples: (vocabulary.examples ?? []).map((ex, j) => ({
-                        ...ex,
-                        _tempId: ex._tempId || ex.id || crypto.randomUUID(),
-                        position: ex.position ?? j,
-                    })),
+                    examples: [],
                 },
             ];
         })(),
-        examples: (vocabulary.examples ?? []).map((ex, i) => ({
-            ...ex,
-            _tempId: ex._tempId || ex.id || crypto.randomUUID(),
-            position: ex.position ?? i,
-        })),
     };
-}
-
-/** Convert space-separated text to CamelCase (each word capitalized, no spaces).
- *  Special: erhua "r" stays lowercase. */
-function toCamelCase(value) {
-    const trimmed = (value ?? "").trim();
-    if (!trimmed) return trimmed;
-    return trimmed
-        .split(/\s+/)
-        .map((w) => {
-            // Erhua suffix: keep lowercase "r"
-            if (w === "r" || w === "R") return "r";
-            return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-        })
-        .join(" ");
 }
 
 /** Convert comma/separator-delimited tag values to space-separated string for DB storage. */
@@ -180,56 +250,186 @@ function tagsToSpace(value) {
         .join(" ");
 }
 
-export function vocabularyDraftPayload(draft) {
-    const filteredMeanings = (draft.meanings ?? []).filter(
-        (m) => (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim(),
-    );
-    // Derive flat fields from structured meanings when available
-    const firstMeaning = filteredMeanings[0];
+/** Build payload khi lưu (shape cũ, typed romanization array) — dùng để so sánh content trước khi save. */
+export function vocabularyDraftPayloadLegacy(draft, { activePinyinId, activeJyutpingId } = {}) {
+    const allRoms = Array.isArray(draft.romanization) ? draft.romanization : [];
+
+    // Lọc meaning rỗng + chuẩn hóa (giữ id cũ, không sinh lại).
+    const normalizeMeanings = (meanings) =>
+        (meanings ?? [])
+            .filter((m) => (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim())
+            .map((m, i) => ({
+                id: m.id,
+                _tempId: m._tempId,
+                category: capitalizeFirst((m.category ?? "").trim()),
+                vietMeanings: capitalizeFirst((m.vietMeanings ?? "").trim()),
+                engMeanings: capitalizeFirst((m.engMeanings ?? "").trim()),
+                position: i,
+                examples: (m.examples ?? [])
+                    .filter((ex) => {
+                        const parts = exampleHanParts(ex);
+                        return parts.hanSimplified || parts.hanTraditional || (ex.vietExamples ?? "").trim();
+                    })
+                    .map((ex, j) => {
+                        const parts = exampleHanParts(ex);
+                        return {
+                            id: ex.id,
+                            _tempId: ex._tempId,
+                            hanSimplified: parts.hanSimplified,
+                            hanTraditional: parts.hanTraditional,
+                            jyutpingExample: (ex.jyutpingExample ?? "").trim(),
+                            pinyinExample: (ex.pinyinExample ?? "").trim(),
+                            vietExamples: capitalizeFirst((ex.vietExamples ?? "").trim()),
+                            engExamples: (ex.engExamples ?? "").trim(),
+                            position: j,
+                        };
+                    }),
+            }));
+
+    // Build full `romanization` array từ draft entries (giữ nguyên id + type).
+    const romanization = allRoms
+        .map((r) => {
+            const type = r.type === "jyutping" ? "jyutping" : "pinyin";
+            return {
+                id: r.id,
+                type,
+                sinoVietnamese: normalizeSinoVietnameseValue(r.sinoVietnamese) || "",
+                pinyin: type === "pinyin" ? tagsToSpace(r.pinyin) : "",
+                jyutping: type === "jyutping" ? tagsToSpace(r.jyutping) : "",
+                meanings: normalizeMeanings(r.meanings),
+            };
+        })
+        .filter((r) => (r.pinyin ?? "").trim() || (r.jyutping ?? "").trim());
+
+    const pyEntries = romanization.filter((r) => r.type === "pinyin");
+    const jpEntries = romanization.filter((r) => r.type === "jyutping");
+
+    // Dedupe meanings theo id: 2 entry jyutping cùng mang bộ dict meanings (21)
+    // → gộp flatMeanings + meanings_json chỉ còn 1 bản unique (tránh nhân đôi).
+    const dedupeById = (items) => {
+        const seen = new Set();
+        const out = [];
+        for (const m of items ?? []) {
+            if (m?.id && seen.has(m.id)) continue;
+            if (m?.id) seen.add(m.id);
+            out.push(m);
+        }
+        return out;
+    };
+
+    // Flat columns: nối các reading cùng loại. Meanings flat ưu tiên jyutping (Cantonese).
+    const jpMeanings = dedupeById(jpEntries.flatMap((r) => r.meanings));
+    const pyMeanings = dedupeById(pyEntries.flatMap((r) => r.meanings));
+    const primaryMeanings = jpMeanings.length > 0 ? jpMeanings : pyMeanings;
+    const hasStructuredMeanings = primaryMeanings.length > 0;
+    const firstMeaning = primaryMeanings[0];
     const derivedViet = firstMeaning?.vietMeanings?.trim() || "";
     const derivedEng = firstMeaning?.engMeanings?.trim() || "";
-    return {
-        engMeanings: capitalizeFirst(derivedEng || draft.engMeanings?.trim()) || undefined,
+
+    const base = {
+        engMeanings: capitalizeFirst(hasStructuredMeanings ? derivedEng : "") || undefined,
         hanTraditional: draft.hanTraditional.trim(),
         hanSimplified: draft.hanSimplified?.trim() || undefined,
-        vietMeanings: capitalizeFirst(derivedViet || draft.vietMeanings.trim()),
+        hanHongKong: draft.hanHongKong?.trim() || undefined,
+        vietMeanings: capitalizeFirst(hasStructuredMeanings ? derivedViet : ""),
         vietExamples: draft.vietExamples?.trim() || undefined,
-        sinoVietnamese: toCamelCase(draft.sinoVietnamese) || undefined,
-        jyutping: tagsToSpace(draft.jyutping),
-        pinyin: tagsToSpace(draft.pinyin) || undefined,
+        sinoVietnamese: normalizeSinoVietnameseValue(draft.sinoVietnamese) || undefined,
+        jyutping:
+            jpEntries
+                .map((r) => r.jyutping)
+                .filter(Boolean)
+                .join(" / ") || undefined,
+        pinyin:
+            pyEntries
+                .map((r) => r.pinyin)
+                .filter(Boolean)
+                .join(" / ") || undefined,
         hskLevel: draft.hskLevel?.trim() || undefined,
+        pureCantonese: Boolean(draft.pureCantonese),
         important: Boolean(draft.important),
-        meanings: filteredMeanings.map((m, i) => ({
-            id: m.id,
-            _tempId: m._tempId,
-            category: capitalizeFirst((m.category ?? "").trim()),
-            vietMeanings: capitalizeFirst((m.vietMeanings ?? "").trim()),
-            engMeanings: capitalizeFirst((m.engMeanings ?? "").trim()),
-            position: i,
-            examples: (m.examples ?? [])
-                .filter((ex) => (ex.hanExample ?? "").trim() || (ex.vietExamples ?? "").trim())
-                .map((ex, j) => ({
-                    id: ex.id,
-                    _tempId: ex._tempId,
-                    hanExample: (ex.hanExample ?? "").trim(),
-                    jyutpingExample: (ex.jyutpingExample ?? "").trim(),
-                    pinyinExample: (ex.pinyinExample ?? "").trim(),
-                    vietExamples: capitalizeFirst((ex.vietExamples ?? "").trim()),
-                    engExamples: (ex.engExamples ?? "").trim(),
-                    position: j,
-                })),
-        })),
-        examples: (draft.examples ?? [])
-            .filter((ex) => (ex.hanExample ?? "").trim() || (ex.vietExamples ?? "").trim())
-            .map((ex, i) => ({
-                id: ex.id,
-                _tempId: ex._tempId,
-                hanExample: (ex.hanExample ?? "").trim(),
-                pinyinExample: (ex.pinyinExample ?? "").trim(),
-                vietExamples: (ex.vietExamples ?? "").trim(),
-                engExamples: (ex.engExamples ?? "").trim(),
+        meanings: primaryMeanings,
+    };
+
+    return { ...base, romanization };
+}
+
+/**
+ * Build payload model MỚI (2026-08-14) gửi API:
+ *   { mandarin, cantonese, metadata } + flags (pureCantonese/important/mastered).
+ * meaning dict (CC-Canto/words.hk/粵典–words.hk) → gloss vào `zh|yue`, `vi` trống;
+ * meaning manual → `vi` = nghĩa tiếng Việt, `zh|yue` trống.
+ */
+const DICT_CATEGORIES = new Set(["CC-Canto", "words.hk", "粵典–words.hk"]);
+const isDictCategory = (category) => DICT_CATEGORIES.has(String(category ?? "").trim());
+
+function meaningsNewFromLegacy(meanings, side) {
+    const hanField = side === "mandarin" ? "zh" : "yue";
+    const romanField = side === "mandarin" ? "pinyinExample" : "jyutpingExample";
+    return (meanings ?? [])
+        .filter((m) => (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim())
+        .map((m, i) => {
+            const gloss = capitalizeFirst((m.vietMeanings ?? "").trim());
+            const isDict = isDictCategory(m.category);
+            return {
+                id: m.id,
                 position: i,
-            })),
+                category: capitalizeFirst((m.category ?? "").trim()),
+                [hanField]: isDict ? gloss : "",
+                vi: isDict ? "" : gloss,
+                en: capitalizeFirst((m.engMeanings ?? "").trim()),
+                examples: (m.examples ?? [])
+                    .filter((ex) => {
+                        const parts = exampleHanParts(ex);
+                        return parts.hanSimplified || parts.hanTraditional || (ex.vietExamples ?? "").trim();
+                    })
+                    .map((ex, j) => {
+                        const parts = exampleHanParts(ex);
+                        return {
+                            id: ex.id,
+                            position: j,
+                            [hanField]: side === "mandarin" ? parts.hanSimplified : parts.hanTraditional,
+                            romanization: (ex[romanField] ?? "").trim(),
+                            vi: capitalizeFirst((ex.vietExamples ?? "").trim()),
+                            en: (ex.engExamples ?? "").trim(),
+                        };
+                    }),
+            };
+        });
+}
+
+export function vocabularyDraftPayload(draft, { activePinyinId, activeJyutpingId } = {}) {
+    const allRoms = Array.isArray(draft.romanization) ? draft.romanization : [];
+    const pyEntries = allRoms.filter((r) => r.type !== "jyutping").filter((r) => (r.pinyin ?? "").trim());
+    const jpEntries = allRoms.filter((r) => r.type === "jyutping").filter((r) => (r.jyutping ?? "").trim());
+
+    const buildBlock = (entries, side) => ({
+        hanzi_simplified: draft.hanSimplified?.trim() || "",
+        hanzi_traditional:
+            side === "cantonese"
+                ? draft.hanHongKong?.trim() || draft.hanTraditional.trim()
+                : draft.hanTraditional.trim(),
+        system: side === "mandarin" ? "pinyin" : "jyutping",
+        readings: entries.map((r) => ({
+            id: r.id,
+            romanization: side === "mandarin" ? tagsToSpace(r.pinyin) : tagsToSpace(r.jyutping),
+            sino_vietnamese: normalizeSinoVietnameseValue(r.sinoVietnamese) || "",
+            meanings: meaningsNewFromLegacy(r.meanings, side),
+        })),
+    });
+
+    return {
+        mandarin: buildBlock(pyEntries, "mandarin"),
+        cantonese: buildBlock(jpEntries, "cantonese"),
+        metadata: {
+            hsk_level: draft.hskLevel?.trim() || "",
+            popularity: draft.popularity ?? draft.boost ?? null,
+            frequency: draft.frequency ?? null,
+            movie_word_rank: draft.movieWordRank ?? null,
+            book_word_rank: draft.bookWordRank ?? null,
+        },
+        pureCantonese: Boolean(draft.pureCantonese),
+        important: Boolean(draft.important),
+        mastered: Boolean(draft.mastered),
     };
 }
 
@@ -239,7 +439,8 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
 
     // Build lookup map once
     const lookupMap = buildCharLookupMap(hanCharacters);
-    const charReadings = resolveCharReadings(draft.hanTraditional, lookupMap);
+    const hanValue = (draft.hanTraditional ?? "").trim();
+    const charReadings = resolveCharReadings(hanValue, lookupMap);
 
     // Per-tag option arrays for TagInput dropdowns (only han chars)
     const hanReadings = charReadings.filter((r) => r.isHan);
@@ -272,9 +473,10 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
         onChange({ ...draft, [field]: value });
     };
 
-    const hasHan = draft.hanTraditional.trim().length > 0;
+    const hasHan = hanValue.length > 0;
 
-    // When hanTraditional changes, auto-fill jyutping/pinyin/sinoVietnamese
+    // When han changes, auto-fill jyutping/pinyin/sinoVietnamese
+    // Quảng thuần → ghi vào hanSimplified, traditional rỗng
     const handleHanChange = (value) => {
         const readings = resolveCharReadings(value, lookupMap);
         const jpParts = readings.map((r) => {
@@ -287,7 +489,7 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
         });
         const hvParts = readings.map((r) => {
             if (!r.isHan) return "";
-            return toCamelCase(r.sinoVietnameseOptions[0]) || "";
+            return normalizeSinoVietnameseValue(r.sinoVietnameseOptions[0]) || "";
         });
         onChange({
             ...draft,
@@ -298,36 +500,47 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
         });
     };
 
-    // Sync on mount when hanTraditional is pre-filled (e.g. from "add new word" flow)
+    // Sync on mount when han is pre-filled (e.g. from "add new word" flow)
     const syncedRef = useRef(false);
     useEffect(() => {
         if (!syncedRef.current && hasHan && !draft.jyutping?.trim() && !draft.sinoVietnamese?.trim()) {
             syncedRef.current = true;
-            handleHanChange(draft.hanTraditional);
+            handleHanChange(hanValue);
         }
-    }, [hasHan, draft.hanTraditional, draft.jyutping, draft.sinoVietnamese, handleHanChange]);
+    }, [hasHan, hanValue, draft.jyutping, draft.sinoVietnamese, handleHanChange]);
 
     return (
         <div className="flex w-full min-w-0 flex-col gap-4 text-left">
-            {/* 1. Chữ Hán — moved to top */}
-            <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
-                {t.wordBank.colHanTraditional} *
-                <input
-                    className="w-full px-2 py-4 font-semibold text-red-600 dark:text-red-400 bg-transparent border-0 border-b-2 border-border outline-none transition-colors focus:border-accent-border"
-                    style={{ fontSize: 48 }}
-                    value={draft.hanTraditional}
-                    onChange={(e) => handleHanChange(e.target.value)}
-                />
-            </label>
+            {/* 1. Chữ Hán — giản thể (trái) | phồn thể (phải) */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
+                    {t.wordBank.colHanSimplified}
+                    <input
+                        className="w-full px-2 py-4 font-semibold text-han-simp bg-transparent border-b-2 border-border outline-none transition-colors focus:border-primary/25"
+                        style={{ fontSize: 40 }}
+                        value={draft.hanSimplified ?? ""}
+                        onChange={(e) => set("hanSimplified", e.target.value)}
+                    />
+                </label>
+                <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
+                    {t.wordBank.colHanTraditional} *
+                    <input
+                        className="w-full px-2 py-4 font-semibold text-han-trad bg-transparent border-b-2 border-border outline-none transition-colors focus:border-primary/25"
+                        style={{ fontSize: 40 }}
+                        value={draft.hanTraditional}
+                        onChange={(e) => handleHanChange(e.target.value)}
+                    />
+                </label>
+            </div>
 
             {hasHan && (
                 <>
                     {/* 2. Hán-Việt */}
-                    <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
                         {t.wordBank.colSinoVietnamese}
                         <TagInput
                             value={draft.sinoVietnamese ?? ""}
-                            onChange={(v) => set("sinoVietnamese", toCamelCase(v))}
+                            onChange={(v) => set("sinoVietnamese", normalizeSinoVietnameseValue(v))}
                             tagOptions={sinoVietnameseTagOptions}
                             onRemoveTag={handleRemoveTag}
                             allowEmpty
@@ -335,7 +548,7 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
                     </label>
 
                     {/* 3. Jyutping */}
-                    <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
                         {t.wordBank.colJyutping} *
                         <TagInput
                             value={draft.jyutping ?? ""}
@@ -347,7 +560,7 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
                     </label>
 
                     {/* 4. Pinyin */}
-                    <label className="flex flex-col gap-2 text-sm font-medium text-text-h">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-foreground">
                         {t.wordBank.colPinyin}
                         <TagInput
                             value={draft.pinyin ?? ""}
@@ -368,10 +581,10 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
                 <button
                     type="button"
                     className={cn(
-                        "inline-flex size-12 shrink-0 items-center justify-center rounded-[10px] border-2 border-border bg-surface text-[1.625rem] leading-none text-text-muted transition-[border-color,color,background,box-shadow] duration-150",
-                        "hover:border-yellow-500 hover:text-yellow-600 hover:shadow-[0_0_0_3px_rgba(234,179,8,0.12)]",
+                        "inline-flex size-12 shrink-0 items-center justify-center rounded-[10px] border-2 border-border bg-card text-[1.625rem] leading-none text-muted-foreground transition-[border-color,color,background,box-shadow] duration-150",
+                        "hover:border-primary/50 hover:text-primary hover:shadow-[0_0_0_3px_rgba(22,163,74,0.12)]",
                         draft.important &&
-                            "border-yellow-500 bg-yellow-500/14 text-yellow-500 shadow-[0_0_0_3px_rgba(234,179,8,0.16)]",
+                            "border-primary bg-primary/14 text-primary shadow-[0_0_0_3px_rgba(22,163,74,0.16)]",
                     )}
                     onClick={() => set("important", !draft.important)}
                     aria-pressed={Boolean(draft.important)}
@@ -380,11 +593,11 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
                 >
                     <IconStar size={24} />
                 </button>
-                <span className="text-[0.9375rem] font-medium text-text-h">{t.addWord.markImportant}</span>
+                <span className="text-[0.9375rem] font-medium text-foreground">{t.addWord.markImportant}</span>
             </div>
             {validationError && (
                 <p
-                    className="m-0 rounded-lg border border-error-border bg-error-bg px-4 py-4 text-sm text-error-text"
+                    className="m-0 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-4 text-sm text-destructive"
                     role="alert"
                 >
                     {validationError}
@@ -395,6 +608,7 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
 }
 
 export function MeaningsEditor({ meanings, onChange }) {
+    const { t } = useLocale();
     const [expanded, setExpanded] = useState((meanings ?? []).length > 0);
     const skipSyncRef = useRef(false);
     const prevMeaningsRef = useRef(meanings);
@@ -496,53 +710,60 @@ export function MeaningsEditor({ meanings, onChange }) {
     if (!expanded) {
         return (
             <div className="flex justify-center">
-                <button
+                <Button
                     type="button"
-                    className="inline-flex items-center justify-center size-10 rounded-lg border-2 bg-success-bg text-success-text border-success-border shadow-sm transition-all hover:bg-success-bg hover:border-success-text hover:shadow-md"
+                    className="size-10 rounded-lg bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90 shadow-sm"
                     onClick={handleExpand}
-                    title="Add meaning & example"
+                    title={t.addWord.addMeaningExample}
                 >
                     <IconPlus size={22} />
-                </button>
+                </Button>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col gap-4 rounded-xl border border-border bg-bg/50 p-4">
-            <div className="flex items-center gap-2">
-                <h3 className="flex-1 text-center text-sm font-semibold text-text-h">Detailed meanings & examples</h3>
-                <button
+        <Card className="bg-background/50 border border-border">
+            <CardHeader className="flex-row items-center gap-2">
+                <CardTitle className="flex-1 text-center text-sm font-semibold text-foreground">
+                    {t.addWord.detailedMeanings}
+                </CardTitle>
+                <Button
                     type="button"
-                    className="inline-flex items-center justify-center size-8 rounded-md text-text-muted hover:bg-bg hover:text-text-h transition-colors"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground hover:text-foreground"
                     onClick={() => setExpanded(false)}
-                    title="Collapse"
+                    title={t.addWord.collapse}
                 >
                     <IconMinus size={16} />
-                </button>
-            </div>
-            {localCategories.map((cat, i) => (
-                <CategoryCard
-                    key={cat._tempId || i}
-                    category={cat}
-                    index={i}
-                    onChange={(updated) => updateCategory(i, updated)}
-                    onRemove={() => removeCategory(i)}
-                />
-            ))}
-            <button
-                type="button"
-                className="inline-flex items-center gap-2 self-start rounded-lg border bg-success-bg text-success-text border-success-border px-4 py-2 text-sm font-medium transition-colors hover:enabled:bg-success-bg hover:enabled:border-success-text"
-                onClick={addCategory}
-            >
-                <IconPlus size={14} />
-                Add group
-            </button>
-        </div>
+                </Button>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+                {localCategories.map((cat, i) => (
+                    <CategoryCard
+                        key={cat._tempId || i}
+                        category={cat}
+                        index={i}
+                        onChange={(updated) => updateCategory(i, updated)}
+                        onRemove={() => removeCategory(i)}
+                    />
+                ))}
+                <Button
+                    type="button"
+                    className="self-start bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                    onClick={addCategory}
+                >
+                    <IconPlus size={14} data-icon="inline-start" />
+                    {t.addWord.addGroup}
+                </Button>
+            </CardContent>
+        </Card>
     );
 }
 
 function CategoryCard({ category, index, onChange, onRemove }) {
+    const { t } = useLocale();
     const addMeaning = () => {
         const nextMeanings = [
             ...(category.meanings ?? []),
@@ -567,62 +788,192 @@ function CategoryCard({ category, index, onChange, onRemove }) {
     };
 
     return (
-        <div className="rounded-xl border-2 border-accent-border/30 bg-bg p-4">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 flex-1 mr-2">
-                    <span className="text-sm font-semibold text-violet-600 dark:text-violet-400 shrink-0">Group:</span>
-                    <input
-                        className={cn(
-                            "flex-1 min-w-0 max-w-48 rounded-md border border-border bg-surface px-2.5 py-1 text-sm font-semibold text-violet-600 dark:text-violet-400 outline-none transition-colors focus:border-accent-border",
-                        )}
-                        value={category.name ?? ""}
-                        onChange={(e) => onChange({ name: e.target.value })}
-                    />
+        <Card className="bg-card shadow-sm ring-0 border border-border/60">
+            <CardContent className="flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 mr-2">
+                        <span className="text-sm font-semibold text-foreground shrink-0">{t.addWord.group}</span>
+                        <Input
+                            className="flex-1 min-w-0 max-w-48 text-sm font-semibold text-foreground"
+                            value={category.name ?? ""}
+                            onChange={(e) => onChange({ name: e.target.value })}
+                        />
+                    </div>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="self-start"
+                        onClick={onRemove}
+                        title={t.addWord.deleteGroup}
+                    >
+                        <IconClose size={14} data-icon="inline-start" />
+                        {category.name
+                            ? t.addWord.deleteGroupWithName.replace("{name}", category.name)
+                            : t.addWord.deleteGroup}
+                    </Button>
                 </div>
-                <button
-                    type="button"
-                    className="inline-flex items-center gap-2 self-start rounded-lg border bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 px-4 py-2 text-sm font-medium transition-colors hover:bg-red-100 dark:hover:bg-red-900"
-                    onClick={onRemove}
-                    title="Delete group"
-                >
-                    <IconClose size={14} />
-                    {category.name ? `Delete group: ${category.name}` : "Delete group"}
-                </button>
-            </div>
-            {/* Meanings in this category */}
-            <div className="flex flex-col gap-4 ml-2 pl-3 border-l-2 border-border/60">
-                {(category.meanings ?? []).map((m, j) => (
-                    <MeaningCard
-                        key={m._tempId || j}
-                        meaning={m}
-                        index={j}
-                        onChange={(updated) => updateMeaning(j, updated)}
-                        onRemove={() => removeMeaning(j)}
-                    />
-                ))}
-                <button
-                    type="button"
-                    className="inline-flex items-center gap-2 self-start rounded-lg border bg-success-bg text-success-text border-success-border px-4 py-2 text-sm font-medium transition-colors hover:enabled:bg-success-bg hover:enabled:border-success-text"
-                    onClick={addMeaning}
-                >
-                    <IconPlus size={14} />
-                    Add meaning
-                </button>
+                {/* Meanings in this category */}
+                <div className="flex flex-col gap-4">
+                    {(category.meanings ?? []).map((m, j) => (
+                        <MeaningCard
+                            key={m._tempId || j}
+                            meaning={m}
+                            index={j}
+                            onChange={(updated) => updateMeaning(j, updated)}
+                            onRemove={() => removeMeaning(j)}
+                        />
+                    ))}
+                    <Button
+                        type="button"
+                        className="self-start bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                        onClick={addMeaning}
+                    >
+                        <IconPlus size={14} data-icon="inline-start" />
+                        {t.addWord.addMeaning}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
+ * Format pasted Hanzii example text into simplified (line 1) + traditional (line 2).
+ *  - Hanzii: "我的爸爸是一名消防员。【我的爸爸是一名消防員。】"
+ *    → "我的爸爸是一名消防员。\n我的爸爸是一名消防員。" (keeps punctuation as-is)
+ *  - Already two-line: normalized (empty lines dropped).
+ *  - Single line without brackets: returned trimmed.
+ */
+/**
+ * Normalize meaning/example separators to commas on sync:
+ * "1, số 1; một; số một." → "1, số 1, một, số một."
+ * Converts semicolons (; ；) and CJK enumeration comma (、) to ASCII comma and
+ * normalizes spacing around commas. Keeps the sentence-final period.
+ */
+function normalizeGlossSeparators(value) {
+    return String(value ?? "")
+        .replace(/[;；、]/g, ",")
+        .replace(/\s*,\s*/g, ", ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+}
+
+/** Same as normalizeGlossSeparators but drops the trailing sentence period — meanings only. */
+function normalizeMeaningSeparators(value) {
+    return normalizeGlossSeparators(value)
+        .replace(/[.。]+$/u, "")
+        .trim();
+}
+
+// Meaning sau sync LUÔN lowercase (áp dụng cả vi & en).
+function normalizeMeaningSync(value) {
+    return normalizeMeaningSeparators(value).toLowerCase();
+}
+
+function formatExampleHanText(text) {
+    const raw = (text ?? "").trim();
+    if (!raw) return "";
+
+    const lines = raw
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+    if (lines.length >= 2) return lines.join("\n");
+
+    const tradMatch = raw.match(/【([^】]*)】/);
+    const trad = tradMatch ? tradMatch[1].trim() : "";
+    const simp = raw.replace(/【[^】]*】/g, "").trim();
+
+    if (simp && trad) return `${simp}\n${trad}`;
+    return simp || trad || raw;
+}
+
+// Font Hán cố định — PHẢI khớp giữa textarea (chữ vô hình) và backdrop (chữ màu).
+// Nếu 2 lớp lệch font/size/line-height, khi bôi đen text sẽ thấy "bóng mờ" text
+// to hơn (do vùng selection tính theo metrics của textarea ≠ glyph backdrop).
+const HAN_EXAMPLE_FONT =
+    '"Noto Sans TC Variable", "Noto Sans SC Variable", "Microsoft JhengHei", "PingFang HK", sans-serif';
+
+/**
+ * Editable single han line (giản hoặc phồn) — color giống detail (text-foreground).
+ * Overlay: pointer-events-none backdrop draws the text while the real <textarea>
+ * on top stays editable (transparent text + visible caret). Both layers share the
+ * same font/size/line-height so text selection has no "ghost", and the han glyphs
+ * keep the fixed Noto font (matching the app's han display).
+ */
+function HanLineTextarea({ value, onChange, rows = 2, className }) {
+    const text = value ?? "";
+
+    return (
+        <div className={cn("relative", className)}>
+            <Textarea
+                style={{
+                    fontFamily: HAN_EXAMPLE_FONT,
+                    fontSize: "0.9375rem",
+                    lineHeight: 1.5,
+                    minHeight: "2.5rem",
+                }}
+                className="resize-none bg-transparent text-transparent caret-primary"
+                rows={rows}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+            />
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 z-10 overflow-hidden whitespace-pre-wrap wrap-break-word px-2.5 py-2 text-[0.9375rem] leading-normal text-foreground"
+            >
+                {text}
             </div>
         </div>
     );
 }
 
 function MeaningCard({ meaning, index, onChange, onRemove }) {
+    const { t } = useLocale();
     const [convertingJpPy, setConvertingJpPy] = useState(null);
-    const [showExamples, setShowExamples] = useState(false); // exIdx being converted
+    const [showExamples, setShowExamples] = useState(true); // examples expanded by default
+    const [syncingMeaning, setSyncingMeaning] = useState(false);
+    const [syncingExample, setSyncingExample] = useState(null); // exIdx being synced
+
+    // Sync the empty side from the filled one (vi <-> en) via the translate pipeline.
+    const viet = (meaning.vietMeanings ?? "").trim();
+    const eng = (meaning.engMeanings ?? "").trim();
+    const canSync = Boolean(viet) !== Boolean(eng);
+    const handleSyncMeaning = async () => {
+        if (!canSync) return;
+        setSyncingMeaning(true);
+        try {
+            const source = viet ? "vi" : "en";
+            const target = viet ? "en" : "vi";
+            // Chuẩn hóa dấu tách (; 、…) về phẩy cho cả phía đã có và phía vừa dịch.
+            // Meaning sau sync LUÔN lowercase (cả vi & en), không giữ dấu chấm cuối câu.
+            const patch = viet
+                ? { vietMeanings: normalizeMeaningSync(meaning.vietMeanings ?? "") }
+                : { engMeanings: normalizeMeaningSync(meaning.engMeanings ?? "") };
+            const res = await api.translate(viet || eng, source, target);
+            const translated = normalizeMeaningSync(res?.translated ?? "");
+            if (translated) {
+                if (viet) patch.engMeanings = translated;
+                else patch.vietMeanings = translated;
+            }
+            onChange(patch);
+        } catch {
+            // Vẫn chuẩn hóa phía đã có nếu dịch lỗi.
+            if (viet) onChange({ vietMeanings: normalizeMeaningSync(meaning.vietMeanings ?? "") });
+            else onChange({ engMeanings: normalizeMeaningSync(meaning.engMeanings ?? "") });
+        } finally {
+            setSyncingMeaning(false);
+        }
+    };
 
     const addExample = () => {
         const nextExamples = [
             ...(meaning.examples ?? []),
             {
                 _tempId: crypto.randomUUID(),
-                hanExample: "",
+                hanSimplified: "",
+                hanTraditional: "",
                 jyutpingExample: "",
                 pinyinExample: "",
                 vietExamples: "",
@@ -637,20 +988,64 @@ function MeaningCard({ meaning, index, onChange, onRemove }) {
         onChange({ examples: nextExamples });
     };
 
-    const handleConvertBoth = async (exIdx, text) => {
-        const trimmed = (text ?? "").trim();
+    // Update one line (0 = giản, 1 = phồn) of the han example.
+    const updateHanLine = (exIdx, lineIdx, lineValue) => {
+        const ex = (meaning.examples ?? [])[exIdx];
+        const parts = exampleHanParts(ex);
+        const g = lineIdx === 0 ? (lineValue ?? "").trim() : parts.hanSimplified;
+        const p = lineIdx === 1 ? (lineValue ?? "").trim() : parts.hanTraditional;
+        updateExample(exIdx, { hanSimplified: g, hanTraditional: p });
+    };
+
+    // Format the copied han example (Hanzii 【...】) into giản + phồn.
+    // Hoạt động dù text paste nằm ở field giản hay phồn.
+    const handleFormatExample = (exIdx) => {
+        const ex = (meaning.examples ?? [])[exIdx];
+        const parts = exampleHanParts(ex);
+        const raw = [parts.hanSimplified, parts.hanTraditional].filter(Boolean).join("\n");
+        const source = parts.hanSimplified.includes("【")
+            ? parts.hanSimplified
+            : parts.hanTraditional.includes("【")
+              ? parts.hanTraditional
+              : raw;
+        const formatted = formatExampleHanText(source);
+        const fl = formatted.split("\n");
+        const newG = fl[0] ?? "";
+        const newP = fl[1] ?? "";
+        if (newG !== parts.hanSimplified || newP !== parts.hanTraditional) {
+            updateExample(exIdx, { hanSimplified: newG, hanTraditional: newP });
+        }
+    };
+
+    const handleConvertBoth = async (exIdx) => {
+        const ex = (meaning.examples ?? [])[exIdx];
+        const parts = exampleHanParts(ex);
+        const trimmed = [parts.hanSimplified, parts.hanTraditional].filter(Boolean).join("\n");
         if (!trimmed) return;
         setConvertingJpPy(exIdx);
         try {
-            // Jyutping from traditional part (inside 【】) if present
-            const tradMatch = trimmed.match(/【(.+?)】/);
-            const tradSource = tradMatch ? tradMatch[1].trim() : trimmed;
-            // Pinyin from simplified part (before 【) if present
-            const simpMatch = trimmed.match(/^(.+?)【/);
-            const simpSource = simpMatch ? simpMatch[1].trim() : trimmed;
+            // Prefer the formatted two-line shape: line 1 = simplified, line 2 = traditional.
+            const lines = trimmed
+                .split("\n")
+                .map((l) => l.trim())
+                .filter(Boolean);
+            let tradSource = "";
+            let simpSource = "";
+            if (lines.length >= 2) {
+                simpSource = lines[0];
+                tradSource = lines[1];
+            } else {
+                // Legacy Hanzii format 【...】:
+                const tradMatch = trimmed.match(/【(.+?)】/);
+                tradSource = tradMatch ? tradMatch[1].trim() : trimmed;
+                const simpMatch = trimmed.match(/^(.+?)【/);
+                simpSource = simpMatch ? simpMatch[1].trim() : trimmed;
+            }
 
+            // Sinh pinyin từ GIẢN THỂ, jyutping từ PHỒN THỂ (quy ước mặc định).
+            const jyutpingSource = tradSource;
             const [jpRes, pyRes] = await Promise.all([
-                tradSource ? api.toJyutping(tradSource) : Promise.resolve(null),
+                jyutpingSource ? api.toJyutping(jyutpingSource) : Promise.resolve(null),
                 simpSource ? api.toPinyin(simpSource) : Promise.resolve(null),
             ]);
 
@@ -672,139 +1067,270 @@ function MeaningCard({ meaning, index, onChange, onRemove }) {
         onChange({ examples: nextExamples });
     };
 
-    return (
-        <div className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
-            <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-accent">{index + 1}.</span>
-                <button
-                    type="button"
-                    className="inline-flex items-center justify-center size-6 rounded border bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
-                    onClick={onRemove}
-                    title="Delete meaning"
-                >
-                    <IconClose size={12} />
-                </button>
-            </div>
-            {/* Line 1: Vietnamese meaning */}
-            <label className="flex flex-col gap-0.5 mb-2">
-                <span className="text-[0.7rem] text-accent font-semibold">Vietnamese meaning</span>
-                <textarea
-                    className={cn(textareaClass, "text-viet font-medium")}
-                    rows={2}
-                    value={meaning.vietMeanings ?? ""}
-                    onChange={(e) => onChange({ vietMeanings: e.target.value })}
-                />
-            </label>
-            {/* Line 2: English meaning (replaces Chinese definition) */}
-            <label className="flex flex-col gap-0.5 mb-2">
-                <span className="text-[0.7rem] text-accent font-semibold">English meaning</span>
-                <textarea
-                    className={cn(textareaClass, "text-blue-600 dark:text-blue-400")}
-                    rows={2}
-                    value={meaning.engMeanings ?? ""}
-                    onChange={(e) => onChange({ engMeanings: e.target.value })}
-                />
-            </label>
+    // Sync the empty side of a single example (vi <-> en) via the translate pipeline.
+    const handleSyncExample = async (exIdx) => {
+        const ex = (meaning.examples ?? [])[exIdx];
+        const exViet = (ex?.vietExamples ?? "").trim();
+        const exEng = (ex?.engExamples ?? "").trim();
+        if ((!exViet && !exEng) || (exViet && exEng)) return; // nothing to fill
+        setSyncingExample(exIdx);
+        try {
+            const source = exViet ? "vi" : "en";
+            const target = exViet ? "en" : "vi";
+            const patch = exViet
+                ? { vietExamples: normalizeGlossSeparators(ex?.vietExamples ?? "") }
+                : { engExamples: normalizeGlossSeparators(ex?.engExamples ?? "") };
+            const res = await api.translate(exViet || exEng, source, target);
+            const translated = normalizeGlossSeparators(res?.translated ?? "");
+            if (translated) {
+                if (exViet) patch.engExamples = translated;
+                else patch.vietExamples = translated;
+            }
+            updateExample(exIdx, patch);
+        } catch {
+            if (exViet) updateExample(exIdx, { vietExamples: normalizeGlossSeparators(ex?.vietExamples ?? "") });
+            else updateExample(exIdx, { engExamples: normalizeGlossSeparators(ex?.engExamples ?? "") });
+        } finally {
+            setSyncingExample(null);
+        }
+    };
 
-            {/* Examples for this meaning */}
-            <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-2 text-xs text-accent font-semibold hover:underline"
-                        onClick={() => setShowExamples((v) => !v)}
-                    >
-                        {showExamples ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
-                        Examples
-                    </button>
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-2 rounded-md border bg-success-bg text-success-text border-success-border px-2 py-2 text-xs font-medium transition-colors hover:enabled:bg-success-bg hover:enabled:border-success-text"
-                        onClick={() => {
-                            if (!showExamples) setShowExamples(true);
-                            addExample();
-                        }}
-                    >
-                        <IconPlus size={10} />
-                        Add example
-                    </button>
-                </div>
-                {showExamples && (
-                    <>
-                        {(meaning.examples ?? []).map((ex, j) => (
-                            <div key={ex._tempId || j} className="rounded-lg border border-border/60 bg-bg p-2.5">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[0.7rem] text-accent font-semibold">Example {j + 1}</span>
-                                    <button
-                                        type="button"
-                                        className="inline-flex items-center justify-center size-6 rounded border bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
-                                        onClick={() => removeExample(j)}
-                                        title="Delete example"
+    return (
+        <Card className="bg-card shadow-sm border border-border">
+            <CardHeader className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-primary-foreground">{index + 1}.</CardTitle>
+                <CardAction>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            size="xs"
+                            className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                            onClick={handleSyncMeaning}
+                            disabled={!canSync || syncingMeaning}
+                            title={t.addWord.syncMeaningHint}
+                        >
+                            {syncingMeaning ? <Spinner className="size-3.5" /> : <IconSpeech size={14} />}
+                            {t.addWord.syncMeaning}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={onRemove}
+                            title={t.addWord.deleteMeaning}
+                        >
+                            <IconClose size={14} data-icon="inline-start" />
+                            {t.addWord.deleteMeaning}
+                        </Button>
+                    </div>
+                </CardAction>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+                {/* Line 1: Vietnamese meaning */}
+                <label className="flex flex-col gap-0.5 mb-2">
+                    <span className="text-sm text-primary-foreground font-semibold">{t.addWord.vietnameseMeaning}</span>
+                    <Textarea
+                        className="text-foreground font-medium"
+                        rows={2}
+                        value={meaning.vietMeanings ?? ""}
+                        onChange={(e) => onChange({ vietMeanings: e.target.value })}
+                    />
+                </label>
+                {/* Line 2: English meaning (replaces Chinese definition) */}
+                <label className="flex flex-col gap-0.5 mb-2">
+                    <span className="text-sm text-primary-foreground font-semibold">{t.addWord.englishMeaning}</span>
+                    <Textarea
+                        className="text-foreground"
+                        rows={2}
+                        value={meaning.engMeanings ?? ""}
+                        onChange={(e) => onChange({ engMeanings: e.target.value })}
+                    />
+                </label>
+
+                {/* Examples for this meaning */}
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                            onClick={() => {
+                                if (!showExamples) setShowExamples(true);
+                                addExample();
+                            }}
+                        >
+                            <IconPlus size={10} data-icon="inline-start" />
+                            {t.addWord.addExample}
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                            onClick={() => setShowExamples((v) => !v)}
+                        >
+                            {showExamples ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+                            {(meaning.examples ?? []).length > 0
+                                ? t.addWord.examplesWithCount.replace("{count}", (meaning.examples ?? []).length)
+                                : t.addWord.examples}
+                        </Button>
+                    </div>
+                    {showExamples && (
+                        <>
+                            {(meaning.examples ?? []).map((ex, j) => {
+                                const hanParts = exampleHanParts(ex);
+                                const hasHan = Boolean(hanParts.hanSimplified || hanParts.hanTraditional);
+                                return (
+                                    <Card
+                                        key={ex._tempId || j}
+                                        className="rounded-lg border border-border/70 bg-background p-4 shadow-none ring-0"
                                     >
-                                        <IconClose size={10} />
-                                    </button>
-                                </div>
-                                <label className="flex flex-col gap-0.5 mb-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[0.65rem] text-accent font-semibold">Chinese</span>
-                                        <button
-                                            type="button"
-                                            className={cn(
-                                                "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.65rem] font-medium transition-colors",
-                                                convertingJpPy === j
-                                                    ? "text-text-muted cursor-not-allowed"
-                                                    : (ex.hanExample ?? "").trim()
-                                                      ? "text-accent hover:bg-accent/10"
-                                                      : "text-text-muted",
-                                            )}
-                                            onClick={() => handleConvertBoth(j, ex.hanExample ?? "")}
-                                            disabled={convertingJpPy === j || !(ex.hanExample ?? "").trim()}
-                                            title="Auto-fill Jyutping & Pinyin"
-                                        >
-                                            {convertingJpPy === j ? (
-                                                <IconSpinner size={14} />
-                                            ) : (
-                                                <IconSpeech size={14} />
-                                            )}
-                                            JP+PY
-                                        </button>
-                                    </div>
-                                    <textarea
-                                        className={cn(textareaClass, "text-red-600 dark:text-red-400")}
-                                        rows={2}
-                                        value={ex.hanExample ?? ""}
-                                        onChange={(e) => updateExample(j, { hanExample: e.target.value })}
-                                    />
-                                </label>
-                                <label className="flex flex-col gap-0.5 mb-2">
-                                    <span className="text-[0.65rem] text-accent font-semibold">Pinyin</span>
-                                    <input
-                                        className={cn(uiInputClass, "text-pinyin text-sm")}
-                                        value={ex.pinyinExample ?? ""}
-                                        onChange={(e) => updateExample(j, { pinyinExample: e.target.value })}
-                                    />
-                                </label>
-                                <label className="flex flex-col gap-0.5 mb-2">
-                                    <span className="text-[0.65rem] text-accent font-semibold">Jyutping</span>
-                                    <input
-                                        className={cn(uiInputClass, "text-jyutping font-semibold text-sm")}
-                                        value={ex.jyutpingExample ?? ""}
-                                        onChange={(e) => updateExample(j, { jyutpingExample: e.target.value })}
-                                    />
-                                </label>
-                                <label className="flex flex-col gap-0.5">
-                                    <span className="text-[0.65rem] text-accent font-semibold">Vietnamese</span>
-                                    <input
-                                        className={cn(uiInputClass, "text-viet text-sm")}
-                                        value={ex.vietExamples ?? ""}
-                                        onChange={(e) => updateExample(j, { vietExamples: e.target.value })}
-                                    />
-                                </label>
-                            </div>
-                        ))}
-                    </>
-                )}
-            </div>
-        </div>
+                                        <CardHeader className="flex items-center justify-between">
+                                            <CardTitle className="text-sm text-primary-foreground font-semibold">
+                                                {t.addWord.example.replace("{index}", j + 1)}
+                                            </CardTitle>
+                                            <CardAction>
+                                                <div className="flex flex-wrap items-center justify-end gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        size="xs"
+                                                        className={cn(
+                                                            hasHan
+                                                                ? "bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                                                                : "bg-primary/50 text-primary-foreground/60 border-primary/50",
+                                                        )}
+                                                        onClick={() => handleFormatExample(j)}
+                                                        disabled={!hasHan}
+                                                        title={t.addWord.formatExampleHint}
+                                                    >
+                                                        <IconEdit size={14} />
+                                                        {t.addWord.formatExample}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="xs"
+                                                        className={cn(
+                                                            hasHan
+                                                                ? "bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                                                                : "bg-primary/50 text-primary-foreground/60 border-primary/50",
+                                                        )}
+                                                        onClick={() => handleConvertBoth(j)}
+                                                        disabled={convertingJpPy === j || !hasHan}
+                                                        title={t.addWord.generateReadings}
+                                                    >
+                                                        {convertingJpPy === j ? (
+                                                            <Spinner className="size-3.5" />
+                                                        ) : (
+                                                            <IconSpeech size={14} />
+                                                        )}
+                                                        {t.addWord.generateBoth}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="xs"
+                                                        className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                                                        onClick={() => handleSyncExample(j)}
+                                                        disabled={
+                                                            syncingExample === j ||
+                                                            Boolean((ex.vietExamples ?? "").trim()) ===
+                                                                Boolean((ex.engExamples ?? "").trim())
+                                                        }
+                                                        title={t.addWord.syncExampleHint}
+                                                    >
+                                                        {syncingExample === j ? (
+                                                            <Spinner className="size-3.5" />
+                                                        ) : (
+                                                            <IconSpeech size={14} />
+                                                        )}
+                                                        {t.addWord.syncExample}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => removeExample(j)}
+                                                        title={t.addWord.deleteExample}
+                                                    >
+                                                        <IconClose size={14} data-icon="inline-start" />
+                                                        {t.addWord.deleteExample}
+                                                    </Button>
+                                                </div>
+                                            </CardAction>
+                                        </CardHeader>
+                                        <CardContent className="flex flex-col gap-2">
+                                            <div className="flex flex-col gap-2 mb-2">
+                                                <label className="flex flex-col gap-0.5">
+                                                    <span className="text-sm text-primary-foreground font-semibold">
+                                                        {t.addWord.simplified}
+                                                    </span>
+                                                    <HanLineTextarea
+                                                        rows={1}
+                                                        value={hanParts.hanSimplified}
+                                                        onChange={(v) => updateHanLine(j, 0, v)}
+                                                    />
+                                                </label>
+                                                <label className="flex flex-col gap-0.5">
+                                                    <span className="text-sm text-primary-foreground font-semibold">
+                                                        {t.addWord.traditional}
+                                                    </span>
+                                                    <HanLineTextarea
+                                                        rows={1}
+                                                        value={hanParts.hanTraditional}
+                                                        onChange={(v) => updateHanLine(j, 1, v)}
+                                                    />
+                                                </label>
+                                            </div>
+                                            <label className="flex flex-col gap-0.5 mb-2">
+                                                <span className="text-sm text-primary-foreground font-semibold">
+                                                    {t.addWord.pinyin}
+                                                </span>
+                                                <Input
+                                                    className="text-primary-foreground text-sm"
+                                                    value={ex.pinyinExample ?? ""}
+                                                    onChange={(e) =>
+                                                        updateExample(j, { pinyinExample: e.target.value })
+                                                    }
+                                                />
+                                            </label>
+                                            <label className="flex flex-col gap-0.5 mb-2">
+                                                <span className="text-sm text-primary-foreground font-semibold">
+                                                    {t.addWord.jyutping}
+                                                </span>
+                                                <Input
+                                                    className="text-primary-foreground text-sm"
+                                                    value={ex.jyutpingExample ?? ""}
+                                                    onChange={(e) =>
+                                                        updateExample(j, { jyutpingExample: e.target.value })
+                                                    }
+                                                />
+                                            </label>
+                                            <label className="flex flex-col gap-0.5 mb-2">
+                                                <span className="text-sm text-primary-foreground font-semibold">
+                                                    {t.addWord.vietnamese}
+                                                </span>
+                                                <Input
+                                                    className="text-primary-foreground text-sm"
+                                                    value={ex.vietExamples ?? ""}
+                                                    onChange={(e) => updateExample(j, { vietExamples: e.target.value })}
+                                                />
+                                            </label>
+                                            <label className="flex flex-col gap-0.5">
+                                                <span className="text-sm text-primary-foreground font-semibold">
+                                                    {t.addWord.english}
+                                                </span>
+                                                <Input
+                                                    className="text-primary-foreground text-sm"
+                                                    value={ex.engExamples ?? ""}
+                                                    onChange={(e) => updateExample(j, { engExamples: e.target.value })}
+                                                />
+                                            </label>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
+                        </>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
     );
 }

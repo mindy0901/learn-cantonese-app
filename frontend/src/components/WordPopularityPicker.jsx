@@ -27,8 +27,8 @@ export function WordPopularityPicker({ value, onChange, disabled, compact = fals
   const trackClass = cn(
     'inline-flex items-center justify-center',
     footer
-      ? 'gap-2.5 rounded-full bg-bg/90 px-3 py-2 ring-1 ring-border/70 shadow-sm dark:bg-white/5'
-      : 'gap-2 rounded-2xl bg-bg/90 px-3 py-2.5 ring-1 ring-border/70 dark:bg-white/5',
+      ? 'gap-2.5 rounded-full bg-background/90 px-3 py-2 ring-1 ring-border/70 shadow-sm dark:bg-white/5'
+      : 'gap-2 rounded-2xl bg-background/90 px-3 py-2.5 ring-1 ring-border/70 dark:bg-white/5',
   )
 
   return (
@@ -42,7 +42,7 @@ export function WordPopularityPicker({ value, onChange, disabled, compact = fals
       {showTitle && (
         <p
           className={cn(
-            'm-0 shrink-0 font-medium text-text-muted',
+            'm-0 shrink-0 font-medium text-muted-foreground',
             footer ? 'text-sm whitespace-nowrap' : 'mb-2.5 text-xs font-semibold uppercase tracking-wide',
           )}
         >

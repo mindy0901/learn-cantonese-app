@@ -15,9 +15,9 @@ import { cn } from "../lib/cn.js";
 import { btnClass } from "./ui/buttonStyles.js";
 
 const fieldClass =
-    "w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text-h focus:outline-none focus:ring-2 focus:ring-accent/35 focus:border-accent-border";
+    "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/25";
 
-const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted";
+const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
 export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = null }) {
     const { t, fmt } = useLocale();
@@ -98,16 +98,16 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
     return (
         <div className="flex flex-col gap-5">
             {dueTotal != null && dueTotal > 0 && (
-                <div className="rounded-xl border border-accent-border bg-accent-bg/50 px-4 py-3 text-center">
-                    <p className="m-0 text-sm text-text-muted">{t.flashcard.dueToday}</p>
-                    <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-accent">
+                <div className="rounded-xl border border-primary/25 bg-primary/10/50 px-4 py-3 text-center">
+                    <p className="m-0 text-sm text-muted-foreground">{t.flashcard.dueToday}</p>
+                    <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-primary">
                         {fmt(t.flashcard.dueCount, { count: dueTotal })}
                     </p>
                 </div>
             )}
 
-            <section className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
-                <h2 className="m-0 mb-4 text-sm font-semibold text-text-h">{t.flashcard.setupSource}</h2>
+            <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                <h2 className="m-0 mb-4 text-sm font-semibold text-foreground">{t.flashcard.setupSource}</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label className={labelClass} htmlFor="flashcard-source">
@@ -158,15 +158,15 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
                                         </option>
                                     ))}
                                 </select>
-                                {decksLoading && <p className="m-0 mt-1 text-xs text-text-muted">{t.common.loading}</p>}
+                                {decksLoading && <p className="m-0 mt-1 text-xs text-muted-foreground">{t.common.loading}</p>}
                             </>
                         )}
                     </div>
                 </div>
             </section>
 
-            <section className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
-                <h2 className="m-0 mb-4 text-sm font-semibold text-text-h">{t.flashcard.setupMode}</h2>
+            <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                <h2 className="m-0 mb-4 text-sm font-semibold text-foreground">{t.flashcard.setupMode}</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
                         <label className={labelClass} htmlFor="flashcard-card-mode">
@@ -185,7 +185,7 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
                             ))}
                         </select>
                     </div>
-                    <label className="flex items-center gap-2 text-sm text-text-h sm:col-span-2">
+                    <label className="flex items-center gap-2 text-sm text-foreground sm:col-span-2">
                         <input
                             type="checkbox"
                             className="h-4 w-4 rounded border-border accent-accent"
@@ -198,8 +198,8 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
                 </div>
             </section>
 
-            <section className="rounded-xl border border-border bg-surface p-4 shadow-theme-sm">
-                <h2 className="m-0 mb-4 text-sm font-semibold text-text-h">{t.flashcard.setupSize}</h2>
+            <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                <h2 className="m-0 mb-4 text-sm font-semibold text-foreground">{t.flashcard.setupSize}</h2>
                 <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
                     {FLASHCARD_SESSION_SIZES.map((size) => (
                         <button
@@ -208,15 +208,15 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
                             className={cn(
                                 "flex flex-col items-center justify-center gap-1.5 min-h-[5.5rem] px-3 py-3 border rounded-xl cursor-pointer transition-[background,border-color,transform] duration-150",
                                 prefs.sessionSize === size
-                                    ? "border-accent-border bg-accent-bg text-accent shadow-theme-sm"
-                                    : "border-border bg-bg text-text hover:bg-accent-bg/40 hover:border-accent-border/60",
+                                    ? "border-primary/25 bg-primary/10 text-primary shadow-sm"
+                                    : "border-border bg-background text-muted-foreground hover:bg-primary/10/40 hover:border-primary/25/60",
                                 "disabled:opacity-60 disabled:cursor-not-allowed",
                             )}
                             disabled={disabled || loading}
                             onClick={() => updatePref({ sessionSize: size })}
                         >
                             <span className="text-[1.5rem] font-bold leading-none">{size}</span>
-                            <span className="text-xs text-text-muted">
+                            <span className="text-xs text-muted-foreground">
                                 {fmt(t.flashcard.randomCards, { count: size })}
                             </span>
                         </button>

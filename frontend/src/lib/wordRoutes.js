@@ -1,3 +1,3 @@
-export function vocabularyDetailPath(id) {
-    return `/vocabulary/${id}`;
+export function vocabularyDetailPath(han) {
+    return `/vocabulary/${encodeURIComponent(String(han ?? ""))}`;
 }

@@ -3,10 +3,10 @@ import { cn } from "../lib/cn.js";
 import { IconChevronDown } from "./NavIcons.jsx";
 
 const tagChipClass =
-    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border/60 bg-surface text-sm font-medium focus:outline-none";
+    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border/60 bg-card text-sm font-medium focus:outline-none";
 
 const tagChipSelectableClass =
-    "inline-flex items-center gap-1 pl-2 pr-1.5 py-0.5 rounded-full border border-border/60 bg-surface text-sm font-medium focus:outline-none";
+    "inline-flex items-center gap-1 pl-2 pr-1.5 py-0.5 rounded-full border border-border/60 bg-card text-sm font-medium focus:outline-none";
 
 const tagSelectClass =
     "rounded border border-transparent bg-transparent px-1.5 py-0 text-sm text-inherit outline-none focus:outline-none focus:ring-0 cursor-pointer appearance-none";
@@ -125,7 +125,7 @@ export function TagInput({ value, onChange, className, placeholder, tagOptions, 
 
     return (
         <div
-            className={`flex flex-wrap items-center gap-1.5 p-2 min-h-11 rounded-md border border-border bg-bg focus-within:outline-none ${className ?? ""}`}
+            className={`flex flex-wrap items-center gap-1.5 p-2 min-h-11 rounded-md border border-border bg-background focus-within:outline-none ${className ?? ""}`}
             onClick={() => inputRef.current?.focus()}
         >
             {tags.map((tag, i) => {
@@ -148,7 +148,7 @@ export function TagInput({ value, onChange, className, placeholder, tagOptions, 
                                     </option>
                                 ))}
                             </select>
-                            <span className={`${tagTextClass} text-text-muted ml-0.5 opacity-60`} aria-hidden="true">
+                            <span className={`${tagTextClass} text-muted-foreground ml-0.5 opacity-60`} aria-hidden="true">
                                 <IconChevronDown size={12} />
                             </span>
                         </span>
@@ -161,7 +161,7 @@ export function TagInput({ value, onChange, className, placeholder, tagOptions, 
                         className={cn(
                             tagChipClass,
                             isEmpty &&
-                                "italic text-text-muted cursor-pointer hover:border-accent-border hover:bg-accent-bg",
+                                "italic text-muted-foreground cursor-pointer hover:border-primary/25 hover:bg-primary/10",
                         )}
                         onClick={
                             isEmpty

@@ -6,8 +6,10 @@ export const DEFAULT_PREFS = {
         showImportant: false,
         showMastered: false,
         hskLevel: "all",
+        setId: "all",
         sortKey: "sinoVietnamese",
         sortDir: "asc",
+        searchColumn: "han",
     },
     grammarBank: {
         filter: "all",
@@ -35,22 +37,31 @@ function mergeWordBankPrefs(defaults, saved) {
     return merged;
 }
 
+function normalizePrefs(parsed) {
+    return {
+        wordBank: mergeWordBankPrefs(DEFAULT_PREFS.wordBank, parsed.wordBank),
+        grammarBank: mergeSection(DEFAULT_PREFS.grammarBank, parsed.grammarBank),
+        sentenceBank: mergeSection(DEFAULT_PREFS.sentenceBank, parsed.sentenceBank),
+        flashcard: mergeSection(DEFAULT_PREFS.flashcard, parsed.flashcard ?? parsed.study),
+    };
+}
+
+/** Synchronous read from localStorage. */
 export function loadPrefs() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return structuredClone(DEFAULT_PREFS);
-        const parsed = JSON.parse(raw);
-        return {
-            wordBank: mergeWordBankPrefs(DEFAULT_PREFS.wordBank, parsed.wordBank),
-            grammarBank: mergeSection(DEFAULT_PREFS.grammarBank, parsed.grammarBank),
-            sentenceBank: mergeSection(DEFAULT_PREFS.sentenceBank, parsed.sentenceBank),
-            flashcard: mergeSection(DEFAULT_PREFS.flashcard, parsed.flashcard ?? parsed.study),
-        };
+        return normalizePrefs(JSON.parse(raw));
     } catch {
         return structuredClone(DEFAULT_PREFS);
     }
 }
 
+/** Synchronous persist to localStorage. */
 export function savePrefs(prefs) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    } catch {
+        /* ignore quota/private mode */
+    }
 }

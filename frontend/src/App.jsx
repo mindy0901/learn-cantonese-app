@@ -8,6 +8,9 @@ import { HomePage } from "./pages/HomePage.jsx";
 import { FlashcardPage } from "./pages/FlashcardPage.jsx";
 import { HanCharactersPage } from "./pages/HanCharactersPage.jsx";
 import { HanCharacterDetailPage } from "./pages/HanCharacterDetailPage.jsx";
+import { RadicalsPage } from "./pages/RadicalsPage.jsx";
+import { PinyinTablePage } from "./pages/PinyinTablePage.jsx";
+import { JyutpingChartPage } from "./pages/JyutpingChartPage.jsx";
 import { WordBankPage } from "./pages/WordBankPage.jsx";
 import { WordDetailPage } from "./pages/WordDetailPage.jsx";
 import { ErrorPage } from "./pages/ErrorPage.jsx";
@@ -24,14 +27,20 @@ function App() {
         <BrowserRouter>
             <AuthGate>
                 <Routes>
-                    <Route element={<Layout />}>
-                        <Route path="error" element={<ErrorPage />} />
-                        <Route element={<CloudGate />}>
+                    <Route path="error" element={<ErrorPage />} />
+                    <Route path="*" element={<ErrorPage />} />
+                    {/* CloudGate renders the loading screen WITHOUT the navbar;
+                        once hydrated it renders Layout (navbar) + the page. */}
+                    <Route element={<CloudGate />}>
+                        <Route element={<Layout />}>
                             <Route index element={<HomePage />} />
                             <Route path="vocabulary" element={<WordBankPage />} />
-                            <Route path="vocabulary/:id" element={<WordDetailPage />} />
+                            <Route path="vocabulary/:han" element={<WordDetailPage />} />
                             <Route path="grammar" element={<GrammarBankPage />} />
                             <Route path="sentences" element={<SentencePatternsPage />} />
+                            <Route path="radicals" element={<RadicalsPage />} />
+                            <Route path="pinyin" element={<PinyinTablePage />} />
+                            <Route path="jyutping" element={<JyutpingChartPage />} />
                             <Route
                                 path="han-characters"
                                 element={

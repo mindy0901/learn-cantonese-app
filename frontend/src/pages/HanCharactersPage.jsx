@@ -11,15 +11,18 @@ import { useConfirmDialog } from "../hooks/useConfirmDialog.jsx";
 import { cn } from "../lib/cn.js";
 import { useLocale } from "../store/localeStore.js";
 import { useAppActions, useHanCharacters } from "../store/appStore.js";
-import { btnClass } from "../components/ui/buttonStyles.js";
-import { SkeletonTable } from "../components/ui/Skeleton.jsx";
-import { IconSpinner } from "../components/NavIcons.jsx";
+import { Button } from "../components/shadcn/button.jsx";
 import {
-    bankToolbarRowClass,
-    bankToolbarSearchClass,
-    bankToolbarSelectClass,
-    bankToolbarButtonClass,
-} from "../components/ui/bankToolbarStyles.js";
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../components/shadcn/select.jsx";
+import { SkeletonTable } from "../components/ui/Skeleton.jsx";
+import { Spinner } from "../components/shadcn/spinner.jsx";
+import { bankToolbarRowClass } from "../components/ui/bankToolbarStyles.js";
 import { invalidateHanCharacterBrowseCache } from "../lib/hanCharacterBrowseCache.js";
 import { invalidateDataCache } from "../lib/dataCache.js";
 import { PAGE_SIZE } from "../lib/constants.js";
@@ -33,7 +36,6 @@ const FILTER_OPTIONS = [
 const SORT_OPTIONS = [
     { value: "createdAt", labelKey: "sortDate" },
     { value: "hanSimplified", labelKey: "sortHanSimplified" },
-    { value: "popularity", labelKey: "sortPopularity" },
 ];
 
 export function HanCharactersPage() {
@@ -94,10 +96,6 @@ export function HanCharactersPage() {
             if (sortKey === "createdAt") {
                 aVal = a.createdAt ?? "";
                 bVal = b.createdAt ?? "";
-            }
-            if (sortKey === "popularity") {
-                aVal = a.popularity ?? -1;
-                bVal = b.popularity ?? -1;
             }
             if (aVal == null || bVal == null) {
                 if (aVal == null && bVal == null) return 0;
@@ -291,6 +289,95 @@ export function HanCharactersPage() {
         };
     }, [progressTimer]);
 
+    // ── Sync stroke count ──
+    const [syncingStrokes, setSyncingStrokes] = useState(false);
+    const [strokePreviewOpen, setStrokePreviewOpen] = useState(false);
+    const [strokePreview, setStrokePreview] = useState(null);
+    const [strokePreviewLoading, setStrokePreviewLoading] = useState(false);
+    const [strokePreviewError, setStrokePreviewError] = useState("");
+    const [strokeMode, setStrokeMode] = useState("fast"); // "fast" | "full"
+    const [strokeProgress, setStrokeProgress] = useState(null); // { job, percent }
+    const [strokeTimer, setStrokeTimer] = useState(null);
+
+    const pollStrokeProgress = useCallback(
+        async (jobId) => {
+            const poll = async () => {
+                try {
+                    const res = await api.syncHanCharStrokesProgress(jobId);
+                    const job = res?.job;
+                    if (!job) return;
+                    const percent = job.total > 0 ? Math.round((job.processed / job.total) * 100) : 0;
+                    setStrokeProgress({ job, percent });
+                    if (job.done) {
+                        if (strokeTimer) clearInterval(strokeTimer);
+                        setStrokeTimer(null);
+                        setSyncingStrokes(false);
+                        invalidateHanCharacterBrowseCache();
+                        invalidateDataCache();
+                        await refreshHanCharacters();
+                    }
+                } catch (err) {
+                    logError("Poll stroke sync progress failed", err instanceof Error ? err.message : String(err));
+                }
+            };
+            await poll();
+            const timer = setInterval(poll, 1500);
+            setStrokeTimer(timer);
+        },
+        [strokeTimer, refreshHanCharacters],
+    );
+
+    const openStrokePreview = useCallback(
+        async (mode = "fast") => {
+            if (syncingStrokes) return;
+            setStrokeMode(mode);
+            setStrokePreviewOpen(true);
+            setStrokePreviewLoading(true);
+            setStrokePreviewError("");
+            try {
+                const res = await api.previewSyncHanCharStrokes(mode);
+                setStrokePreview(res);
+            } catch (err) {
+                setStrokePreviewError(err instanceof Error ? err.message : String(err));
+            } finally {
+                setStrokePreviewLoading(false);
+            }
+        },
+        [syncingStrokes],
+    );
+
+    const closeStrokePreview = useCallback(() => {
+        setStrokePreviewOpen(false);
+        setStrokePreview(null);
+    }, []);
+
+    const confirmStrokeSync = useCallback(async () => {
+        setStrokePreviewOpen(false);
+        setStrokePreview(null);
+        setSyncingStrokes(true);
+        setStrokeProgress(null);
+        try {
+            const res = await api.syncHanCharStrokes(strokeMode);
+            if (res?.jobId) {
+                await pollStrokeProgress(res.jobId);
+            } else {
+                invalidateHanCharacterBrowseCache();
+                invalidateDataCache();
+                await refreshHanCharacters();
+                setSyncingStrokes(false);
+            }
+        } catch (err) {
+            logError("Sync stroke count failed", err instanceof Error ? err.message : String(err));
+            setSyncingStrokes(false);
+        }
+    }, [pollStrokeProgress, refreshHanCharacters, strokeMode]);
+
+    useEffect(() => {
+        return () => {
+            if (strokeTimer) clearInterval(strokeTimer);
+        };
+    }, [strokeTimer]);
+
     const sortDirLabel =
         sortKey === "createdAt"
             ? sortDir === "asc"
@@ -306,16 +393,26 @@ export function HanCharactersPage() {
                 {/* ── Left Sidebar: Sync Tools ── */}
                 {isAdmin && (
                     <aside className="shrink-0 w-56 flex flex-col gap-3 sticky top-20">
-                        <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted m-0 px-1">
-                            Sync Data
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground m-0 px-1">
+                            {t.hanCharacters.syncData}
                         </h3>
 
                         <SyncButton
-                            label={syncingHanChars ? "Syncing..." : "Sync Han Characters"}
-                            desc="Sync all characters + details from vocabularies"
+                            label={syncingHanChars ? t.hanCharacters.syncing : t.hanCharacters.syncHanCharacters}
+                            runningLabel={t.hanCharacters.running}
+                            desc={t.hanCharacters.syncDesc}
                             count={storeHanCharacters.length}
                             loading={syncingHanChars}
                             onClick={() => openPreview(syncMode)}
+                        />
+
+                        <SyncButton
+                            label={syncingStrokes ? t.hanCharacters.syncing : t.hanCharacters.syncStrokeCount}
+                            runningLabel={t.hanCharacters.running}
+                            desc={t.hanCharacters.syncStrokeDesc}
+                            count={storeHanCharacters.filter((h) => h.strokeCount > 0).length}
+                            loading={syncingStrokes}
+                            onClick={() => openStrokePreview(strokeMode)}
                         />
                     </aside>
                 )}
@@ -324,57 +421,71 @@ export function HanCharactersPage() {
                 <div className="flex-1 min-w-0">
                     <div className={bankToolbarRowClass}>
                         <BankSearchInput
-                            className={bankToolbarSearchClass}
+                            className="min-w-0 w-full shrink-0 min-[640px]:w-auto min-[640px]:min-w-55 min-[640px]:max-w-75 min-[640px]:flex-[1_1_240px]"
                             onChange={setSearch}
                             placeholder={t.hanCharacters.searchPlaceholder}
                         />
-                        <select
-                            className={bankToolbarSelectClass}
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                            aria-label={t.common.filter || "Filter"}
-                        >
-                            {FILTER_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {t.hanCharacters[opt.labelKey]}
-                                </option>
-                            ))}
-                        </select>
-                        <select
-                            className={bankToolbarSelectClass}
+                        <Select value={filter} onValueChange={setFilter}>
+                            <SelectTrigger aria-label={t.common.filter}>
+                                <SelectValue>
+                                    {FILTER_OPTIONS.find((o) => o.value === filter)?.labelKey
+                                        ? t.hanCharacters[FILTER_OPTIONS.find((o) => o.value === filter).labelKey]
+                                        : filter}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {FILTER_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                            {t.hanCharacters[opt.labelKey]}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <Select
                             value={sortKey}
-                            onChange={(e) => {
-                                const nextKey = e.target.value;
+                            onValueChange={(nextKey) => {
                                 setSortKey(nextKey);
                                 if (nextKey === "createdAt" && sortKey !== "createdAt") setSortDir("desc");
                                 else if (nextKey !== "createdAt" && sortKey === "createdAt") setSortDir("asc");
                             }}
-                            aria-label={t.common.sort || "Sort"}
                         >
-                            {SORT_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {t.hanCharacters[opt.labelKey]}
-                                </option>
-                            ))}
-                        </select>
-                        <button
+                            <SelectTrigger aria-label={t.common.sort}>
+                                <SelectValue>
+                                    {SORT_OPTIONS.find((o) => o.value === sortKey)?.labelKey
+                                        ? t.hanCharacters[SORT_OPTIONS.find((o) => o.value === sortKey).labelKey]
+                                        : sortKey}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {SORT_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                            {t.hanCharacters[opt.labelKey]}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <Button
                             type="button"
-                            className={bankToolbarButtonClass}
+                            variant="outline"
                             onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
                         >
                             {sortDirLabel}
-                        </button>
+                        </Button>
                         {isAdmin && (
-                            <button type="button" className={btnClass("primary")} onClick={openAdd}>
+                            <Button type="button" variant="default" onClick={openAdd}>
                                 + {t.hanCharacters.addCharacter}
-                            </button>
+                            </Button>
                         )}
                     </div>
 
                     {loading ? (
                         <SkeletonTable rows={10} />
                     ) : items.length === 0 ? (
-                        <p className="text-text-muted text-sm py-12 text-center">
+                        <p className="text-muted-foreground text-sm py-12 text-center">
                             {search ? t.hanCharacters.noSearchMatch : t.hanCharacters.empty}
                         </p>
                     ) : (
@@ -382,17 +493,13 @@ export function HanCharactersPage() {
                             <div className="overflow-x-auto rounded-xl border border-border">
                                 <table className="w-full text-sm">
                                     <thead>
-                                        <tr className="border-b border-border bg-bg text-left text-text-muted text-xs uppercase tracking-wider">
+                                        <tr className="border-b border-border bg-background text-left text-muted-foreground text-xs uppercase tracking-wider">
                                             <th className="px-1.5 py-3 text-center w-10">#</th>
-                                            <th className="px-3.5 py-3">
-                                                {t.hanCharacters.hanViet || "Sino-Vietnamese"}
-                                            </th>
-                                            <th className="px-3.5 py-3">
-                                                {t.hanCharacters.hanCharacter || "Chinese Character"}
-                                            </th>
-                                            <th className="px-3.5 py-3">{t.hanCharacters.pinyin || "Pinyin"}</th>
-                                            <th className="px-3.5 py-3">{t.hanCharacters.jyutping || "Jyutping"}</th>
-                                            <th className="px-3.5 py-3 text-center w-24">{t.common.actions || ""}</th>
+                                            <th className="px-3.5 py-3">{t.hanCharacters.colSinoVietnamese}</th>
+                                            <th className="px-3.5 py-3">{t.hanCharacters.colHanSimplified}</th>
+                                            <th className="px-3.5 py-3">{t.hanCharacters.pinyin}</th>
+                                            <th className="px-3.5 py-3">{t.hanCharacters.jyutping}</th>
+                                            <th className="px-3.5 py-3 text-center w-24">{t.common.actions}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -439,19 +546,21 @@ export function HanCharactersPage() {
                     {/* Preview modal: confirm before syncing */}
                     {previewOpen && (
                         <div
-                            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4"
+                            className="fixed inset-0 z-110 flex items-center justify-center bg-black/40 p-4"
                             onClick={previewLoading ? undefined : closePreview}
                         >
                             <div
-                                className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl bg-surface shadow-xl p-6 flex flex-col gap-4"
+                                className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl bg-card shadow-xl p-6 flex flex-col gap-4"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-base font-semibold text-text-h">Sync Han Characters</h3>
+                                    <h3 className="text-base font-semibold text-foreground">
+                                        {t.hanCharacters.syncHanCharacters}
+                                    </h3>
                                     {!previewLoading && (
                                         <button
                                             type="button"
-                                            className="text-xl leading-none text-text-muted hover:text-text-h"
+                                            className="text-xl leading-none text-muted-foreground hover:text-foreground"
                                             onClick={closePreview}
                                         >
                                             ×
@@ -461,8 +570,8 @@ export function HanCharactersPage() {
 
                                 {/* Mode selector: always visible */}
                                 <div className="flex flex-col gap-2">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                                        Sync mode
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                        {t.hanCharacters.syncMode}
                                     </p>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <button
@@ -470,14 +579,16 @@ export function HanCharactersPage() {
                                             disabled={previewLoading}
                                             className={`rounded-lg border px-3 py-2 text-left flex flex-col gap-1 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
                                                 syncMode === "fast"
-                                                    ? "border-accent bg-accent/10"
-                                                    : "border-border bg-bg hover:border-accent/50"
+                                                    ? "border-primary bg-primary/10"
+                                                    : "border-border bg-background hover:border-primary/50"
                                             }`}
                                             onClick={() => openPreview("fast")}
                                         >
-                                            <span className="text-sm font-semibold text-text-h">Fast sync</span>
-                                            <span className="text-xs text-text-muted leading-snug">
-                                                Chỉ xử lý từ chưa có breakdown. Nhanh, không xóa gì.
+                                            <span className="text-sm font-semibold text-foreground">
+                                                {t.hanCharacters.fastSync}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground leading-snug">
+                                                {t.hanCharacters.fastSyncHint}
                                             </span>
                                         </button>
                                         <button
@@ -485,71 +596,75 @@ export function HanCharactersPage() {
                                             disabled={previewLoading}
                                             className={`rounded-lg border px-3 py-2 text-left flex flex-col gap-1 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
                                                 syncMode === "full"
-                                                    ? "border-accent bg-accent/10"
-                                                    : "border-border bg-bg hover:border-accent/50"
+                                                    ? "border-primary bg-primary/10"
+                                                    : "border-border bg-background hover:border-primary/50"
                                             }`}
                                             onClick={() => openPreview("full")}
                                         >
-                                            <span className="text-sm font-semibold text-text-h">Full overwrite</span>
-                                            <span className="text-xs text-text-muted leading-snug">
-                                                Xóa hết hán tự cũ rồi sync lại toàn bộ từ đầu.
+                                            <span className="text-sm font-semibold text-foreground">
+                                                {t.hanCharacters.fullOverwrite}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground leading-snug">
+                                                {t.hanCharacters.fullOverwriteHint}
                                             </span>
                                         </button>
                                     </div>
                                 </div>
 
                                 {previewLoading ? (
-                                    <div className="flex items-center gap-2 text-sm text-text-muted">
-                                        <IconSpinner size={16} />
-                                        <span>Analyzing vocabularies…</span>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Spinner />
+                                        <span>{t.hanCharacters.analyzing}</span>
                                     </div>
                                 ) : previewError ? (
-                                    <p className="text-sm text-error-text">{previewError}</p>
+                                    <p className="text-sm text-destructive">{previewError}</p>
                                 ) : preview ? (
                                     <>
                                         <div className="flex flex-col gap-2 text-sm">
-                                            <p className="text-text-h">
-                                                Total unique characters:{" "}
+                                            <p className="text-foreground">
+                                                {t.hanCharacters.totalUnique}{" "}
                                                 <strong className="tabular-nums">{preview.total}</strong>
                                             </p>
                                             <p className="text-green-600 dark:text-green-400">
-                                                New characters to create:{" "}
+                                                {t.hanCharacters.newToCreate}{" "}
                                                 <strong className="tabular-nums">{preview.newCount}</strong>
                                             </p>
                                             <p className="text-amber-600 dark:text-amber-400">
-                                                Existing to update:{" "}
+                                                {t.hanCharacters.existingToUpdate}{" "}
                                                 <strong className="tabular-nums">{preview.updateCount}</strong>
                                             </p>
-                                            <p className="text-text-muted">
-                                                Unchanged: <strong className="tabular-nums">{preview.sameCount}</strong>
+                                            <p className="text-muted-foreground">
+                                                {t.hanCharacters.unchanged}{" "}
+                                                <strong className="tabular-nums">{preview.sameCount}</strong>
                                             </p>
                                         </div>
 
                                         {preview.newChars.length > 0 && (
                                             <div className="flex flex-col gap-2">
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                                                    New characters ({preview.newCount})
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                    {t.hanCharacters.newChars.replace("{count}", preview.newCount)}
                                                 </p>
                                                 <div className="flex flex-col gap-2 max-h-52 overflow-y-auto">
                                                     {preview.newChars.map((c) => (
                                                         <div
-                                                            key={c.character}
-                                                            className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+                                                            key={c.hanTraditional}
+                                                            className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
                                                         >
                                                             <span className="flex items-baseline gap-1.5">
-                                                                <span className="text-lg font-semibold leading-tight text-red-600 dark:text-red-400">
-                                                                    {c.character}
+                                                                <span className="text-lg font-semibold leading-tight text-han-trad">
+                                                                    {c.hanTraditional}
                                                                 </span>
-                                                                {c.hanSimplified && c.hanSimplified !== c.character && (
-                                                                    <span className="text-lg font-semibold leading-tight text-blue-600 dark:text-blue-400">
-                                                                        {c.hanSimplified}
-                                                                    </span>
-                                                                )}
+                                                                {c.hanSimplified &&
+                                                                    c.hanSimplified !== c.hanTraditional && (
+                                                                        <span className="text-lg font-semibold leading-tight text-han-simp">
+                                                                            {c.hanSimplified}
+                                                                        </span>
+                                                                    )}
                                                             </span>
                                                             {c.pinyin?.length > 0 && (
                                                                 <span className="flex items-baseline gap-1">
-                                                                    <span className="text-xs text-text-muted">
-                                                                        Pinyin
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {t.hanCharacters.pinyin}
                                                                     </span>
                                                                     <span className="font-medium not-italic tracking-wide text-pinyin">
                                                                         {c.pinyin.join(" ")}
@@ -558,8 +673,8 @@ export function HanCharactersPage() {
                                                             )}
                                                             {c.jyutping?.length > 0 && (
                                                                 <span className="flex items-baseline gap-1">
-                                                                    <span className="text-xs text-text-muted">
-                                                                        Jyutping
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {t.hanCharacters.jyutping}
                                                                     </span>
                                                                     <span className="font-medium not-italic tracking-wide text-jyutping">
                                                                         {c.jyutping.join(" ")}
@@ -568,8 +683,8 @@ export function HanCharactersPage() {
                                                             )}
                                                             {c.sinoVietnamese?.length > 0 && (
                                                                 <span className="flex items-baseline gap-1">
-                                                                    <span className="text-xs text-text-muted">
-                                                                        Sino
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {t.hanCharacters.sino}
                                                                     </span>
                                                                     <span className="font-medium text-viet">
                                                                         {c.sinoVietnamese.join(" ")}
@@ -584,17 +699,17 @@ export function HanCharactersPage() {
 
                                         {preview.updateChars.length > 0 && (
                                             <div className="flex flex-col gap-2">
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                                                    To update ({preview.updateCount})
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                    {t.hanCharacters.toUpdate.replace("{count}", preview.updateCount)}
                                                 </p>
                                                 <div className="flex flex-col gap-2 max-h-52 overflow-y-auto">
                                                     {preview.updateChars.map((c) => (
                                                         <div
-                                                            key={c.character + (c.existingId ?? "")}
-                                                            className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+                                                            key={c.hanTraditional + (c.existingId ?? "")}
+                                                            className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
                                                         >
-                                                            <span className="text-lg font-semibold leading-tight text-red-600 dark:text-red-400">
-                                                                {c.character}
+                                                            <span className="text-lg font-semibold leading-tight text-han-trad">
+                                                                {c.hanTraditional}
                                                             </span>
                                                             <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                                                 {c.missing.map((m) => {
@@ -608,16 +723,16 @@ export function HanCharactersPage() {
                                                                               : "text-viet";
                                                                     const label =
                                                                         tag === "py"
-                                                                            ? "Pinyin"
+                                                                            ? t.hanCharacters.pinyin
                                                                             : tag === "jp"
-                                                                              ? "Jyutping"
-                                                                              : "Sino";
+                                                                              ? t.hanCharacters.jyutping
+                                                                              : t.hanCharacters.sino;
                                                                     return (
                                                                         <span
                                                                             key={m}
                                                                             className="flex items-baseline gap-1"
                                                                         >
-                                                                            <span className="text-xs text-text-muted">
+                                                                            <span className="text-xs text-muted-foreground">
                                                                                 +{label}
                                                                             </span>
                                                                             <span
@@ -637,18 +752,17 @@ export function HanCharactersPage() {
 
                                         {syncMode === "full" && (
                                             <p className="text-sm text-amber-600 dark:text-amber-400">
-                                                ⚠️ Full overwrite sẽ xóa toàn bộ hán tự hiện có rồi sync lại từ đầu —
-                                                thời gian lâu hơn, chỉ dùng khi cần dựng lại dữ liệu.
+                                                {t.hanCharacters.fullWarning}
                                             </p>
                                         )}
 
                                         <div className="flex justify-end gap-2 border-t border-border pt-4">
-                                            <button type="button" className={btnClass("ghost")} onClick={closePreview}>
-                                                Cancel
-                                            </button>
-                                            <button type="button" className={btnClass("primary")} onClick={confirmSync}>
-                                                Confirm Sync
-                                            </button>
+                                            <Button type="button" variant="ghost" onClick={closePreview}>
+                                                {t.common.cancel}
+                                            </Button>
+                                            <Button type="button" variant="default" onClick={confirmSync}>
+                                                {t.hanCharacters.confirmSync}
+                                            </Button>
                                         </div>
                                     </>
                                 ) : null}
@@ -658,74 +772,270 @@ export function HanCharactersPage() {
 
                     {/* Progress modal while syncing */}
                     {progress && (
-                        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4">
-                            <div className="w-full max-w-md rounded-2xl bg-surface shadow-xl p-6 flex flex-col gap-4">
-                                <h3 className="text-base font-semibold text-text-h">Syncing Han Characters…</h3>
+                        <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/40 p-4">
+                            <div className="w-full max-w-md rounded-2xl bg-card shadow-xl p-6 flex flex-col gap-4">
+                                <h3 className="text-base font-semibold text-foreground">{t.hanCharacters.syncingTitle}</h3>
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-text-muted">
+                                    <span className="text-muted-foreground">
                                         {progress.job.status === "error"
-                                            ? "Failed"
+                                            ? t.hanCharacters.failed
                                             : progress.job.done
-                                              ? "Complete"
-                                              : "In progress"}
+                                              ? t.hanCharacters.complete
+                                              : t.hanCharacters.inProgress}
                                     </span>
-                                    <span className="text-text-h font-semibold tabular-nums">{progress.percent}%</span>
+                                    <span className="text-foreground font-semibold tabular-nums">{progress.percent}%</span>
                                 </div>
                                 {progress.job.mode === "full" && !progress.job.done && (
                                     <p className="text-xs text-amber-600 dark:text-amber-400">
-                                        Full overwrite — đang dựng lại toàn bộ hán tự từ đầu.
+                                        {t.hanCharacters.fullProgressHint}
                                     </p>
                                 )}
-                                <div className="h-2 w-full rounded-full bg-bg overflow-hidden">
+                                <div className="h-2 w-full rounded-full bg-background overflow-hidden">
                                     <div
-                                        className="h-full rounded-full bg-accent transition-[width] duration-300"
+                                        className="h-full rounded-full bg-primary transition-[width] duration-300"
                                         style={{ width: `${progress.percent}%` }}
                                     />
                                 </div>
-                                <div className="flex flex-col gap-1 text-xs text-text-muted">
+                                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
                                     <p>
-                                        Vocabularies:{" "}
-                                        <strong className="tabular-nums text-text-h">
+                                        {t.hanCharacters.vocabularies}{" "}
+                                        <strong className="tabular-nums text-foreground">
                                             {progress.job.processed} / {progress.job.total}
                                         </strong>
                                     </p>
                                     {progress.job.current && (
                                         <p>
-                                            Current:{" "}
-                                            <span className="text-red-600 dark:text-red-400">
-                                                {progress.job.current}
-                                            </span>
+                                            {t.hanCharacters.current}{" "}
+                                            <span className="text-han-trad">{progress.job.current}</span>
                                         </p>
                                     )}
                                 </div>
                                 {progress.job.done && (
                                     <div className="flex flex-col gap-1 text-sm">
                                         <p className="text-green-600 dark:text-green-400">
-                                            Created: <strong className="tabular-nums">{progress.job.created}</strong>
+                                            {t.hanCharacters.created}{" "}
+                                            <strong className="tabular-nums">{progress.job.created}</strong>
                                         </p>
                                         <p className="text-amber-600 dark:text-amber-400">
-                                            Updated: <strong className="tabular-nums">{progress.job.updated}</strong>
+                                            {t.hanCharacters.updated}{" "}
+                                            <strong className="tabular-nums">{progress.job.updated}</strong>
                                         </p>
-                                        <p className="text-text-muted">
-                                            Linked: <strong className="tabular-nums">{progress.job.linked}</strong>
+                                        <p className="text-muted-foreground">
+                                            {t.hanCharacters.linked}{" "}
+                                            <strong className="tabular-nums">{progress.job.linked}</strong>
                                         </p>
                                         {progress.job.merged > 0 && (
-                                            <p className="text-text-muted">
-                                                Merged duplicates:{" "}
+                                            <p className="text-muted-foreground">
+                                                {t.hanCharacters.mergedDuplicates}{" "}
                                                 <strong className="tabular-nums">{progress.job.merged}</strong>
                                             </p>
                                         )}
-                                        {progress.job.error && <p className="text-error-text">{progress.job.error}</p>}
+                                        {progress.job.error && <p className="text-destructive">{progress.job.error}</p>}
                                     </div>
                                 )}
                                 {progress.job.done && (
-                                    <button
-                                        type="button"
-                                        className={btnClass("primary")}
-                                        onClick={() => setProgress(null)}
-                                    >
-                                        Close
-                                    </button>
+                                    <Button type="button" variant="default" onClick={() => setProgress(null)}>
+                                        {t.hanCharacters.close}
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Stroke sync: preview modal */}
+                    {strokePreviewOpen && (
+                        <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/40 p-4">
+                            <div className="w-full max-w-md rounded-2xl bg-card shadow-xl p-6 flex flex-col gap-4">
+                                <h3 className="text-base font-semibold text-foreground">
+                                    {t.hanCharacters.syncStrokeCount}
+                                </h3>
+
+                                {!strokePreviewLoading && (
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            disabled={strokePreviewLoading}
+                                            className={`flex-1 rounded-lg border px-3 py-2 text-left flex flex-col gap-1 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                                                strokeMode === "fast"
+                                                    ? "border-primary bg-primary/10"
+                                                    : "border-border bg-background hover:border-primary/50"
+                                            }`}
+                                            onClick={() => openStrokePreview("fast")}
+                                        >
+                                            <span className="text-sm font-semibold text-foreground">
+                                                {t.hanCharacters.fastSync}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground leading-snug">
+                                                {t.hanCharacters.syncStrokeFastHint}
+                                            </span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={strokePreviewLoading}
+                                            className={`flex-1 rounded-lg border px-3 py-2 text-left flex flex-col gap-1 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                                                strokeMode === "full"
+                                                    ? "border-primary bg-primary/10"
+                                                    : "border-border bg-background hover:border-primary/50"
+                                            }`}
+                                            onClick={() => openStrokePreview("full")}
+                                        >
+                                            <span className="text-sm font-semibold text-foreground">
+                                                {t.hanCharacters.fullOverwrite}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground leading-snug">
+                                                {t.hanCharacters.syncStrokeFullHint}
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {strokePreviewLoading ? (
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Spinner />
+                                        <span>{t.hanCharacters.analyzing}</span>
+                                    </div>
+                                ) : strokePreviewError ? (
+                                    <p className="text-sm text-destructive">{strokePreviewError}</p>
+                                ) : strokePreview ? (
+                                    <>
+                                        <div className="flex flex-col gap-2 text-sm">
+                                            <p className="text-foreground">
+                                                {t.hanCharacters.totalUnique}{" "}
+                                                <strong className="tabular-nums">{strokePreview.total}</strong>
+                                            </p>
+                                            <p className="text-green-600 dark:text-green-400">
+                                                {t.hanCharacters.strokeNew}{" "}
+                                                <strong className="tabular-nums">{strokePreview.newCount}</strong>
+                                            </p>
+                                            <p className="text-amber-600 dark:text-amber-400">
+                                                {t.hanCharacters.strokeUpdate}{" "}
+                                                <strong className="tabular-nums">{strokePreview.updateCount}</strong>
+                                            </p>
+                                            <p className="text-muted-foreground">
+                                                {t.hanCharacters.unchanged}{" "}
+                                                <strong className="tabular-nums">{strokePreview.sameCount}</strong>
+                                            </p>
+                                        </div>
+
+                                        {strokePreview.newChars.length > 0 && (
+                                            <div className="flex flex-col gap-2">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                    {t.hanCharacters.strokeNewChars.replace(
+                                                        "{count}",
+                                                        strokePreview.newCount,
+                                                    )}
+                                                </p>
+                                                <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto">
+                                                    {strokePreview.newChars.map((c) => (
+                                                        <span
+                                                            key={c.char}
+                                                            className="flex items-baseline gap-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                                                        >
+                                                            <span className="text-lg font-semibold leading-tight text-han-trad">
+                                                                {c.char}
+                                                            </span>
+                                                            <span className="text-foreground tabular-nums">
+                                                                {c.strokes}
+                                                            </span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {strokePreview.updateChars.length > 0 && (
+                                            <div className="flex flex-col gap-2">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                    {t.hanCharacters.strokeUpdateChars.replace(
+                                                        "{count}",
+                                                        strokePreview.updateCount,
+                                                    )}
+                                                </p>
+                                                <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto">
+                                                    {strokePreview.updateChars.map((c) => (
+                                                        <span
+                                                            key={c.char}
+                                                            className="flex items-baseline gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                                                        >
+                                                            <span className="text-lg font-semibold leading-tight text-han-trad">
+                                                                {c.char}
+                                                            </span>
+                                                            <span className="text-muted-foreground tabular-nums">
+                                                                {c.old} →{" "}
+                                                                <strong className="text-foreground">{c.strokes}</strong>
+                                                            </span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-end gap-2 border-t border-border pt-4">
+                                            <Button type="button" variant="ghost" onClick={closeStrokePreview}>
+                                                {t.common.cancel}
+                                            </Button>
+                                            <Button type="button" variant="default" onClick={confirmStrokeSync}>
+                                                {t.hanCharacters.confirmSync}
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : null}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Stroke sync: progress modal */}
+                    {strokeProgress && (
+                        <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/40 p-4">
+                            <div className="w-full max-w-md rounded-2xl bg-card shadow-xl p-6 flex flex-col gap-4">
+                                <h3 className="text-base font-semibold text-foreground">
+                                    {t.hanCharacters.syncStrokeCount}
+                                </h3>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">
+                                        {strokeProgress.job.status === "error"
+                                            ? t.hanCharacters.failed
+                                            : strokeProgress.job.done
+                                              ? t.hanCharacters.complete
+                                              : t.hanCharacters.inProgress}
+                                    </span>
+                                    <span className="text-foreground font-semibold tabular-nums">
+                                        {strokeProgress.percent}%
+                                    </span>
+                                </div>
+                                <div className="h-2 w-full rounded-full bg-background overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full bg-primary transition-[width] duration-300"
+                                        style={{ width: `${strokeProgress.percent}%` }}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                                    <p>
+                                        {t.hanCharacters.vocabularies}{" "}
+                                        <strong className="tabular-nums text-foreground">
+                                            {strokeProgress.job.processed} / {strokeProgress.job.total}
+                                        </strong>
+                                    </p>
+                                    {strokeProgress.job.current && (
+                                        <p>
+                                            {t.hanCharacters.current}{" "}
+                                            <span className="text-han-trad">{strokeProgress.job.current}</span>
+                                        </p>
+                                    )}
+                                </div>
+                                {strokeProgress.job.done && (
+                                    <div className="flex flex-col gap-1 text-sm">
+                                        <p className="text-green-600 dark:text-green-400">
+                                            {t.hanCharacters.strokeUpdated}{" "}
+                                            <strong className="tabular-nums">{strokeProgress.job.updated}</strong>
+                                        </p>
+                                        {strokeProgress.job.error && (
+                                            <p className="text-destructive">{strokeProgress.job.error}</p>
+                                        )}
+                                        <Button type="button" variant="default" onClick={() => setStrokeProgress(null)}>
+                                            {t.hanCharacters.close}
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -738,23 +1048,23 @@ export function HanCharactersPage() {
     );
 }
 
-function SyncButton({ label, desc, count, loading, onClick }) {
+function SyncButton({ label, desc, count, loading, runningLabel, onClick }) {
     return (
         <button
             type="button"
-            className="w-full text-left px-3 py-2.5 rounded-lg border border-border bg-surface hover:bg-accent-bg transition-colors disabled:opacity-50"
+            className="w-full text-left px-3 py-2.5 rounded-lg border border-border bg-card hover:bg-primary/10 transition-colors disabled:opacity-50"
             onClick={onClick}
             disabled={loading}
         >
             <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-text-h">{loading ? "Running..." : label}</span>
+                <span className="text-sm font-medium text-foreground">{loading ? runningLabel : label}</span>
                 {loading ? (
-                    <span className="text-xs text-text-muted">⏳</span>
+                    <span className="text-xs text-muted-foreground">⏳</span>
                 ) : (
-                    <span className="text-xs text-text-muted tabular-nums">{count}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
                 )}
             </div>
-            <p className="text-[0.6875rem] text-text-muted mt-0.5">{desc}</p>
+            <p className="text-[0.6875rem] text-muted-foreground mt-0.5">{desc}</p>
         </button>
     );
 }

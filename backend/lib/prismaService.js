@@ -5,32 +5,199 @@
 import { prisma } from "./prisma.js";
 import { randomUUID } from "crypto";
 import { computeHanCharacters, syncVocabularyHanCharacters } from "./hanCharacterBreakdown.js";
+import { capitalizeSentences } from "./wordNormalize.js";
+import { romanizationId } from "./romanizationId.js";
+import {
+    blocksFromRow,
+    buildRomanizationJsonNew,
+    blockFromLegacy,
+    flatDerivedFromBlocks,
+    meaningFromLegacy,
+    normalizeBlock,
+} from "./vocabModel.js";
+
+export { romanizationId };
 
 const PAGE_SIZE = 1000;
 
+let _cnchar = null;
+let _cncharTrad = null;
+async function loadCnchar() {
+    if (_cnchar) return _cnchar;
+    const [cnchar, trad] = await Promise.all([import("cnchar"), import("cnchar-trad")]);
+    const cc = cnchar.default;
+    cc.use(trad.default);
+    _cnchar = cc;
+    return cc;
+}
+
+/**
+ * Stroke count of a single han character via cnchar (+trad plugin).
+ * Returns null when the character is unknown (Cantonese-only chars like 冚).
+ * Lazy-loads cnchar only when a character is created/edited.
+ */
+export async function computeStrokeCount(ch) {
+    if (!ch) return null;
+    try {
+        const cc = await loadCnchar();
+        const n = cc.stroke(String(ch));
+        return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null;
+    } catch {
+        return null;
+    }
+}
+
 // ── Row ↔ Domain transforms (mirror dataService.js signatures) ──
+
+/**
+ * Split an example's han text into giản (line 0) + phồn (line 1).
+ * Prefers explicit hanSimplified/hanTraditional; falls back to splitting hanExample ("giản\nphồn").
+ */
+export function splitExampleHan(ex) {
+    const simp = (ex?.hanSimplified ?? "").trim();
+    const trad = (ex?.hanTraditional ?? "").trim();
+    if (simp || trad) return { hanSimplified: simp, hanTraditional: trad };
+    const lines = String(ex?.hanExample ?? "")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+    return {
+        hanSimplified: lines[0] ?? "",
+        hanTraditional: lines[1] ?? "",
+    };
+}
+
+/** Build the meaningsJson payload ({meanings:[], examples:[]}) stored on the vocab row. */
+export function buildMeaningsJson(meanings) {
+    return {
+        meanings: (meanings ?? []).map((m, i) => ({
+            id: m.id,
+            category: m.category ?? "",
+            vietMeanings: capitalizeSentences(m.vietMeanings ?? ""),
+            engMeanings: capitalizeSentences(m.engMeanings ?? "", { comma: true }),
+            examples: (m.examples ?? []).map((ex, j) => {
+                const han = splitExampleHan(ex);
+                return {
+                    id: ex.id,
+                    hanSimplified: han.hanSimplified,
+                    hanTraditional: han.hanTraditional,
+                    hanExample: [han.hanSimplified, han.hanTraditional].filter(Boolean).join("\n"),
+                    jyutpingExample: ex.jyutpingExample ?? "",
+                    pinyinExample: ex.pinyinExample ?? "",
+                    vietExamples: ex.vietExamples ?? "",
+                    engExamples: ex.engExamples ?? "",
+                    position: ex.position ?? j,
+                };
+            }),
+            position: m.position ?? i,
+        })),
+    };
+}
+
+/**
+ * Build the romanizationJson payload — model MỚI (2026-08-14):
+ *   { mandarin: { hanzi_simplified, hanzi_traditional, system:"pinyin",   readings[] },
+ *     cantonese: { hanzi_simplified, hanzi_traditional, system:"jyutping", readings[] } }
+ * reading = { id, romanization, sino_vietnamese, meanings[] }
+ * Chấp nhận:
+ *   - payload model mới (vocab.mandarin / vocab.cantonese)
+ *   - legacy typed array (vocab.romanization) → chuyển sang blocks
+ *   - flat fallback (pinyin/jyutping/sinoVietnamese/meanings) → build blocks
+ */
+export function buildRomanizationJson(vocab) {
+    if (vocab?.mandarin || vocab?.cantonese) {
+        return buildRomanizationJsonNew(vocab);
+    }
+
+    const structured = Array.isArray(vocab?.romanization) ? vocab.romanization : null;
+    if (structured && structured.length > 0) {
+        const hanS = String(vocab?.hanSimplified ?? "");
+        const hanT = String(vocab?.hanTraditional ?? "");
+        return {
+            mandarin: blockFromLegacy(structured, "mandarin", hanS, hanT),
+            cantonese: blockFromLegacy(structured, "cantonese", hanS, String(vocab?.hanHongKong ?? hanT)),
+        };
+    }
+
+    // Flat fallback: derive readings from the flat columns.
+    const sino = String(vocab?.sinoVietnamese ?? "");
+    const py = String(vocab?.pinyin ?? "")
+        .toLowerCase()
+        .trim();
+    const jp = String(vocab?.jyutping ?? "")
+        .toLowerCase()
+        .trim();
+    const hanS = String(vocab?.hanSimplified ?? "");
+    const hanT = String(vocab?.hanTraditional ?? "");
+    const hanHK = String(vocab?.hanHongKong ?? hanT);
+    const legacyMeanings = Array.isArray(vocab?.meanings) ? vocab.meanings : [];
+    const blocks = {
+        mandarin: { hanzi_simplified: hanS, hanzi_traditional: hanT, system: "pinyin", readings: [] },
+        cantonese: { hanzi_simplified: hanS, hanzi_traditional: hanHK, system: "jyutping", readings: [] },
+    };
+    if (py) {
+        blocks.mandarin.readings.push({
+            id: romanizationId(py, ""),
+            romanization: py,
+            sino_vietnamese: sino,
+            meanings: legacyMeanings.map((m, i) => meaningFromLegacy(m, "mandarin", i)),
+        });
+    }
+    if (jp) {
+        blocks.cantonese.readings.push({
+            id: romanizationId("", jp),
+            romanization: jp,
+            sino_vietnamese: sino,
+            meanings: legacyMeanings.map((m, i) => meaningFromLegacy(m, "cantonese", i)),
+        });
+    }
+    return blocks;
+}
+
+/** Extract a romanization entry back into a flat vocab-shaped object (for editing). */
+export function romanizationToVocab(base, entry) {
+    return {
+        ...base,
+        pinyin: entry?.pinyin ?? "",
+        jyutping: entry?.jyutping ?? "",
+        sinoVietnamese: entry?.sinoVietnamese ?? "",
+        meanings: entry?.meanings ?? [],
+        examples: entry?.examples ?? [],
+    };
+}
 
 export function vocabularyToRow(vocab, userId, { includeCreatedAt = true } = {}) {
     const now = new Date().toISOString();
-    // Dictionary fields → Vocabulary table
+    // Model mới: blocks từ mandarin/cantonese (+ fallback legacy typed array / flat).
+    const romanizationJson = buildRomanizationJson(vocab);
+    const blocks =
+        romanizationJson && typeof romanizationJson === "object" && !Array.isArray(romanizationJson)
+            ? romanizationJson
+            : blocksFromRow(vocab);
+    const flat = flatDerivedFromBlocks(blocks);
+    const meta = vocab?.metadata ?? {};
+
     return {
         id: vocab.id,
-        hanSimplified: vocab.hanSimplified?.trim() || null,
-        hanTraditional: vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han ?? "",
-        sinoVietnamese: vocab.sinoVietnamese ?? null,
-        jyutping: vocab.jyutping ?? null,
-        pinyin: vocab.pinyin?.trim() || null,
-        vietMeanings: vocab.vietMeanings ?? "",
-        vietExamples: vocab.vietExamples?.trim() || null,
-        engMeanings: vocab.engMeanings ?? "",
-        hskLevel: vocab.hskLevel?.trim() || null,
-        searchKey: vocab.searchKey ?? vocab.search_key ?? null,
+        hanSimplified: (blocks.mandarin?.hanzi_simplified || blocks.cantonese?.hanzi_simplified || "").trim() || null,
+        hanTraditional:
+            (
+                blocks.mandarin?.hanzi_traditional ||
+                blocks.cantonese?.hanzi_traditional ||
+                (vocab.hanTraditional ?? vocab.han ?? "")
+            ).trim() || "",
+        hanHongKong: (blocks.cantonese?.hanzi_traditional || "").trim() || null,
+        hskLevel: String(meta.hsk_level ?? vocab.hskLevel ?? "").trim() || null,
+        pureCantonese: Boolean(vocab.pureCantonese),
+        searchKey: flat.searchKey || null,
         hanCharacters: vocab.hanCharacters ?? undefined,
+        romanizationJson,
+        boost: meta.popularity ?? vocab.boost ?? vocab.popularity ?? undefined,
+        frequency: meta.frequency ?? vocab.frequency ?? undefined,
+        movieWordRank: meta.movie_word_rank ?? vocab.movieWordRank ?? undefined,
+        bookWordRank: meta.book_word_rank ?? vocab.bookWordRank ?? undefined,
         createdAt: includeCreatedAt ? (vocab.createdAt ?? now) : undefined,
         updatedAt: now,
-        // Nested meanings & examples for upsert
-        _meanings: vocab.meanings ?? undefined,
-        _examples: vocab.examples ?? undefined,
     };
 }
 
@@ -49,62 +216,41 @@ export function rowToVocabulary(row) {
     // - a Vocabulary record (no progress fields)
     // - a UserVocabulary & { vocabulary: Vocabulary } include result
     const vocab = row.vocabulary ?? row;
-    const progress = row.vocabulary ? row : {}; // if include result, progress is on parent
+
+    // Model mới (2026-08-14): { id, mandarin, cantonese, metadata } (+ progress merge bên ngoài).
+    const blocks = blocksFromRow(vocab);
     return {
         id: vocab.id,
-        hanTraditional: vocab.hanTraditional ?? "",
-        hanSimplified: vocab.hanSimplified ?? undefined,
-        sinoVietnamese: vocab.sinoVietnamese ?? undefined,
-        jyutping: vocab.jyutping ?? undefined,
-        pinyin: vocab.pinyin ?? undefined,
-        vietMeanings: vocab.vietMeanings ?? "",
-        vietExamples: vocab.vietExamples ?? undefined,
-        engMeanings: vocab.engMeanings ?? "",
+        mandarin: blocks.mandarin,
+        cantonese: blocks.cantonese,
+        metadata: {
+            hsk_level: vocab.hskLevel ?? "",
+            popularity: vocab.boost ?? null,
+            frequency: vocab.frequency ?? null,
+            movie_word_rank: vocab.movieWordRank ?? null,
+            book_word_rank: vocab.bookWordRank ?? null,
+            pure_cantonese: Boolean(vocab.pureCantonese),
+            created_at: vocab.createdAt ?? vocab.updatedAt ?? null,
+            updated_at: vocab.updatedAt ?? vocab.createdAt ?? null,
+        },
+    };
+}
+
+/** Summary flat-shape cho list responses (flashcard decks/sets) — derive từ blocks. */
+function vocabListSummary(vocab) {
+    const blocks = blocksFromRow(vocab);
+    const flat = flatDerivedFromBlocks(blocks);
+    return {
+        id: vocab.id,
+        hanSimplified: (blocks.mandarin?.hanzi_simplified || "").trim() || undefined,
+        hanTraditional: (blocks.mandarin?.hanzi_traditional || "").trim() || "",
+        hanHongKong: (blocks.cantonese?.hanzi_traditional || "").trim() || undefined,
+        sinoVietnamese: flat.sinoVietnamese || undefined,
+        jyutping: (flat.jyutping || "").toLowerCase().trim() || undefined,
+        pinyin: (flat.pinyin || "").toLowerCase().trim() || undefined,
+        vietMeanings: flat.vietMeanings ?? "",
+        engMeanings: flat.engMeanings ?? "",
         hskLevel: vocab.hskLevel ?? undefined,
-        pos: vocab.pos ?? undefined,
-        frequency: vocab.frequency ?? undefined,
-        radical: vocab.radical ?? undefined,
-        classifiers: vocab.classifiers ?? undefined,
-        pinyinNumeric: vocab.pinyinNumeric ?? undefined,
-        movieWordRank: vocab.movieWordRank ?? undefined,
-        bookWordRank: vocab.bookWordRank ?? undefined,
-        relatedWords: vocab.relatedWords ?? undefined,
-        boost: vocab.boost ?? undefined,
-        searchPinyin: vocab.searchPinyin ?? undefined,
-        hanCharacters: vocab.hanCharacters ?? undefined,
-        important: progress.important ?? false,
-        mastered: progress.mastered ?? false,
-        studyProgress: progress.studyProgress ?? 0,
-        studyProgressAt: progress.studyProgressAt ?? undefined,
-        createdAt: vocab.createdAt ?? vocab.updatedAt,
-        updatedAt: vocab.updatedAt ?? vocab.createdAt,
-        meanings: (vocab.vocabularyMeanings ?? []).map((m) => ({
-            id: m.id,
-            category: m.category ?? "",
-            vietMeanings: m.vietMeanings ?? "",
-            engMeanings: m.engMeanings ?? "",
-            position: m.position ?? 0,
-            examples: (m.examples ?? []).map((ex) => ({
-                id: ex.id,
-                hanExample: ex.hanExample ?? "",
-                jyutpingExample: ex.jyutpingExample ?? "",
-                pinyinExample: ex.pinyinExample ?? "",
-                vietExamples: ex.vietExamples ?? "",
-                engExamples: ex.engExamples ?? "",
-                position: ex.position ?? 0,
-            })),
-        })),
-        examples: (vocab.vocabularyExamples ?? [])
-            .filter((ex) => !ex.meaningId) // only top-level examples (not linked to a meaning)
-            .map((ex) => ({
-                id: ex.id,
-                hanExample: ex.hanExample ?? "",
-                jyutpingExample: ex.jyutpingExample ?? "",
-                pinyinExample: ex.pinyinExample ?? "",
-                vietExamples: ex.vietExamples ?? "",
-                engExamples: ex.engExamples ?? "",
-                position: ex.position ?? 0,
-            })),
     };
 }
 
@@ -207,9 +353,9 @@ export function hanCharacterToRow(item, userId, { includeCreatedAt = true } = {}
         sinoVietnamese: readings.length > 0 ? readings : [],
         jyutping: parseArr(item.jyutping),
         pinyin: parseArr(item.pinyin),
-        popularity: item.popularity ?? null,
         important: item.important ?? false,
         mastered: item.mastered ?? false,
+        strokeCount: item.strokeCount ?? null,
         createdAt: includeCreatedAt ? (item.createdAt ?? now) : undefined,
         updatedAt: now,
     };
@@ -223,9 +369,9 @@ export function rowToHanCharacter(row) {
         sinoVietnamese: row.sinoVietnamese ?? [],
         jyutping: row.jyutping ?? [],
         pinyin: row.pinyin ?? [],
-        popularity: row.popularity ?? undefined,
         important: row.important ?? false,
         mastered: row.mastered ?? false,
+        strokeCount: row.strokeCount ?? null,
         createdAt: row.createdAt ?? row.updatedAt,
         updatedAt: row.updatedAt ?? row.createdAt,
     };
@@ -295,28 +441,16 @@ export async function fetchSentencePatternRows(userId) {
 
 // ── Query vocabularies (browse) ──
 
+// Sau migration (2026-08-14) các cột flat pinyin/jyutping/sino/viet/eng đã drop.
 const SORT_FIELDS = {
-    sinoVietnamese: "sinoVietnamese",
     hanTraditional: "hanTraditional",
-    jyutping: "jyutping",
-    pinyin: "pinyin",
-    vietMeanings: "vietMeanings",
-    engMeanings: "engMeanings",
+    hanSimplified: "hanSimplified",
+    hanHongKong: "hanHongKong",
     hskLevel: "hskLevel",
     createdAt: "createdAt",
     studyProgressAt: "studyProgressAt",
 };
-const vocabularyInclude = {
-    include: {
-        vocabularyMeanings: {
-            orderBy: { position: "asc" },
-            include: {
-                examples: { orderBy: { position: "asc" } },
-            },
-        },
-        vocabularyExamples: { orderBy: { position: "asc" } },
-    },
-};
+const vocabularyInclude = {};
 export async function queryVocabularies(
     userId,
     {
@@ -346,9 +480,7 @@ export async function queryVocabularies(
         wordWhere.OR = [
             { hanTraditional: { contains: q, mode: "insensitive" } },
             { hanSimplified: { contains: q, mode: "insensitive" } },
-            { sinoVietnamese: { contains: q, mode: "insensitive" } },
-            { jyutping: { contains: q, mode: "insensitive" } },
-            { pinyin: { contains: q, mode: "insensitive" } },
+            { hanHongKong: { contains: q, mode: "insensitive" } },
             { searchKey: { contains: q, mode: "insensitive" } },
         ];
     }
@@ -599,10 +731,6 @@ export async function replacePartialData(userId, { types, words, grammarBank, se
 export async function createVocabulary(userId, body) {
     const vocabDict = vocabularyToRow(body, userId);
     const progress = userWordFields(body);
-    const meanings = vocabDict._meanings;
-    const examples = vocabDict._examples;
-    delete vocabDict._meanings;
-    delete vocabDict._examples;
 
     // Create a new Vocabulary entry — never overwrite existing ones
     // (different pronunciations of the same word are separate entries)
@@ -610,9 +738,6 @@ export async function createVocabulary(userId, body) {
     const vocab = await prisma.vocabulary.create({
         data: { id: _dictId, ...dictData },
     });
-
-    // Upsert meanings and examples
-    await upsertMeaningsAndExamples(vocab.id, meanings, examples);
 
     // Compute + store hanCharacters breakdown, then sync to HanCharacter store
     const breakdown = computeHanCharacters(vocab);
@@ -637,17 +762,70 @@ export async function createVocabulary(userId, body) {
     });
 
     const full = { ...userVocab, vocabulary: { ...vocab, hanCharacters: breakdown } };
-    return rowToVocabulary(full);
+    const base = rowToVocabulary(full);
+    return {
+        ...base,
+        important: userVocab.important ?? false,
+        mastered: userVocab.mastered ?? false,
+        studyProgress: userVocab.studyProgress ?? 0,
+        studyProgressAt: userVocab.studyProgressAt ?? null,
+    };
 }
 
 export async function updateVocabulary(userId, id, body) {
     try {
+        // Khi client gửi model mới (mandarin/cantonese blocks), trust it.
+        // Legacy: full `romanization` array → chuyển sang blocks; ngược lại merge
+        // single-pronunciation edit vào romanization_json hiện có.
+        let romanizationJson = null;
+        if (body?.mandarin || body?.cantonese) {
+            romanizationJson = buildRomanizationJsonNew(body);
+        } else if (Array.isArray(body?.romanization) && body.romanization.length > 0) {
+            const hanS = String(body?.hanSimplified ?? "");
+            const hanT = String(body?.hanTraditional ?? "");
+            const existingRow = await prisma.vocabulary.findUnique({
+                where: { id },
+                select: { hanSimplified: true, hanTraditional: true, hanHongKong: true },
+            });
+            romanizationJson = {
+                mandarin: blockFromLegacy(
+                    body.romanization,
+                    "mandarin",
+                    hanS || existingRow?.hanSimplified,
+                    hanT || existingRow?.hanTraditional,
+                ),
+                cantonese: blockFromLegacy(
+                    body.romanization,
+                    "cantonese",
+                    hanS || existingRow?.hanSimplified,
+                    body?.hanHongKong ?? existingRow?.hanHongKong ?? hanT ?? existingRow?.hanTraditional,
+                ),
+            };
+        } else {
+            // Legacy single-pronunciation edit → merge vào blocks hiện có (format mới).
+            const existing = await prisma.vocabulary.findUnique({
+                where: { id },
+                select: { romanizationJson: true, hanSimplified: true, hanTraditional: true, hanHongKong: true },
+            });
+            const blocks = blocksFromRow(existing ?? {});
+            const entryPy = (body?.pinyin ?? "").toLowerCase().trim();
+            const entryJp = (body?.jyutping ?? "").toLowerCase().trim();
+            const side = entryPy && !entryJp ? "mandarin" : "cantonese";
+            const reading = {
+                id: body?.romanizationId ?? romanizationId(entryPy, entryJp),
+                romanization: side === "mandarin" ? entryPy : entryJp,
+                sino_vietnamese: body?.sinoVietnamese ?? "",
+            };
+            reading.meanings = (body?.meanings ?? []).map((m, i) => meaningFromLegacy(m, side, i));
+            const readings = blocks[side].readings ?? [];
+            const idx = readings.findIndex((r) => r.id === reading.id);
+            if (idx >= 0) readings[idx] = reading;
+            else readings.push(reading);
+            romanizationJson = blocks;
+        }
+
         // Update shared Vocabulary dictionary fields
         const vocabDict = vocabularyToRow({ ...body, id }, userId, { includeCreatedAt: false });
-        const meanings = vocabDict._meanings;
-        const examples = vocabDict._examples;
-        delete vocabDict._meanings;
-        delete vocabDict._examples;
         const { id: _id, createdAt, ...dictData } = vocabDict;
 
         const vocab = await prisma.vocabulary.update({
@@ -655,19 +833,17 @@ export async function updateVocabulary(userId, id, body) {
             data: {
                 hanSimplified: dictData.hanSimplified ?? undefined,
                 hanTraditional: dictData.hanTraditional,
-                sinoVietnamese: dictData.sinoVietnamese ?? undefined,
-                jyutping: dictData.jyutping ?? undefined,
-                pinyin: dictData.pinyin ?? undefined,
-                vietMeanings: dictData.vietMeanings ?? undefined,
-                vietExamples: dictData.vietExamples ?? undefined,
-                engMeanings: dictData.engMeanings ?? undefined,
+                hanHongKong: dictData.hanHongKong ?? undefined,
                 hskLevel: dictData.hskLevel ?? undefined,
+                pureCantonese: dictData.pureCantonese ?? undefined,
                 searchKey: dictData.searchKey ?? undefined,
+                romanizationJson: romanizationJson ?? undefined,
+                boost: dictData.boost ?? undefined,
+                frequency: dictData.frequency ?? undefined,
+                movieWordRank: dictData.movieWordRank ?? undefined,
+                bookWordRank: dictData.bookWordRank ?? undefined,
             },
         });
-
-        // Upsert meanings and examples
-        await upsertMeaningsAndExamples(vocab.id, meanings, examples);
 
         // Recompute + store hanCharacters breakdown, then sync to HanCharacter store
         const breakdown = computeHanCharacters(vocab);
@@ -702,76 +878,17 @@ export async function updateVocabulary(userId, id, body) {
             where: { userId_vocabularyId: { userId, vocabularyId: id } },
             include: { vocabulary: vocabularyInclude },
         });
-        return rowToVocabulary(refreshed);
+        const base = rowToVocabulary(refreshed);
+        return {
+            ...base,
+            important: refreshed.important ?? false,
+            mastered: refreshed.mastered ?? false,
+            studyProgress: refreshed.studyProgress ?? 0,
+            studyProgressAt: refreshed.studyProgressAt ?? null,
+        };
     } catch (e) {
         console.error("updateVocabulary error:", e.message, e.stack);
         throw e;
-    }
-}
-
-async function upsertMeaningsAndExamples(vocabularyId, meanings, examples) {
-    // Delete existing meanings and examples, then recreate
-    await prisma.vocabularyExample.deleteMany({ where: { vocabularyId } });
-    await prisma.vocabularyMeaning.deleteMany({ where: { vocabularyId } });
-
-    // Create meanings
-    const meaningIdMap = new Map(); // tempId → realId
-    if (Array.isArray(meanings) && meanings.length > 0) {
-        for (let i = 0; i < meanings.length; i++) {
-            const m = meanings[i];
-            const created = await prisma.vocabularyMeaning.create({
-                data: {
-                    id: m.id || randomUUID(),
-                    vocabularyId,
-                    category: m.category ?? "",
-                    vietMeanings: m.vietMeanings ?? "",
-                    engMeanings: m.engMeanings ?? "",
-                    position: m.position ?? i,
-                },
-            });
-            if (m._tempId) meaningIdMap.set(m._tempId, created.id);
-            if (m.id && !m._tempId) meaningIdMap.set(m.id, created.id);
-
-            // Create nested examples for this meaning
-            const nestedExamples = m.examples ?? [];
-            for (let j = 0; j < nestedExamples.length; j++) {
-                const ex = nestedExamples[j];
-                await prisma.vocabularyExample.create({
-                    data: {
-                        id: ex.id || randomUUID(),
-                        vocabularyId,
-                        meaningId: created.id,
-                        hanExample: ex.hanExample ?? "",
-                        jyutpingExample: ex.jyutpingExample ?? "",
-                        pinyinExample: ex.pinyinExample ?? "",
-                        vietExamples: ex.vietExamples ?? "",
-                        engExamples: ex.engExamples ?? "",
-                        position: ex.position ?? j,
-                    },
-                });
-            }
-        }
-    }
-
-    // Create top-level examples (not linked to any meaning)
-    if (Array.isArray(examples) && examples.length > 0) {
-        for (let i = 0; i < examples.length; i++) {
-            const ex = examples[i];
-            const meaningId = ex.meaningId || (ex._tempMeaningId ? meaningIdMap.get(ex._tempMeaningId) : null) || null;
-            await prisma.vocabularyExample.create({
-                data: {
-                    id: ex.id || randomUUID(),
-                    vocabularyId,
-                    meaningId,
-                    hanExample: ex.hanExample ?? "",
-                    jyutpingExample: ex.jyutpingExample ?? "",
-                    pinyinExample: ex.pinyinExample ?? "",
-                    vietExamples: ex.vietExamples ?? "",
-                    engExamples: ex.engExamples ?? "",
-                    position: ex.position ?? i,
-                },
-            });
-        }
     }
 }
 
@@ -796,7 +913,14 @@ export async function patchVocabularyFlags(userId, id, flags) {
         include: { vocabulary: vocabularyInclude },
     });
 
-    return rowToVocabulary(userVocab);
+    const base = rowToVocabulary(userVocab);
+    return {
+        ...base,
+        important: userVocab.important ?? false,
+        mastered: userVocab.mastered ?? false,
+        studyProgress: userVocab.studyProgress ?? 0,
+        studyProgressAt: userVocab.studyProgressAt ?? null,
+    };
 }
 
 export async function deleteVocabulary(userId, id) {
@@ -892,7 +1016,7 @@ export async function deleteSentence(userId, id) {
 export async function createHanChar(userId, body) {
     const { randomUUID } = await import("crypto");
     const row = hanCharacterToRow(body, userId);
-    const { id, createdAt, updatedAt, userId: _uid, popularity, important, mastered, ...rest } = row;
+    const { id, createdAt, updatedAt, userId: _uid, important, mastered, ...rest } = row;
     const data = {
         id: id || randomUUID(),
         hanSimplified: rest.hanSimplified || null,
@@ -902,6 +1026,7 @@ export async function createHanChar(userId, body) {
         pinyin: rest.pinyin || [],
         hskLevel: rest.hskLevel || null,
         searchKey: rest.searchKey || null,
+        strokeCount: await computeStrokeCount(rest.hanTraditional || rest.hanSimplified || ""),
     };
     const created = await prisma.hanCharacter.create({ data });
     return rowToHanCharacter(created);
@@ -909,11 +1034,14 @@ export async function createHanChar(userId, body) {
 
 export async function updateHanChar(userId, id, body) {
     const row = hanCharacterToRow({ ...body, id }, userId, { includeCreatedAt: false });
-    const { createdAt, userId: _uid, popularity, important, mastered, ...rest } = row;
+    const { createdAt, userId: _uid, important, mastered, ...rest } = row;
     const data = {};
     // undefined = không đổi; rỗng "" = clear về NULL (single-form)
     if (rest.hanSimplified !== undefined) data.hanSimplified = rest.hanSimplified || null;
-    if (rest.hanTraditional !== undefined) data.hanTraditional = rest.hanTraditional;
+    if (rest.hanTraditional !== undefined) {
+        data.hanTraditional = rest.hanTraditional;
+        data.strokeCount = await computeStrokeCount(rest.hanTraditional);
+    }
     if (rest.sinoVietnamese !== undefined) data.sinoVietnamese = rest.sinoVietnamese;
     if (rest.jyutping !== undefined) data.jyutping = rest.jyutping;
     if (rest.pinyin !== undefined) data.pinyin = rest.pinyin;
@@ -931,7 +1059,6 @@ export async function patchHanCharFlags(userId, id, flags) {
     const data = { updatedAt: new Date() };
     if ("important" in flags) data.important = flags.important;
     if ("mastered" in flags) data.mastered = flags.mastered;
-    if ("popularity" in flags) data.popularity = flags.popularity;
     const updated = await prisma.hanCharacter.update({
         where: { id },
         data,
@@ -953,18 +1080,10 @@ function rowToFlashcardDeck(row) {
         color: row.color ?? "",
         vocabularyCount: row._count?.vocabularies ?? row.vocabularies?.length ?? 0,
         vocabularies: row.vocabularies
-            ? row.vocabularies.map((dv) => ({
-                  id: dv.vocabulary?.id ?? dv.vocabularyId,
-                  position: dv.position,
-                  hanTraditional: dv.vocabulary?.hanTraditional ?? "",
-                  hanSimplified: dv.vocabulary?.hanSimplified ?? undefined,
-                  sinoVietnamese: dv.vocabulary?.sinoVietnamese ?? undefined,
-                  jyutping: dv.vocabulary?.jyutping ?? undefined,
-                  pinyin: dv.vocabulary?.pinyin ?? undefined,
-                  vietMeanings: dv.vocabulary?.vietMeanings ?? "",
-                  engMeanings: dv.vocabulary?.engMeanings ?? "",
-                  hskLevel: dv.vocabulary?.hskLevel ?? undefined,
-              }))
+            ? row.vocabularies.map((dv) => {
+                  const s = dv.vocabulary ? vocabListSummary(dv.vocabulary) : {};
+                  return { id: dv.vocabulary?.id ?? dv.vocabularyId, position: dv.position, ...s };
+              })
             : undefined,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
@@ -1050,18 +1169,7 @@ export async function addVocabularyToDeck(userId, deckId, vocabularyId) {
             },
             include: { vocabulary: true },
         });
-        return {
-            id: created.vocabulary.id,
-            position: created.position,
-            hanTraditional: created.vocabulary.hanTraditional,
-            hanSimplified: created.vocabulary.hanSimplified ?? undefined,
-            sinoVietnamese: created.vocabulary.sinoVietnamese ?? undefined,
-            jyutping: created.vocabulary.jyutping ?? undefined,
-            pinyin: created.vocabulary.pinyin ?? undefined,
-            vietMeanings: created.vocabulary.vietMeanings ?? "",
-            engMeanings: created.vocabulary.engMeanings ?? "",
-            hskLevel: created.vocabulary.hskLevel ?? undefined,
-        };
+        return { ...vocabListSummary(created.vocabulary), position: created.position };
     } catch (err) {
         // Unique constraint violation → already in deck
         if (err?.code === "P2002") {
@@ -1095,18 +1203,114 @@ export async function getDeckVocabularies(userId, deckId) {
         include: { vocabulary: true },
     });
 
-    return items.map((dv) => ({
-        id: dv.vocabulary.id,
-        position: dv.position,
-        hanTraditional: dv.vocabulary.hanTraditional ?? "",
-        hanSimplified: dv.vocabulary.hanSimplified ?? undefined,
-        sinoVietnamese: dv.vocabulary.sinoVietnamese ?? undefined,
-        jyutping: dv.vocabulary.jyutping ?? undefined,
-        pinyin: dv.vocabulary.pinyin ?? undefined,
-        vietMeanings: dv.vocabulary.vietMeanings ?? "",
-        engMeanings: dv.vocabulary.engMeanings ?? "",
-        hskLevel: dv.vocabulary.hskLevel ?? undefined,
+    return items.map((dv) => ({ ...vocabListSummary(dv.vocabulary), position: dv.position }));
+}
+
+// ── Vocabulary sets (custom user groups) ──
+
+export async function getVocabularySets(userId) {
+    const sets = await prisma.vocabularySet.findMany({
+        where: { userId },
+        include: { vocabularies: { select: { vocabularyId: true } } },
+        orderBy: { createdAt: "desc" },
+    });
+    return sets.map((s) => ({
+        id: s.id,
+        name: s.name ?? "",
+        description: s.description ?? "",
+        color: s.color ?? "",
+        count: s.vocabularies.length,
+        vocabularyIds: s.vocabularies.map((v) => v.vocabularyId),
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
     }));
+}
+
+export async function createVocabularySet(userId, body) {
+    const id = body.id ?? randomUUID();
+    const created = await prisma.vocabularySet.create({
+        data: {
+            id,
+            userId,
+            name: body.name ?? "",
+            description: body.description ?? "",
+            color: body.color ?? "",
+        },
+        include: { vocabularies: { select: { vocabularyId: true } } },
+    });
+    return {
+        id: created.id,
+        name: created.name ?? "",
+        description: created.description ?? "",
+        color: created.color ?? "",
+        count: created.vocabularies.length,
+        vocabularyIds: created.vocabularies.map((v) => v.vocabularyId),
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+    };
+}
+
+export async function updateVocabularySet(userId, id, body) {
+    const updated = await prisma.vocabularySet.update({
+        where: { id_userId: { id, userId } },
+        data: {
+            ...(body.name !== undefined && { name: body.name }),
+            ...(body.description !== undefined && { description: body.description }),
+            ...(body.color !== undefined && { color: body.color }),
+            updatedAt: new Date(),
+        },
+        include: { vocabularies: { select: { vocabularyId: true } } },
+    });
+    return {
+        id: updated.id,
+        name: updated.name ?? "",
+        description: updated.description ?? "",
+        color: updated.color ?? "",
+        count: updated.vocabularies.length,
+        vocabularyIds: updated.vocabularies.map((v) => v.vocabularyId),
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+    };
+}
+
+export async function deleteVocabularySet(userId, id) {
+    await prisma.vocabularySet.delete({ where: { id_userId: { id, userId } } });
+}
+
+export async function addVocabularyToSet(userId, setId, vocabularyId) {
+    const set = await prisma.vocabularySet.findUnique({
+        where: { id_userId: { id: setId, userId } },
+    });
+    if (!set) throw Object.assign(new Error("Set not found"), { statusCode: 404 });
+
+    const lastItem = await prisma.vocabularySetVocabulary.findFirst({
+        where: { setId },
+        orderBy: { position: "desc" },
+    });
+    const nextPosition = (lastItem?.position ?? -1) + 1;
+
+    try {
+        await prisma.vocabularySetVocabulary.create({
+            data: { setId, vocabularyId, position: nextPosition },
+        });
+        return { ok: true };
+    } catch (err) {
+        if (err?.code === "P2002") {
+            throw Object.assign(new Error("Vocabulary already in set"), { statusCode: 409 });
+        }
+        throw err;
+    }
+}
+
+export async function removeVocabularyFromSet(userId, setId, vocabularyId) {
+    const set = await prisma.vocabularySet.findUnique({
+        where: { id_userId: { id: setId, userId } },
+    });
+    if (!set) throw Object.assign(new Error("Set not found"), { statusCode: 404 });
+
+    await prisma.vocabularySetVocabulary.delete({
+        where: { setId_vocabularyId: { setId, vocabularyId } },
+    });
 }
 
 // ── Resolve user ──

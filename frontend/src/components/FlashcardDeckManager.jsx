@@ -8,9 +8,11 @@ import { EmptyState } from "./ui/EmptyState.jsx";
 import { ConfirmDialog } from "./ConfirmDialog.jsx";
 import { IconFlashcard } from "./NavIcons.jsx";
 import { normalizeSearchText } from "../lib/wordSearch.js";
+import { collectMeaningsField, displayMeaning } from "../lib/wordNormalize.js";
+import { vocabRomanizationField, vocabMeanings } from "../lib/wordDisplay.js";
 
 const DECK_COLORS = [
-    "#4F46E5", // indigo
+    "#6D28D9", // violet-700
     "#7C3AED", // violet
     "#DB2777", // pink
     "#DC2626", // red
@@ -122,7 +124,7 @@ export function FlashcardDeckManager({ onClose, onDeckSelect }) {
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
-                <h2 className="m-0 text-lg font-semibold text-text-h">{t.flashcard.manageDecks}</h2>
+                <h2 className="m-0 text-lg font-semibold text-foreground">{t.flashcard.manageDecks}</h2>
                 <div className="flex gap-2">
                     <button type="button" className={btnClass("primary", "sm")} onClick={handleCreateDeck}>
                         + {t.flashcard.createDeck}
@@ -136,7 +138,7 @@ export function FlashcardDeckManager({ onClose, onDeckSelect }) {
             </div>
 
             {error && (
-                <p className="px-4 py-3 rounded-lg text-sm bg-error-bg text-error-text border border-error-border">
+                <p className="px-4 py-3 rounded-lg text-sm bg-destructive/10 text-destructive border border-destructive/30">
                     {error}
                 </p>
             )}
@@ -187,17 +189,17 @@ function DeckCard({ deck, onSelect, onManage, onEdit, onDelete }) {
 
     return (
         <div
-            className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3 hover:border-accent-border transition-colors"
+            className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3 hover:border-primary/25 transition-colors"
             style={colorStyle}
         >
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                    <h3 className="m-0 text-base font-semibold text-text-h truncate">{deck.name}</h3>
+                    <h3 className="m-0 text-base font-semibold text-foreground truncate">{deck.name}</h3>
                     {deck.description && (
-                        <p className="m-0 mt-1 text-sm text-text-muted line-clamp-2">{deck.description}</p>
+                        <p className="m-0 mt-1 text-sm text-muted-foreground line-clamp-2">{deck.description}</p>
                     )}
                 </div>
-                <span className="text-xs text-text-muted whitespace-nowrap">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {t.flashcard.deckVocabCount.replace("{count}", deck.vocabularyCount ?? 0)}
                 </span>
             </div>
@@ -257,23 +259,23 @@ function DeckForm({ deck, onSave, onCancel }) {
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <h2 className="m-0 text-lg font-semibold text-text-h">
+            <h2 className="m-0 text-lg font-semibold text-foreground">
                 {isNew ? t.flashcard.createDeck : t.flashcard.editDeck}
             </h2>
 
             {error && (
-                <p className="px-4 py-3 rounded-lg text-sm bg-error-bg text-error-text border border-error-border">
+                <p className="px-4 py-3 rounded-lg text-sm bg-destructive/10 text-destructive border border-destructive/30">
                     {error}
                 </p>
             )}
 
             <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {t.flashcard.deckName} *
                 </label>
                 <input
                     type="text"
-                    className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text-h focus:outline-none focus:ring-2 focus:ring-accent/35 focus:border-accent-border"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/25"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={t.flashcard.deckNamePlaceholder}
@@ -283,11 +285,11 @@ function DeckForm({ deck, onSave, onCancel }) {
             </div>
 
             <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {t.flashcard.deckDescription}
                 </label>
                 <textarea
-                    className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text-h focus:outline-none focus:ring-2 focus:ring-accent/35 focus:border-accent-border resize-y"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/25 resize-y"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder={t.flashcard.deckDescriptionPlaceholder}
@@ -296,7 +298,7 @@ function DeckForm({ deck, onSave, onCancel }) {
             </div>
 
             <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {t.flashcard.deckColor}
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -382,6 +384,8 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
                         pinyin: vocab.pinyin,
                         vietMeanings: vocab.vietMeanings,
                         engMeanings: vocab.engMeanings,
+                        meanings: vocab.meanings,
+                        romanization: vocab.romanization,
                         hskLevel: vocab.hskLevel,
                     },
                 ]);
@@ -417,10 +421,10 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
                 <button type="button" className={btnClass("ghost", "sm")} onClick={onBack}>
                     ← {t.common.back}
                 </button>
-                <h2 className="m-0 text-lg font-semibold text-text-h">
+                <h2 className="m-0 text-lg font-semibold text-foreground">
                     {deck.name} — {t.flashcard.addVocabToDeck}
                 </h2>
-                <span className="text-sm text-text-muted">
+                <span className="text-sm text-muted-foreground">
                     ({t.flashcard.deckVocabCount.replace("{count}", vocabularies.length)})
                 </span>
             </div>
@@ -429,7 +433,7 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
             <div>
                 <input
                     type="text"
-                    className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text-h focus:outline-none focus:ring-2 focus:ring-accent/35 focus:border-accent-border"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/25"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder={t.flashcard.deckSearchPlaceholder}
@@ -437,31 +441,43 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
             </div>
 
             {search.trim() && (
-                <div className="rounded-xl border border-border bg-surface divide-y divide-border max-h-64 overflow-y-auto">
+                <div className="rounded-xl border border-border bg-card divide-y divide-border max-h-64 overflow-y-auto">
                     {searching ? (
-                        <div className="p-4 text-center text-sm text-text-muted">{t.common.loading}</div>
+                        <div className="p-4 text-center text-sm text-muted-foreground">{t.common.loading}</div>
                     ) : searchResults.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-text-muted">{t.wordBank.noSearchMatch}</div>
+                        <div className="p-4 text-center text-sm text-muted-foreground">{t.wordBank.noSearchMatch}</div>
                     ) : (
                         searchResults.map((vocab) => {
                             const inDeck = deckVocabIds.has(vocab.id);
                             return (
                                 <div
                                     key={vocab.id}
-                                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-bg transition-colors"
+                                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-background transition-colors"
                                 >
                                     <div className="flex-1 min-w-0">
-                                        <span className="font-semibold text-red-600 dark:text-red-400 text-base">
+                                        <span className="font-semibold text-han-trad text-base">
                                             {vocab.hanTraditional}
                                         </span>
-                                        {vocab.sinoVietnamese && (
-                                            <span className="ml-2 text-sm text-viet">{vocab.sinoVietnamese}</span>
-                                        )}
-                                        {(vocab.vietMeanings || vocab.engMeanings) && (
-                                            <span className="ml-2 text-sm text-text-muted truncate">
-                                                {vocab.vietMeanings || vocab.engMeanings}
+                                        {vocabRomanizationField(vocab, "sinoVietnamese") && (
+                                            <span className="ml-2 text-sm text-viet">
+                                                {vocabRomanizationField(vocab, "sinoVietnamese")}
                                             </span>
                                         )}
+                                        {(() => {
+                                            const viet =
+                                                collectMeaningsField(vocabMeanings(vocab), "vietMeanings") ||
+                                                displayMeaning(vocab.vietMeanings);
+                                            const eng =
+                                                collectMeaningsField(vocabMeanings(vocab), "engMeanings") ||
+                                                displayMeaning(vocab.engMeanings);
+                                            return (
+                                                (viet || eng) && (
+                                                    <span className="ml-2 text-sm text-muted-foreground truncate">
+                                                        {viet || eng}
+                                                    </span>
+                                                )
+                                            );
+                                        })()}
                                     </div>
                                     <button
                                         type="button"
@@ -480,30 +496,42 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
 
             {/* Current deck vocabularies */}
             <div>
-                <h3 className="m-0 mb-2 text-sm font-semibold text-text-muted uppercase tracking-wide">
+                <h3 className="m-0 mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                     {t.flashcard.deckVocabCount.replace("{count}", vocabularies.length)}
                 </h3>
                 {vocabularies.length === 0 ? (
-                    <p className="text-sm text-text-muted text-center py-4">{t.flashcard.deckEmpty}</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">{t.flashcard.deckEmpty}</p>
                 ) : (
-                    <div className="rounded-xl border border-border bg-surface divide-y divide-border max-h-80 overflow-y-auto">
+                    <div className="rounded-xl border border-border bg-card divide-y divide-border max-h-80 overflow-y-auto">
                         {vocabularies.map((vocab) => (
                             <div
                                 key={vocab.id}
-                                className="flex items-center gap-3 px-4 py-2.5 hover:bg-bg transition-colors"
+                                className="flex items-center gap-3 px-4 py-2.5 hover:bg-background transition-colors"
                             >
                                 <div className="flex-1 min-w-0">
-                                    <span className="font-semibold text-red-600 dark:text-red-400 text-base">
+                                    <span className="font-semibold text-han-trad text-base">
                                         {vocab.hanTraditional}
                                     </span>
-                                    {vocab.sinoVietnamese && (
-                                        <span className="ml-2 text-sm text-viet">{vocab.sinoVietnamese}</span>
-                                    )}
-                                    {(vocab.vietMeanings || vocab.engMeanings) && (
-                                        <span className="ml-2 text-sm text-text-muted truncate">
-                                            {vocab.vietMeanings || vocab.engMeanings}
+                                    {vocabRomanizationField(vocab, "sinoVietnamese") && (
+                                        <span className="ml-2 text-sm text-viet">
+                                            {vocabRomanizationField(vocab, "sinoVietnamese")}
                                         </span>
                                     )}
+                                    {(() => {
+                                        const viet =
+                                            collectMeaningsField(vocabMeanings(vocab), "vietMeanings") ||
+                                            displayMeaning(vocab.vietMeanings);
+                                        const eng =
+                                            collectMeaningsField(vocabMeanings(vocab), "engMeanings") ||
+                                            displayMeaning(vocab.engMeanings);
+                                        return (
+                                            (viet || eng) && (
+                                                <span className="ml-2 text-sm text-muted-foreground truncate">
+                                                    {viet || eng}
+                                                </span>
+                                            )
+                                        );
+                                    })()}
                                 </div>
                                 <button
                                     type="button"

@@ -2,14 +2,6 @@ import { STALE_STUDY_DAYS, clampStudyProgress } from './flashcardProgress.js'
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
-export function dueReviewCutoffDate(now = Date.now()) {
-  return new Date(now - STALE_STUDY_DAYS * MS_PER_DAY)
-}
-
-export function dueReviewCutoffIso(now = Date.now()) {
-  return dueReviewCutoffDate(now).toISOString()
-}
-
 /** Word needs review: partial progress and not studied within the stale window. */
 export function isWordDueForReview(word, now = Date.now()) {
   if (!word || word.mastered) return false

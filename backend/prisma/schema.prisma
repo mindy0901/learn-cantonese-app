@@ -18,87 +18,70 @@ model HanCharacter {
     jyutping       String[] @db.VarChar
     hskLevel       String?  @default("") @map("hsk_level") @db.VarChar
     searchKey      String?  @map("search_key") @db.Text
+    frequency      Int?     @map("frequency")
+    strokeCount    Int?     @map("stroke_count")
+    radicalId      String?  @map("radical_id") @db.Uuid
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 
+    radical              Radical?              @relation(fields: [radicalId], references: [id], onDelete: SetNull)
     vocabularyCharacters VocabularyCharacter[]
 
     @@unique([id, hanSimplified, hanTraditional])
     @@index([jyutping, pinyin])
+    @@index([radicalId])
     @@map("han_characters")
 }
 
-model Vocabulary {
-    id             String  @id @default(uuid()) @db.Uuid
-    sinoVietnamese String? @default("") @map("sino_vietnamese") @db.VarChar
-    hanSimplified  String? @default("") @map("han_simplified") @db.VarChar
-    pinyin         String? @default("") @db.VarChar
-    hanTraditional String  @default("") @map("han_traditional") @db.VarChar
-    jyutping       String? @default("") @db.VarChar
-    hskLevel       String? @default("") @map("hsk_level") @db.VarChar
-    searchKey      String? @map("search_key") @db.Text
-    vietMeanings   String? @default("") @map("viet_meanings") @db.VarChar
-    engMeanings    String? @default("") @map("eng_meanings") @db.VarChar
-    vietExamples   String? @default("") @map("viet_examples") @db.Text
-    pos            String? @default("") @db.VarChar
-    frequency      Int?    @map("frequency")
-    radical        String? @default("") @db.VarChar
-    classifiers    String? @default("") @db.VarChar
-    pinyinNumeric  String? @default("") @map("pinyin_numeric") @db.VarChar
-    movieWordRank  Int?    @map("movie_word_rank")
-    bookWordRank   Int?    @map("book_word_rank")
-    relatedWords   Json?   @map("related_words") @db.JsonB
-    hanCharacters  Json?   @map("han_characters") @db.JsonB
-    boost          Float?  @db.Real
-    searchPinyin   String? @default("") @map("search_pinyin") @db.VarChar
+model Radical {
+    id          String   @id @default(uuid()) @db.Uuid
+    number      Int      @unique @map("number")
+    char        String   @map("char") @db.VarChar
+    name        String   @map("name") @db.VarChar
+    desc        String?  @map("desc") @db.Text
+    pinyin      String?  @map("pinyin") @db.VarChar
+    variants    String[] @map("variants") @db.VarChar
+    strokeCount Int      @map("stroke_count")
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 
-    vocabularyMeanings        VocabularyMeaning[]
-    vocabularyExamples        VocabularyExample[]
+    hanCharacters HanCharacter[]
+
+    @@map("radicals")
+}
+
+model Vocabulary {
+    id             String   @id @default(uuid()) @db.Uuid
+    hanSimplified  String?  @default("") @map("han_simplified") @db.VarChar
+    hanTraditional String   @default("") @map("han_traditional") @db.VarChar
+    hanHongKong    String?  @default("") @map("han_hongkong") @db.VarChar
+    hskLevel       String?  @default("") @map("hsk_level") @db.VarChar
+    pureCantonese  Boolean? @default(false) @map("pure_cantonese")
+    searchKey      String?  @map("search_key") @db.Text
+    partOfSpeech   String?  @default("") @map("part_of_speech") @db.VarChar
+    frequency      Int?     @map("frequency")
+    radical        String?  @default("") @db.VarChar
+    classifiers    String?  @default("") @db.VarChar
+    movieWordRank  Int?     @map("movie_word_rank")
+    bookWordRank   Int?     @map("book_word_rank")
+    relatedWords   Json?    @map("related_words") @db.JsonB
+    hanCharacters  Json?    @map("han_characters") @db.JsonB
+    boost          Float?   @db.Real
+
+    romanizationJson Json? @map("romanization_json") @db.JsonB
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
     vocabularyCharacters      VocabularyCharacter[]
     userVocabularies          UserVocabulary[]
     flashcardDeckVocabularies FlashcardDeckVocabulary[]
+    vocabularySetVocabularies VocabularySetVocabulary[]
 
     @@index([searchKey, hskLevel])
     @@map("vocabularies")
-}
-
-model VocabularyMeaning {
-    id           String   @id @default(uuid()) @db.Uuid
-    vocabularyId String   @map("vocabulary_id") @db.Uuid
-    category     String?  @default("") @db.VarChar
-    vietMeanings String?  @default("") @map("viet_meanings") @db.VarChar
-    engMeanings  String?  @default("") @map("eng_meanings") @db.VarChar
-    position     Int      @default(0) @db.SmallInt
-    createdAt    DateTime @default(now()) @map("created_at")
-    updatedAt    DateTime @updatedAt @map("updated_at")
-
-    vocabulary Vocabulary          @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
-    examples   VocabularyExample[]
-
-    @@map("vocabulary_meanings")
-}
-
-model VocabularyExample {
-    id              String   @id @default(uuid()) @db.Uuid
-    vocabularyId    String   @map("vocabulary_id") @db.Uuid
-    meaningId       String?  @map("meaning_id") @db.Uuid
-    hanExample      String?  @default("") @map("han_example") @db.Text
-    jyutpingExample String?  @default("") @map("jyutping_example") @db.VarChar
-    pinyinExample   String?  @default("") @map("pinyin_example") @db.VarChar
-    vietExamples    String?  @default("") @map("viet_examples") @db.VarChar
-    engExamples     String?  @default("") @map("eng_examples") @db.VarChar
-    position        Int      @default(0) @db.SmallInt
-    createdAt       DateTime @default(now()) @map("created_at")
-    updatedAt       DateTime @updatedAt @map("updated_at")
-
-    vocabulary Vocabulary         @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
-    meaning    VocabularyMeaning? @relation(fields: [meaningId], references: [id], onDelete: SetNull)
-
-    @@map("vocabulary_examples")
 }
 
 model VocabularyCharacter {
@@ -165,6 +148,7 @@ model User {
     updatedAt        DateTime         @updatedAt @map("updated_at")
     userVocabularies UserVocabulary[]
     flashcardDecks   FlashcardDeck[]
+    vocabularySets   VocabularySet[]
 
     @@map("users")
 }
@@ -241,4 +225,38 @@ model FlashcardDeckVocabulary {
     @@unique([deckId, vocabularyId])
     @@index([vocabularyId])
     @@map("flashcard_deck_vocabularies")
+}
+
+model VocabularySet {
+    id          String  @id @default(uuid()) @db.Uuid
+    userId      String  @map("user_id") @db.Uuid
+    name        String  @default("") @db.VarChar
+    description String? @default("") @db.Text
+    color       String? @default("") @db.VarChar
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    vocabularies VocabularySetVocabulary[]
+
+    @@unique([id, userId])
+    @@index([userId])
+    @@map("vocabulary_sets")
+}
+
+model VocabularySetVocabulary {
+    id           String @id @default(uuid()) @db.Uuid
+    setId        String @map("set_id") @db.Uuid
+    vocabularyId String @map("vocabulary_id") @db.Uuid
+    position     Int    @default(0) @db.SmallInt
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    set        VocabularySet @relation(fields: [setId], references: [id], onDelete: Cascade)
+    vocabulary Vocabulary    @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+    @@unique([setId, vocabularyId])
+    @@index([vocabularyId])
+    @@map("vocabulary_set_vocabularies")
 }

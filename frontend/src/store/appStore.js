@@ -15,6 +15,7 @@ import {
     updateGrammarInList,
     updateSentenceInList,
     updateVocabularyInList,
+    vocabNewToLegacy,
 } from "../lib/dataTransforms.js";
 import { invalidateVocabularyBrowseCache, patchVocabularyInBrowseCache } from "../lib/wordBrowseCache.js";
 import { api } from "../lib/api.js";
@@ -22,7 +23,7 @@ import { log, logWarn, logError, logFetchDone, logMutStart, logMutDone } from ".
 import { normalizeVocabularyFields, vocabularyContentEqual } from "../lib/wordNormalize.js";
 import { useAuthStore } from "./authStore.js";
 import { findWordIdsInSentence } from "../lib/sentencePatternMatch.js";
-import { saveDataCache, loadDataCache, invalidateDataCache } from "../lib/dataCache.js";
+import { saveDataCache, invalidateDataCache } from "../lib/dataCache.js";
 
 const LEGACY_DATA_KEY = "cantonese-app-data";
 
@@ -31,13 +32,13 @@ let hydrateFromCloudPromise = null;
 
 function assertAdmin() {
     if (!useAuthStore.getState().user?.isAdmin) {
-        throw new Error("Admin only");
+        throw new Error("Yêu cầu quyền admin");
     }
 }
 
 function assertSignedIn() {
     if (!useAuthStore.getState().user) {
-        throw new Error("Sign in required");
+        throw new Error("Yêu cầu đăng nhập");
     }
 }
 
@@ -94,16 +95,12 @@ async function migrateLegacyLocalIfNeeded() {
 
     try {
         const parsed = JSON.parse(raw);
-        const hasLocal =
-            (parsed.words?.length ?? 0) > 0 ||
-            (parsed.grammarBank?.length ?? 0) > 0;
+        const hasLocal = (parsed.words?.length ?? 0) > 0 || (parsed.grammarBank?.length ?? 0) > 0;
 
         if (hasLocal) {
             log("Migrate legacy data");
             const remote = await api.fetchFromCloud();
-            const cloudEmpty =
-                (remote.vocabularies?.length ?? 0) === 0 &&
-                (remote.grammars?.length ?? 0) === 0;
+            const cloudEmpty = (remote.vocabularies?.length ?? 0) === 0 && (remote.grammars?.length ?? 0) === 0;
 
             if (cloudEmpty) {
                 await api.uploadToCloud({
@@ -130,8 +127,10 @@ export const useAppStore = create((set, get) => ({
     hanCharacters: [],
     hanCharacterTotal: 0,
     hanCharactersRevision: 0,
+    vocabularySets: [],
     dataLoading: false,
     dataError: null, // { message: string, status?: number } | null
+    dataLoadingStep: "", // "" | "checking-user" | "loading-data" | "saving-cache" | "indexing" | "done"
     hydrated: false,
 
     clearData: () => {
@@ -147,8 +146,10 @@ export const useAppStore = create((set, get) => ({
             hanCharacters: [],
             hanCharacterTotal: 0,
             hanCharactersRevision: 0,
+            vocabularySets: [],
             dataLoading: false,
             dataError: null,
+            dataLoadingStep: "",
             hydrated: false,
         });
     },
@@ -157,37 +158,13 @@ export const useAppStore = create((set, get) => ({
         if (hydrateFromCloudPromise) return hydrateFromCloudPromise;
 
         hydrateFromCloudPromise = (async () => {
-            set({ dataLoading: true, dataError: null });
-
-            // Step 0: Try to load from cache for instant display
-            const cached = loadDataCache();
-            if (cached) {
-                try {
-                    const indexed = indexCloudPayload({
-                        vocabularies: cached.vocabularies ?? [],
-                        grammars: cached.grammars ?? [],
-                        sentencePatterns: cached.sentencePatterns ?? [],
-                    });
-                    set({
-                        ...indexed,
-                        vocabularyTotal: cached.vocabularyTotal ?? indexed.vocabularies.length,
-                        masteredVocabularyCount: cached.masteredVocabularyCount ?? 0,
-                        hanCharacters: cached.hanCharacters ?? [],
-                        hanCharacterTotal: cached.hanCharacterTotal ?? cached.hanCharacters?.length ?? 0,
-                        dataLoading: false,
-                        dataError: null,
-                        hydrated: true,
-                    });
-                } catch {
-                    // Cache parse error — silently ignore, will fetch from API
-                    invalidateDataCache();
-                }
-            }
+            set({ dataLoading: true, dataError: null, dataLoadingStep: "checking-user" });
 
             try {
                 if (useAuthStore.getState().user?.isAdmin) {
                     await migrateLegacyLocalIfNeeded();
                 }
+                set({ dataLoadingStep: "loading-data" });
                 const remote = await api.fetchFullData();
                 logFetchDone({
                     vocabularies: remote.vocabularies?.length ?? 0,
@@ -196,7 +173,9 @@ export const useAppStore = create((set, get) => ({
                     hanCharacters: remote.hanCharacterTotal ?? remote.hanCharacters?.length ?? 0,
                 });
                 // Save raw payload to cache for next cold start
-                saveDataCache(remote);
+                set({ dataLoadingStep: "saving-cache" });
+                await saveDataCache(remote);
+                set({ dataLoadingStep: "indexing" });
                 const indexed = indexCloudPayload({
                     vocabularies: remote.vocabularies ?? [],
                     grammars: remote.grammars ?? [],
@@ -210,20 +189,19 @@ export const useAppStore = create((set, get) => ({
                     hanCharacterTotal: remote.hanCharacterTotal ?? remote.hanCharacters?.length ?? 0,
                     dataLoading: false,
                     dataError: null,
+                    dataLoadingStep: "done",
                     hydrated: true,
                 });
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
                 const status = err instanceof Error && "status" in err ? err.status : undefined;
                 logError("Fetch all Data failed", message);
-                // If we already loaded from cache, keep showing cached data
-                if (!cached) {
-                    set({
-                        dataLoading: false,
-                        dataError: { message, status },
-                        hydrated: false,
-                    });
-                }
+                set({
+                    dataLoading: false,
+                    dataError: { message, status },
+                    dataLoadingStep: "",
+                    hydrated: false,
+                });
                 throw err;
             } finally {
                 hydrateFromCloudPromise = null;
@@ -322,15 +300,36 @@ export const useAppStore = create((set, get) => ({
         }
         if (!existing) return;
 
-        const merged = normalizeVocabularyFields({ ...existing, ...patch });
+        // Payload model mới (mandarin/cantonese) → convert về legacy cho store
+        // so sánh + optimistic update; gửi payload MỚI lên API.
+        const isNewPayload =
+            patch && typeof patch === "object" && !Array.isArray(patch) && (patch.mandarin || patch.cantonese);
+        const legacyPatch = isNewPayload
+            ? vocabNewToLegacy({ id, mandarin: patch.mandarin, cantonese: patch.cantonese, metadata: patch.metadata })
+            : patch;
+        const patchFlags = patch ?? {};
+        const legacyPatchWithFlags = {
+            ...legacyPatch,
+            important: Boolean(patchFlags.important ?? existing.important),
+            mastered: Boolean(patchFlags.mastered ?? existing.mastered),
+            pureCantonese: Boolean(patchFlags.pureCantonese ?? existing.pureCantonese),
+        };
+
+        const merged = normalizeVocabularyFields({ ...existing, ...legacyPatchWithFlags });
         if (vocabularyContentEqual(existing, merged)) return;
 
         const label =
             existing.hanTraditional || existing.vietMeanings || existing.engMeanings || `#${String(id).slice(0, 8)}`;
         logMutStart("Update vocabulary", label, patch);
         let nextVocabularies = prev.some((w) => w.id === id)
-            ? updateVocabularyInList(prev, id, { ...patch, updatedAt: new Date().toISOString() })
-            : [...prev, indexVocabulary({ ...existing, ...patch, updatedAt: new Date().toISOString() }, prev.length)];
+            ? updateVocabularyInList(prev, id, { ...legacyPatchWithFlags, updatedAt: new Date().toISOString() })
+            : [
+                  ...prev,
+                  indexVocabulary(
+                      { ...existing, ...legacyPatchWithFlags, updatedAt: new Date().toISOString() },
+                      prev.length,
+                  ),
+              ];
 
         const vocab = nextVocabularies.find((w) => w.id === id);
         set({ vocabularies: nextVocabularies });
@@ -343,23 +342,29 @@ export const useAppStore = create((set, get) => ({
                 vietExamples: vocab.vietExamples,
                 sinoVietnamese: vocab.sinoVietnamese,
                 jyutping: vocab.jyutping,
+                romanization: vocab.romanization,
                 important: vocab.important,
             });
             return syncMutation(async () => {
                 const current = get().vocabularies.find((w) => w.id === id);
                 if (!current) return;
-                const saved = await api.updateVocabulary(id, stripSearchIndex(current));
+                const saved = await api.updateVocabulary(
+                    id,
+                    isNewPayload ? { id, ...patch } : stripSearchIndex(current),
+                );
+                const savedLegacy = indexVocabulary(saved);
                 logMutDone("Update vocabulary", label, saved);
-                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, saved) });
+                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, savedLegacy) });
                 patchVocabularyInBrowseCache(id, {
-                    engMeanings: saved.engMeanings,
-                    engExamples: saved.engExamples,
-                    hanTraditional: saved.hanTraditional,
-                    vietMeanings: saved.vietMeanings,
-                    vietExamples: saved.vietExamples,
-                    sinoVietnamese: saved.sinoVietnamese,
-                    jyutping: saved.jyutping,
-                    important: saved.important,
+                    engMeanings: savedLegacy.engMeanings,
+                    engExamples: savedLegacy.engExamples,
+                    hanTraditional: savedLegacy.hanTraditional,
+                    vietMeanings: savedLegacy.vietMeanings,
+                    vietExamples: savedLegacy.vietExamples,
+                    sinoVietnamese: savedLegacy.sinoVietnamese,
+                    jyutping: savedLegacy.jyutping,
+                    romanization: savedLegacy.romanization,
+                    important: savedLegacy.important,
                 });
             }).catch((err) => {
                 set({ vocabularies: prev });
@@ -371,26 +376,6 @@ export const useAppStore = create((set, get) => ({
     syncHanVariantsAll: async () => {
         assertAdmin();
         const result = await api.backfillHanVariants();
-        invalidateVocabularyBrowseCache();
-        invalidateDataCache();
-        await get().refreshVocabularies();
-        set((s) => ({ vocabulariesRevision: s.vocabulariesRevision + 1 }));
-        return result;
-    },
-
-    syncPinyinAll: async () => {
-        assertAdmin();
-        const result = await api.backfillPinyin();
-        invalidateVocabularyBrowseCache();
-        invalidateDataCache();
-        await get().refreshVocabularies();
-        set((s) => ({ vocabulariesRevision: s.vocabulariesRevision + 1 }));
-        return result;
-    },
-
-    syncJyutpingAll: async () => {
-        assertAdmin();
-        const result = await api.backfillJyutping();
         invalidateVocabularyBrowseCache();
         invalidateDataCache();
         await get().refreshVocabularies();
@@ -603,6 +588,7 @@ export const useAppStore = create((set, get) => ({
                                     sinoVietnamese: existing.sinoVietnamese,
                                     jyutping: existing.jyutping,
                                     vietExamples: existing.vietExamples,
+                                    romanization: existing.romanization,
                                     updatedAt: existing.updatedAt,
                                 }
                               : {}),
@@ -883,19 +869,71 @@ export const useAppStore = create((set, get) => ({
         syncMutation(() => api.deleteSentencePattern(id)).catch(() => set({ sentencePatterns: prev }));
     },
 
+    // ── Vocabulary Sets (custom user groups) ──
+
+    fetchVocabularySets: async () => {
+        const result = await api.fetchVocabularySets();
+        set({ vocabularySets: result });
+        return result;
+    },
+
+    createVocabularySet: async (payload) => {
+        const saved = await api.createVocabularySet(payload);
+        set((s) => ({ vocabularySets: [...s.vocabularySets, saved] }));
+        return saved;
+    },
+
+    updateVocabularySet: async (id, patch) => {
+        const saved = await api.updateVocabularySet(id, patch);
+        set((s) => ({
+            vocabularySets: s.vocabularySets.map((st) => (st.id === id ? { ...st, ...saved } : st)),
+        }));
+        return saved;
+    },
+
+    deleteVocabularySet: async (id) => {
+        await api.deleteVocabularySet(id);
+        set((s) => ({ vocabularySets: s.vocabularySets.filter((st) => st.id !== id) }));
+    },
+
+    addVocabularyToSet: async (setId, vocabularyId) => {
+        await api.addVocabularyToSet(setId, vocabularyId);
+        set((s) => ({
+            vocabularySets: s.vocabularySets.map((st) =>
+                st.id === setId && !st.vocabularyIds.includes(vocabularyId)
+                    ? { ...st, count: st.count + 1, vocabularyIds: [...st.vocabularyIds, vocabularyId] }
+                    : st,
+            ),
+        }));
+    },
+
+    removeVocabularyFromSet: async (setId, vocabularyId) => {
+        await api.removeVocabularyFromSet(setId, vocabularyId);
+        set((s) => ({
+            vocabularySets: s.vocabularySets.map((st) =>
+                st.id === setId
+                    ? {
+                          ...st,
+                          count: Math.max(0, st.count - 1),
+                          vocabularyIds: st.vocabularyIds.filter((v) => v !== vocabularyId),
+                      }
+                    : st,
+            ),
+        }));
+    },
 }));
 
 export const useVocabularies = () => useAppStore((s) => s.vocabularies);
+export const useVocabularySets = () => useAppStore((s) => s.vocabularySets);
 export const useGrammarBank = () => useAppStore((s) => s.grammarBank);
 export const useSentencePatterns = () => useAppStore((s) => s.sentencePatterns);
 export const useDataLoading = () => useAppStore((s) => s.dataLoading);
 export const useDataError = () => useAppStore((s) => s.dataError);
 export const useDataHydrated = () => useAppStore((s) => s.hydrated);
+export const useDataLoadingStep = () => useAppStore((s) => s.dataLoadingStep);
 export const useVocabularyCount = () => useAppStore((s) => s.vocabularyTotal);
 export const useVocabulariesRevision = () => useAppStore((s) => s.vocabulariesRevision);
 export const useHanCharacters = () => useAppStore((s) => s.hanCharacters);
-export const useHanCharacterTotal = () => useAppStore((s) => s.hanCharacterTotal);
-export const useHanCharactersRevision = () => useAppStore((s) => s.hanCharactersRevision);
 export const useGrammarCount = () => useAppStore((s) => s.grammarBank.length);
 export const useSentenceCount = () => useAppStore((s) => s.sentencePatterns.length);
 export const useMasteredVocabularyCount = () => useAppStore((s) => s.masteredVocabularyCount);
@@ -928,12 +966,16 @@ export const useAppActions = () =>
             mergeVocabularies: s.mergeVocabularies,
             ensureVocabulariesByIds: s.ensureVocabulariesByIds,
             syncHanVariantsAll: s.syncHanVariantsAll,
-            syncPinyinAll: s.syncPinyinAll,
-            syncJyutpingAll: s.syncJyutpingAll,
             mergeHanCharacters: s.mergeHanCharacters,
             removeHanCharacter: s.removeHanCharacter,
             bumpHanCharactersRevision: s.bumpHanCharactersRevision,
             editHanCharacter: s.editHanCharacter,
             refreshHanCharacters: s.refreshHanCharacters,
+            fetchVocabularySets: s.fetchVocabularySets,
+            createVocabularySet: s.createVocabularySet,
+            updateVocabularySet: s.updateVocabularySet,
+            deleteVocabularySet: s.deleteVocabularySet,
+            addVocabularyToSet: s.addVocabularyToSet,
+            removeVocabularyFromSet: s.removeVocabularyFromSet,
         })),
     );

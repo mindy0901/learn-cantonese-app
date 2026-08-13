@@ -1,136 +1,49 @@
-import { useEffect, useRef, useState } from "react";
-import { useAuthError, useAuthSigningOut, useAuthStore, useAuthUser, useGoogleReady } from "../store/authStore.js";
-import { btnClass } from "./ui/buttonStyles.js";
-import { LoadingButton, BtnSpinner } from "./LoadingButton.jsx";
-import { GoogleIcon } from "./GoogleIcon.jsx";
+import { useState } from "react";
+import { useAuthSigningOut, useAuthStore, useAuthUser } from "../store/authStore.js";
+import { Button } from "./shadcn/button.jsx";
+import { Dialog, DialogTrigger } from "./shadcn/dialog.jsx";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from "./shadcn/dropdown-menu.jsx";
+import { LoginModal } from "./LoginModal.jsx";
 import { useLocale } from "../store/localeStore.js";
 
 export function UserMenu() {
     const { t } = useLocale();
     const user = useAuthUser();
     const signingOut = useAuthSigningOut();
-    const googleReady = useGoogleReady();
-    const authError = useAuthError();
-    const { signInWithGoogle, signInWithPassword, signOut, clearAuthError } = useAuthStore();
+    const { signOut, clearAuthError } = useAuthStore();
 
-    const [open, setOpen] = useState(false);
-    const [showLoginForm, setShowLoginForm] = useState(false);
-    const [loginEmail, setLoginEmail] = useState("");
-    const [loginPassword, setLoginPassword] = useState("");
-    const [loginLoading, setLoginLoading] = useState(false);
-    const [loginError, setLoginError] = useState(null);
-    const rootRef = useRef(null);
-
-    useEffect(() => {
-        if (!open) return;
-        const onDocClick = (e) => {
-            if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
-        };
-        document.addEventListener("mousedown", onDocClick);
-        return () => document.removeEventListener("mousedown", onDocClick);
-    }, [open]);
-
-    const errorMessage =
-        authError === "google_not_configured" ? t.auth.oauthNotConfigured : authError ? authError : null;
-
-    const handlePasswordLogin = async (e) => {
-        e.preventDefault();
-        if (!loginEmail || !loginPassword) return;
-        setLoginLoading(true);
-        setLoginError(null);
-        try {
-            await signInWithPassword(loginEmail, loginPassword);
-            setShowLoginForm(false);
-            setLoginEmail("");
-            setLoginPassword("");
-        } catch (err) {
-            setLoginError(err?.message || "Sign in failed");
-        } finally {
-            setLoginLoading(false);
-        }
-    };
+    const [loginOpen, setLoginOpen] = useState(false);
 
     if (!user) {
         return (
-            <div className="relative shrink-0 flex flex-col items-end gap-2" ref={rootRef}>
-                <div className="flex items-center gap-2">
-                    <LoadingButton
-                        className={btnClass("google", "sm")}
-                        onClick={signInWithGoogle}
-                        title={!googleReady ? t.auth.oauthNotConfigured : undefined}
-                    >
-                        <GoogleIcon className="size-[1.125rem]" />
-                        {t.auth.signIn}
-                    </LoadingButton>
-                    <button
-                        type="button"
-                        className={btnClass("ghost", "sm")}
-                        onClick={() => setShowLoginForm((v) => !v)}
-                    >
-                        🔑
-                    </button>
-                </div>
-                {showLoginForm && (
-                    <form
-                        onSubmit={handlePasswordLogin}
-                        className="absolute top-[calc(100%+0.5rem)] right-0 z-20 w-64 rounded-lg border border-border bg-surface p-3 shadow-lg flex flex-col gap-2"
-                    >
-                        <input
-                            type="text"
-                            placeholder="Username"
-                            value={loginEmail}
-                            onChange={(e) => setLoginEmail(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded border border-border bg-bg text-sm text-text-h outline-none focus:border-accent"
-                            autoComplete="username"
-                        />
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={loginPassword}
-                            onChange={(e) => setLoginPassword(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded border border-border bg-bg text-sm text-text-h outline-none focus:border-accent"
-                            autoComplete="current-password"
-                        />
-                        <button
-                            type="submit"
-                            className={btnClass("primary", "sm")}
-                            disabled={loginLoading || !loginEmail || !loginPassword}
-                        >
-                            {loginLoading ? "Signing in..." : "Sign in"}
-                        </button>
-                        {loginError && <p className="text-xs text-error-text m-0">{loginError}</p>}
-                    </form>
-                )}
-                {errorMessage && (
-                    <p
-                        className="absolute top-[calc(100%+0.5rem)] right-0 z-20 m-0 max-w-64 rounded-lg border border-error-border bg-error-bg py-2 pr-7 pl-2.5 text-xs leading-snug text-error-text whitespace-normal"
-                        role="alert"
-                    >
-                        {errorMessage}
-                        <button
-                            type="button"
-                            className="absolute top-0.5 right-1 border-0 bg-transparent p-0.5 text-base leading-none text-inherit cursor-pointer"
-                            onClick={clearAuthError}
-                            aria-label={t.common.close}
-                        >
-                            ×
-                        </button>
-                    </p>
-                )}
-            </div>
+            <Dialog
+                open={loginOpen}
+                onOpenChange={(open) => {
+                    if (open) clearAuthError();
+                    setLoginOpen(open);
+                }}
+            >
+                <DialogTrigger render={<Button type="button" variant="outline" size="sm" />}>
+                    {t.auth.login}
+                </DialogTrigger>
+                <LoginModal onClose={() => setLoginOpen(false)} />
+            </Dialog>
         );
     }
 
     const initial = (user.name ?? user.email ?? "?").charAt(0).toUpperCase();
 
     return (
-        <div className="relative shrink-0" ref={rootRef}>
-            <button
-                type="button"
-                className="flex max-w-48 items-center gap-2 rounded-full border border-border bg-surface py-1 pr-2 pl-1 text-[0.8125rem] text-text-h cursor-pointer hover:border-accent-border hover:bg-accent-bg"
-                onClick={() => setOpen((v) => !v)}
-                aria-expanded={open}
-                aria-haspopup="true"
+        <DropdownMenu>
+            <DropdownMenuTrigger
+                className="flex max-w-48 items-center gap-2 rounded-full border border-border bg-card py-1 pr-2 pl-1 text-[0.8125rem] text-card-foreground cursor-pointer hover:bg-primary/10"
                 title={user.email ?? user.name}
             >
                 {user.picture ? (
@@ -142,43 +55,28 @@ export function UserMenu() {
                     />
                 ) : (
                     <span
-                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white"
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
                         aria-hidden="true"
                     >
                         {initial}
                     </span>
                 )}
                 <span className="overflow-hidden text-ellipsis whitespace-nowrap">{user.name ?? user.email}</span>
-            </button>
-
-            {open && (
-                <div
-                    className="absolute top-[calc(100%+0.375rem)] right-0 z-20 min-w-44 rounded-[10px] border border-border bg-surface p-1.5 shadow-[0_8px_24px_rgb(0_0_0/12%)]"
-                    role="menu"
-                >
-                    <div className="mb-1 break-all border-b border-border px-2.5 py-1.5 text-xs text-text-muted">
-                        {user.email}
-                    </div>
-                    <button
-                        type="button"
-                        className="block w-full rounded-md border-0 bg-transparent px-2.5 py-2 text-left text-[0.8125rem] text-text-h cursor-pointer hover:bg-accent-bg"
-                        role="menuitem"
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={8}>
+                <DropdownMenuGroup>
+                    <DropdownMenuLabel className="max-w-56 break-all">{user.email}</DropdownMenuLabel>
+                    <DropdownMenuItem
+                        variant="destructive"
                         disabled={signingOut}
                         onClick={() => {
-                            setOpen(false);
                             signOut();
                         }}
                     >
-                        {signingOut ? (
-                            <span className="inline-flex items-center gap-2">
-                                <BtnSpinner size="sm" /> {t.auth.signingOut}
-                            </span>
-                        ) : (
-                            t.auth.signOut
-                        )}
-                    </button>
-                </div>
-            )}
-        </div>
+                        {signingOut ? t.auth.signingOut : t.auth.signOut}
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

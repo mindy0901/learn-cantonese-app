@@ -14,7 +14,3 @@ export function hanziiWordUrl(hanTraditional, locale) {
     const hl = hanziiHl(locale);
     return `https://hanzii.net/search/word/${encodeURIComponent(query)}?hl=${encodeURIComponent(hl)}`;
 }
-
-export function hanziiHomeUrl(locale) {
-    return `https://hanzii.net/?hl=${encodeURIComponent(hanziiHl(locale))}`;
-}

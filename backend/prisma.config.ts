@@ -4,6 +4,7 @@ import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+// Local dev DB (docker). Cloud is kept separately in backend/.env.cloud and NOT loaded here.
 dotenv.config({ path: resolve(__dirname, "..", ".env.dev") });
 
 export default defineConfig({
@@ -13,5 +14,6 @@ export default defineConfig({
     },
     migrations: {
         path: "prisma/migrations",
+        seed: "tsx prisma/seed.ts",
     },
 });

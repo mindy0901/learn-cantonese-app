@@ -1,6 +1,7 @@
 import { memo, useCallback, useRef, useState } from "react";
+import { Search } from "lucide-react";
 import { cn } from "../lib/cn.js";
-import { bankSearchInputClass } from "./ui/bankToolbarStyles.js";
+import { Input } from "./shadcn/input.jsx";
 
 export const BankSearchInput = memo(function BankSearchInput({
     id,
@@ -38,27 +39,13 @@ export const BankSearchInput = memo(function BankSearchInput({
     );
 
     return (
-        <div className={cn(bankSearchInputClass, "flex items-center gap-2", className)}>
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="shrink-0 text-text-muted"
-                aria-hidden="true"
-            >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
+        <div className={cn("relative w-full min-w-0 shrink-0", className)}>
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
                 ref={inputRef}
                 id={id}
                 type="search"
-                className="flex-1 min-w-0 border-0 bg-transparent p-0 text-sm leading-5 text-text-h outline-none placeholder:text-text-muted"
+                className="pl-8"
                 placeholder={placeholder}
                 value={value}
                 onChange={handleChange}

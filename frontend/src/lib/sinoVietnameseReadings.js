@@ -34,11 +34,7 @@ function toDisplayCase(value) {
         .trim()
         .split(/\s+/)
         .filter(Boolean)
-        .map((token) => {
-            // Erhua suffix: keep lowercase "r"
-            if (token === "r" || token === "R") return "r";
-            return titleCaseToken(token);
-        })
+        .map((token) => token.toLocaleUpperCase("vi"))
         .join(" ");
 }
 
@@ -85,7 +81,9 @@ export function normalizeSinoVietnameseValue(sinoVietnamese) {
 }
 
 function formatSinoVietnameseSlotForDisplay(slot) {
-    return parseSinoVietnameseSlotReadings(slot)
+    const readings = parseSinoVietnameseSlotReadings(slot);
+    if (readings.length === 0) return slot; // e.g. standalone "/" separator between pronunciations → keep it
+    return readings
         .map((reading) => (isSinoVietnamesePlaceholder(reading) ? SINO_VIETNAMESE_PLACEHOLDER : reading))
         .join(" / ");
 }
@@ -155,4 +153,26 @@ function alignSinoVietnameseTokens(tokens, charCount) {
         aligned.push(SINO_VIETNAMESE_PLACEHOLDER);
     }
     return aligned;
+}
+
+const HAN_CHAR_RE = /\p{Script=Han}/u;
+
+/**
+ * Display Sino-Vietnamese aligned to the number of Han characters in the word.
+ * When the stored value has fewer tokens than han chars (e.g. 香港 only has
+ * "hương"), pad the missing slots with "-" so the user knows the reading is
+ * incomplete (HƯƠNG -) instead of silently showing only one token.
+ */
+export function displaySinoVietnameseAligned(sinoVietnamese, hanText) {
+    const text = String(sinoVietnamese ?? "").trim();
+    if (!text) return "";
+    if (isSinoVietnameseNone(text)) return SINO_VIETNAMESE_NONE;
+
+    const hanCount = [...String(hanText ?? "")].filter((ch) => HAN_CHAR_RE.test(ch)).length;
+    const tokens = parseSinoVietnameseTokens(text);
+    if (hanCount === 0 || tokens.length >= hanCount) return displaySinoVietnamese(text);
+
+    const aligned = [...tokens];
+    while (aligned.length < hanCount) aligned.push("-");
+    return aligned.join(" ");
 }

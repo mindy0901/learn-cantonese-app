@@ -58,7 +58,7 @@ export function SkeletonCardList({ cards = 4, className }) {
     return (
         <div className={cn("flex flex-col gap-3", className)}>
             {Array.from({ length: cards }, (_, i) => (
-                <div key={i} className="rounded-lg border border-border/60 bg-surface p-5 flex flex-col gap-3">
+                <div key={i} className="rounded-lg border border-border/60 bg-card p-5 flex flex-col gap-3">
                     <SkeletonLine width="60%" className="h-5" />
                     <SkeletonLine width="40%" />
                     <div className="flex gap-2 mt-1">
@@ -76,7 +76,7 @@ export function SkeletonStats({ stats = 4, className }) {
     return (
         <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-3", className)}>
             {Array.from({ length: stats }, (_, i) => (
-                <div key={i} className="rounded-xl border border-border/60 bg-surface p-4 flex flex-col gap-2">
+                <div key={i} className="rounded-xl border border-border/60 bg-card p-4 flex flex-col gap-2">
                     <SkeletonLine width="40%" className="h-3" />
                     <SkeletonLine width="70%" className="h-7" />
                 </div>

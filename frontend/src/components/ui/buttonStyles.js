@@ -4,13 +4,13 @@ import { cn } from "../../lib/cn.js";
 /** @typedef {'sm' | 'md' | 'lg' | 'icon'} ButtonSize */
 
 const base = cn(
-    "box-border m-0 shrink-0 rounded-lg border bg-surface",
+    "box-border m-0 shrink-0 rounded-lg border bg-card",
     "inline-flex items-center justify-center",
     "gap-1.5 font-medium leading-normal no-underline whitespace-nowrap shadow-sm",
     "border-transparent",
     "transition-[color,background-color,border-color,box-shadow,transform] duration-150",
     "active:enabled:scale-[0.97]",
-    "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
+    "focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2",
     "disabled:cursor-not-allowed",
 );
 
@@ -24,15 +24,15 @@ export const buttonSizes = {
 
 const variants = {
     primary:
-        "bg-accent text-white border-accent hover:enabled:bg-accent-hover hover:enabled:border-accent-hover disabled:opacity-50 disabled:shadow-none",
-    outline: "bg-surface text-accent border-accent-border hover:enabled:bg-accent-bg hover:enabled:border-accent",
-    ghost: "bg-surface text-text-h border-border hover:enabled:bg-bg hover:enabled:border-text-muted",
+        "bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90 hover:enabled:border-primary disabled:opacity-50 disabled:shadow-none",
+    outline: "bg-card text-primary border-primary/25 hover:enabled:bg-primary/10 hover:enabled:border-primary",
+    ghost: "bg-card text-foreground border-border hover:enabled:bg-background hover:enabled:border-muted",
     success:
-        "bg-success-bg text-success-text border-success-border hover:enabled:bg-success-bg hover:enabled:border-success-text",
-    danger: "bg-red-50 text-red-700 border-red-200 hover:enabled:bg-red-100 hover:enabled:border-red-300 disabled:opacity-50 disabled:shadow-none dark:bg-red-950 dark:text-red-300 dark:border-red-800 dark:hover:enabled:bg-red-900 dark:hover:enabled:border-red-700",
+        "bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90 hover:enabled:border-primary",
+    danger: "bg-destructive text-destructive-foreground border-destructive hover:enabled:bg-destructive/90 disabled:opacity-50 disabled:shadow-none",
     warning:
         "bg-amber-500 text-white border-amber-600 hover:enabled:bg-amber-600 disabled:opacity-50 disabled:shadow-none",
-    google: "gap-2.5 bg-white text-[#1f1f1f] border-[#747775] shadow-none font-medium tracking-wide hover:enabled:bg-[#f7f8f8] hover:enabled:border-[#747775] hover:enabled:shadow-[0_1px_2px_rgb(60_64_67/30%)] dark:bg-surface dark:text-text-h dark:border-border",
+    google: "gap-2.5 bg-white text-[#1f1f1f] border-[#747775] shadow-none font-medium tracking-wide hover:enabled:bg-[#f7f8f8] hover:enabled:border-[#747775] hover:enabled:shadow-[0_1px_2px_rgb(60_64_67/30%)] dark:bg-card dark:text-foreground dark:border-border dark:hover:enabled:bg-background dark:hover:enabled:border-primary/25 dark:hover:enabled:shadow-none",
 };
 
 /**

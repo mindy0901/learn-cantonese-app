@@ -2,7 +2,7 @@ import { cn } from "../lib/cn.js";
 import { isVocabularyFieldPending, vocabularyFieldDisplayText } from "../lib/wordDisplay.js";
 
 /** Pending fields stay readable (not muted) but italicized. */
-export const wordFieldPendingClass = "italic !text-text-h";
+export const wordFieldPendingClass = "italic !text-foreground";
 
 export function WordFieldText({
     vocab,

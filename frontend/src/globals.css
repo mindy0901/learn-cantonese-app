@@ -1,0 +1,754 @@
+/* ════════════════════════════════════════════════════════════
+   shadcn/ui theme (theo docs https://ui.shadcn.com/docs/theming)
+   Base UI + preset Nova — màu mặc định (neutral).
+   App custom CSS nằm ở `app.css`; theme chỉ ở đây.
+   ════════════════════════════════════════════════════════════ */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/noto-sans-tc";
+@import "@fontsource-variable/noto-sans-sc";
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+    --font-sans: "Geist Variable", sans-serif;
+    --font-heading: "Geist Variable", sans-serif;
+}
+
+:root {
+    --radius: 0.625rem;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.148 0.004 228.8);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.148 0.004 228.8);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.148 0.004 228.8);
+    --primary: oklch(0.508 0.118 165.612);
+    --primary-foreground: oklch(0.979 0.021 166.113);
+    --secondary: oklch(0.967 0.001 286.375);
+    --secondary-foreground: oklch(0.21 0.006 285.885);
+    --muted: oklch(0.963 0.002 197.1);
+    --muted-foreground: oklch(0.56 0.021 213.5);
+    --accent: oklch(0.963 0.002 197.1);
+    --accent-foreground: oklch(0.218 0.008 223.9);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.979 0.021 166.113);
+    --border: oklch(0.925 0.005 214.3);
+    --input: oklch(0.925 0.005 214.3);
+    --ring: oklch(0.723 0.014 214.4);
+    --chart-1: oklch(0.872 0.007 219.6);
+    --chart-2: oklch(0.56 0.021 213.5);
+    --chart-3: oklch(0.45 0.017 213.2);
+    --chart-4: oklch(0.378 0.015 216);
+    --chart-5: oklch(0.275 0.011 216.9);
+    --sidebar: oklch(0.987 0.002 197.1);
+    --sidebar-foreground: oklch(0.148 0.004 228.8);
+    --sidebar-primary: oklch(0.596 0.145 163.225);
+    --sidebar-primary-foreground: oklch(0.979 0.021 166.113);
+    --sidebar-accent: oklch(0.963 0.002 197.1);
+    --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
+    --sidebar-border: oklch(0.925 0.005 214.3);
+    --sidebar-ring: oklch(0.723 0.014 214.4);
+}
+
+[data-theme="dark"] {
+    --background: oklch(0.148 0.004 228.8);
+    --foreground: oklch(0.987 0.002 197.1);
+    --card: oklch(0.218 0.008 223.9);
+    --card-foreground: oklch(0.987 0.002 197.1);
+    --popover: oklch(0.218 0.008 223.9);
+    --popover-foreground: oklch(0.987 0.002 197.1);
+    --primary: oklch(0.432 0.095 166.913);
+    --primary-foreground: oklch(0.979 0.021 166.113);
+    --secondary: oklch(0.274 0.006 286.033);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.275 0.011 216.9);
+    --muted-foreground: oklch(0.723 0.014 214.4);
+    --accent: oklch(0.275 0.011 216.9);
+    --accent-foreground: oklch(0.987 0.002 197.1);
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.985 0 0);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.56 0.021 213.5);
+    --chart-1: oklch(0.872 0.007 219.6);
+    --chart-2: oklch(0.56 0.021 213.5);
+    --chart-3: oklch(0.45 0.017 213.2);
+    --chart-4: oklch(0.378 0.015 216);
+    --chart-5: oklch(0.275 0.011 216.9);
+    --sidebar: oklch(0.218 0.008 223.9);
+    --sidebar-foreground: oklch(0.987 0.002 197.1);
+    --sidebar-primary: oklch(0.696 0.17 162.48);
+    --sidebar-primary-foreground: oklch(0.262 0.051 172.552);
+    --sidebar-accent: oklch(0.275 0.011 216.9);
+    --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.56 0.021 213.5);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    html {
+        @apply font-sans;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   App custom CSS — token riêng + CSS component của app.
+   Legacy tokens map sang màu mặc định của UI lib (neutral).
+   ════════════════════════════════════════════════════════════ */
+@theme {
+    --color-border: var(--border);
+    --color-accent: var(--accent);
+    --color-han: var(--han-color);
+    --color-han-trad: var(--han-trad-color);
+    --color-han-simp: var(--han-simp-color);
+    --color-pinyin: var(--pinyin-color);
+    --color-jyutping: var(--jyutping-color);
+    --color-viet: var(--viet-color);
+    --color-han-pop-0: var(--han-popularity-0);
+    --color-han-pop-1: var(--han-popularity-1);
+    --color-han-pop-2: var(--han-popularity-2);
+    --color-han-pop-3: var(--han-popularity-3);
+    --color-han-pop-4: var(--han-popularity-4);
+    --shadow-md: var(--shadow);
+    --shadow-sm: var(--shadow-sm);
+    --font-sans: var(--sans);
+    --font-heading: var(--heading);
+    --font-mono: var(--mono);
+}
+
+:root {
+    color-scheme: light;
+    --han-scale: 1.3;
+    --jyutping-scale: 1.15;
+
+    /* Màu nội dung (semantic) — giữ riêng, không thuộc theme UI lib */
+    --han-color: #dc2626;
+    --han-trad-color: #dc2626;
+    --han-simp-color: #2563eb;
+    --han-popularity-0: #dc2626;
+    --han-popularity-1: #ea580c;
+    --han-popularity-2: #65a30d;
+    --han-popularity-3: #059669;
+    --han-popularity-4: #7c3aed;
+    --jyutping-color: #dc2626;
+    --viet-color: #16a34a;
+    --pinyin-color: #2563eb;
+
+    /* Legacy tokens — map sang theme UI lib (tự theo light/dark) */
+    --accent: var(--primary);
+    --accent-foreground: var(--primary-foreground);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.05);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
+
+    /* Word detail card — baseline 34rem, +20% */
+    --word-detail-card-min-height: 40.8rem;
+    --word-detail-content-scale: 1.5;
+
+    --sans: "Geist Variable", sans-serif;
+    --heading: "Geist Variable", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    font-family: var(--sans);
+    line-height: 1.5;
+    color: var(--muted-foreground);
+    background: var(--background);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scrollbar-gutter: stable;
+}
+
+/* Han character detail page — larger font sizes */
+.han-detail-page {
+    --word-detail-content-scale: 2.25;
+}
+.han-detail-page .text-6xl {
+    font-size: 4rem !important;
+}
+.han-detail-page .text-lg {
+    font-size: 1.375rem !important;
+}
+.han-detail-page .text-xs {
+    font-size: 0.9375rem !important;
+}
+.han-detail-page .text-base {
+    font-size: 1.125rem !important;
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+    /* Màu nội dung dark — text/bg/surface tự theo globals qua var() */
+    --han-color: #f87171;
+    --han-trad-color: #f87171;
+    --han-simp-color: #60a5fa;
+    --han-popularity-0: #f87171;
+    --han-popularity-1: #fb923c;
+    --han-popularity-2: #a3e635;
+    --han-popularity-3: #34d399;
+    --han-popularity-4: #a78bfa;
+    --jyutping-color: #f87171;
+    --viet-color: #4ade80;
+    --pinyin-color: #60a5fa;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100svh;
+    font-size: 1rem;
+    background-color: var(--background);
+    background-image:
+        linear-gradient(to right, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px),
+        linear-gradient(to bottom, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px);
+    background-size: 26px 26px;
+}
+
+#root {
+    min-height: 100svh;
+}
+
+h1,
+h2 {
+    font-family: var(--heading);
+    font-weight: 600;
+    color: var(--foreground);
+    margin: 0;
+}
+
+h1 {
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+}
+
+h2 {
+    font-size: 1.125rem;
+}
+
+p {
+    margin: 0;
+}
+
+/* NOTE: rule này để trong `@layer base` để không override utilities của Tailwind.
+   Nếu để unlayered (ngoài @layer), `button { margin: 0 }` sẽ thắng mọi class
+   `mt-*`/`mb-*` (CSS cascade: unlayered > layered) → margin trên button không hoạt động. */
+@layer base {
+    button {
+        font-family: inherit;
+        cursor: pointer;
+        margin: 0;
+    }
+}
+
+input,
+textarea,
+select {
+    font-family: inherit;
+    font-size: 0.9375rem;
+}
+
+code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    padding: 0.15em 0.4em;
+    background: var(--muted);
+    border-radius: 4px;
+    color: var(--jyutping-color);
+}
+
+.muted {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+}
+
+/* ── Flashcard 3D flip (minimal custom CSS) ── */
+
+.flashcard-stage {
+    overflow: hidden;
+    min-height: 360px;
+}
+
+.flashcard-nav-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+.flashcard-nav-btn {
+    align-self: center;
+    min-width: 4.5rem;
+    max-width: 5.5rem;
+    flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+    .flashcard-nav-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .flashcard-nav-btn {
+        max-width: none;
+        width: 100%;
+    }
+}
+
+.flashcard-3d {
+    perspective: 1200px;
+    min-height: 360px;
+    cursor: pointer;
+}
+
+.flashcard-3d--no-flip .flashcard-3d__inner {
+    transition: none;
+}
+
+.flashcard-3d--slide-out-next {
+    animation: flashcard-slide-out-left 0.26s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+    pointer-events: none;
+}
+
+.flashcard-3d--slide-in-next {
+    animation: flashcard-slide-in-right 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    pointer-events: none;
+}
+
+.flashcard-3d--slide-out-prev {
+    animation: flashcard-slide-out-right 0.26s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+    pointer-events: none;
+}
+
+.flashcard-3d--slide-in-prev {
+    animation: flashcard-slide-in-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    pointer-events: none;
+}
+
+@keyframes flashcard-slide-out-left {
+    from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-2.5rem) scale(0.96);
+    }
+}
+
+@keyframes flashcard-slide-in-right {
+    from {
+        opacity: 0;
+        transform: translateX(2.5rem) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes flashcard-slide-out-right {
+    from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(2.5rem) scale(0.96);
+    }
+}
+
+@keyframes flashcard-slide-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-2.5rem) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flashcard-3d--slide-out-next,
+    .flashcard-3d--slide-in-next,
+    .flashcard-3d--slide-out-prev,
+    .flashcard-3d--slide-in-prev {
+        animation: none;
+    }
+}
+
+.flashcard-3d__inner {
+    position: relative;
+    width: 100%;
+    min-height: 360px;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.flashcard-3d--flipped .flashcard-3d__inner {
+    transform: rotateY(180deg);
+}
+
+.flashcard-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem 1.75rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 0.875rem;
+}
+
+.flashcard-face--back {
+    transform: rotateY(180deg);
+}
+
+/* Flashcard typography */
+
+.flashcard-sino-vietnamese {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    line-height: 1.3;
+}
+
+.flashcard-han {
+    font-size: calc(2.75rem * var(--han-scale));
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+}
+
+.flashcard-han:not([class*="han-popularity--lvl-"]) {
+    color: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+    .flashcard-han:not([class*="han-popularity--lvl-"]) {
+        color: #f87171;
+    }
+}
+
+.flashcard-viet {
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--viet-color);
+    line-height: 1.3;
+    margin: 0;
+}
+
+.flashcard-english {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--foreground);
+    line-height: 1.3;
+    margin: 0;
+}
+
+.flashcard-jyutping {
+    font-size: calc(2.5rem * var(--jyutping-scale));
+    font-weight: 600;
+    font-style: normal;
+    color: var(--jyutping-color);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.flashcard-face--front .flashcard-jyutping {
+    font-size: calc(1.35rem * var(--jyutping-scale));
+}
+
+.flashcard-face--back .flashcard-viet {
+    font-size: 1.75rem;
+}
+
+.flashcard-face--back .flashcard-english {
+    font-size: 1.25rem;
+    color: var(--muted-foreground);
+}
+
+@media (max-width: 640px) {
+    .flashcard-han {
+        font-size: calc(2rem * var(--han-scale));
+    }
+}
+
+/* ── Word detail — main content typography (+50% via --word-detail-content-scale) ── */
+.word-detail-content .wd-text {
+    font-size: calc(clamp(0.9375rem, 2.5vw, 1.0625rem) * var(--word-detail-content-scale));
+}
+.word-detail-content .wd-sub {
+    font-size: calc(0.6875rem * var(--word-detail-content-scale));
+}
+.word-detail-content .wd-han {
+    font-size: calc(1.75rem * var(--han-scale) * var(--word-detail-content-scale));
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+    /* Font Hán cố định (đồng nhất mọi user): web font Noto Sans CJK (TC+SC)
+       self-host trước, hệ thống fallback sau. Geist không có glyph Hán nên
+       không đứng đầu ở vùng Hán thuần. */
+    font-family: "Noto Sans TC Variable", "Noto Sans SC Variable", "Microsoft JhengHei", "PingFang HK", sans-serif;
+}
+.word-detail-content .wd-roman {
+    min-height: calc(1.375rem * var(--word-detail-content-scale));
+}
+.word-detail-content .wd-input {
+    font-size: calc(0.875rem * var(--word-detail-content-scale));
+}
+
+/* ── Font Hán đồng nhất toàn app (2026-08-11) ──
+   Geist Variable không có glyph Hán → browser fallback hệ thống KHÁC NHAU
+   giữa run giản/phồn → độ dày nét lệch. Ép font Hán cố định (Noto Sans CJK
+   web font self-host trước, hệ thống fallback sau) cho MỌI nơi hiển thị hán. */
+.flashcard-han,
+.wd-han,
+.text-han-trad,
+.text-han-simp,
+[class*="wd-han"] {
+    font-family: "Noto Sans TC Variable", "Noto Sans SC Variable", "Microsoft JhengHei", "PingFang HK", sans-serif;
+}
+
+/* ── Font phiên âm (pinyin/jyutping) — KHÔNG ép font Hán ──
+   Noto Sans TC/SC thiếu ē (U+0113) & ě (U+011B) → thanh điệu bị fallback
+   sang font hệ thống KHÁC → dấu lệch vị trí so với j/i. Geist Variable có
+   đủ ē/é/ě/è → đứng đầu stack cho phiên âm (Latin + dấu thanh điệu). */
+.text-pinyin,
+.text-jyutping {
+    font-family:
+        "Geist Variable", "Noto Sans TC Variable", "Noto Sans SC Variable", "Microsoft JhengHei", "PingFang HK",
+        sans-serif;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Radicals page — theo theme chung (light/dark)
+   ──────────────────────────────────────────────────────────── */
+.radicals-page {
+    color: var(--foreground);
+    background: var(--background);
+}
+
+.radicals-grid-bg,
+.page-grid-bg {
+    background-color: var(--background);
+    background-image:
+        linear-gradient(to right, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px),
+        linear-gradient(to bottom, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px);
+    background-size: 26px 26px;
+}
+
+/* Card */
+.radicals-card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}
+.radicals-card--hover {
+    transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease;
+}
+.radicals-card--hover:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+/* Buttons */
+.radicals-btn {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--foreground);
+    transition:
+        background-color 0.12s ease,
+        border-color 0.12s ease,
+        color 0.12s ease;
+}
+.radicals-btn:hover:not(:disabled) {
+    background-color: var(--background);
+    border-color: var(--muted-foreground);
+}
+.radicals-btn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+.radicals-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.radicals-btn--solid {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-foreground);
+}
+.radicals-btn--solid:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--primary) 85%, var(--primary-foreground));
+    border-color: var(--primary);
+    color: var(--primary-foreground);
+}
+.radicals-btn--hi {
+    background-color: color-mix(in oklab, var(--accent) 8%, transparent);
+    border-color: color-mix(in oklab, var(--accent) 25%, transparent);
+    color: var(--accent);
+}
+.radicals-btn--hi:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--accent) 8%, transparent);
+    color: var(--accent);
+}
+.radicals-btn--active {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: var(--primary-foreground) !important;
+}
+
+/* Chip — variant / small badge */
+.radicals-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background-color: var(--muted);
+    padding: 0 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--muted-foreground);
+}
+
+/* Flashcard 3D flip (X-axis, like nhaihsk) */
+.radicals-flip {
+    perspective: 1200px;
+}
+.radicals-flip__inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 340px;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+.radicals-flip--flipped .radicals-flip__inner {
+    transform: rotateX(-180deg);
+}
+.radicals-flip__face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background-color: var(--card);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    text-align: center;
+    padding: 1.5rem;
+}
+.radicals-flip__face--back {
+    transform: rotateX(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+    .radicals-flip__inner {
+        transition: none;
+    }
+}
+
+/* Sheet luyện viết — ẩn trên màn hình, hiện trong modal & khi in */
+.radicals-sheet {
+    display: none;
+}
+.radicals-sheet--open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    overflow: auto;
+    background-color: var(--background);
+    padding: 1.5rem;
+}
+.radicals-sheet--open .radicals-sheet__inner {
+    max-width: 60rem;
+    margin: 0 auto;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .radicals-sheet,
+    .radicals-sheet * {
+        visibility: visible;
+    }
+    .radicals-sheet {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 0.5rem;
+        background-color: #fff;
+    }
+    .radicals-sheet .radicals-sheet__toolbar {
+        display: none !important;
+    }
+}

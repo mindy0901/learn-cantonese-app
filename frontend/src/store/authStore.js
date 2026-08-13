@@ -71,9 +71,30 @@ export const useAuthStore = create((set, get) => ({
             return user;
         } catch (err) {
             set({ loading: false });
-            const msg = err?.message || "Sign in failed";
+            const msg = err?.message || "Đăng nhập thất bại";
             set({ authError: msg });
             log("Password sign-in failed", msg);
+            throw err;
+        }
+    },
+
+    signUpWithPassword: async (email, password) => {
+        log("Password sign-up");
+        set({ authError: null, loading: true });
+        try {
+            const user = await api.register(email, password);
+            setVocabularyBrowseCacheOwner(user.id);
+            set({ user, loading: false });
+            log("Getting user", user.email.split("@")[0]);
+            // Re-hydrate data
+            const { useAppStore } = await import("./appStore.js");
+            await useAppStore.getState().hydrateFromCloud();
+            return user;
+        } catch (err) {
+            set({ loading: false });
+            const msg = err?.message || "Đăng ký thất bại";
+            set({ authError: msg });
+            log("Password sign-up failed", msg);
             throw err;
         }
     },

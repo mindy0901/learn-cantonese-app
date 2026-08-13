@@ -38,6 +38,44 @@ export function toDisplayCase(value) {
         .join(" ");
 }
 
+/**
+ * Capitalize the first letter of the whole string and of each item
+ * after `.`, `!`, `?`, `;` and (optionally) `,`. Used for vietMeanings /
+ * engMeanings. Does NOT lowercase the rest — only enforces the leading
+ * letter case. `opts.comma` adds `,` to the separator set (used for
+ * engMeanings so "capable; smart, brilliant" → "Capable; Smart, Brilliant").
+ */
+export function capitalizeSentences(value, opts = {}) {
+    const s = String(value ?? "").trim();
+    if (!s) return s;
+    // eslint-disable-next-line no-control-regex
+    return opts.comma
+        ? s.replace(/(^|[.,!?;/]\s*)(\p{L})/gu, (_m, pre, ch) => pre + ch.toLocaleUpperCase("vi"))
+        : s.replace(/(^|[.!?;/]\s*)(\p{L})/gu, (_m, pre, ch) => pre + ch.toLocaleUpperCase("vi"));
+}
+
+/**
+ * Join a field across the child-table meanings array (`vocabulary_meanings`).
+ * Example: vocab.meanings = [{ vietMeanings: "A", engMeanings: "X" }, { vietMeanings: "B", engMeanings: "Y" }]
+ *   collectMeaningsField(vocab.meanings, "vietMeanings") → "A; B"
+ * Returns "" when there are no meanings or none have the field.
+ */
+export function collectMeaningsField(meanings, field) {
+    if (!Array.isArray(meanings) || meanings.length === 0) return "";
+    const parts = meanings.map((m) => String(m?.[field] ?? "").trim()).filter(Boolean);
+    return displayMeaning(parts.join("; "));
+}
+
+/**
+ * Display form for a meaning string: capitalize the first letter of the whole
+ * string and of each item after a comma (and `.`, `!`, `?`, `;`). Data is
+ * stored lowercase (after sync); this restores nice casing ONLY for display.
+ * Example: "1, một, số 1, số một" → "1, Một, Số 1, Số một".
+ */
+export function displayMeaning(value) {
+    return capitalizeSentences(String(value ?? "").trim(), { comma: true });
+}
+
 /** @param {{ hanTraditional?: string, hanTrad?: string, han?: string }} vocab */
 function resolveHanTraditional(vocab) {
     return stripTrailingPunctuation(vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han);
@@ -57,10 +95,10 @@ export function normalizeVocabularyFields(vocab) {
     const hanSimplified = stripTrailingPunctuation(vocab.hanSimplified);
     const next = {
         ...vocab,
-        engMeanings: toDisplayCase(stripTrailingPunctuation(vocab.engMeanings)),
+        engMeanings: capitalizeSentences(stripTrailingPunctuation(vocab.engMeanings), { comma: true }),
         hanTraditional,
         hanSimplified: hanSimplified || undefined,
-        vietMeanings: toDisplayCase(stripTrailingPunctuation(vocab.vietMeanings)),
+        vietMeanings: capitalizeSentences(stripTrailingPunctuation(vocab.vietMeanings)),
     };
     delete next.han;
     if (!hanSimplified) {
@@ -74,15 +112,18 @@ export function normalizeVocabularyFields(vocab) {
         }
     }
     if (vocab.jyutping != null && vocab.jyutping !== "") {
-        next.jyutping = stripTrailingPunctuation(vocab.jyutping);
+        next.jyutping = stripTrailingPunctuation(vocab.jyutping).toLowerCase();
     } else {
         delete next.jyutping;
     }
     if (vocab.pinyin != null && vocab.pinyin !== "") {
-        next.pinyin = stripTrailingPunctuation(vocab.pinyin);
+        next.pinyin = stripTrailingPunctuation(vocab.pinyin).toLowerCase();
     } else {
         delete next.pinyin;
     }
+    // Pure Cantonese words no longer drop pinyin/simplified here — the UI
+    // keeps both fields and marks the traditional form with a strikethrough
+    // (Cantonese & Mandarin both use the simplified spelling).
     const vietExamples = String(vocab.vietExamples ?? "").trim();
     if (vietExamples) {
         next.vietExamples = vietExamples;
@@ -110,6 +151,7 @@ export function mergeVocabularyFieldsPreferFilled(existing, incoming) {
         vietExamples: "vietExamples" in incoming ? incoming.vietExamples || undefined : existing.vietExamples,
         important: Boolean(existing.important || incoming.important),
         mastered: Boolean(existing.mastered || incoming.mastered),
+        pureCantonese: Boolean(existing.pureCantonese || incoming.pureCantonese),
 
         createdAt: existing.createdAt ?? incoming.createdAt,
         updatedAt: incoming.updatedAt ?? existing.updatedAt,
@@ -117,6 +159,8 @@ export function mergeVocabularyFieldsPreferFilled(existing, incoming) {
 }
 
 export function vocabularyContentEqual(a, b) {
+    // Compare meanings & romanization while ignoring temp ids used for editing.
+    const jsonNoTemp = (v) => JSON.stringify(v ?? [], (k, val) => (k === "_tempId" ? undefined : val));
     return (
         normVocabularyField(a.engMeanings) === normVocabularyField(b.engMeanings) &&
         normVocabularyField(resolveHanTraditional(a)) === normVocabularyField(resolveHanTraditional(b)) &&
@@ -129,6 +173,8 @@ export function vocabularyContentEqual(a, b) {
         Boolean(a.important) === Boolean(b.important) &&
         Boolean(a.mastered) === Boolean(b.mastered) &&
         String(a.hskLevel ?? "").trim() === String(b.hskLevel ?? "").trim() &&
-        JSON.stringify(a.meanings ?? []) === JSON.stringify(b.meanings ?? [])
+        Boolean(a.pureCantonese) === Boolean(b.pureCantonese) &&
+        jsonNoTemp(a.meanings) === jsonNoTemp(b.meanings) &&
+        jsonNoTemp(a.romanization) === jsonNoTemp(b.romanization)
     );
 }

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bảng Pinyin — 406 âm tiết chuẩn</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f7f7f8;
+            color: #1a1a1a;
+            line-height: 1.5;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px 64px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin: 0 0 4px;
+        }
+
+        .sub {
+            color: #666;
+            margin: 0 0 24px;
+        }
+
+        .tone-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .tone-card {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .tone-card .mark {
+            font-size: 1.8rem;
+            line-height: 1;
+        }
+
+        .tone-card .name {
+            font-weight: 600;
+            margin: 6px 0 2px;
+        }
+
+        .tone-card .desc {
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .note {
+            background: #fffbe6;
+            border: 1px solid #ffe58f;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            margin-bottom: 28px;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            background: #fff;
+            max-height: 70vh;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            border: 1px solid #ececec;
+            padding: 6px 8px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: #f0f0f2;
+            z-index: 2;
+            font-weight: 600;
+        }
+
+        tbody th {
+            position: sticky;
+            left: 0;
+            background: #f7f7f8;
+            z-index: 1;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        thead th:first-child {
+            left: 0;
+            z-index: 3;
+        }
+
+        td.empty {
+            background: #fafafa;
+        }
+
+        td.syllable {
+            color: #1a56db;
+            font-weight: 500;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #16161a;
+                color: #e6e6e6;
+            }
+
+            .tone-card {
+                background: #1f1f26;
+                border-color: #33333c;
+            }
+
+            .tone-card .desc {
+                color: #a0a0ab;
+            }
+
+            .note {
+                background: #2a2615;
+                border-color: #5c4f1a;
+                color: #e6dca8;
+            }
+
+            .table-wrap {
+                background: #1f1f26;
+                border-color: #33333c;
+            }
+
+            th,
+            td {
+                border-color: #2c2c34;
+            }
+
+            thead th {
+                background: #26262e;
+            }
+
+            tbody th {
+                background: #1c1c22;
+            }
+
+            td.empty {
+                background: #18181d;
+            }
+
+            td.syllable {
+                color: #7aa2ff;
+            }
+
+            .sub {
+                color: #9a9aa4;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>Bảng Pinyin <span style="font-weight:400;font-size:1rem;color:#888">(拼音表)</span></h1>
+        <p class="sub">Thanh mẫu (声母) × Vận mẫu (韵母) — <strong>406 âm tiết chuẩn</strong></p>
+
+        <section class="tone-grid">
+            <div class="tone-card">
+                <div class="mark">ˉ</div>
+                <div class="name">Thanh 1 (阴平)</div>
+                <div class="desc">Cao và đều (55) — như ngân "ma-a" giọng cao</div>
+            </div>
+            <div class="tone-card">
+                <div class="mark">ˊ</div>
+                <div class="name">Thanh 2 (阳平)</div>
+                <div class="desc">Từ trung lên cao (35) — như dấu sắc kéo dài</div>
+            </div>
+            <div class="tone-card">
+                <div class="mark">ˇ</div>
+                <div class="name">Thanh 3 (上声)</div>
+                <div class="desc">Xuống thấp rồi vòng lên (214) — gần dấu hỏi</div>
+            </div>
+            <div class="tone-card">
+                <div class="mark">ˋ</div>
+                <div class="name">Thanh 4 (去声)</div>
+                <div class="desc">Từ cao rơi xuống thấp (51) — dứt khoát như ra lệnh</div>
+            </div>
+        </section>
+
+        <div class="note">Ngoài 4 thanh trên còn có <strong>thanh nhẹ (轻声)</strong> — đọc ngắn, nhẹ, không dấu (vd âm
+            tiết thứ 2 trong 妈妈 māma).</div>
+
+        <div class="table-wrap">
+            <table id="pinyin-table">
+                <thead>
+                    <tr id="head-row">
+                        <th>声母 \ 韵母</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        // Dữ liệu bảng pinyin — 35 vận mẫu (cột) × 21 thanh mẫu + hàng Ø
+        const FINALS = ["a", "o", "e", "er", "ai", "ei", "ao", "ou", "an", "en", "ang", "eng",
+            "yi", "ya", "ye", "yao", "you", "yan", "yin", "yang", "ying", "yong",
+            "wu", "wa", "wo", "wai", "wei", "wan", "wen", "wang", "weng",
+            "yu", "yue", "yuan", "yun"];
+
+        const ROWS = [
+            { initial: "Ø", cells: FINALS },
+            { initial: "b", cells: ["ba", "bo", "", "", "", "bai", "bei", "bao", "", "ban", "ben", "bang", "beng", "", "bi", "", "bie", "biao", "", "bian", "bin", "", "bing", "", "bu", "", "", "", "", "", "", "", "", "", "", "", ""] },
+            { initial: "p", cells: ["pa", "po", "", "", "", "pai", "pei", "pao", "pou", "pan", "pen", "pang", "peng", "", "pi", "", "pie", "piao", "", "pian", "pin", "", "ping", "", "pu", "", "", "", "", "", "", "", "", "", "", "", ""] },
+            { initial: "m", cells: ["ma", "mo", "me", "", "", "mai", "mei", "mao", "mou", "man", "men", "mang", "meng", "", "mi", "", "mie", "miao", "miu", "mian", "min", "", "ming", "", "mu", "", "", "", "", "", "", "", "", "", "", "", ""] },
+            { initial: "f", cells: ["fa", "fo", "", "", "", "", "fei", "", "fou", "fan", "fen", "fang", "feng", "", "", "", "", "", "", "", "", "", "", "", "fu", "", "", "", "", "", "", "", "", "", "", "", ""] },
+            { initial: "d", cells: ["da", "", "de", "", "", "dai", "dei", "dao", "dou", "dan", "den", "dang", "deng", "dong", "di", "", "die", "diao", "diu", "dian", "", "", "ding", "", "du", "", "duo", "", "dui", "duan", "dun", "", "", "", "", "", ""] },
+            { initial: "t", cells: ["ta", "", "te", "", "", "tai", "", "tao", "tou", "tan", "", "tang", "teng", "tong", "ti", "", "tie", "tiao", "", "tian", "", "", "ting", "", "tu", "", "tuo", "", "tui", "tuan", "tun", "", "", "", "", "", ""] },
+            { initial: "n", cells: ["na", "", "ne", "", "", "nai", "nei", "nao", "nou", "nan", "nen", "nang", "neng", "nong", "ni", "", "nie", "niao", "niu", "nian", "nin", "niang", "ning", "", "nu", "", "nuo", "", "", "nuan", "", "", "", "nü", "nüe", "", ""] },
+            { initial: "l", cells: ["la", "", "le", "", "", "lai", "lei", "lao", "lou", "lan", "", "lang", "leng", "long", "li", "lia", "lie", "liao", "liu", "lian", "lin", "liang", "ling", "", "lu", "", "luo", "", "", "luan", "lun", "", "", "lü", "lüe", "", ""] },
+            { initial: "z", cells: ["za", "", "ze", "zi", "", "zai", "zei", "zao", "zou", "zan", "zen", "zang", "zeng", "zong", "", "", "", "", "", "", "", "", "", "", "zu", "", "zuo", "", "zui", "zuan", "zun", "", "", "", "", "", ""] },
+            { initial: "c", cells: ["ca", "", "ce", "ci", "", "cai", "", "cao", "cou", "can", "cen", "cang", "ceng", "cong", "", "", "", "", "", "", "", "", "", "", "cu", "", "cuo", "", "cui", "cuan", "cun", "", "", "", "", "", ""] },
+            { initial: "s", cells: ["sa", "", "se", "si", "", "sai", "", "sao", "sou", "san", "sen", "sang", "seng", "song", "", "", "", "", "", "", "", "", "", "", "su", "", "suo", "", "sui", "suan", "sun", "", "", "", "", "", ""] },
+            { initial: "zh", cells: ["zha", "", "zhe", "zhi", "", "zhai", "zhei", "zhao", "zhou", "zhan", "zhen", "zhang", "zheng", "zhong", "", "", "", "", "", "", "", "", "", "", "zhu", "zhua", "zhuo", "zhuai", "zhui", "zhuan", "zhun", "zhuang", "", "", "", "", ""] },
+            { initial: "ch", cells: ["cha", "", "che", "chi", "", "chai", "", "chao", "chou", "chan", "chen", "chang", "cheng", "chong", "", "", "", "", "", "", "", "", "", "", "chu", "chua", "chuo", "chuai", "chui", "chuan", "chun", "chuang", "", "", "", "", ""] },
+            { initial: "sh", cells: ["sha", "", "she", "shi", "", "shai", "shei", "shao", "shou", "shan", "shen", "shang", "sheng", "", "", "", "", "", "", "", "", "", "", "", "shu", "shua", "shuo", "shuai", "shui", "shuan", "shun", "shuang", "", "", "", "", ""] },
+            { initial: "r", cells: ["", "", "re", "ri", "", "", "", "rao", "rou", "ran", "ren", "rang", "reng", "rong", "", "", "", "", "", "", "", "", "", "", "ru", "", "ruo", "", "rui", "ruan", "run", "", "", "", "", "", ""] },
+            { initial: "j", cells: ["", "", "", "", "", "", "", "", "", "", "", "", "ji", "jia", "jie", "jiao", "jiu", "jian", "jin", "jiang", "jing", "jiong", "", "", "", "", "", "", "", "", "", "ju", "jue", "juan", "jun"] },
+            { initial: "q", cells: ["", "", "", "", "", "", "", "", "", "", "", "", "qi", "qia", "qie", "qiao", "qiu", "qian", "qin", "qiang", "qing", "qiong", "", "", "", "", "", "", "", "", "", "qu", "que", "quan", "qun"] },
+            { initial: "x", cells: ["", "", "", "", "", "", "", "", "", "", "", "", "xi", "xia", "xie", "xiao", "xiu", "xian", "xin", "xiang", "xing", "xiong", "", "", "", "", "", "", "", "", "", "xu", "xue", "xuan", "xun"] },
+            { initial: "g", cells: ["ga", "", "ge", "", "", "gai", "gei", "gao", "gou", "gan", "gen", "gang", "geng", "gong", "", "", "", "", "", "", "", "", "", "", "gu", "gua", "guo", "guai", "gui", "guan", "gun", "guang", "", "", "", "", ""] },
+            { initial: "k", cells: ["ka", "", "ke", "", "", "kai", "kei", "kao", "kou", "kan", "ken", "kang", "keng", "kong", "", "", "", "", "", "", "", "", "", "", "ku", "kua", "kuo", "kuai", "kui", "kuan", "kun", "kuang", "", "", "", "", ""] },
+            { initial: "h", cells: ["ha", "", "he", "", "", "hai", "hei", "hao", "hou", "han", "hen", "hang", "heng", "hong", "", "", "", "", "", "", "", "", "", "", "hu", "hua", "huo", "huai", "hui", "huan", "hun", "huang", "", "", "", "", ""] },
+        ];
+
+        // Render header
+        const headRow = document.getElementById("head-row");
+        FINALS.forEach(f => {
+            const th = document.createElement("th");
+            th.textContent = f;
+            headRow.appendChild(th);
+        });
+
+        // Render rows
+        const body = document.getElementById("table-body");
+        let total = 0;
+        ROWS.forEach(({ initial, cells }) => {
+            const tr = document.createElement("tr");
+            const th = document.createElement("th");
+            th.textContent = initial;
+            tr.appendChild(th);
+            FINALS.forEach((f, i) => {
+                const td = document.createElement("td");
+                const s = cells[i];
+                if (s) { td.textContent = s; td.className = "syllable"; total++; }
+                else { td.className = "empty"; }
+                tr.appendChild(td);
+            });
+            body.appendChild(tr);
+        });
+
+        document.querySelector(".sub strong").textContent = total + " âm tiết chuẩn";
+    </script>
+</body>
+
+</html>

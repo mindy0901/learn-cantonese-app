@@ -1,16 +1,11 @@
 import { normalizeSearchText } from "./wordSearch.js";
 
-export function getSentenceSearchBlob(item) {
-    return normalizeSearchText(
-        `${item.hanTraditional ?? ""} ${item.hanSimplified ?? ""} ${item.jyutping ?? ""} ${item.pinyin ?? ""} ${item.vietnamese ?? ""} ${item.english ?? ""}`,
-    );
-}
-
 export function matchesSentenceSearch(item, query) {
     const q = normalizeSearchText(query);
     if (!q) return true;
-    if (item._searchBlob && !item._searchBlob.includes(q)) return false;
-    const blob = getSentenceSearchBlob(item);
+    const blob = normalizeSearchText(
+        `${item.hanTraditional ?? ""} ${item.hanSimplified ?? ""} ${item.jyutping ?? ""} ${item.pinyin ?? ""} ${item.vietnamese ?? ""} ${item.english ?? ""}`,
+    );
     return blob.includes(q);
 }
 

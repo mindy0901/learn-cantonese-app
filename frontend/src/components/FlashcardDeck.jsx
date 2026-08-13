@@ -7,9 +7,8 @@ import { useLocale } from "../store/localeStore.js";
 import { log } from "../lib/actionLog.js";
 import { recordFlashcardSession } from "../lib/flashcardStats.js";
 import { clampStudyProgress, nextStudyProgress } from "../lib/flashcardProgress.js";
-import { vocabularyFieldDisplayText, isVocabularyFieldPending } from "../lib/wordDisplay.js";
+import { vocabularyFieldDisplayText, isVocabularyFieldPending, vocabRomanizationField } from "../lib/wordDisplay.js";
 import { wordFieldPendingClass } from "./WordFieldText.jsx";
-import { hanPopularityClass } from "../lib/wordPopularity.js";
 import { vocabularyDetailPath } from "../lib/wordRoutes.js";
 import { cn } from "../lib/cn.js";
 import { btnClass } from "./ui/buttonStyles.js";
@@ -37,8 +36,8 @@ function FlashcardCardFaces({ vocab, cardMode, hideJyutping, updatingLabel }) {
     const sinoVietnamese = flashcardField(vocab, "sinoVietnamese", updatingLabel);
     const vietMeanings = flashcardField(vocab, "vietMeanings", updatingLabel);
     const engMeanings = flashcardField(vocab, "engMeanings", updatingLabel);
-    const han = vocab.hanTraditional || "—";
-    const jyutping = vocab.jyutping || "—";
+    const han = vocab.hanSimplified || vocab.hanHongKong || vocab.hanTraditional || "—";
+    const jyutping = vocabRomanizationField(vocab, "jyutping") || vocab.jyutping || "—";
     const hanClass = cn("flashcard-han");
 
     if (cardMode === "meaningToHan") {
@@ -114,8 +113,8 @@ function vocabSnapshot(vocab) {
     return {
         id: vocab.id,
         hanTraditional: vocab.hanTraditional ?? "",
-        sinoVietnamese: vocab.sinoVietnamese,
-        jyutping: vocab.jyutping ?? "",
+        sinoVietnamese: vocabRomanizationField(vocab, "sinoVietnamese") || vocab.sinoVietnamese,
+        jyutping: vocabRomanizationField(vocab, "jyutping") || (vocab.jyutping ?? ""),
         vietnamese: vocab.vietnamese ?? "",
         english: vocab.english ?? "",
         popularity: vocab.popularity,
@@ -319,7 +318,7 @@ export function FlashcardDeck({
     const openDetail = useCallback(() => {
         if (!current) return;
         log("Open vocabulary detail", current);
-        navigate(vocabularyDetailPath(current.id));
+        navigate(vocabularyDetailPath(current.hanTraditional || current.hanSimplified || current.hanHongKong));
     }, [current, navigate]);
 
     const removeMasteredCard = useCallback(
@@ -429,10 +428,10 @@ export function FlashcardDeck({
 
     if (!current) {
         return (
-            <div className="text-center py-12 px-6 bg-surface border border-border rounded-2xl shadow-theme">
+            <div className="text-center py-12 px-6 bg-card border border-border rounded-2xl shadow-md">
                 <h2>{t.flashcard.sessionComplete}</h2>
                 <p className="mt-2">{fmt(t.flashcard.cardsStudied, { count: stats.again + stats.mastered })}</p>
-                <div className="flex flex-wrap justify-center gap-4 my-4 text-sm text-text-muted">
+                <div className="flex flex-wrap justify-center gap-4 my-4 text-sm text-muted-foreground">
                     <span>
                         {t.flashcard.again}: {stats.again}
                     </span>
@@ -451,16 +450,16 @@ export function FlashcardDeck({
         <div className="flex flex-col gap-4">
             <div className="h-1.5 bg-border rounded-full overflow-hidden">
                 <div
-                    className="h-full bg-accent rounded-full transition-[width] duration-250 ease-out"
+                    className="h-full bg-primary rounded-full transition-[width] duration-250 ease-out"
                     style={{ width: `${sessionProgressPct}%` }}
                 />
             </div>
-            <p className="text-sm text-text-muted text-center">
+            <p className="text-sm text-muted-foreground text-center">
                 {fmt(t.flashcard.progress, { current: index + 1, total })}
             </p>
 
             <div className="flex items-center gap-3">
-                <span className="shrink-0 text-xs font-semibold tabular-nums text-text-muted">
+                <span className="shrink-0 text-xs font-semibold tabular-nums text-muted-foreground">
                     {fmt(t.flashcard.wordProgress, { percent: wordProgress })}
                 </span>
                 <div
@@ -472,7 +471,7 @@ export function FlashcardDeck({
                     aria-label={t.flashcard.wordProgressLabel}
                 >
                     <div
-                        className="h-full rounded-full bg-gradient-to-r from-accent to-indigo-400 transition-[width] duration-300 ease-out"
+                        className="h-full rounded-full bg-linear-to-r from-primary to-violet-400 transition-[width] duration-300 ease-out"
                         style={{ width: `${wordProgress}%` }}
                     />
                 </div>
@@ -484,7 +483,7 @@ export function FlashcardDeck({
                     className={cn(
                         rateBase,
                         "flashcard-nav-btn",
-                        "border-border bg-bg text-text-muted hover:border-text-muted hover:bg-surface hover:text-text-h hover:shadow-theme-sm disabled:opacity-40 disabled:bg-bg",
+                        "border-border bg-background text-muted-foreground hover:border-muted hover:bg-card hover:text-foreground hover:shadow-sm disabled:opacity-40 disabled:bg-background",
                     )}
                     onClick={goPrev}
                     disabled={!canGoPrev || isAnimating}
@@ -526,7 +525,7 @@ export function FlashcardDeck({
                     className={cn(
                         rateBase,
                         "flashcard-nav-btn",
-                        "border-border bg-bg text-text-muted hover:border-text-muted hover:bg-surface hover:text-text-h hover:shadow-theme-sm disabled:opacity-40 disabled:bg-bg",
+                        "border-border bg-background text-muted-foreground hover:border-muted hover:bg-card hover:text-foreground hover:shadow-sm disabled:opacity-40 disabled:bg-background",
                     )}
                     onClick={goNext}
                     disabled={isAnimating || (!isLastCard && !canGoNext && flipped)}
@@ -535,13 +534,13 @@ export function FlashcardDeck({
                 </button>
             </div>
 
-            <div className="flex flex-col gap-2.5 p-3.5 border border-border rounded-[0.875rem] bg-surface shadow-theme-sm">
+            <div className="flex flex-col gap-2.5 p-3.5 border border-border rounded-[0.875rem] bg-card shadow-sm">
                 <div className="grid grid-cols-5 gap-1.5 max-sm:grid-cols-2">
                     <button
                         type="button"
                         className={cn(
                             rateBase,
-                            "border-error-border bg-gradient-to-b from-error-bg to-red-100/65 text-error-text hover:border-red-400 hover:bg-rose-100 hover:shadow-[0_2px_8px_rgba(244,63,94,0.12)] dark:from-red-950/55 dark:to-red-950/85 dark:hover:border-rose-400 dark:hover:bg-red-950/75 dark:hover:shadow-[0_2px_10px_rgba(251,113,133,0.15)]",
+                            "border-destructive/30 bg-linear-to-b from-destructive/10 to-red-100/65 text-destructive hover:border-red-400 hover:bg-rose-100 hover:shadow-[0_2px_8px_rgba(244,63,94,0.12)] dark:from-red-950/55 dark:to-red-950/85 dark:hover:border-rose-400 dark:hover:bg-red-950/75 dark:hover:shadow-[0_2px_10px_rgba(251,113,133,0.15)]",
                         )}
                         onClick={() => handleRate("again")}
                         disabled={isAnimating}
@@ -552,7 +551,7 @@ export function FlashcardDeck({
                         type="button"
                         className={cn(
                             rateBase,
-                            "border-amber-400/45 bg-gradient-to-b from-amber-50 to-amber-100 text-amber-800 hover:border-amber-400 hover:bg-amber-200 hover:shadow-[0_2px_8px_rgba(245,158,11,0.15)] dark:from-amber-950/55 dark:to-amber-900/35 dark:text-amber-300 dark:hover:border-amber-300 dark:hover:bg-amber-900/45",
+                            "border-amber-400/45 bg-linear-to-b from-amber-50 to-amber-100 text-amber-800 hover:border-amber-400 hover:bg-amber-200 hover:shadow-[0_2px_8px_rgba(245,158,11,0.15)] dark:from-amber-950/55 dark:to-amber-900/35 dark:text-amber-300 dark:hover:border-amber-300 dark:hover:bg-amber-900/45",
                         )}
                         onClick={() => handleRate("hard")}
                         disabled={isAnimating}
@@ -563,7 +562,7 @@ export function FlashcardDeck({
                         type="button"
                         className={cn(
                             rateBase,
-                            "border-sky-400/45 bg-gradient-to-b from-sky-50 to-sky-100 text-sky-800 hover:border-sky-400 hover:bg-sky-200 hover:shadow-[0_2px_8px_rgba(14,165,233,0.15)] dark:from-sky-950/55 dark:to-sky-900/35 dark:text-sky-300 dark:hover:border-sky-300 dark:hover:bg-sky-900/45",
+                            "border-sky-400/45 bg-linear-to-b from-sky-50 to-sky-100 text-sky-800 hover:border-sky-400 hover:bg-sky-200 hover:shadow-[0_2px_8px_rgba(14,165,233,0.15)] dark:from-sky-950/55 dark:to-sky-900/35 dark:text-sky-300 dark:hover:border-sky-300 dark:hover:bg-sky-900/45",
                         )}
                         onClick={() => handleRate("medium")}
                         disabled={isAnimating}
@@ -574,7 +573,7 @@ export function FlashcardDeck({
                         type="button"
                         className={cn(
                             rateBase,
-                            "border-emerald-400/45 bg-gradient-to-b from-emerald-50 to-emerald-100 text-emerald-800 hover:border-emerald-400 hover:bg-emerald-200 hover:shadow-[0_2px_8px_rgba(16,185,129,0.15)] dark:from-emerald-950/55 dark:to-emerald-900/35 dark:text-emerald-300 dark:hover:border-emerald-300 dark:hover:bg-emerald-900/45",
+                            "border-emerald-400/45 bg-linear-to-b from-emerald-50 to-emerald-100 text-emerald-800 hover:border-emerald-400 hover:bg-emerald-200 hover:shadow-[0_2px_8px_rgba(16,185,129,0.15)] dark:from-emerald-950/55 dark:to-emerald-900/35 dark:text-emerald-300 dark:hover:border-emerald-300 dark:hover:bg-emerald-900/45",
                         )}
                         onClick={() => handleRate("easy")}
                         disabled={isAnimating}
@@ -585,7 +584,7 @@ export function FlashcardDeck({
                         type="button"
                         className={cn(
                             rateBase,
-                            "border-success-border bg-gradient-to-b from-success-bg to-emerald-200/45 text-success-text hover:border-accent-border hover:bg-accent-bg hover:text-accent hover:shadow-[0_2px_8px_rgba(15,118,110,0.15)] dark:from-emerald-950/75 dark:to-emerald-900/35 dark:hover:border-accent-border dark:hover:bg-accent-bg dark:hover:text-accent dark:hover:shadow-[0_2px_10px_rgba(45,212,191,0.18)]",
+                            "border-primary bg-linear-to-b from-primary to-emerald-200/45 text-primary hover:border-primary/25 hover:bg-primary/10 hover:text-primary hover:shadow-[0_2px_8px_rgba(15,118,110,0.15)] dark:from-emerald-950/75 dark:to-emerald-900/35 dark:hover:border-primary/25 dark:hover:bg-primary/10 dark:hover:text-primary dark:hover:shadow-[0_2px_10px_rgba(45,212,191,0.18)]",
                         )}
                         onClick={() => handleRate("mastered")}
                         disabled={isAnimating}
@@ -598,7 +597,7 @@ export function FlashcardDeck({
                         type="button"
                         className={cn(
                             rateBase,
-                            "min-w-[7rem] border-blue-400/45 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-700 hover:border-blue-400 hover:bg-blue-200 hover:text-blue-900 hover:shadow-[0_2px_8px_rgba(59,130,246,0.15)] dark:border-blue-400/45 dark:from-blue-950/55 dark:to-blue-900/35 dark:text-blue-300 dark:hover:border-blue-300 dark:hover:bg-blue-900/45 dark:hover:text-blue-100",
+                            "min-w-28 border-blue-400/45 bg-linear-to-b from-blue-50 to-blue-100 text-blue-700 hover:border-blue-400 hover:bg-blue-200 hover:text-blue-900 hover:shadow-[0_2px_8px_rgba(59,130,246,0.15)] dark:border-blue-400/45 dark:from-blue-950/55 dark:to-blue-900/35 dark:text-blue-300 dark:hover:border-blue-300 dark:hover:bg-blue-900/45 dark:hover:text-blue-100",
                         )}
                         onClick={openDetail}
                         disabled={isAnimating}

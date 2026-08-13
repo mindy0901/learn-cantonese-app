@@ -7,7 +7,7 @@ import { uiCompactIconButtonClass } from "./ui/controlStyles.js";
 const tdClass = "px-3.5 py-2.5 text-left align-middle truncate max-w-[200px]";
 const rowClass = "border-b border-border";
 const cellInputClass =
-    "w-full min-w-20 px-2 py-1.5 border border-accent-border rounded-md bg-surface text-sm outline-none focus:border-accent";
+    "w-full min-w-20 px-2 py-1.5 border border-primary/25 rounded-md bg-card text-sm outline-none focus:border-primary";
 
 export const SentenceRow = memo(function SentenceRow({
     item,
@@ -73,12 +73,12 @@ export const SentenceRow = memo(function SentenceRow({
         }
     };
 
-    const numClass = "text-text-muted text-[0.8125rem] whitespace-nowrap text-center px-1.5 pr-0.5";
+    const numClass = "text-muted-foreground text-[0.8125rem] whitespace-nowrap text-center px-1.5 pr-0.5";
     const flagColClass = "px-0.5 py-1.5 text-center align-middle";
 
     if (editing && canEdit) {
         return (
-            <tr className="bg-accent-bg border-b border-border" onClick={stop} onKeyDown={handleEditKeyDown}>
+            <tr className="bg-primary/10 border-b border-border" onClick={stop} onKeyDown={handleEditKeyDown}>
                 <td className={numClass}>{index + 1}</td>
                 {canMark && <td className={flagColClass} />}
                 <td className={tdClass}>
@@ -114,7 +114,7 @@ export const SentenceRow = memo(function SentenceRow({
                         type="button"
                         className={cn(
                             uiCompactIconButtonClass,
-                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-green-600 rounded hover:bg-bg",
+                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-green-600 rounded hover:bg-background",
                         )}
                         onClick={saveEdit}
                         title={t.common.save}
@@ -125,7 +125,7 @@ export const SentenceRow = memo(function SentenceRow({
                         type="button"
                         className={cn(
                             uiCompactIconButtonClass,
-                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-text-muted rounded hover:bg-bg",
+                            "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-muted-foreground rounded hover:bg-background",
                         )}
                         onClick={cancelEdit}
                         title={t.common.cancel}
@@ -141,7 +141,7 @@ export const SentenceRow = memo(function SentenceRow({
         <tr
             className={cn(
                 rowClass,
-                "cursor-pointer hover:bg-accent-bg",
+                "cursor-pointer hover:bg-primary/10",
                 item.important && "bg-orange-600/[0.04]",
                 item.mastered && "opacity-75",
             )}
@@ -167,11 +167,11 @@ export const SentenceRow = memo(function SentenceRow({
                 </td>
             )}
             <td className={cn(tdClass, "max-w-md")}>
-                <div className="font-semibold text-text-h">{hanDisplay || "—"}</div>
+                <div className="font-semibold text-foreground">{hanDisplay || "—"}</div>
                 {item.jyutping && <div className="text-jyutping text-sm mt-0.5">{item.jyutping}</div>}
             </td>
             <td className={cn(tdClass, "text-viet max-w-sm")}>{item.vietnamese}</td>
-            <td className={cn(tdClass, "text-text max-w-sm")}>{item.english || "—"}</td>
+            <td className={cn(tdClass, "text-muted-foreground max-w-sm")}>{item.english || "—"}</td>
             {canMark && (
                 <td className={flagColClass} onClick={stop}>
                     <button
@@ -179,7 +179,7 @@ export const SentenceRow = memo(function SentenceRow({
                         className={cn(
                             uiCompactIconButtonClass,
                             "min-w-5 min-h-5 border border-border rounded-md text-xs px-0.5",
-                            item.mastered ? "text-success-text border-success-border bg-success-bg" : "text-text-muted",
+                            item.mastered ? "text-primary border-primary bg-primary" : "text-muted-foreground",
                         )}
                         onClick={() => onToggleMastered(item.id)}
                         title={item.mastered ? t.wordDetail.unmarkMastered : t.wordDetail.markMastered}

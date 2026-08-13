@@ -1,26 +1,74 @@
 <!doctype html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        /* Pre-hydration boot fallback: a single spinner centered on the app
+           background (theme-matched) so there is no white flash while the JS
+           bundle loads. Colors mirror globals.css tokens. */
+        #boot-fallback {
+            margin: 0;
+            padding: 2.5rem 1.5rem;
+            /* = Tailwind p-8 px-6 @ 20px root */
+            min-height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: oklch(1 0 0);
+            color: oklch(0.508 0.118 165.612);
+            /* = --primary (light) */
+        }
+
+        html[data-theme="dark"] #boot-fallback {
+            background: oklch(0.148 0.004 228.8);
+            color: oklch(0.432 0.095 166.913);
+            /* = --primary (dark) */
+        }
+
+        .boot-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: boot-spin 0.8s linear infinite;
+        }
+
+        @keyframes boot-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <script>
+        // Apply saved theme before first paint so the boot fallback (and app)
+        // doesn't flash the wrong background.
+        try {
+            var s = JSON.parse(localStorage.getItem("cantonese-app-ui") || "{}");
+            if (s.theme === "dark" || s.theme === "light") {
+                document.documentElement.dataset.theme = s.theme;
+            }
+        } catch (e) { /* ignore */ }
+    </script>
     <title>Learn Cantonese</title>
-  </head>
-  <body>
+</head>
+
+<body>
     <div id="root">
-      <p
-        id="boot-fallback"
-        style="margin:0;padding:2rem;font-family:system-ui,sans-serif;color:#94a3b8;background:#0f172a;min-height:100vh"
-      >
-        Loading…
-      </p>
+        <p id="boot-fallback" role="status" aria-live="polite">
+            <span class="boot-spinner" aria-hidden="true"></span>
+        </p>
     </div>
     <script type="module" src="/src/main.jsx"></script>
-  </body>
+</body>
+
 </html>

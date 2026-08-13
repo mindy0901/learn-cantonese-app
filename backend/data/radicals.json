@@ -1,0 +1,1807 @@
+{
+  "source": "https://nhaihsk.com/radicals",
+  "extractedAt": "2026-08-10T09:56:01.228Z",
+  "totalRadicals": 214,
+  "groups": [
+    {
+      "strokes": 1,
+      "radicals": [
+        {
+          "no": 1,
+          "char": "一",
+          "name": "Nhất",
+          "desc": "Một, thứ nhất, khởi đầu các số đo, thuộc về dương, bao quát hết thảy.",
+          "pinyin": "yī"
+        },
+        {
+          "no": 2,
+          "char": "丨",
+          "name": "Cổn",
+          "desc": "Nét sổ, đường thẳng đứng trên thông xuống dưới.",
+          "pinyin": "gǔn"
+        },
+        {
+          "no": 3,
+          "char": "丶",
+          "name": "Chủ",
+          "desc": "Nét chấm, một điểm.",
+          "pinyin": "zhǔ"
+        },
+        {
+          "no": 4,
+          "char": "丿",
+          "name": "Phiệt",
+          "desc": "Nét phẩy, nét nghiêng từ phải qua trái, chỉ động tác.",
+          "pinyin": "piě"
+        },
+        {
+          "no": 5,
+          "char": "乙",
+          "name": "Ất",
+          "desc": "Can thứ hai trong mười can (Giáp, Ất, Bính, Đinh…).",
+          "pinyin": "yǐ"
+        },
+        {
+          "no": 6,
+          "char": "亅",
+          "name": "Quyết",
+          "desc": "Nét sổ có móc, cái móc.",
+          "pinyin": "jué"
+        }
+      ]
+    },
+    {
+      "strokes": 2,
+      "radicals": [
+        {
+          "no": 7,
+          "char": "二",
+          "name": "Nhị",
+          "desc": "Số hai, số của đất, thuộc về âm.",
+          "pinyin": "èr"
+        },
+        {
+          "no": 8,
+          "char": "亠",
+          "name": "Đầu",
+          "desc": "Không có nghĩa, thường là phần trên của một số chữ khác.",
+          "pinyin": "tóu"
+        },
+        {
+          "no": 9,
+          "char": "人",
+          "name": "Nhân",
+          "desc": "Người, có hai chân, là sinh vật đứng thẳng.",
+          "variants": [
+            "亻"
+          ],
+          "pinyin": "rén"
+        },
+        {
+          "no": 10,
+          "char": "儿",
+          "name": "Nhân (đi)",
+          "desc": "Người, như hình người đang đi.",
+          "pinyin": "ér"
+        },
+        {
+          "no": 11,
+          "char": "入",
+          "name": "Nhập",
+          "desc": "Vào, tượng hình rễ cây đâm sâu vào đất.",
+          "pinyin": "rù"
+        },
+        {
+          "no": 12,
+          "char": "八",
+          "name": "Bát",
+          "desc": "Nguyên nghĩa là phân chia, còn có nghĩa là số tám.",
+          "pinyin": "bā"
+        },
+        {
+          "no": 13,
+          "char": "冂",
+          "name": "Quynh",
+          "desc": "Đất ở xa ngoài bờ cõi, như vòng tường bao quanh thành lũy.",
+          "pinyin": "jiōng"
+        },
+        {
+          "no": 14,
+          "char": "冖",
+          "name": "Mịch",
+          "desc": "Khăn trùm lên đồ vật, che đậy, kín không nhìn thấy rõ.",
+          "pinyin": "mì"
+        },
+        {
+          "no": 15,
+          "char": "冫",
+          "name": "Băng",
+          "desc": "Nước đóng băng, nước đá.",
+          "pinyin": "bīng"
+        },
+        {
+          "no": 16,
+          "char": "几",
+          "name": "Kỷ",
+          "desc": "Cái ghế, bảo thủ không biến đổi, ích kỷ.",
+          "pinyin": "jǐ"
+        },
+        {
+          "no": 17,
+          "char": "凵",
+          "name": "Khảm",
+          "desc": "Há miệng, vật để đựng đồ như máng, chậu, đấu…",
+          "pinyin": "kǎn"
+        },
+        {
+          "no": 18,
+          "char": "刀",
+          "name": "Đao",
+          "desc": "Con dao; dạng 刂 thường đứng bên phải các bộ khác.",
+          "variants": [
+            "刂"
+          ],
+          "pinyin": "dāo"
+        },
+        {
+          "no": 19,
+          "char": "力",
+          "name": "Lực",
+          "desc": "Sức, như hình bàn tay đánh xuống.",
+          "pinyin": "lì"
+        },
+        {
+          "no": 20,
+          "char": "勹",
+          "name": "Bao",
+          "desc": "Bọc, gói, khom lưng ôm một vật.",
+          "pinyin": "bāo"
+        },
+        {
+          "no": 21,
+          "char": "匕",
+          "name": "Tỷ (bỉ)",
+          "desc": "Cái thìa.",
+          "pinyin": "bǐ"
+        },
+        {
+          "no": 22,
+          "char": "匚",
+          "name": "Phương",
+          "desc": "Đồ đựng, cái hộp, hình khoanh gỗ khoét ở giữa (nét ngang dưới).",
+          "pinyin": "fāng"
+        },
+        {
+          "no": 23,
+          "char": "匸",
+          "name": "Hễ (hệ)",
+          "desc": "Che đậy (nét ngang trên phủ quá sang trái nét sổ vuông).",
+          "pinyin": "xì"
+        },
+        {
+          "no": 24,
+          "char": "十",
+          "name": "Thập",
+          "desc": "Số mười, đầy đủ (Đông tây nam bắc trung cung đủ cả).",
+          "pinyin": "shí"
+        },
+        {
+          "no": 25,
+          "char": "卜",
+          "name": "Bốc",
+          "desc": "Bói, giống như những vết nứt trên yếm rùa để xem hung cát…",
+          "pinyin": "bǔ"
+        },
+        {
+          "no": 26,
+          "char": "卩",
+          "name": "Tiết",
+          "desc": "Đốt tre, một chi tiết nhỏ trong một sự vật hoặc hiện tượng.",
+          "pinyin": "jié"
+        },
+        {
+          "no": 27,
+          "char": "厂",
+          "name": "Hán",
+          "desc": "Chỗ sườn núi có mái che, người xưa chọn làm chỗ ở.",
+          "pinyin": "chǎng"
+        },
+        {
+          "no": 28,
+          "char": "厶",
+          "name": "Tư",
+          "desc": "Riêng tư.",
+          "pinyin": "sī"
+        },
+        {
+          "no": 29,
+          "char": "又",
+          "name": "Hựu",
+          "desc": "Cái tay bắt chéo, trở lại một lần nữa.",
+          "pinyin": "yòu"
+        },
+        {
+          "no": 54,
+          "char": "廴",
+          "name": "Dẫn",
+          "desc": "Đi xa (chữ 彳 xích — bước, thêm nét dài để chỉ việc đi xa).",
+          "pinyin": "yǐn"
+        },
+        {
+          "no": 149,
+          "char": "讠",
+          "name": "Ngôn",
+          "desc": "Nói (thoại). (Dạng gốc Khang Hy: 言)",
+          "variants": [
+            "言",
+            "訁"
+          ],
+          "pinyin": "yán"
+        }
+      ]
+    },
+    {
+      "strokes": 3,
+      "radicals": [
+        {
+          "no": 30,
+          "char": "口",
+          "name": "Khẩu",
+          "desc": "Miệng (hình cái miệng).",
+          "pinyin": "kǒu"
+        },
+        {
+          "no": 31,
+          "char": "囗",
+          "name": "Vi",
+          "desc": "Vây quanh (phạm vi, ranh giới bao quanh).",
+          "pinyin": "wéi"
+        },
+        {
+          "no": 32,
+          "char": "土",
+          "name": "Thổ",
+          "desc": "Đất — gồm bộ nhị 二 với bộ cổn 丨 như hình cây mọc trên mặt đất.",
+          "pinyin": "tǔ"
+        },
+        {
+          "no": 33,
+          "char": "士",
+          "name": "Sĩ",
+          "desc": "Học trò, sĩ tử, những người nghiên cứu học vấn. Gồm chữ thập 十 và chữ nhất 一: người có học thì một việc suy ra mười, mười việc hợp lại thành một.",
+          "pinyin": "shì"
+        },
+        {
+          "no": 34,
+          "char": "夂",
+          "name": "Truy (trĩ)",
+          "desc": "Theo sau mà đến kịp người đi trước.",
+          "pinyin": "zhǐ"
+        },
+        {
+          "no": 35,
+          "char": "夊",
+          "name": "Tuy",
+          "desc": "Dáng đi chậm.",
+          "pinyin": "suī"
+        },
+        {
+          "no": 36,
+          "char": "夕",
+          "name": "Tịch",
+          "desc": "Buổi tối (nửa chữ nguyệt — mặt trăng vừa mọc, phần dưới chưa thấy rõ).",
+          "pinyin": "xī"
+        },
+        {
+          "no": 37,
+          "char": "大",
+          "name": "Đại",
+          "desc": "Lớn — hình người dang rộng hai tay và chân.",
+          "pinyin": "dà"
+        },
+        {
+          "no": 38,
+          "char": "女",
+          "name": "Nữ",
+          "desc": "Con gái — như người con gái chắp tay trước bụng thu gọn vạt áo.",
+          "pinyin": "nǚ"
+        },
+        {
+          "no": 39,
+          "char": "子",
+          "name": "Tử",
+          "desc": "Con — hình đứa trẻ mới sinh cuốn tã lót không thấy chân.",
+          "pinyin": "zǐ"
+        },
+        {
+          "no": 40,
+          "char": "宀",
+          "name": "Miên",
+          "desc": "Mái nhà.",
+          "pinyin": "mián"
+        },
+        {
+          "no": 41,
+          "char": "寸",
+          "name": "Thốn",
+          "desc": "Tấc, một phần mười của thước.",
+          "pinyin": "cùn"
+        },
+        {
+          "no": 42,
+          "char": "小",
+          "name": "Tiểu",
+          "desc": "Nhỏ bé, ít (còn nguyên thì to, chia ra thì nhỏ).",
+          "pinyin": "xiǎo"
+        },
+        {
+          "no": 43,
+          "char": "尢",
+          "name": "Uông",
+          "desc": "Què — hình người đứng có chân không thẳng.",
+          "variants": [
+            "兀"
+          ],
+          "pinyin": "wāng"
+        },
+        {
+          "no": 44,
+          "char": "尸",
+          "name": "Thi",
+          "desc": "Thây người chết, thi thể.",
+          "pinyin": "shī"
+        },
+        {
+          "no": 45,
+          "char": "屮",
+          "name": "Triệt",
+          "desc": "Cây cỏ mới mọc (mới đâm chồi, có hai lá và rễ cây).",
+          "pinyin": "chè"
+        },
+        {
+          "no": 46,
+          "char": "山",
+          "name": "Sơn (san)",
+          "desc": "Núi.",
+          "pinyin": "shān"
+        },
+        {
+          "no": 47,
+          "char": "巛",
+          "name": "Xuyên",
+          "desc": "Sông — dòng sông có nhiều nhánh chảy vào.",
+          "variants": [
+            "川"
+          ],
+          "pinyin": "chuān"
+        },
+        {
+          "no": 48,
+          "char": "工",
+          "name": "Công",
+          "desc": "Việc, người thợ (hình dụng cụ đo góc vuông).",
+          "pinyin": "gōng"
+        },
+        {
+          "no": 49,
+          "char": "己",
+          "name": "Kỷ",
+          "desc": "Can thứ sáu trong mười can.",
+          "pinyin": "jǐ"
+        },
+        {
+          "no": 50,
+          "char": "巾",
+          "name": "Cân",
+          "desc": "Khăn (hình cái khăn cột ở thắt lưng, hai đầu buông xuống).",
+          "pinyin": "jīn"
+        },
+        {
+          "no": 51,
+          "char": "干",
+          "name": "Can",
+          "desc": "Phạm đến.",
+          "pinyin": "gān"
+        },
+        {
+          "no": 52,
+          "char": "幺",
+          "name": "Yêu",
+          "desc": "Nhỏ (hình đứa bé mới sinh).",
+          "pinyin": "yāo"
+        },
+        {
+          "no": 53,
+          "char": "广",
+          "name": "Nghiễm",
+          "desc": "Nhân chỗ sườn núi làm nhà (cái chấm ở trên là nóc nhà).",
+          "pinyin": "guǎng"
+        },
+        {
+          "no": 55,
+          "char": "廾",
+          "name": "Củng",
+          "desc": "Chắp hai tay cung kính (hai chữ hựu 又 gộp lại).",
+          "pinyin": "gǒng"
+        },
+        {
+          "no": 56,
+          "char": "弋",
+          "name": "Dực (dặc)",
+          "desc": "Cái cọc; cột dây vào mũi tên mà bắn; cọc buộc súc vật.",
+          "pinyin": "yì"
+        },
+        {
+          "no": 57,
+          "char": "弓",
+          "name": "Cung",
+          "desc": "Cái cung để bắn tên.",
+          "pinyin": "gōng"
+        },
+        {
+          "no": 58,
+          "char": "彐",
+          "name": "Kệ (kí)",
+          "desc": "Đầu con heo.",
+          "variants": [
+            "彑"
+          ],
+          "pinyin": "jì"
+        },
+        {
+          "no": 59,
+          "char": "彡",
+          "name": "Sam",
+          "desc": "Lông dài (đuôi sam).",
+          "pinyin": "shān"
+        },
+        {
+          "no": 60,
+          "char": "彳",
+          "name": "Xích",
+          "desc": "Bước ngắn, bước chân trái.",
+          "pinyin": "chì"
+        },
+        {
+          "no": 90,
+          "char": "丬",
+          "name": "Tường",
+          "desc": "Tấm ván — hình nửa bên trái của chữ mộc. (Dạng gốc Khang Hy: 爿)",
+          "variants": [
+            "爿"
+          ],
+          "pinyin": "pán"
+        },
+        {
+          "no": 120,
+          "char": "纟",
+          "name": "Mịch",
+          "desc": "Sợi tơ (hình lọn tơ được thắt lại). (Dạng gốc Khang Hy: 糸)",
+          "variants": [
+            "糸",
+            "糹"
+          ],
+          "pinyin": "sī"
+        },
+        {
+          "no": 140,
+          "char": "艹",
+          "name": "Thảo",
+          "desc": "Cỏ. (Dạng gốc Khang Hy: 艸)",
+          "variants": [
+            "艸"
+          ],
+          "pinyin": "ǎo"
+        },
+        {
+          "no": 162,
+          "char": "辶",
+          "name": "Sước",
+          "desc": "Chợt đi chợt đứng. (Dạng gốc Khang Hy: 辵)",
+          "variants": [
+            "辵"
+          ],
+          "pinyin": "chuò"
+        },
+        {
+          "no": 169,
+          "char": "门",
+          "name": "Môn",
+          "desc": "Cửa. (Phồn thể: 門)",
+          "variants": [
+            "門"
+          ],
+          "pinyin": "mén"
+        },
+        {
+          "no": 183,
+          "char": "飞",
+          "name": "Phi",
+          "desc": "Bay. (Phồn thể: 飛)",
+          "variants": [
+            "飛"
+          ],
+          "pinyin": "fēi"
+        },
+        {
+          "no": 187,
+          "char": "马",
+          "name": "Mã",
+          "desc": "Con ngựa. (Phồn thể: 馬)",
+          "variants": [
+            "馬"
+          ],
+          "pinyin": "mǎ"
+        }
+      ]
+    },
+    {
+      "strokes": 4,
+      "radicals": [
+        {
+          "no": 61,
+          "char": "心",
+          "name": "Tâm",
+          "desc": "Tim (hình quả tim).",
+          "variants": [
+            "忄",
+            "⺗"
+          ],
+          "pinyin": "xīn"
+        },
+        {
+          "no": 62,
+          "char": "戈",
+          "name": "Qua",
+          "desc": "Cái kích bằng đầu.",
+          "pinyin": "gē"
+        },
+        {
+          "no": 63,
+          "char": "户",
+          "name": "Hộ",
+          "desc": "Cửa một cánh (một nửa chữ môn 门 — cửa rộng hai cánh). (Phồn thể: 戶)",
+          "variants": [
+            "戶"
+          ],
+          "pinyin": "hù"
+        },
+        {
+          "no": 64,
+          "char": "手",
+          "name": "Thủ",
+          "desc": "Tay.",
+          "variants": [
+            "扌",
+            "龵"
+          ],
+          "pinyin": "shǒu"
+        },
+        {
+          "no": 65,
+          "char": "支",
+          "name": "Chi",
+          "desc": "Cành cây (hựu 又 — tay, cùng nửa chữ trúc 竹 là cành cây).",
+          "pinyin": "zhī"
+        },
+        {
+          "no": 66,
+          "char": "攵",
+          "name": "Phốc",
+          "desc": "Đánh nhẹ. (Dạng gốc Khang Hy: 攴)",
+          "variants": [
+            "攴"
+          ],
+          "pinyin": "pū"
+        },
+        {
+          "no": 67,
+          "char": "文",
+          "name": "Văn",
+          "desc": "Nét vẽ, đường giao nhau.",
+          "pinyin": "wén"
+        },
+        {
+          "no": 68,
+          "char": "斗",
+          "name": "Đấu",
+          "desc": "Cái đấu, đơn vị đo lường lương thực (đấu thóc, đấu gạo).",
+          "pinyin": "dòu"
+        },
+        {
+          "no": 69,
+          "char": "斤",
+          "name": "Cân",
+          "desc": "Cái rìu (hình cái rìu để đốn cây).",
+          "pinyin": "jīn"
+        },
+        {
+          "no": 70,
+          "char": "方",
+          "name": "Phương",
+          "desc": "Vuông, phương hướng, phía (hai thuyền đậu chung).",
+          "pinyin": "fāng"
+        },
+        {
+          "no": 71,
+          "char": "无",
+          "name": "Vô (kí)",
+          "desc": "Không — chữ vô 无 xưa cũng viết dạng như chữ kí 旡.",
+          "variants": [
+            "旡"
+          ],
+          "pinyin": "wú"
+        },
+        {
+          "no": 72,
+          "char": "日",
+          "name": "Nhật",
+          "desc": "Mặt trời, ban ngày.",
+          "pinyin": "rì"
+        },
+        {
+          "no": 73,
+          "char": "曰",
+          "name": "Viết",
+          "desc": "Nói rằng — miệng khi nói hở răng và phát ra hơi (âm thanh).",
+          "pinyin": "yuē"
+        },
+        {
+          "no": 74,
+          "char": "月",
+          "name": "Nguyệt",
+          "desc": "Mặt trăng — hình trăng khuyết, ban đêm có trăng.",
+          "pinyin": "yuè"
+        },
+        {
+          "no": 75,
+          "char": "木",
+          "name": "Mộc",
+          "desc": "Cây, gỗ (hình cây có cành và rễ).",
+          "pinyin": "mù"
+        },
+        {
+          "no": 76,
+          "char": "欠",
+          "name": "Khiếm",
+          "desc": "Há miệng hả hơi ra ngáp; thiếu (khiếm nhã, khiếm khuyết).",
+          "pinyin": "qiàn"
+        },
+        {
+          "no": 77,
+          "char": "止",
+          "name": "Chỉ",
+          "desc": "Cái chân; cái nền, thế đứng, dừng lại.",
+          "pinyin": "zhǐ"
+        },
+        {
+          "no": 78,
+          "char": "歹",
+          "name": "Ngạt",
+          "desc": "Xương tàn, rã rượi, tan nát.",
+          "pinyin": "dǎi"
+        },
+        {
+          "no": 79,
+          "char": "殳",
+          "name": "Thù",
+          "desc": "Cái gậy — hình tay cầm gậy.",
+          "pinyin": "shū"
+        },
+        {
+          "no": 80,
+          "char": "毋",
+          "name": "Vô",
+          "desc": "Chớ, đừng — chữ nữ 女 với nét phẩy chỉ lòng gian tà, người như vậy bị cấm chỉ.",
+          "variants": [
+            "毌"
+          ],
+          "pinyin": "wú"
+        },
+        {
+          "no": 81,
+          "char": "比",
+          "name": "Tỉ (bỉ)",
+          "desc": "So sánh, so bì — hình hai người đứng ngang nhau để so cao thấp.",
+          "pinyin": "bǐ"
+        },
+        {
+          "no": 82,
+          "char": "毛",
+          "name": "Mao",
+          "desc": "Lông — hình cọng lông có nhiều sợi.",
+          "pinyin": "máo"
+        },
+        {
+          "no": 83,
+          "char": "氏",
+          "name": "Thị",
+          "desc": "Họ, ngành họ mạc trong một gia tộc; phần đệm trong họ tên phái nữ.",
+          "pinyin": "shì"
+        },
+        {
+          "no": 84,
+          "char": "气",
+          "name": "Khí",
+          "desc": "Hơi, khí mây làm thành mưa.",
+          "pinyin": "qì"
+        },
+        {
+          "no": 85,
+          "char": "水",
+          "name": "Thủy",
+          "desc": "Nước — hình dòng nước chảy.",
+          "variants": [
+            "氵",
+            "氺"
+          ],
+          "pinyin": "shuǐ"
+        },
+        {
+          "no": 86,
+          "char": "火",
+          "name": "Hỏa",
+          "desc": "Lửa — giống như ngọn lửa bốc cao.",
+          "variants": [
+            "灬"
+          ],
+          "pinyin": "huǒ"
+        },
+        {
+          "no": 87,
+          "char": "爪",
+          "name": "Trảo",
+          "desc": "Móng vuốt.",
+          "variants": [
+            "爫"
+          ],
+          "pinyin": "zhuǎ"
+        },
+        {
+          "no": 88,
+          "char": "父",
+          "name": "Phụ",
+          "desc": "Cha — tay cầm roi đánh dạy con cái.",
+          "pinyin": "fù"
+        },
+        {
+          "no": 89,
+          "char": "爻",
+          "name": "Hào",
+          "desc": "Giao nhau — mỗi quẻ trong Kinh Dịch có sáu hào.",
+          "pinyin": "yáo"
+        },
+        {
+          "no": 91,
+          "char": "片",
+          "name": "Phiến",
+          "desc": "Mảnh vật mỏng và phẳng — hình nửa bên phải của chữ mộc.",
+          "pinyin": "piàn"
+        },
+        {
+          "no": 92,
+          "char": "牙",
+          "name": "Nha",
+          "desc": "Răng — hình răng hai hàm cắn vào nhau.",
+          "pinyin": "yá"
+        },
+        {
+          "no": 93,
+          "char": "牛",
+          "name": "Ngưu",
+          "desc": "Con bò.",
+          "variants": [
+            "牜"
+          ],
+          "pinyin": "niú"
+        },
+        {
+          "no": 94,
+          "char": "犬",
+          "name": "Khuyển",
+          "desc": "Con chó.",
+          "variants": [
+            "犭"
+          ],
+          "pinyin": "quǎn"
+        },
+        {
+          "no": 98,
+          "char": "瓦",
+          "name": "Ngõa",
+          "desc": "Ngói, gạch nung (thợ nề gọi là thợ ngõa); đồ vật liệu bằng đất nung.",
+          "pinyin": "wǎ"
+        },
+        {
+          "no": 147,
+          "char": "见",
+          "name": "Kiến",
+          "desc": "Thấy, xem, nhìn. (Phồn thể: 見)",
+          "variants": [
+            "見"
+          ],
+          "pinyin": "jiàn"
+        },
+        {
+          "no": 154,
+          "char": "贝",
+          "name": "Bối",
+          "desc": "Con sò — ngày xưa dùng vỏ sò làm tiền, tượng trưng cho của quý. (Phồn thể: 貝)",
+          "variants": [
+            "貝"
+          ],
+          "pinyin": "bèi"
+        },
+        {
+          "no": 159,
+          "char": "车",
+          "name": "Xa",
+          "desc": "Cái xe. (Phồn thể: 車)",
+          "variants": [
+            "車"
+          ],
+          "pinyin": "chē"
+        },
+        {
+          "no": 168,
+          "char": "长",
+          "name": "Trường",
+          "desc": "Dài, lâu. (Phồn thể: 長)",
+          "variants": [
+            "長"
+          ],
+          "pinyin": "cháng"
+        },
+        {
+          "no": 178,
+          "char": "韦",
+          "name": "Vi",
+          "desc": "Da thuộc; trái ngược nhau. (Phồn thể: 韋)",
+          "variants": [
+            "韋"
+          ],
+          "pinyin": "wéi"
+        },
+        {
+          "no": 182,
+          "char": "风",
+          "name": "Phong",
+          "desc": "Gió. (Phồn thể: 風)",
+          "variants": [
+            "風"
+          ],
+          "pinyin": "fēng"
+        }
+      ]
+    },
+    {
+      "strokes": 5,
+      "radicals": [
+        {
+          "no": 95,
+          "char": "玄",
+          "name": "Huyền",
+          "desc": "Sâu kín xa xôi; màu đen có lằn sắc đỏ — màu của trời, của Phật.",
+          "pinyin": "xuán"
+        },
+        {
+          "no": 96,
+          "char": "玉",
+          "name": "Ngọc",
+          "desc": "Đá quý (hình viên ngọc xâu chuỗi với nhau làm đồ trang sức).",
+          "variants": [
+            "王",
+            "⺩"
+          ],
+          "pinyin": "yù"
+        },
+        {
+          "no": 97,
+          "char": "瓜",
+          "name": "Qua",
+          "desc": "Dưa — hình dây dưa bò lan trên đất và có quả.",
+          "pinyin": "guā"
+        },
+        {
+          "no": 99,
+          "char": "甘",
+          "name": "Cam",
+          "desc": "Ngọt — vật ngon ngọt ngậm trong miệng.",
+          "pinyin": "gān"
+        },
+        {
+          "no": 100,
+          "char": "生",
+          "name": "Sinh",
+          "desc": "Sống, mọc, sinh ra — hình cỏ cây mọc trên đất.",
+          "pinyin": "shēng"
+        },
+        {
+          "no": 101,
+          "char": "用",
+          "name": "Dụng",
+          "desc": "Dùng, có thể thi hành — bốc 卜 (bói) với trung 中 (trúng): việc gì bói đúng thì theo đó mà thi hành.",
+          "pinyin": "yòng"
+        },
+        {
+          "no": 102,
+          "char": "田",
+          "name": "Điền",
+          "desc": "Ruộng (hình thửa ruộng chia bờ xung quanh).",
+          "pinyin": "tián"
+        },
+        {
+          "no": 103,
+          "char": "疋",
+          "name": "Sơ",
+          "desc": "Cái chân — hình bắp chân.",
+          "variants": [
+            "⺪"
+          ],
+          "pinyin": "pǐ"
+        },
+        {
+          "no": 104,
+          "char": "疒",
+          "name": "Nạch",
+          "desc": "Tật bệnh (người bệnh phải nằm trên giường).",
+          "pinyin": "nè"
+        },
+        {
+          "no": 105,
+          "char": "癶",
+          "name": "Bát (bát đạp)",
+          "desc": "Đạp ra — nhiều nét hơn bát 八 (tám).",
+          "pinyin": "bō"
+        },
+        {
+          "no": 106,
+          "char": "白",
+          "name": "Bạch",
+          "desc": "Trắng, màu của phương Tây.",
+          "pinyin": "bái"
+        },
+        {
+          "no": 107,
+          "char": "皮",
+          "name": "Bì",
+          "desc": "Da (tay cầm dao lột da từ thây con vật).",
+          "pinyin": "pí"
+        },
+        {
+          "no": 108,
+          "char": "皿",
+          "name": "Mãnh",
+          "desc": "Đồ bát đĩa để ăn cơm.",
+          "pinyin": "mǐn"
+        },
+        {
+          "no": 109,
+          "char": "目",
+          "name": "Mục",
+          "desc": "Mắt (hình con mắt).",
+          "pinyin": "mù"
+        },
+        {
+          "no": 110,
+          "char": "矛",
+          "name": "Mâu",
+          "desc": "Cái mâu — binh khí ngày xưa dùng để chiến đấu với kẻ thù.",
+          "pinyin": "máo"
+        },
+        {
+          "no": 111,
+          "char": "矢",
+          "name": "Thỉ",
+          "desc": "Mũi tên — mũi nhọn có ngạnh, đuôi có lông định hướng bay.",
+          "pinyin": "shǐ"
+        },
+        {
+          "no": 112,
+          "char": "石",
+          "name": "Thạch",
+          "desc": "Đá (chữ hán 厂 — sườn núi, chữ khẩu 口 — hòn, tảng đá).",
+          "pinyin": "shí"
+        },
+        {
+          "no": 113,
+          "char": "示",
+          "name": "Kỳ (thị)",
+          "desc": "Thần đất; báo cho biết trước mọi điều một cách thần kỳ.",
+          "variants": [
+            "礻"
+          ],
+          "pinyin": "shì"
+        },
+        {
+          "no": 114,
+          "char": "禸",
+          "name": "Nhữu (nhựu)",
+          "desc": "Vết chân thú giẫm xuống đất (nhại lại, lặp lại, nói nhựu).",
+          "pinyin": "róu"
+        },
+        {
+          "no": 115,
+          "char": "禾",
+          "name": "Hòa",
+          "desc": "Cây lúa.",
+          "pinyin": "hé"
+        },
+        {
+          "no": 116,
+          "char": "穴",
+          "name": "Huyệt",
+          "desc": "Cái hang.",
+          "pinyin": "xué"
+        },
+        {
+          "no": 117,
+          "char": "立",
+          "name": "Lập",
+          "desc": "Đứng — hình người đứng trên mặt đất.",
+          "pinyin": "lì"
+        },
+        {
+          "no": 196,
+          "char": "鸟",
+          "name": "Điểu",
+          "desc": "Chim. (Phồn thể: 鳥)",
+          "variants": [
+            "鳥"
+          ],
+          "pinyin": "niǎo"
+        },
+        {
+          "no": 212,
+          "char": "龙",
+          "name": "Long",
+          "desc": "Con rồng. (Phồn thể: 龍)",
+          "variants": [
+            "龍"
+          ],
+          "pinyin": "lóng"
+        }
+      ]
+    },
+    {
+      "strokes": 6,
+      "radicals": [
+        {
+          "no": 118,
+          "char": "竹",
+          "name": "Trúc",
+          "desc": "Cây tre.",
+          "variants": [
+            "⺮"
+          ],
+          "pinyin": "zhú"
+        },
+        {
+          "no": 119,
+          "char": "米",
+          "name": "Mễ",
+          "desc": "Gạo (hạt lúa đã được chế biến).",
+          "pinyin": "mǐ"
+        },
+        {
+          "no": 121,
+          "char": "缶",
+          "name": "Phữu (phẫu)",
+          "desc": "Đồ sành như: vò, chum, vại, be có nắp đậy.",
+          "pinyin": "fǒu"
+        },
+        {
+          "no": 122,
+          "char": "网",
+          "name": "Võng",
+          "desc": "Lưới để bắt thú hay đánh cá.",
+          "variants": [
+            "罒",
+            "罓"
+          ],
+          "pinyin": "wǎng"
+        },
+        {
+          "no": 123,
+          "char": "羊",
+          "name": "Dương",
+          "desc": "Con dê.",
+          "pinyin": "yáng"
+        },
+        {
+          "no": 124,
+          "char": "羽",
+          "name": "Vũ",
+          "desc": "Lông chim (hai cánh chim có lông vũ).",
+          "pinyin": "yǔ"
+        },
+        {
+          "no": 125,
+          "char": "老",
+          "name": "Lão",
+          "desc": "Già — người cao tuổi râu tóc đã biến đổi.",
+          "variants": [
+            "耂"
+          ],
+          "pinyin": "lǎo"
+        },
+        {
+          "no": 126,
+          "char": "而",
+          "name": "Nhi",
+          "desc": "Râu.",
+          "pinyin": "ér"
+        },
+        {
+          "no": 127,
+          "char": "耒",
+          "name": "Lỗi",
+          "desc": "Cái cày (làm bằng gỗ, khi cày làm cỏ rậm bị vạch ra).",
+          "pinyin": "lěi"
+        },
+        {
+          "no": 128,
+          "char": "耳",
+          "name": "Nhĩ",
+          "desc": "Tai để nghe.",
+          "pinyin": "ěr"
+        },
+        {
+          "no": 129,
+          "char": "聿",
+          "name": "Duật",
+          "desc": "Cây bút — hình tay cầm cây bút viết.",
+          "pinyin": "yù"
+        },
+        {
+          "no": 130,
+          "char": "肉",
+          "name": "Nhục",
+          "desc": "Thịt — dạng ⺼ gần giống chữ nguyệt 月.",
+          "variants": [
+            "⺼"
+          ],
+          "pinyin": "ròu"
+        },
+        {
+          "no": 131,
+          "char": "臣",
+          "name": "Thần",
+          "desc": "Bề tôi (hình ông quan cúi mình khuất phục).",
+          "pinyin": "chén"
+        },
+        {
+          "no": 132,
+          "char": "自",
+          "name": "Tự",
+          "desc": "Cái mũi (hình cái mũi ở trên miệng); còn có nghĩa là tự mình.",
+          "pinyin": "zì"
+        },
+        {
+          "no": 133,
+          "char": "至",
+          "name": "Chí",
+          "desc": "Đến (hình con chim từ trên trời bay xuống đất — đến nơi); chí hướng.",
+          "pinyin": "zhì"
+        },
+        {
+          "no": 134,
+          "char": "臼",
+          "name": "Cữu",
+          "desc": "Cái cối giã gạo.",
+          "pinyin": "jiù"
+        },
+        {
+          "no": 135,
+          "char": "舌",
+          "name": "Thiệt",
+          "desc": "Cái lưỡi.",
+          "pinyin": "shé"
+        },
+        {
+          "no": 136,
+          "char": "舛",
+          "name": "Suyễn",
+          "desc": "Trái nhau, nằm đối nhau, ngược lại.",
+          "pinyin": "chuǎn"
+        },
+        {
+          "no": 137,
+          "char": "舟",
+          "name": "Chu",
+          "desc": "Thuyền.",
+          "pinyin": "zhōu"
+        },
+        {
+          "no": 138,
+          "char": "艮",
+          "name": "Cấn",
+          "desc": "Không nghe theo, chưa nhất trí, ngăn trở; quẻ Cấn trong bát quái.",
+          "pinyin": "gèn"
+        },
+        {
+          "no": 139,
+          "char": "色",
+          "name": "Sắc",
+          "desc": "Sắc mặt, diện mạo.",
+          "pinyin": "sè"
+        },
+        {
+          "no": 141,
+          "char": "虍",
+          "name": "Hô",
+          "desc": "Vằn lông con cọp.",
+          "pinyin": "hū"
+        },
+        {
+          "no": 142,
+          "char": "虫",
+          "name": "Trùng",
+          "desc": "Côn trùng, rắn rết.",
+          "pinyin": "chóng"
+        },
+        {
+          "no": 143,
+          "char": "血",
+          "name": "Huyết",
+          "desc": "Máu (máu đựng trong bát để tế thần).",
+          "pinyin": "xuè"
+        },
+        {
+          "no": 144,
+          "char": "行",
+          "name": "Hành",
+          "desc": "Đi (hai chân lần lượt bước tới).",
+          "pinyin": "xíng"
+        },
+        {
+          "no": 145,
+          "char": "衣",
+          "name": "Y",
+          "desc": "Áo.",
+          "variants": [
+            "衤"
+          ],
+          "pinyin": "yī"
+        },
+        {
+          "no": 146,
+          "char": "西",
+          "name": "Á",
+          "desc": "Che đậy, cái nắp. (Dạng gốc Khang Hy: 襾)",
+          "variants": [
+            "覀",
+            "襾"
+          ],
+          "pinyin": "xī"
+        },
+        {
+          "no": 181,
+          "char": "页",
+          "name": "Hiệt",
+          "desc": "Cái đầu. (Phồn thể: 頁)",
+          "variants": [
+            "頁"
+          ],
+          "pinyin": "yè"
+        },
+        {
+          "no": 210,
+          "char": "齐",
+          "name": "Tề",
+          "desc": "Lúa trổ đều bông; chỉnh tề. (Phồn thể: 齊)",
+          "variants": [
+            "齊"
+          ],
+          "pinyin": "qí"
+        }
+      ]
+    },
+    {
+      "strokes": 7,
+      "radicals": [
+        {
+          "no": 148,
+          "char": "角",
+          "name": "Giác",
+          "desc": "Cái sừng.",
+          "pinyin": "jiǎo"
+        },
+        {
+          "no": 150,
+          "char": "谷",
+          "name": "Cốc",
+          "desc": "Khe suối chảy thông ra sông.",
+          "pinyin": "gǔ"
+        },
+        {
+          "no": 151,
+          "char": "豆",
+          "name": "Đậu",
+          "desc": "Cái bát có nắp đậy.",
+          "pinyin": "dòu"
+        },
+        {
+          "no": 152,
+          "char": "豕",
+          "name": "Thỉ",
+          "desc": "Con heo (lợn).",
+          "pinyin": "shǐ"
+        },
+        {
+          "no": 153,
+          "char": "豸",
+          "name": "Trĩ",
+          "desc": "Loài thú có xương sống, lưng dài.",
+          "pinyin": "zhì"
+        },
+        {
+          "no": 155,
+          "char": "赤",
+          "name": "Xích",
+          "desc": "Màu đỏ, màu của phương Nam.",
+          "pinyin": "chì"
+        },
+        {
+          "no": 156,
+          "char": "走",
+          "name": "Tẩu",
+          "desc": "Chạy.",
+          "pinyin": "zǒu"
+        },
+        {
+          "no": 157,
+          "char": "足",
+          "name": "Túc",
+          "desc": "Chân.",
+          "variants": [
+            "⻊"
+          ],
+          "pinyin": "zú"
+        },
+        {
+          "no": 158,
+          "char": "身",
+          "name": "Thân",
+          "desc": "Thân mình.",
+          "pinyin": "shēn"
+        },
+        {
+          "no": 160,
+          "char": "辛",
+          "name": "Tân",
+          "desc": "Vị cay; cay đắng, nhọc nhằn, lo toan, tần tảo.",
+          "pinyin": "xīn"
+        },
+        {
+          "no": 161,
+          "char": "辰",
+          "name": "Thần",
+          "desc": "Thì giờ, sấm sét, chuyển giao mùa từ xuân sang hạ (tháng ba).",
+          "pinyin": "chén"
+        },
+        {
+          "no": 163,
+          "char": "邑",
+          "name": "Ấp",
+          "desc": "Nước nhỏ trong nước lớn, lãnh thổ vua ban cho chư hầu; làng, thôn… Dạng 阝đứng BÊN PHẢI chữ.",
+          "variants": [
+            "阝(phải)"
+          ],
+          "pinyin": "yì"
+        },
+        {
+          "no": 164,
+          "char": "酉",
+          "name": "Dậu",
+          "desc": "Rượu (phương Tây trong địa chi: Tí, Ngọ, Mão, Dậu).",
+          "pinyin": "yǒu"
+        },
+        {
+          "no": 165,
+          "char": "釆",
+          "name": "Biện",
+          "desc": "Phân biệt (biện luận, phản biện, biện bàn).",
+          "pinyin": "biàn"
+        },
+        {
+          "no": 166,
+          "char": "里",
+          "name": "Lí",
+          "desc": "Làng; quãng đường (điền 田 và thổ 土).",
+          "pinyin": "lǐ"
+        },
+        {
+          "no": 197,
+          "char": "卤",
+          "name": "Lỗ",
+          "desc": "Đất mặn, muối trong đất. (Phồn thể: 鹵)",
+          "variants": [
+            "鹵"
+          ],
+          "pinyin": "lǔ"
+        },
+        {
+          "no": 199,
+          "char": "麦",
+          "name": "Mạch",
+          "desc": "Lúa mạch. (Phồn thể: 麥)",
+          "variants": [
+            "麥"
+          ],
+          "pinyin": "mài"
+        },
+        {
+          "no": 213,
+          "char": "龟",
+          "name": "Quy",
+          "desc": "Con rùa. (Phồn thể: 龜)",
+          "variants": [
+            "龜"
+          ],
+          "pinyin": "guī"
+        }
+      ]
+    },
+    {
+      "strokes": 8,
+      "radicals": [
+        {
+          "no": 167,
+          "char": "金",
+          "name": "Kim",
+          "desc": "Vàng, kim loại nói chung.",
+          "variants": [
+            "钅",
+            "釒"
+          ],
+          "pinyin": "jīn"
+        },
+        {
+          "no": 170,
+          "char": "阜",
+          "name": "Phụ",
+          "desc": "Núi đất không có đá. Dạng 阝đứng BÊN TRÁI chữ.",
+          "variants": [
+            "阝(trái)"
+          ],
+          "pinyin": "fù"
+        },
+        {
+          "no": 171,
+          "char": "隶",
+          "name": "Đãi",
+          "desc": "Kịp (chạy cho nhanh theo kịp người đi trước).",
+          "pinyin": "lì"
+        },
+        {
+          "no": 172,
+          "char": "隹",
+          "name": "Chuy",
+          "desc": "Giống chim đuôi ngắn.",
+          "pinyin": "zhuī"
+        },
+        {
+          "no": 173,
+          "char": "雨",
+          "name": "Vũ",
+          "desc": "Mưa.",
+          "pinyin": "yǔ"
+        },
+        {
+          "no": 174,
+          "char": "青",
+          "name": "Thanh",
+          "desc": "Xanh — màu của phương Đông, ngược với màu trắng phương Tây.",
+          "pinyin": "qīng"
+        },
+        {
+          "no": 175,
+          "char": "非",
+          "name": "Phi",
+          "desc": "Không phải, trái, trái ngược (hai cánh chim đối nhau).",
+          "pinyin": "fēi"
+        },
+        {
+          "no": 195,
+          "char": "鱼",
+          "name": "Ngư",
+          "desc": "Cá. (Phồn thể: 魚)",
+          "variants": [
+            "魚"
+          ],
+          "pinyin": "yú"
+        },
+        {
+          "no": 205,
+          "char": "黾",
+          "name": "Mãnh",
+          "desc": "Con ếch. (Phồn thể: 黽)",
+          "variants": [
+            "黽"
+          ],
+          "pinyin": "miǎn"
+        },
+        {
+          "no": 211,
+          "char": "齿",
+          "name": "Xỉ",
+          "desc": "Răng; lẻ loi. (Phồn thể: 齒)",
+          "variants": [
+            "齒"
+          ],
+          "pinyin": "chǐ"
+        }
+      ]
+    },
+    {
+      "strokes": 9,
+      "radicals": [
+        {
+          "no": 176,
+          "char": "面",
+          "name": "Diện",
+          "desc": "Mặt.",
+          "pinyin": "miàn"
+        },
+        {
+          "no": 177,
+          "char": "革",
+          "name": "Cách",
+          "desc": "Da thú thuộc, bỏ sạch lông.",
+          "pinyin": "gé"
+        },
+        {
+          "no": 179,
+          "char": "韭",
+          "name": "Cửu",
+          "desc": "Cây hẹ.",
+          "pinyin": "jiǔ"
+        },
+        {
+          "no": 180,
+          "char": "音",
+          "name": "Âm",
+          "desc": "Tiếng, âm thanh phát ra tai nghe được.",
+          "pinyin": "yīn"
+        },
+        {
+          "no": 184,
+          "char": "食",
+          "name": "Thực",
+          "desc": "Ăn.",
+          "variants": [
+            "饣",
+            "飠"
+          ],
+          "pinyin": "shí"
+        },
+        {
+          "no": 185,
+          "char": "首",
+          "name": "Thủ",
+          "desc": "Đầu.",
+          "pinyin": "shǒu"
+        },
+        {
+          "no": 186,
+          "char": "香",
+          "name": "Hương",
+          "desc": "Mùi thơm.",
+          "pinyin": "xiāng"
+        },
+        {
+          "no": 188,
+          "char": "骨",
+          "name": "Cốt",
+          "desc": "Xương.",
+          "pinyin": "gǔ"
+        },
+        {
+          "no": 194,
+          "char": "鬼",
+          "name": "Quỷ",
+          "desc": "Ma quỷ.",
+          "pinyin": "guǐ"
+        }
+      ]
+    },
+    {
+      "strokes": 10,
+      "radicals": [
+        {
+          "no": 189,
+          "char": "高",
+          "name": "Cao",
+          "desc": "Trái lại với thấp là cao.",
+          "pinyin": "gāo"
+        },
+        {
+          "no": 190,
+          "char": "髟",
+          "name": "Tiêu",
+          "desc": "Tóc dài — hình chữ trường 长 và chữ sam 彡 (lông dài).",
+          "pinyin": "biāo"
+        },
+        {
+          "no": 191,
+          "char": "鬥",
+          "name": "Đấu",
+          "desc": "Đánh nhau, chiến đấu, đấu tranh… (giản thể thường nhập vào chữ đấu 斗).",
+          "pinyin": "dòu"
+        },
+        {
+          "no": 192,
+          "char": "鬯",
+          "name": "Sướng",
+          "desc": "Loại rượu lễ để cầu thần.",
+          "pinyin": "chàng"
+        },
+        {
+          "no": 193,
+          "char": "鬲",
+          "name": "Lịch (cách)",
+          "desc": "Cái đỉnh hương; ngăn cách âm dương.",
+          "pinyin": "gé"
+        }
+      ]
+    },
+    {
+      "strokes": 11,
+      "radicals": [
+        {
+          "no": 198,
+          "char": "鹿",
+          "name": "Lộc",
+          "desc": "Con nai.",
+          "pinyin": "lù"
+        },
+        {
+          "no": 200,
+          "char": "麻",
+          "name": "Ma",
+          "desc": "Cây gai.",
+          "pinyin": "má"
+        },
+        {
+          "no": 201,
+          "char": "黄",
+          "name": "Hoàng",
+          "desc": "Màu vàng. (Phồn thể: 黃)",
+          "variants": [
+            "黃"
+          ],
+          "pinyin": "huáng"
+        }
+      ]
+    },
+    {
+      "strokes": 12,
+      "radicals": [
+        {
+          "no": 202,
+          "char": "黍",
+          "name": "Thử",
+          "desc": "Lúa nếp.",
+          "pinyin": "shǔ"
+        },
+        {
+          "no": 203,
+          "char": "黑",
+          "name": "Hắc",
+          "desc": "Màu đen.",
+          "pinyin": "hēi"
+        },
+        {
+          "no": 204,
+          "char": "黹",
+          "name": "Chí (phất)",
+          "desc": "Thêu may.",
+          "pinyin": "zhǐ"
+        },
+        {
+          "no": 206,
+          "char": "鼎",
+          "name": "Đỉnh",
+          "desc": "Cái vạc.",
+          "pinyin": "dǐng"
+        }
+      ]
+    },
+    {
+      "strokes": 13,
+      "radicals": [
+        {
+          "no": 207,
+          "char": "鼓",
+          "name": "Cổ",
+          "desc": "Cái trống.",
+          "pinyin": "gǔ"
+        },
+        {
+          "no": 208,
+          "char": "鼠",
+          "name": "Thử",
+          "desc": "Con chuột.",
+          "pinyin": "shǔ"
+        }
+      ]
+    },
+    {
+      "strokes": 14,
+      "radicals": [
+        {
+          "no": 209,
+          "char": "鼻",
+          "name": "Tỵ",
+          "desc": "Cái mũi.",
+          "pinyin": "bí"
+        }
+      ]
+    },
+    {
+      "strokes": 17,
+      "radicals": [
+        {
+          "no": 214,
+          "char": "龠",
+          "name": "Dược",
+          "desc": "Nhạc khí như ống sáo có lỗ.",
+          "pinyin": "yuè"
+        }
+      ]
+    }
+  ],
+  "strokeOrderRules": [
+    {
+      "rule": "Trên trước, dưới sau",
+      "zh": "从上到下",
+      "desc": "Viết từ trên xuống dưới, phần trên xong mới đến phần dưới.",
+      "char": "六"
+    },
+    {
+      "rule": "Trái trước, phải sau",
+      "zh": "从左到右",
+      "desc": "Viết từ trái sang phải, bộ phận bên trái xong mới sang bên phải.",
+      "char": "行"
+    },
+    {
+      "rule": "Ngang trước, sổ sau",
+      "zh": "先横后竖",
+      "desc": "Gặp nét ngang và nét sổ giao nhau thì viết nét ngang trước.",
+      "char": "干"
+    },
+    {
+      "rule": "Phẩy trước, mác sau",
+      "zh": "先撇后捺",
+      "desc": "Nét phẩy (丿) viết trước, nét mác (乀) viết sau.",
+      "char": "父"
+    },
+    {
+      "rule": "Ngoài trước, trong sau",
+      "zh": "先外后内",
+      "desc": "Khung ngoài viết trước rồi mới viết phần bên trong.",
+      "char": "月"
+    },
+    {
+      "rule": "Vào nhà trước, đóng cửa sau",
+      "zh": "先里头后封口",
+      "desc": "Chữ có khung kín: viết khung → phần trong → nét đóng đáy sau cùng.",
+      "char": "固"
+    },
+    {
+      "rule": "Giữa trước, hai bên sau",
+      "zh": "先中间后两边",
+      "desc": "Nét giữa nổi bật, hai bên đối xứng: viết nét giữa trước.",
+      "char": "小"
+    }
+  ],
+  "strokeOrderNote": {
+    "text": "Bộ 辶 (sước), 廴 (dẫn), 凵 (khảm) luôn viết SAU CÙNG",
+    "chars": [
+      "逃",
+      "廷",
+      "凶"
+    ]
+  }
+}

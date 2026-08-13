@@ -47,20 +47,15 @@ export { Prisma }
  */
 export type HanCharacter = Prisma.HanCharacterModel
 /**
+ * Model Radical
+ * 
+ */
+export type Radical = Prisma.RadicalModel
+/**
  * Model Vocabulary
  * 
  */
 export type Vocabulary = Prisma.VocabularyModel
-/**
- * Model VocabularyMeaning
- * 
- */
-export type VocabularyMeaning = Prisma.VocabularyMeaningModel
-/**
- * Model VocabularyExample
- * 
- */
-export type VocabularyExample = Prisma.VocabularyExampleModel
 /**
  * Model VocabularyCharacter
  * 
@@ -101,3 +96,13 @@ export type FlashcardDeck = Prisma.FlashcardDeckModel
  * 
  */
 export type FlashcardDeckVocabulary = Prisma.FlashcardDeckVocabularyModel
+/**
+ * Model VocabularySet
+ * 
+ */
+export type VocabularySet = Prisma.VocabularySetModel
+/**
+ * Model VocabularySetVocabulary
+ * 
+ */
+export type VocabularySetVocabulary = Prisma.VocabularySetVocabularyModel

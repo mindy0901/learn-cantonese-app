@@ -1,0 +1,150 @@
+{
+    "id": "686063d4-9cf8-50ec-6fca-7a191e25319e",
+    "mandarin": {
+        "hanzi_simplified": "长",
+        "hanzi_traditional": "長",
+        "system": "pinyin",
+        "readings": [
+            {
+                "id": "c3f7ec3c-a06c-ed80-10ea-68ddde2eecad",
+                "romanization": "cháng",
+                "sino_vietnamese": "TRƯỜNG",
+                "meanings": [
+                    {
+                        "id": "pending-id",
+                        "position": 0,
+                        "category": "Danh tu",
+                        "zh": "",
+                        "vi": "111111111111111",
+                        "en": "111111111111",
+                        "examples": [
+                            {
+                                "id": "pending-id",
+                                "position": 0,
+                                "zh": "1111111111111",
+                                "romanization": "11111111111111111111111111",
+                                "vi": "11111111",
+                                "en": "111111111111111"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "b2a7efe8-e922-f9cd-57c2-79b804019a1c",
+                "romanization": "zhǎng",
+                "sino_vietnamese": "TRƯỞNG",
+                "meanings": []
+            }
+        ]
+    },
+    "cantonese": {
+        "hanzi_simplified": "长",
+        "hanzi_traditional": "長",
+        "system": "jyutping",
+        "readings": [
+            {
+                "id": "43e28cac-f352-8e20-dec7-612d46feca67",
+                "romanization": "zoeng2",
+                "sino_vietnamese": "TRƯỞNG",
+                "meanings": [
+                    {
+                        "id": "8069ba3f-03df-4499-970c-798710abc012",
+                        "position": 0,
+                        "category": "CC-Canto",
+                        "yue": "",
+                        "vi": "",
+                        "en": "Chief",
+                        "examples": []
+                    }
+                ]
+            },
+            {
+                "id": "f1e3e389-79d3-190d-24b4-3798e2fbec78",
+                "romanization": "coeng4",
+                "sino_vietnamese": "TRƯỜNG",
+                "meanings": [
+                    {
+                        "id": "489e0332-6414-4960-893b-f0bb335a6403",
+                        "position": 18,
+                        "category": "粵典–words.hk",
+                        "yue": "兩端嘅空間、時間距離比一般水平多",
+                        "vi": "",
+                        "en": "Long, Spatially or temporally",
+                        "examples": [
+                            {
+                                "id": "edf52c12-34f8-4f3e-928a-885008416371",
+                                "position": 0,
+                                "yue": "長裙",
+                                "romanization": "coeng4 kwan4",
+                                "vi": "",
+                                "en": "a long dress"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "33dd0bc1-4be4-484a-add3-40dc28685a41",
+                        "position": 19,
+                        "category": "粵典–words.hk",
+                        "vi": "",
+                        "en": "Length",
+                        "yue": "兩個完結點之間嘅距離",
+                        "examples": [
+                            {
+                                "id": "8cc4090a-61d0-4048-b9b3-c793f3463bae",
+                                "position": 0,
+                                "vi": "",
+                                "en": "length, width and height",
+                                "romanization": "coeng4 fut3 gou1",
+                                "yue": "長闊高"
+                            },
+                            {
+                                "id": "b82606ba-98c7-458b-9e8d-77de1717afbc",
+                                "position": 1,
+                                "vi": "",
+                                "en": "the length of a car",
+                                "romanization": "ce1 coeng4",
+                                "yue": "車長"
+                            },
+                            {
+                                "id": "183f61bd-2c12-4417-8d73-a84c92829e9a",
+                                "position": 2,
+                                "vi": "",
+                                "en": "The overall length of the bridge is three thousand metres.",
+                                "romanization": "tiu4 kiu4 cyun4 coeng4 saam1 cin1 mai5",
+                                "yue": "條橋全長三千米。"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "a9d6ebc3-dc88-4616-ad4e-f247966ac91f",
+                        "position": 20,
+                        "category": "粵典–words.hk",
+                        "vi": "",
+                        "en": "Strong point; Merit; Specialty",
+                        "yue": "優點；優勝嘅地方",
+                        "examples": [
+                            {
+                                "id": "da35ad72-f5a1-473b-93f4-0f37543ff33a",
+                                "position": 0,
+                                "vi": "",
+                                "en": "to show one's strength",
+                                "romanization": "jat1 zin2 so2 coeng4",
+                                "yue": "一展所長"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "metadata": {
+        "hsk_level": "HSK 3",
+        "popularity": 64.9,
+        "frequency": 2276,
+        "movie_word_rank": 294,
+        "book_word_rank": 192,
+        "created_at": "2026-08-10T07:19:21.689Z",
+        "updated_at": "2026-08-13T15:56:19.037Z"
+    }
+}

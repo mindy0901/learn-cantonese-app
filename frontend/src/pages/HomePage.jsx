@@ -7,85 +7,85 @@ import {
 } from "../store/appStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { FlashcardStatsPanel } from "../components/FlashcardStatsPanel.jsx";
-import { btnClass } from "../components/ui/buttonStyles.js";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/shadcn/card.jsx";
 import { IconWordBank, IconGrammar, IconSentences, IconFlashcard } from "../components/NavIcons.jsx";
 
 export function HomePage() {
     const wordCount = useVocabularyCount();
+    const masteredCount = useMasteredVocabularyCount();
     const grammarCount = useGrammarCount();
     const sentenceCount = useSentenceCount();
-    const masteredCount = useMasteredVocabularyCount();
     const { t, fmt } = useLocale();
-
     const remaining = wordCount - masteredCount;
-    const pct = wordCount > 0 ? Math.round((masteredCount / wordCount) * 100) : 0;
+
+    const quickLinks = [
+        {
+            to: "/vocabulary",
+            icon: IconWordBank,
+            title: t.home.goWordBank,
+            meta: fmt(t.home.wordCountMeta, { count: wordCount }),
+        },
+        {
+            to: "/grammar",
+            icon: IconGrammar,
+            title: t.home.goGrammar,
+            meta: fmt(t.home.grammarCountMeta, { count: grammarCount }),
+        },
+        {
+            to: "/sentences",
+            icon: IconSentences,
+            title: t.nav.sentenceBank,
+            meta: `${sentenceCount} ${t.nav.sentenceBank.toLowerCase()}`,
+        },
+        {
+            to: "/flashcard",
+            icon: IconFlashcard,
+            title: t.home.goFlashcard,
+            meta: fmt(t.home.flashcardMeta, { remaining }),
+        },
+    ];
+
+    const libGroups = [
+        {
+            title: t.techStack.frontend,
+            libs: [
+                ["React", t.techStack.react],
+                ["React Router", t.techStack.reactRouter],
+                ["Zustand", t.techStack.zustand],
+                ["Tailwind CSS", t.techStack.tailwind],
+                ["tailwind-merge + clsx", t.techStack.classUtils],
+                ["Vite", t.techStack.vite],
+                ["react-markdown + remark-gfm", t.techStack.markdown],
+                ["oxlint", t.techStack.oxlint],
+            ],
+        },
+        {
+            title: t.techStack.backend,
+            libs: [
+                ["Fastify", t.techStack.fastify],
+                ["@fastify/session + cookie", t.techStack.session],
+                ["@fastify/cors + formbody", t.techStack.cors],
+                ["Prisma", t.techStack.prisma],
+                ["bcryptjs", t.techStack.bcrypt],
+                ["dotenv", t.techStack.dotenv],
+            ],
+        },
+        {
+            title: t.techStack.data,
+            libs: [
+                ["PostgreSQL", t.techStack.postgres],
+                ["pg", t.techStack.pg],
+                ["connect-pg-simple", t.techStack.connectPgSimple],
+                ["Docker", t.techStack.docker],
+                ["tsx", t.techStack.tsx],
+                ["pinyin-pro", t.techStack.pinyinPro],
+                ["opencc-js", t.techStack.opencc],
+            ],
+        },
+    ];
 
     return (
         <main className="flex-1 w-full">
-            {/* ── Hero Section ── */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-accent/8 via-surface to-accent/5 border-b border-border">
-                <div className="w-full px-5 py-10 sm:py-14">
-                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-                        <div className="max-w-2xl">
-                            <p className="text-xs font-semibold tracking-widest uppercase text-accent mb-2">
-                                {t.brandTagline}
-                            </p>
-                            <h1 className="!text-[clamp(1.75rem,5vw,2.75rem)] !font-bold !leading-[1.1] !tracking-tight">
-                                {t.home.title} <span className="text-accent">{t.home.titleAccent}</span>
-                            </h1>
-                            <p className="mt-3 text-text-muted text-base max-w-lg">{t.home.subtitle}</p>
-                        </div>
-                        {/* Big stat ring */}
-                        <div className="flex items-center gap-5 shrink-0">
-                            <div className="relative flex items-center justify-center size-28 sm:size-32">
-                                <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="44" fill="none" stroke="var(--border)" strokeWidth="8" />
-                                    <circle
-                                        cx="50"
-                                        cy="50"
-                                        r="44"
-                                        fill="none"
-                                        stroke="var(--accent)"
-                                        strokeWidth="8"
-                                        strokeLinecap="round"
-                                        strokeDasharray={`${pct * 2.765} 276.5`}
-                                        className="transition-[stroke-dasharray] duration-700 ease-out"
-                                    />
-                                </svg>
-                                <div className="flex flex-col items-center text-center">
-                                    <span className="text-2xl sm:text-3xl font-extrabold text-accent tabular-nums">
-                                        {pct}%
-                                    </span>
-                                    <span className="text-[0.625rem] text-text-muted leading-tight mt-0.5 max-w-[4rem]">
-                                        {t.home.progress}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="size-2.5 rounded-full bg-accent" />
-                                    <span className="text-sm text-text-h font-medium">
-                                        {fmt(t.home.wordCountMeta, { count: wordCount })}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="size-2.5 rounded-full bg-success-text" />
-                                    <span className="text-sm text-text-h font-medium">
-                                        {t.home.masteredWords}: {masteredCount}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="size-2.5 rounded-full bg-amber-500" />
-                                    <span className="text-sm text-text-h font-medium">
-                                        {t.home.wordsRemaining}: {remaining}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             <div className="w-full px-5 pb-12">
                 {/* ── Stats ── */}
                 <section className="mt-7 mb-7">
@@ -94,70 +94,50 @@ export function HomePage() {
 
                 {/* ── Quick Nav ── */}
                 <section className="mb-7">
-                    <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-3">
+                    <h2 className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                         {t.home.quickNav}
                     </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                        <Link
-                            to="/vocabulary"
-                            className="group flex flex-col gap-1.5 p-4 bg-surface border border-border rounded-xl no-underline text-text-h shadow-sm transition-all duration-200 hover:border-accent-border hover:shadow-theme hover:-translate-y-0.5"
-                        >
-                            <IconWordBank
-                                className="text-accent transition-transform duration-200 group-hover:scale-110"
-                                size={22}
-                            />
-                            <span className="font-semibold text-sm">{t.home.goWordBank}</span>
-                            <span className="text-[0.75rem] text-text-muted">
-                                {fmt(t.home.wordCountMeta, { count: wordCount })}
-                            </span>
-                        </Link>
-                        <Link
-                            to="/grammar"
-                            className="group flex flex-col gap-1.5 p-4 bg-surface border border-border rounded-xl no-underline text-text-h shadow-sm transition-all duration-200 hover:border-accent-border hover:shadow-theme hover:-translate-y-0.5"
-                        >
-                            <IconGrammar
-                                className="text-accent transition-transform duration-200 group-hover:scale-110"
-                                size={22}
-                            />
-                            <span className="font-semibold text-sm">{t.home.goGrammar}</span>
-                            <span className="text-[0.75rem] text-text-muted">
-                                {fmt(t.home.grammarCountMeta, { count: grammarCount })}
-                            </span>
-                        </Link>
-                        <Link
-                            to="/sentences"
-                            className="group flex flex-col gap-1.5 p-4 bg-surface border border-border rounded-xl no-underline text-text-h shadow-sm transition-all duration-200 hover:border-accent-border hover:shadow-theme hover:-translate-y-0.5"
-                        >
-                            <IconSentences
-                                className="text-accent transition-transform duration-200 group-hover:scale-110"
-                                size={22}
-                            />
-                            <span className="font-semibold text-sm">{t.nav.sentenceBank}</span>
-                            <span className="text-[0.75rem] text-text-muted">
-                                {sentenceCount} {t.nav.sentenceBank.toLowerCase()}
-                            </span>
-                        </Link>
-                        <Link
-                            to="/flashcard"
-                            className="group flex flex-col gap-1.5 p-4 border-2 border-accent-border rounded-xl no-underline text-text-h bg-accent-bg/60 shadow-sm transition-all duration-200 hover:border-accent hover:shadow-theme hover:-translate-y-0.5"
-                        >
-                            <IconFlashcard
-                                className="text-accent transition-transform duration-200 group-hover:scale-110"
-                                size={22}
-                            />
-                            <span className="font-semibold text-sm">{t.home.goFlashcard}</span>
-                            <span className="text-[0.75rem] text-text-muted">
-                                {fmt(t.home.flashcardMeta, { remaining })}
-                            </span>
-                        </Link>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                        {quickLinks.map(({ to, icon: Icon, title, meta }) => (
+                            <Link key={to} to={to} className="group h-full">
+                                <Card className="h-full transition-all hover:border-primary/40 hover:shadow-md">
+                                    <CardContent className="flex flex-col gap-2">
+                                        <Icon
+                                            className="text-primary transition-transform duration-200 group-hover:scale-110"
+                                            size={22}
+                                        />
+                                        <CardTitle className="text-sm">{title}</CardTitle>
+                                        <CardDescription>{meta}</CardDescription>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        ))}
                     </div>
                 </section>
 
-                {/* ── CTA ── */}
-                <section className="flex justify-center gap-3 mt-2 flex-wrap">
-                    <Link to="/flashcard" className={btnClass("primary", "lg")}>
-                        <IconFlashcard size={20} /> {t.home.startFlashcard}
-                    </Link>
+                {/* ── Tech Stack ── */}
+                <section className="mt-2 mb-7">
+                    <h2 className="mb-1 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
+                        {t.techStack.title}
+                    </h2>
+                    <p className="mb-4 text-sm text-muted-foreground">{t.techStack.subtitle}</p>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {libGroups.map((group) => (
+                            <Card key={group.title}>
+                                <CardHeader>
+                                    <CardTitle className="text-sm">{group.title}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex flex-col gap-2">
+                                    {group.libs.map(([name, role]) => (
+                                        <div key={name} className="flex flex-col">
+                                            <span className="text-sm font-medium text-card-foreground">{name}</span>
+                                            <span className="text-xs leading-snug text-muted-foreground">{role}</span>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
                 </section>
             </div>
         </main>

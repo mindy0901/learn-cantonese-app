@@ -39,6 +39,13 @@ import {
     addVocabularyToDeck,
     removeVocabularyFromDeck,
     getDeckVocabularies,
+    // Vocabulary set CRUD
+    getVocabularySets,
+    createVocabularySet,
+    updateVocabularySet,
+    deleteVocabularySet,
+    addVocabularyToSet,
+    removeVocabularyFromSet,
 } from "../lib/prismaService.js";
 import { getUserId, requireAuth } from "../middleware/auth.js";
 import { requireAppAdmin } from "../middleware/appAdmin.js";
@@ -66,10 +73,7 @@ export async function dataRoutes(fastify) {
             maxProgress: request.query.maxProgress,
             hskLevel: request.query.hskLevel || null,
         });
-        return {
-            ...result,
-            items: result.items.map(rowToVocabulary),
-        };
+        return result;
     });
 
     // ── Vocabulary by IDs ──
@@ -116,10 +120,10 @@ export async function dataRoutes(fastify) {
                 search: request.query.q ?? request.query.search,
                 importantFirst: request.query.importantFirst === "true",
             });
-            return { ...result, items: result.items.map(rowToVocabulary) };
+            return result;
         }
         const data = await fetchAllData(userId);
-        return data.words;
+        return data.vocabularies;
     });
 
     fastify.post("/vocabulary", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
@@ -237,6 +241,29 @@ export async function dataRoutes(fastify) {
     fastify.delete("/han-characters/:id", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
         await deleteHanChar(getUserId(request), request.params.id);
         return { ok: true };
+    });
+
+    // ── Radicals (214 bộ thủ) ──
+    fastify.get("/radicals", async () => {
+        const { prisma } = await import("../lib/prisma.js");
+        const radicals = await prisma.radical.findMany({ orderBy: { number: "asc" } });
+        const groups = [];
+        for (const r of radicals) {
+            let g = groups.find((x) => x.strokes === r.strokeCount);
+            if (!g) {
+                g = { strokes: r.strokeCount, radicals: [] };
+                groups.push(g);
+            }
+            g.radicals.push({
+                no: r.number,
+                char: r.char,
+                name: r.name,
+                desc: r.desc,
+                pinyin: r.pinyin,
+                variants: r.variants,
+            });
+        }
+        return { total: radicals.length, groups };
     });
 
     // ── Backfill Traditional/Simplified variants using OpenCC + vocabulary pairs ──
@@ -455,99 +482,39 @@ export async function dataRoutes(fastify) {
         },
     );
 
-    // ── Backfill pinyin for all vocabulary ──
-    fastify.post("/data/backfill-pinyin", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
-        const { prisma } = await import("../lib/prisma.js");
-        const { pinyin } = await import("pinyin-pro");
+    // ── Sync stroke count (HanCharacter.strokeCount) ──
+    // Preview: tính trước những ký tự sẽ fill / đổi (không ghi DB).
+    fastify.post(
+        "/data/sync-han-char-strokes/preview",
+        { preHandler: [requireAuth, requireAppAdmin] },
+        async (request) => {
+            const { previewHanCharStrokes } = await import("../lib/hanCharStrokeSync.js");
+            const mode = request.body?.mode === "full" ? "full" : "fast";
+            const result = await previewHanCharStrokes(mode);
+            return { ok: true, mode, ...result };
+        },
+    );
 
-        // Only fill rows that have null or empty pinyin — never overwrite existing data
-        const vocabs = await prisma.vocabulary.findMany({
-            where: {
-                OR: [{ pinyin: null }, { pinyin: "" }],
-            },
-            select: { id: true, hanTraditional: true, hanSimplified: true },
-        });
-
-        let updated = 0;
-        const skipped = [];
-        for (const v of vocabs) {
-            const source = (v.hanSimplified || v.hanTraditional || "").trim();
-            if (!source) {
-                skipped.push(v.hanTraditional);
-                continue;
-            }
-
-            const py = pinyin(source, { toneType: "symbol", type: "array" })
-                .map((s) => String(s ?? "").trim())
-                .filter(Boolean)
-                .join(" ");
-            if (!py || /[\u4E00-\u9FFF\u3400-\u4DBF]/.test(py)) {
-                skipped.push(v.hanTraditional);
-                continue;
-            }
-
-            await prisma.vocabulary.update({
-                where: { id: v.id },
-                data: { pinyin: py },
-            });
-            updated++;
-        }
-
-        return { updated, total: vocabs.length, skipped };
+    // Bắt đầu job sync stroke count (trả jobId ngay, chạy background).
+    fastify.post("/data/sync-han-char-strokes", { preHandler: [requireAuth, requireAppAdmin] }, async (request) => {
+        const { createStrokeJob, runStrokeJob } = await import("../lib/hanCharStrokeJob.js");
+        const mode = request.body?.mode === "full" ? "full" : "fast";
+        const job = createStrokeJob();
+        runStrokeJob(job.id, mode); // fire-and-forget
+        return { ok: true, jobId: job.id, mode };
     });
 
-    // ── Backfill jyutping for all vocabulary ──
-    fastify.post("/data/backfill-jyutping", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
-        const { prisma } = await import("../lib/prisma.js");
-        const { execFile } = await import("node:child_process");
-        const { promisify } = await import("node:util");
-        const execFileAsync = promisify(execFile);
-
-        const PYTHON_BIN = "/opt/pycantonese-venv/bin/python3";
-        const JYUTPING_SCRIPT = "/app/scripts/jyutping.py";
-
-        const toJyutping = async (text) => {
-            try {
-                const { stdout } = await execFileAsync(PYTHON_BIN, [JYUTPING_SCRIPT, text], {
-                    timeout: 10000,
-                });
-                return stdout.trim();
-            } catch (err) {
-                console.error("pycantonese error:", err.message);
-                return "";
-            }
-        };
-
-        // Only fill rows that have null or empty jyutping — never overwrite existing data
-        const vocabs = await prisma.vocabulary.findMany({
-            where: { OR: [{ jyutping: null }, { jyutping: "" }] },
-            select: { id: true, hanTraditional: true },
-        });
-
-        let updated = 0;
-        const skipped = [];
-        for (const v of vocabs) {
-            const source = (v.hanTraditional ?? "").trim();
-            if (!source) {
-                skipped.push(v.hanTraditional);
-                continue;
-            }
-
-            const jp = await toJyutping(source);
-            if (!jp) {
-                skipped.push(v.hanTraditional);
-                continue;
-            }
-
-            await prisma.vocabulary.update({
-                where: { id: v.id },
-                data: { jyutping: jp },
-            });
-            updated++;
-        }
-
-        return { updated, total: vocabs.length, skipped };
-    });
+    // Poll tiến trình job sync stroke count.
+    fastify.get(
+        "/data/sync-han-char-strokes/progress/:jobId",
+        { preHandler: [requireAuth, requireAppAdmin] },
+        async (request) => {
+            const { getStrokeJob } = await import("../lib/hanCharStrokeJob.js");
+            const job = getStrokeJob(request.params.jobId);
+            if (!job) return { ok: true, job: null };
+            return { ok: true, job };
+        },
+    );
 
     // ── Flashcard Decks ──
 
@@ -614,6 +581,70 @@ export async function dataRoutes(fastify) {
             const userId = getUserId(request);
             try {
                 await removeVocabularyFromDeck(userId, request.params.deckId, request.params.vocabularyId);
+                return { ok: true };
+            } catch (err) {
+                if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+                throw err;
+            }
+        },
+    );
+
+    // ── Vocabulary Sets (custom user groups) ──
+
+    fastify.get("/vocabulary-sets", { preHandler: [requireAuth] }, async (request) => {
+        const userId = getUserId(request);
+        return getVocabularySets(userId);
+    });
+
+    fastify.post("/vocabulary-sets", { preHandler: [requireAuth] }, async (request, reply) => {
+        const userId = getUserId(request);
+        const set = await createVocabularySet(userId, request.body ?? {});
+        return reply.code(201).send(set);
+    });
+
+    fastify.put("/vocabulary-sets/:id", { preHandler: [requireAuth] }, async (request, reply) => {
+        const userId = getUserId(request);
+        try {
+            const set = await updateVocabularySet(userId, request.params.id, request.body ?? {});
+            return set;
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            throw err;
+        }
+    });
+
+    fastify.delete("/vocabulary-sets/:id", { preHandler: [requireAuth] }, async (request, reply) => {
+        const userId = getUserId(request);
+        try {
+            await deleteVocabularySet(userId, request.params.id);
+            return { ok: true };
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            throw err;
+        }
+    });
+
+    fastify.post("/vocabulary-sets/:id/vocabularies", { preHandler: [requireAuth] }, async (request, reply) => {
+        const userId = getUserId(request);
+        const { vocabularyId } = request.body ?? {};
+        if (!vocabularyId) return reply.code(400).send({ error: "vocabularyId is required" });
+        try {
+            const res = await addVocabularyToSet(userId, request.params.id, vocabularyId);
+            return reply.code(201).send(res);
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            if (err.statusCode === 409) return reply.code(409).send({ error: err.message });
+            throw err;
+        }
+    });
+
+    fastify.delete(
+        "/vocabulary-sets/:id/vocabularies/:vocabularyId",
+        { preHandler: [requireAuth] },
+        async (request, reply) => {
+            const userId = getUserId(request);
+            try {
+                await removeVocabularyFromSet(userId, request.params.id, request.params.vocabularyId);
                 return { ok: true };
             } catch (err) {
                 if (err.statusCode === 404) return reply.code(404).send({ error: err.message });

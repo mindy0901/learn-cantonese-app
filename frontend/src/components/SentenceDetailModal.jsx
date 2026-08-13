@@ -8,7 +8,7 @@ const backdropClass =
   'fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/40 px-4 py-[max(1.25rem,env(safe-area-inset-top,0px))] pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]'
 
 const modalClass =
-  'm-auto flex w-full max-w-[min(36rem,calc(100vw-2rem))] shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_48px_rgb(0_0_0/22%),0_8px_16px_rgb(0_0_0/12%)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]'
+  'm-auto flex w-full max-w-[min(36rem,calc(100vw-2rem))] shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_24px_48px_rgb(0_0_0/22%),0_8px_16px_rgb(0_0_0/12%)] max-h-[min(calc(100vh-2.5rem),calc(100dvh-2.5rem))]'
 
 const detailTextClass =
   'm-0 max-w-full text-[clamp(0.9375rem,2.5vw,1.0625rem)] leading-normal break-normal'
@@ -39,7 +39,7 @@ export function SentenceDetailModal({ item, onClose, onToggleImportant, onToggle
                 className={cn(
                   btnClass('ghost', 'sm'),
                   'inline-flex min-h-12 min-w-12 items-center justify-center p-2 text-[1.625rem] leading-none',
-                  item.mastered && 'text-success-text',
+                  item.mastered && 'text-primary',
                 )}
                 onClick={() => onToggleMastered(item.id)}
                 aria-label={item.mastered ? t.wordDetail.unmarkMastered : t.wordDetail.markMastered}
@@ -87,7 +87,7 @@ export function SentenceDetailModal({ item, onClose, onToggleImportant, onToggle
                     </p>
                   )}
                   {item.pinyin && item.pinyin !== item.jyutping && (
-                    <p className={cn(detailTextClass, 'text-text-muted tabular-nums')}>{item.pinyin}</p>
+                    <p className={cn(detailTextClass, 'text-muted-foreground tabular-nums')}>{item.pinyin}</p>
                   )}
                   {!item.jyutping && !item.pinyin && romanization && (
                     <p className={cn(detailTextClass, 'font-semibold not-italic tracking-wide text-jyutping')}>
@@ -101,7 +101,7 @@ export function SentenceDetailModal({ item, onClose, onToggleImportant, onToggle
             <div className="flex w-full min-w-0 flex-col items-center gap-2.5 text-center">
               <p className={cn(detailTextClass, 'font-semibold text-viet')}>{item.vietnamese || '—'}</p>
               {item.english && (
-                <p className={cn(detailTextClass, 'mt-1.5 font-medium text-text-h [hyphens:auto] [text-wrap:pretty]')}>
+                <p className={cn(detailTextClass, 'mt-1.5 font-medium text-foreground [hyphens:auto] [text-wrap:pretty]')}>
                   {item.english}
                 </p>
               )}

@@ -11,6 +11,7 @@ export function emptyVocabulary(partial) {
         studyProgress: 0,
         studyProgressAt: undefined,
         hskLevel: undefined,
+        pureCantonese: false,
         meanings: [],
         examples: [],
         createdAt: now,

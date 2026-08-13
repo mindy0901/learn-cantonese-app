@@ -1,30 +1,126 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../store/localeStore.js";
-import { useAppActions, useVocabularies } from "../store/appStore.js";
+import { useAppActions, useVocabularies, useHanCharacters } from "../store/appStore.js";
 import { normalizeSearchText, hasToneDiacritics } from "../lib/wordSearch.js";
+import { collectMeaningsField } from "../lib/wordNormalize.js";
+import { vocabRomanizationField, vocabMeanings } from "../lib/wordDisplay.js";
+import { comparePinyinTone } from "../lib/pinyinSort.js";
 import { saveWordBankReturnState, clearWordBankReturnState, restoreWordBankScroll } from "../lib/wordBankReturn.js";
 import { useIsSignedIn, useIsAdmin } from "../store/authStore.js";
 import { PAGE_SIZE } from "../lib/constants.js";
 import { cn } from "../lib/cn.js";
+import { hanSortKey, compareHanKeys, setHanStrokeMap } from "../lib/hanStroke.js";
 import { Pagination } from "./Pagination.jsx";
 import { WordRow } from "./WordRow.jsx";
 import { SkeletonTable } from "./ui/Skeleton.jsx";
 import { ConfirmDialog } from "./ConfirmDialog.jsx";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./shadcn/table.jsx";
 
 const thClass =
-    "text-left border-b border-border align-middle truncate bg-bg text-text-muted font-medium text-sm uppercase tracking-wide";
+    "sticky top-0 z-10 text-left border-b border-border align-middle truncate bg-background text-muted-foreground font-medium text-sm uppercase tracking-wide";
 
 const thClassBank = "px-5 py-2.5";
 const thClassPicker = "px-3 py-2";
 const tdPicker = "[&_td]:px-3 [&_td]:py-2";
 
+/**
+ * Deterministic tiebreak for equal sort values — keeps row order stable across refreshes.
+ */
+function stableTiebreak(a, b) {
+    const ha = String(a.hanTraditional ?? "");
+    const hb = String(b.hanTraditional ?? "");
+    if (ha !== hb) return compareHan(ha, hb);
+    const ia = String(a.id ?? "");
+    const ib = String(b.id ?? "");
+    return ia < ib ? -1 : ia > ib ? 1 : 0;
+}
+
+/** Lightweight han comparison (stroke collator) for tiebreaks only. */
+const tiebreakCollator = (() => {
+    try {
+        return new Intl.Collator("zh-Hant-u-co-stroke", { sensitivity: "variant" });
+    } catch {
+        return null;
+    }
+})();
+
+function compareHan(a, b) {
+    if (tiebreakCollator) return tiebreakCollator.compare(a, b);
+    return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function comparePinyin(a, b) {
+    // Prefer DB-computed pinyin_numeric (yi1 yi2 yi4 — stable, locale-free).
+    const na = String(a.pinyinNumeric ?? "")
+        .trim()
+        .toLowerCase();
+    const nb = String(b.pinyinNumeric ?? "")
+        .trim()
+        .toLowerCase();
+    if (na && nb && na !== nb) return na < nb ? -1 : 1;
+    // Tone collator — orders yī, yí, yǐ, yì by tone (1,2,3,4).
+    return comparePinyinTone(
+        vocabRomanizationField(a, "pinyin") || (a.pinyin ?? ""),
+        vocabRomanizationField(b, "pinyin") || (b.pinyin ?? ""),
+    );
+}
+
+/** Vocabulary fields searched for a given "Search in" column selector. */
+function searchFieldsFor(column) {
+    switch (column) {
+        case "han":
+            // "Chữ Hán & Phiên âm" — search han forms (simp + hk) and romanizations
+            return ["hanTraditional", "hanSimplified", "hanHongKong", "pinyin", "jyutping"];
+        case "sinoVietnamese":
+            return ["sinoVietnamese"];
+        case "meaning":
+            // "Nghĩa" — search both Vietnamese and English meanings
+            return ["vietMeanings", "engMeanings"];
+        default:
+            return ["hanTraditional", "hanSimplified", "hanHongKong"];
+    }
+}
+
+/**
+ * Resolve a field's searchable value, preferring the child `word.meanings`
+ * (meanings_json) per project rule, falling back to the flat column.
+ * For meaning fields, reads across `romanization` when present.
+ */
+function searchFieldValue(word, field) {
+    if (field === "vietMeanings" || field === "engMeanings") {
+        const joined = collectMeaningsField(vocabMeanings(word), field) || collectMeaningsField(word.meanings, field);
+        return joined || word[field] || "";
+    }
+    if (field === "pinyin") return vocabRomanizationField(word, "pinyin") || word[field] || "";
+    if (field === "jyutping") return vocabRomanizationField(word, "jyutping") || word[field] || "";
+    if (field === "sinoVietnamese") return vocabRomanizationField(word, "sinoVietnamese") || word[field] || "";
+    return word[field] ?? "";
+}
+
+/**
+ * Whole-word matching for the "meaning" search (Vietnamese & English).
+ * The query must match a complete word, not a substring of a longer word:
+ *   "cam" matches "cam quýt" but NOT "Camel" / "camera" / "campus".
+ * Multi-word queries fall back to phrase (substring) matching.
+ * Assumes both haystack and q are already normalized (lowercased, tone-less).
+ */
+function matchesWholeWord(haystack, q) {
+    if (!haystack || !q) return false;
+    if (q.includes(" ")) return haystack.includes(q);
+    const tokens = haystack.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    return tokens.includes(q);
+}
+
 export const WordBankBrowseTable = memo(function WordBankBrowseTable({
     variant = "bank",
     search,
+    searchColumn,
     filter,
     showImportant,
     showMastered,
     hskLevel,
+    setId,
+    setVocabularyIds,
     sortKey,
     sortDir,
     onView,
@@ -43,6 +139,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
     const canMark = !isPicker && isSignedIn;
     const isAdmin = useIsAdmin();
     const storeWords = useVocabularies();
+    const hanCharacters = useHanCharacters();
     const { toggleImportant, toggleMastered, removeVocabulary } = useAppActions();
     const restoredScrollRef = useRef(false);
     const skipPageResetRef = useRef(Boolean(restoreState));
@@ -56,6 +153,11 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+
+    // Load char→strokeCount map from store once (used by han sort, no cnchar).
+    useEffect(() => {
+        setHanStrokeMap(hanCharacters);
+    }, [hanCharacters]);
 
     useEffect(() => {
         setItems((current) => {
@@ -74,9 +176,11 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                     engMeanings: fromStore.engMeanings,
                     hanTraditional: fromStore.hanTraditional,
                     vietMeanings: fromStore.vietMeanings,
+                    meanings: fromStore.meanings,
                     sinoVietnamese: fromStore.sinoVietnamese,
                     jyutping: fromStore.jyutping,
                     vietExamples: fromStore.vietExamples,
+                    romanization: fromStore.romanization,
                     important: fromStore.important,
                     mastered: fromStore.mastered,
                 };
@@ -84,9 +188,11 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                     updated.engMeanings !== item.engMeanings ||
                     updated.hanTraditional !== item.hanTraditional ||
                     updated.vietMeanings !== item.vietMeanings ||
+                    updated.meanings !== item.meanings ||
                     updated.sinoVietnamese !== item.sinoVietnamese ||
                     updated.jyutping !== item.jyutping ||
                     updated.vietExamples !== item.vietExamples ||
+                    updated.romanization !== item.romanization ||
                     updated.important !== item.important ||
                     updated.mastered !== item.mastered
                 ) {
@@ -152,7 +258,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                 onView(word);
             }
         },
-        [isPicker, onView, page, search, filter, hskLevel, sortKey, sortDir],
+        [isPicker, onView, page, search, filter, hskLevel, setId, sortKey, sortDir, searchColumn],
     );
 
     const handleDelete = useCallback((word) => {
@@ -172,7 +278,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
             return;
         }
         setPage(1);
-    }, [search, filter, hskLevel, sortKey, sortDir]);
+    }, [search, filter, hskLevel, setId, sortKey, sortDir, searchColumn]);
 
     // Client-side filter + sort + paginate from store data
     useEffect(() => {
@@ -189,6 +295,12 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
             });
         }
 
+        // Vocabulary set filter
+        if (setId && setId !== "all") {
+            const ids = setVocabularyIds?.[setId] ?? [];
+            filtered = filtered.filter((w) => ids.includes(w.id));
+        }
+
         // Filter checkboxes
         if (showImportant) filtered = filtered.filter((w) => w.important);
         if (showMastered) filtered = filtered.filter((w) => w.mastered);
@@ -199,64 +311,39 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
         // Only treat as "strict diacritic search" when user typed tone marks (sắc/huyền/hỏi/ngã/nặng).
         // Vowel diacritics alone (ă/â/ê/ô/ơ/ư) → broad normalized match.
         const strictTones = hasToneDiacritics(rawSearch);
+        const searchFields = searchFieldsFor(searchColumn);
 
         if (q) {
+            const wholeWord = searchColumn === "meaning";
             filtered = filtered.filter((w) => {
-                // Tone-strict: require exact tone match in raw fields
+                // Tone-strict: require exact tone match in the searched fields
                 if (strictTones) {
-                    const haystack = [
-                        w.sinoVietnamese,
-                        w.hanTraditional,
-                        w.hanSimplified,
-                        w.engMeanings,
-                        w.vietMeanings,
-                        w.jyutping,
-                        w.pinyin,
-                    ]
+                    const haystack = searchFields
+                        .map((f) => searchFieldValue(w, f))
                         .filter(Boolean)
                         .join(" ")
                         .toLowerCase();
                     return haystack.includes(rawSearch.toLowerCase());
                 }
-                // No tone marks (or pure ASCII): broad normalized match via pre-built _searchBlob
-                if (w._searchBlob && w._searchBlob.includes(q)) return true;
-                // Fallback
-                const haystack = [
-                    w.hanTraditional,
-                    w.hanSimplified,
-                    w.engMeanings,
-                    w.vietMeanings,
-                    w.sinoVietnamese,
-                    w.jyutping,
-                    w.pinyin,
-                ]
+                // Broad normalized match against the selected column(s).
+                // Normalize haystack the same way as q (strip diacritics) so
+                // "nhat" matches "NHẤT" / "nhất".
+                const haystack = searchFields
+                    .map((f) => normalizeSearchText(searchFieldValue(w, f)))
                     .filter(Boolean)
-                    .join(" ")
-                    .toLowerCase();
-                return haystack.includes(q);
+                    .join(" ");
+                // "Tiếng Việt & tiếng Anh" matches complete words only ("cam"
+                // should not match "Camel"); other columns use substring.
+                return wholeWord ? matchesWholeWord(haystack, q) : haystack.includes(q);
             });
         }
 
         // Relevance scoring for search — prioritize exact matches first
-        const rawQuery = search.trim();
         const getMatchScore = (word) => {
-            // Check first token of sinoVietnamese (before | or , or /) — case-insensitive, keep diacritics
-            const svRaw = (word.sinoVietnamese ?? "").split(/[|,/]+/)[0]?.trim() ?? "";
-            if (svRaw.toLowerCase() === rawQuery.toLowerCase()) return 5;
-            if (svRaw.toLowerCase().startsWith(rawQuery.toLowerCase())) return 4;
-
-            const fields = [
-                word.jyutping,
-                word.hanTraditional,
-                word.hanSimplified,
-                word.engMeanings,
-                word.vietMeanings,
-                word.sinoVietnamese,
-                word.pinyin,
-            ];
+            // Score only against the selected search column(s).
             let best = 0;
-            for (const raw of fields) {
-                const v = normalizeSearchText(raw ?? "");
+            for (const f of searchFields) {
+                const v = normalizeSearchText(searchFieldValue(word, f));
                 if (!v) continue;
                 if (v === q) {
                     best = Math.max(best, 3);
@@ -269,33 +356,57 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
             return best;
         };
 
+        // Precompute han sort keys ONCE (cnchar is expensive — avoid calling
+        // it per-comparison inside Array.sort).
+        const hanKeys = new Map();
+        const hanKey = (str) => {
+            const k = String(str ?? "");
+            let key = hanKeys.get(k);
+            if (!key) {
+                key = hanSortKey(k);
+                hanKeys.set(k, key);
+            }
+            return key;
+        };
+
         // Sort — when searching, only rank by relevance, don't apply sortKey
         const sorted = [...filtered].sort((a, b) => {
             if (q) {
                 const aScore = getMatchScore(a);
                 const bScore = getMatchScore(b);
                 if (aScore !== bScore) return bScore - aScore;
-                // Tiebreaker: fewer characters first
+                // Tiebreaker: fewer characters first, then stable key
                 const aLen = (a.hanTraditional ?? "").length;
                 const bLen = (b.hanTraditional ?? "").length;
                 if (aLen !== bLen) return aLen - bLen;
-                return 0;
+                return stableTiebreak(a, b);
             }
             let aVal = a[sortKey];
             let bVal = b[sortKey];
             if (sortKey === "createdAt") {
                 aVal = a.createdAt ?? "";
                 bVal = b.createdAt ?? "";
+            } else if (sortKey === "hanTraditional") {
+                aVal = a.hanTraditional || a.hanSimplified || "";
+                bVal = b.hanTraditional || b.hanSimplified || "";
             }
             if (aVal == null || bVal == null) {
-                if (aVal == null && bVal == null) return 0;
+                if (aVal == null && bVal == null) return stableTiebreak(a, b);
                 return aVal == null ? 1 : -1;
             }
             const aStr = String(aVal).toLowerCase();
             const bStr = String(bVal).toLowerCase();
+            if (sortKey === "hanTraditional") {
+                const cmp = compareHanKeys(hanKey(aStr), hanKey(bStr), aStr, bStr);
+                if (cmp !== 0) return sortDir === "asc" ? cmp : -cmp;
+                // Same han chars → tiebreak by pinyin (yī, yí, yì…), then id.
+                const pc = comparePinyin(a, b);
+                if (pc !== 0) return pc;
+                return stableTiebreak(a, b);
+            }
             if (aStr < bStr) return sortDir === "asc" ? -1 : 1;
             if (aStr > bStr) return sortDir === "asc" ? 1 : -1;
-            return 0;
+            return stableTiebreak(a, b);
         });
 
         // Paginate
@@ -308,7 +419,21 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
         onTotalChange?.(sorted.length);
         setLoading(false);
         setLoadError(null);
-    }, [page, search, filter, showImportant, showMastered, hskLevel, sortKey, sortDir, storeWords, onTotalChange]);
+    }, [
+        page,
+        search,
+        filter,
+        showImportant,
+        showMastered,
+        hskLevel,
+        setId,
+        setVocabularyIds,
+        sortKey,
+        sortDir,
+        searchColumn,
+        storeWords,
+        onTotalChange,
+    ]);
 
     useEffect(() => {
         if (loading) return;
@@ -349,13 +474,17 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
     const placeholderRows = useMemo(
         () =>
             Array.from({ length: placeholderCount }, (_, i) => (
-                <tr key={`placeholder-${i}`} aria-hidden="true" className="border-b border-border last:border-b-0">
-                    <td colSpan={colCount} className="py-2.5 align-middle">
+                <TableRow
+                    key={`placeholder-${i}`}
+                    aria-hidden="true"
+                    className="border-b border-border last:border-b-0 hover:bg-transparent"
+                >
+                    <TableCell colSpan={colCount} className="py-2.5 align-middle">
                         <span className="block min-h-5 invisible" aria-hidden="true">
                             &nbsp;
                         </span>
-                    </td>
-                </tr>
+                    </TableCell>
+                </TableRow>
             )),
         [placeholderCount, colCount],
     );
@@ -381,7 +510,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                 onToggleImportant={handleToggleImportant}
                 onToggleMastered={handleToggleMastered}
                 onView={handleViewWord}
-                onEdit={onEdit}
+                onEdit={isAdmin ? onEdit : undefined}
                 onDelete={isAdmin ? handleDelete : undefined}
             />
         ));
@@ -396,6 +525,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
         handleToggleMastered,
         handleViewWord,
         onEdit,
+        isAdmin,
     ]);
 
     const pagination = (
@@ -413,7 +543,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
     const th = cn(thClass, isPicker ? thClassPicker : thClassBank);
     const numHeadClass = cn(
         th,
-        "text-text-muted text-[0.8125rem] whitespace-nowrap text-center px-1.5",
+        "text-muted-foreground text-[0.8125rem] whitespace-nowrap text-center px-1.5",
         !isPicker && "pr-0.5",
     );
 
@@ -422,12 +552,12 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
             {isPicker && <div className="border-t border-border px-3 pt-2 pb-3">{pagination}</div>}
             <div
                 className={cn(
-                    "overflow-y-auto overflow-x-visible border border-border rounded-xl bg-surface",
+                    "overflow-y-auto overflow-x-visible border border-border rounded-xl bg-card shadow-sm",
                     !isPicker && "w-full max-w-full",
                     isPicker && tdPicker,
                 )}
             >
-                <table className={cn("w-full border-collapse text-base table-auto", isPicker && tdPicker)}>
+                <Table className={cn("border-collapse text-base table-auto", isPicker && tdPicker)}>
                     <colgroup>
                         {isPicker ? <col className="w-9" /> : <col />}
                         {!isPicker && canMark && <col className="w-8" />}
@@ -438,91 +568,96 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                         {!isPicker && <col />}
                         {!isPicker && <col />}
                     </colgroup>
-                    <thead>
-                        <tr>
+                    <TableHeader>
+                        <TableRow className="hover:bg-transparent">
                             {isPicker ? (
-                                <th className={cn(th, "text-center align-middle")} aria-label={t.picker.selected} />
+                                <TableHead
+                                    className={cn(th, "text-center align-middle")}
+                                    aria-label={t.picker.selected}
+                                />
                             ) : (
-                                <th className={numHeadClass}>{t.wordBank.colNum}</th>
+                                <TableHead className={numHeadClass}>{t.wordBank.colNum}</TableHead>
                             )}
                             {!isPicker && canMark && (
-                                <th className={cn(th, "px-0.5 py-1.5 text-center align-middle w-8")}>
+                                <TableHead className={cn(th, "px-0.5 py-1.5 text-center align-middle w-8")}>
                                     {t.wordBank.colStar}
-                                </th>
+                                </TableHead>
                             )}
-                            <th className={cn(th, "w-[120px]")}>{t.wordBank.colSinoVietnamese}</th>
-                            <th className={cn(th, "text-center")} colSpan={4}>
+                            <TableHead className={cn(th, "w-30")}>{t.wordBank.colSinoVietnamese}</TableHead>
+                            <TableHead className={cn(th, "text-center")} colSpan={4}>
                                 {t.wordBank.colHanChars}
-                            </th>
+                            </TableHead>
                             {!isPicker && (
                                 <>
-                                    <th
+                                    <TableHead
                                         className={cn(
                                             th,
                                             "px-5 py-1.5 text-left align-middle text-[0.6875rem] font-semibold leading-tight whitespace-nowrap tracking-wide",
                                         )}
                                     >
                                         {t.wordBank.colVietMeanings}
-                                    </th>
-                                    <th
+                                    </TableHead>
+                                    <TableHead
                                         className={cn(
                                             th,
                                             "px-5 py-1.5 text-left align-middle text-[0.6875rem] font-semibold leading-tight whitespace-nowrap tracking-wide",
                                         )}
                                     >
                                         {t.wordBank.colEngMeanings}
-                                    </th>
+                                    </TableHead>
                                 </>
                             )}
-                            <th className={cn(th, "text-center")}>{t.wordBank.colLevel}</th>
-                            {!isPicker && <th className={cn(th, "px-0 text-center w-10")} />}
-                        </tr>
-                    </thead>
-                    <tbody className="[&_tr:last-child]:border-b-0">
+                            <TableHead className={cn(th, "text-center")}>{t.wordBank.colLevel}</TableHead>
+                            {!isPicker && <TableHead className={cn(th, "px-0 text-center w-10")} />}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody className="[&_tr:last-child]:border-b-0">
                         {loading ? (
-                            <tr>
-                                <td colSpan={colCount} className="p-0">
+                            <TableRow className="hover:bg-transparent">
+                                <TableCell colSpan={colCount} className="p-0">
                                     <SkeletonTable rows={8} />
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ) : loadError ? (
-                            <tr>
-                                <td colSpan={colCount}>
+                            <TableRow className="hover:bg-transparent">
+                                <TableCell colSpan={colCount}>
                                     <p
-                                        className="m-0 min-h-10 flex items-center justify-center text-center px-4 py-3 rounded-lg text-sm bg-error-bg text-error-text border border-error-border"
+                                        className="m-0 min-h-10 flex items-center justify-center text-center px-4 py-3 rounded-lg text-sm bg-destructive/10 text-destructive border border-destructive/30"
                                         role="alert"
                                     >
                                         {loadError}
                                     </p>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ) : showEmpty ? (
-                            <tr>
-                                <td colSpan={colCount}>
+                            <TableRow className="hover:bg-transparent">
+                                <TableCell colSpan={colCount}>
                                     {emptyMessage === "ADD_NEW_PROMPT" ? (
                                         <div className="min-h-10 flex flex-col items-center justify-center gap-2 py-3 text-center">
-                                            <p className="m-0 text-sm text-text-muted">{t.wordBank.noSearchMatch}</p>
+                                            <p className="m-0 text-sm text-muted-foreground">
+                                                {t.wordBank.noSearchMatch}
+                                            </p>
                                             <button
                                                 type="button"
-                                                className="text-sm font-medium text-accent hover:text-accent-hover underline underline-offset-2 transition-colors"
+                                                className="text-sm font-medium text-primary hover:text-primary underline underline-offset-2 transition-colors"
                                                 onClick={() => onAddNew(search)}
                                             >
                                                 {fmt(t.picker.addNew, { word: search })}
                                             </button>
                                         </div>
                                     ) : (
-                                        <p className="m-0 min-h-10 flex items-center justify-center text-center text-sm text-text-muted">
+                                        <p className="m-0 min-h-10 flex items-center justify-center text-center text-sm text-muted-foreground">
                                             {emptyMessage}
                                         </p>
                                     )}
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ) : (
                             rows
                         )}
                         {!loading && placeholderRows}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
             {!isPicker && <div className="min-h-11 mt-3 [&_.pagination]:mt-0">{pagination}</div>}
 
