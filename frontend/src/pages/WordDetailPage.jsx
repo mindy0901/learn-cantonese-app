@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { WordDetailContent } from "../components/WordDetailContent.jsx";
 import { useAppActions, useVocabularies } from "../store/appStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { useIsAdmin, useIsSignedIn } from "../store/authStore.js";
 import { Button } from "../components/shadcn/button.jsx";
-import { ToggleGroup, ToggleGroupItem } from "../components/shadcn/toggle-group.jsx";
 import { vocabularyDetailPath } from "../lib/wordRoutes.js";
 import { comparePinyinTone } from "../lib/pinyinSort.js";
 
@@ -58,13 +57,23 @@ function flattenRomanizations(vocabularies) {
             }
         }
     }
+    // Dedupe: cùng type + cùng phiên âm (pinyin/jyutping) là MỘT reading, dù data
+    // bị lặp ở nhiều variant rows (legacy/unsynced) → giữ entry đầu, bỏ trùng.
+    const seen = new Set();
+    const deduped = out.filter((r) => {
+        const norm = r.type === "jyutping" ? (r.jyutping ?? "").toLowerCase() : (r.pinyin ?? "").toLowerCase();
+        const key = `${r.type}:${norm}`;
+        if (!norm || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
     // Sort by pinyin tone (yī, yí, yǐ, yì → thanh 1, 2, 3, 4), tie-break by jyutping.
-    out.sort((a, b) => {
+    deduped.sort((a, b) => {
         const c = comparePinyinTone(a.pinyin, b.pinyin);
         if (c !== 0) return c;
         return comparePinyinTone(a.jyutping, b.jyutping);
     });
-    return out;
+    return deduped;
 }
 
 export function WordDetailPage() {
@@ -143,6 +152,26 @@ export function WordDetailPage() {
         navigate("/vocabulary");
     }, [vocabulary, removeVocabulary, navigate]);
 
+    // Header & Footer cố định — portal vào 2 vùng này, nằm TRÊN/DƯỚI vùng scroll.
+    const headerRef = useRef(null);
+    const footerRef = useRef(null);
+
+    // Chọn cách đọc: bấm chip trong thẻ để đổi reading đang active (Pinyin / Jyutping).
+    const selectPinyin = useCallback(
+        (key) => {
+            const idx = pinyinRoms.findIndex((r) => r.key === key);
+            if (idx >= 0) setActivePyIdx(idx);
+        },
+        [pinyinRoms],
+    );
+    const selectJyutping = useCallback(
+        (key) => {
+            const idx = jyutpingRoms.findIndex((r) => r.key === key);
+            if (idx >= 0) setActiveJpIdx(idx);
+        },
+        [jyutpingRoms],
+    );
+
     if (!vocabulary) {
         return (
             <main className="flex-1 w-full max-w-360 mx-auto px-4 py-8 pb-12">
@@ -157,92 +186,36 @@ export function WordDetailPage() {
     }
 
     return (
-        <main className="flex-1 w-full max-w-360 mx-auto px-4 py-8 pb-12 flex flex-col">
-            <div className="mb-8">
-                <Button nativeButton={false} variant="ghost" render={<Link to="/vocabulary" />}>
-                    ← {t.wordDetail.backToWordBank}
-                </Button>
-            </div>
-
-            <section className="flex min-h-0 flex-1 flex-col rounded-xl bg-card px-4 py-6 shadow-sm sm:px-8 sm:py-8">
-                <WordDetailContent
-                    key={vocabulary.id}
-                    vocabulary={vocabulary}
-                    canEdit={isAdmin}
-                    onSave={isAdmin ? editVocabulary : undefined}
-                    onDelete={isAdmin ? handleDelete : undefined}
-                    onNextRandom={vocabularies.length > 1 ? handleNextRandom : undefined}
-                    activePinyinId={activePinyin?.romanizationId}
-                    activeJyutpingId={activeJyutping?.romanizationId}
-                    {...(canMark && {
-                        onToggleImportant: toggleImportant,
-                        onToggleMastered: toggleMastered,
-                    })}
-                    pronunciationBar={
-                        romanizations.length > 0 ? (
-                            <div className="flex flex-col items-center gap-2">
-                                {!vocabulary.pureCantonese && pinyinRoms.length > 0 && (
-                                    <ToggleGroup
-                                        className="mx-auto flex-wrap"
-                                        value={[pinyinRoms[effPyIdx]?.key ?? pinyinRoms[0]?.key]}
-                                        onValueChange={(values) => {
-                                            const key = values[0];
-                                            const idx = pinyinRoms.findIndex((r) => r.key === key);
-                                            if (idx >= 0) setActivePyIdx(idx);
-                                        }}
-                                    >
-                                        {pinyinRoms.map((r) => (
-                                            <ToggleGroupItem
-                                                key={r.key}
-                                                value={r.key}
-                                                variant="outline"
-                                                className="gap-2 rounded-full px-4 py-2"
-                                                aria-label={`${r.sinoVietnamese ?? ""} ${r.pinyin ?? ""}`.trim()}
-                                            >
-                                                <div className="flex w-auto min-w-0 items-center gap-1">
-                                                    <span className="text-xs font-semibold text-foreground">
-                                                        {r.sinoVietnamese ?? ""}
-                                                    </span>
-                                                    <span className="text-muted-foreground text-sm">|</span>
-                                                    <span className="font-semibold text-pinyin">{r.pinyin ?? ""}</span>
-                                                </div>
-                                            </ToggleGroupItem>
-                                        ))}
-                                    </ToggleGroup>
-                                )}
-                                {jyutpingRoms.length > 0 && (
-                                    <ToggleGroup
-                                        className="mx-auto flex-wrap"
-                                        value={[jyutpingRoms[effJpIdx]?.key ?? jyutpingRoms[0]?.key]}
-                                        onValueChange={(values) => {
-                                            const key = values[0];
-                                            const idx = jyutpingRoms.findIndex((r) => r.key === key);
-                                            if (idx >= 0) setActiveJpIdx(idx);
-                                        }}
-                                    >
-                                        {jyutpingRoms.map((r) => (
-                                            <ToggleGroupItem
-                                                key={r.key}
-                                                value={r.key}
-                                                variant="outline"
-                                                className="gap-2 rounded-full px-4 py-2"
-                                                aria-label={`${r.sinoVietnamese ?? ""} ${r.jyutping ?? ""}`.trim()}
-                                            >
-                                                <div className="flex w-auto min-w-0 items-center gap-1">
-                                                    <span className="text-xs font-semibold text-foreground">
-                                                        {r.sinoVietnamese ?? ""}
-                                                    </span>
-                                                    <span className="text-muted-foreground text-sm">|</span>
-                                                    <span className="text-xs text-jyutping">{r.jyutping ?? ""}</span>
-                                                </div>
-                                            </ToggleGroupItem>
-                                        ))}
-                                    </ToggleGroup>
-                                )}
-                            </div>
-                        ) : undefined
-                    }
-                />
+        <main className="flex h-[calc(100svh-62px)] w-full max-w-360 mx-auto flex-col overflow-hidden px-4 py-8 pb-12">
+            <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-card shadow-sm">
+                <div ref={headerRef} className="shrink-0 border-b border-border/60 px-4 py-2 sm:px-8" />
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+                    <div className="flex w-full min-w-0 flex-1 flex-col px-4 py-6 sm:px-8 sm:py-8">
+                        <WordDetailContent
+                            key={vocabulary.id}
+                            vocabulary={vocabulary}
+                            canEdit={isAdmin}
+                            onSave={isAdmin ? editVocabulary : undefined}
+                            onDelete={isAdmin ? handleDelete : undefined}
+                            onNextRandom={vocabularies.length > 1 ? handleNextRandom : undefined}
+                            activePinyinId={activePinyin?.romanizationId}
+                            activeJyutpingId={activeJyutping?.romanizationId}
+                            {...(canMark && {
+                                onToggleImportant: toggleImportant,
+                                onToggleMastered: toggleMastered,
+                            })}
+                            pinyinReadings={pinyinRoms}
+                            jyutpingReadings={jyutpingRoms}
+                            activePinyinKey={activePinyin?.key}
+                            activeJyutpingKey={activeJyutping?.key}
+                            onSelectPinyin={selectPinyin}
+                            onSelectJyutping={selectJyutping}
+                            headerRef={headerRef}
+                            footerRef={footerRef}
+                        />
+                    </div>
+                </div>
+                <div ref={footerRef} className="shrink-0 border-t border-border/60 px-4 sm:px-8" />
             </section>
         </main>
     );

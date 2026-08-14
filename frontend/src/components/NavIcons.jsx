@@ -277,10 +277,10 @@ export function IconGlobe({ className, size = 16 }) {
     );
 }
 
-export function IconSpeech({ className, size = 16 }) {
+export function IconSpeech({ className, size = 16, ...rest }) {
     const p = iconProps(className, size);
     return (
-        <svg {...p}>
+        <svg {...p} {...rest}>
             <path d="M2 10v3a4 4 0 004 4h2l4 4V3l-4 4H6a4 4 0 00-4 4z" />
             <path d="M17 11a4 4 0 000-8" />
             <path d="M19 8a6 6 0 010 8" />

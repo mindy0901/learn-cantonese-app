@@ -1,0 +1,259 @@
+{
+    "id": "dec44cd7-75ab-453b-b620-7a74b5ee7d4b",
+    "mandarin": {
+        "system": "pinyin",
+        "readings": [
+            {
+                "id": "12698fe1-ad69-14de-bb80-41d09be2ff82",
+                "meanings": [],
+                "romanization": "biǎn",
+                "sino_vietnamese": "BIỂN"
+            }
+        ],
+        "hanzi_simplified": "扁",
+        "hanzi_traditional": "扁"
+    },
+    "cantonese": {
+        "system": "jyutping",
+        "readings": [
+            {
+                "id": "ff18884b-054f-315c-d827-2dd988723315",
+                "meanings": [
+                    {
+                        "en": "flat",
+                        "id": "0390bbf8-02e2-4056-96ed-1d3d4cc780bc",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 0
+                    },
+                    {
+                        "en": "(coll.) to beat (sb) up",
+                        "id": "c9c1c8cc-f295-4be5-91c4-a48eec1e2efd",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 1
+                    },
+                    {
+                        "en": "old variant of 匾biǎn [匾]",
+                        "id": "78f5891a-87fb-4570-b083-3a7b860f2f73",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 2
+                    },
+                    {
+                        "en": "a signboard",
+                        "id": "9567de02-b8b6-4eca-a9f4-d817ec346a47",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 3
+                    },
+                    {
+                        "en": "# adapted from cc-cedict",
+                        "id": "a856c413-8e08-434b-b680-673ebe1dd85c",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 4
+                    },
+                    {
+                        "en": "flat; with a very short height and a broad surface",
+                        "id": "12043b66-e49c-4679-8e90-6ba0ada126bb",
+                        "vi": "",
+                        "yue": "又平又薄，高度非常短但個面好闊",
+                        "category": "粵典–words.hk",
+                        "examples": [
+                            {
+                                "en": "to crush the ginger",
+                                "id": "1cfab9d5-eb75-4da1-8606-1ab849118b53",
+                                "vi": "",
+                                "yue": "拍扁啲薑",
+                                "position": 0,
+                                "romanization": "paak3 bin2 di1 goeng1"
+                            },
+                            {
+                                "en": "He has a very flat nose.",
+                                "id": "2782a9b7-bc50-40a0-98aa-6b14c8b57a46",
+                                "vi": "",
+                                "yue": "佢個鼻好扁。",
+                                "position": 1,
+                                "romanization": "keoi5 go3 bei6 hou2 bin2"
+                            },
+                            {
+                                "en": "The box had been badly crushed in the post.",
+                                "id": "3d922786-62bf-4716-b0ef-2807e7e45604",
+                                "vi": "",
+                                "yue": "個盒寄嚟嗰陣時俾人壓扁咗。",
+                                "position": 2,
+                                "romanization": "go3 hap2 gei3 lai4 go2 zan6 si4 bei2 jan4 aat3 bin2 zo2"
+                            }
+                        ],
+                        "position": 0
+                    },
+                    {
+                        "en": "a skiff;",
+                        "id": "f7a4a99a-0282-4418-8a0d-a38ca3bb7c4a",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 0
+                    },
+                    {
+                        "en": "a surname",
+                        "id": "3bf4f7bc-5768-4b03-9b85-0f13cee90e97",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 1
+                    },
+                    {
+                        "en": "small (as in 扁舟 small boat)",
+                        "id": "d59e2253-3816-44a0-95ac-a0cf69b70c47",
+                        "vi": "",
+                        "yue": "細小（用喺「扁舟」指船仔、艇仔）",
+                        "category": "粵典–words.hk",
+                        "examples": [],
+                        "position": 0
+                    }
+                ],
+                "romanization": "bin2",
+                "sino_vietnamese": "BIỂN"
+            },
+            {
+                "id": "bc1760e1-e1fb-b012-ac93-402dddc0bb51",
+                "meanings": [
+                    {
+                        "en": "flat",
+                        "id": "0390bbf8-02e2-4056-96ed-1d3d4cc780bc",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 0
+                    },
+                    {
+                        "en": "(coll.) to beat (sb) up",
+                        "id": "c9c1c8cc-f295-4be5-91c4-a48eec1e2efd",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 1
+                    },
+                    {
+                        "en": "old variant of 匾biǎn [匾]",
+                        "id": "78f5891a-87fb-4570-b083-3a7b860f2f73",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 2
+                    },
+                    {
+                        "en": "a signboard",
+                        "id": "9567de02-b8b6-4eca-a9f4-d817ec346a47",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 3
+                    },
+                    {
+                        "en": "# adapted from cc-cedict",
+                        "id": "a856c413-8e08-434b-b680-673ebe1dd85c",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 4
+                    },
+                    {
+                        "en": "flat; with a very short height and a broad surface",
+                        "id": "12043b66-e49c-4679-8e90-6ba0ada126bb",
+                        "vi": "",
+                        "yue": "又平又薄，高度非常短但個面好闊",
+                        "category": "粵典–words.hk",
+                        "examples": [
+                            {
+                                "en": "to crush the ginger",
+                                "id": "1cfab9d5-eb75-4da1-8606-1ab849118b53",
+                                "vi": "",
+                                "yue": "拍扁啲薑",
+                                "position": 0,
+                                "romanization": "paak3 bin2 di1 goeng1"
+                            },
+                            {
+                                "en": "He has a very flat nose.",
+                                "id": "2782a9b7-bc50-40a0-98aa-6b14c8b57a46",
+                                "vi": "",
+                                "yue": "佢個鼻好扁。",
+                                "position": 1,
+                                "romanization": "keoi5 go3 bei6 hou2 bin2"
+                            },
+                            {
+                                "en": "The box had been badly crushed in the post.",
+                                "id": "3d922786-62bf-4716-b0ef-2807e7e45604",
+                                "vi": "",
+                                "yue": "個盒寄嚟嗰陣時俾人壓扁咗。",
+                                "position": 2,
+                                "romanization": "go3 hap2 gei3 lai4 go2 zan6 si4 bei2 jan4 aat3 bin2 zo2"
+                            }
+                        ],
+                        "position": 0
+                    },
+                    {
+                        "en": "a skiff;",
+                        "id": "f7a4a99a-0282-4418-8a0d-a38ca3bb7c4a",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 0
+                    },
+                    {
+                        "en": "a surname",
+                        "id": "3bf4f7bc-5768-4b03-9b85-0f13cee90e97",
+                        "vi": "",
+                        "yue": "",
+                        "category": "CC-Canto",
+                        "examples": [],
+                        "position": 1
+                    },
+                    {
+                        "en": "small (as in 扁舟 small boat)",
+                        "id": "d59e2253-3816-44a0-95ac-a0cf69b70c47",
+                        "vi": "",
+                        "yue": "細小（用喺「扁舟」指船仔、艇仔）",
+                        "category": "粵典–words.hk",
+                        "examples": [],
+                        "position": 0
+                    }
+                ],
+                "romanization": "pin1",
+                "sino_vietnamese": "BIỂN"
+            }
+        ],
+        "hanzi_simplified": "扁",
+        "hanzi_traditional": "扁"
+    },
+    "metadata": {
+        "hsk_level": "HSK 7-9",
+        "popularity": 42.7,
+        "frequency": 44,
+        "movie_word_rank": 3772,
+        "book_word_rank": 6387,
+        "pure_cantonese": false,
+        "created_at": "2026-07-19T22:03:20.393Z",
+        "updated_at": "2026-08-13T19:33:34.087Z"
+    }
+}

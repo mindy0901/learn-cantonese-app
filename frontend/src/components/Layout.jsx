@@ -3,10 +3,13 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { UiSettings } from "./UiSettings.jsx";
 import { LanguageSwitcher } from "./LanguageSwitcher.jsx";
 import { UserMenu } from "./UserMenu.jsx";
+import { VocabularySetsManager } from "./VocabularySetsManager.jsx";
+import { useUiStore } from "../store/uiStore.js";
 import { useIsAdmin } from "../store/authStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { cn } from "../lib/cn.js";
 import { Button } from "./shadcn/button.jsx";
+import { Toaster } from "./shadcn/toast.jsx";
 import {
     IconWordBank,
     IconGrammar,
@@ -36,6 +39,8 @@ export function Layout() {
     const { t } = useLocale();
     const isAdmin = useIsAdmin();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const vocabSetsManagerOpen = useUiStore((s) => s.vocabSetsManagerOpen);
+    const setVocabSetsManagerOpen = useUiStore((s) => s.setVocabSetsManagerOpen);
 
     const navItems = [
         { to: "/vocabulary", label: t.nav.wordBank, Icon: IconWordBank },
@@ -103,6 +108,8 @@ export function Layout() {
                     </div>
                 </nav>
 
+                {vocabSetsManagerOpen && <VocabularySetsManager onClose={() => setVocabSetsManagerOpen(false)} />}
+
                 {/* Mobile nav panel */}
                 {mobileOpen && (
                     <div className="border-t border-border bg-background px-4 py-3 lg:hidden">
@@ -123,6 +130,7 @@ export function Layout() {
             </header>
 
             <Outlet context={{ isAdmin }} />
+            <Toaster />
         </div>
     );
 }

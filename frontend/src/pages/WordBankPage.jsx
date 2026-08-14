@@ -4,7 +4,6 @@ import { AddWordPanel } from "../components/AddWordPanel.jsx";
 import { OcrScanPanel } from "../components/OcrScanPanel.jsx";
 import { EditWordPanel } from "../components/EditWordPanel.jsx";
 import { WordBankListPanel } from "../components/WordBankListPanel.jsx";
-import { VocabularySetsManager } from "../components/VocabularySetsManager.jsx";
 import { usePrefsStore, useWordBankPrefs } from "../store/prefsStore.js";
 import { useLocale } from "../store/localeStore.js";
 import { useIsSignedIn } from "../store/authStore.js";
@@ -26,13 +25,23 @@ export function WordBankPage() {
     const [addOpen, setAddOpen] = useState(false);
     const [scanOpen, setScanOpen] = useState(false);
     const [editWord, setEditWord] = useState(null);
-    const [setsOpen, setSetsOpen] = useState(false);
 
     useEffect(() => {
         if (isSignedIn) fetchVocabularySets().catch(() => {});
     }, [isSignedIn, fetchVocabularySets]);
 
-    const { filter, showImportant, showMastered, hskLevel, setId, sortKey, sortDir, searchColumn } = prefs;
+    const {
+        filter,
+        showImportant,
+        showMastered,
+        hskLevel,
+        setId,
+        sortKey,
+        sortDir,
+        searchColumn,
+        columnVisibility,
+        pageSize,
+    } = prefs;
 
     const handleView = useCallback((word) => openWordDetail(word), [openWordDetail]);
     const handleEdit = useCallback((word) => setEditWord(word), []);
@@ -45,11 +54,6 @@ export function WordBankPage() {
                     <h1>{t.wordBank.title}</h1>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                    {isSignedIn && (
-                        <Button type="button" variant="ghost" onClick={() => setSetsOpen(true)}>
-                            {t.vocabSets.manage}
-                        </Button>
-                    )}
                     {isAdmin && (
                         <div className="flex shrink-0 gap-2">
                             <Button type="button" variant="outline" onClick={() => setScanOpen(true)}>
@@ -72,6 +76,8 @@ export function WordBankPage() {
                 sortKey={sortKey}
                 sortDir={sortDir}
                 searchColumn={searchColumn}
+                columnVisibility={columnVisibility}
+                pageSize={pageSize}
                 isSignedIn={isSignedIn}
                 onFilterChange={handleFilterChange}
                 onView={handleView}
@@ -82,7 +88,6 @@ export function WordBankPage() {
             {addOpen && <AddWordPanel onClose={() => setAddOpen(false)} />}
             {scanOpen && <OcrScanPanel onClose={() => setScanOpen(false)} />}
             {editWord && <EditWordPanel vocabulary={editWord} onClose={() => setEditWord(null)} />}
-            {setsOpen && <VocabularySetsManager onClose={() => setSetsOpen(false)} />}
         </main>
     );
 }

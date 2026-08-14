@@ -7,21 +7,13 @@ import { emptyVocabulary } from "../types/word.js";
 import { useHanCharacters } from "../store/appStore.js";
 import { TagInput } from "./TagInput.jsx";
 import { api } from "../lib/api.js";
-import {
-    IconStar,
-    IconPlus,
-    IconMinus,
-    IconClose,
-    IconSpeech,
-    IconEdit,
-    IconChevronDown,
-    IconChevronRight,
-} from "./NavIcons.jsx";
+import { IconStar, IconPlus, IconClose, IconSpeech, IconChevronDown, IconChevronRight } from "./NavIcons.jsx";
 import { Spinner } from "./shadcn/spinner.jsx";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "./shadcn/card.jsx";
 import { Button } from "./shadcn/button.jsx";
 import { Input } from "./shadcn/input.jsx";
 import { Textarea } from "./shadcn/textarea.jsx";
+import { Separator } from "./shadcn/separator.jsx";
 
 /** Capitalize only the first letter of the string */
 function capitalizeFirst(value) {
@@ -607,7 +599,7 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
     );
 }
 
-export function MeaningsEditor({ meanings, onChange }) {
+export function MeaningsEditor({ meanings, onChange, flat = false, column }) {
     const { t } = useLocale();
     const [expanded, setExpanded] = useState((meanings ?? []).length > 0);
     const skipSyncRef = useRef(false);
@@ -723,28 +715,23 @@ export function MeaningsEditor({ meanings, onChange }) {
     }
 
     return (
-        <Card className="bg-background/50 border border-border">
-            <CardHeader className="flex-row items-center gap-2">
-                <CardTitle className="flex-1 text-center text-sm font-semibold text-foreground">
+        <Card
+            className={cn(
+                flat ? "border-0 bg-transparent shadow-none ring-0" : "bg-background/50 border border-border",
+            )}
+        >
+            <CardHeader className={cn("flex-row items-center gap-2", flat && "px-0")}>
+                <CardTitle className="flex-1 text-center text-lg font-semibold text-foreground">
                     {t.addWord.detailedMeanings}
                 </CardTitle>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="text-muted-foreground hover:text-foreground"
-                    onClick={() => setExpanded(false)}
-                    title={t.addWord.collapse}
-                >
-                    <IconMinus size={16} />
-                </Button>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className={cn("flex flex-col gap-4", flat && "p-0")}>
                 {localCategories.map((cat, i) => (
                     <CategoryCard
                         key={cat._tempId || i}
                         category={cat}
                         index={i}
+                        column={column}
                         onChange={(updated) => updateCategory(i, updated)}
                         onRemove={() => removeCategory(i)}
                     />
@@ -762,7 +749,7 @@ export function MeaningsEditor({ meanings, onChange }) {
     );
 }
 
-function CategoryCard({ category, index, onChange, onRemove }) {
+function CategoryCard({ category, index, column, onChange, onRemove }) {
     const { t } = useLocale();
     const addMeaning = () => {
         const nextMeanings = [
@@ -788,53 +775,53 @@ function CategoryCard({ category, index, onChange, onRemove }) {
     };
 
     return (
-        <Card className="bg-card shadow-sm ring-0 border border-border/60">
-            <CardContent className="flex flex-col gap-4">
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 mr-2">
-                        <span className="text-sm font-semibold text-foreground shrink-0">{t.addWord.group}</span>
-                        <Input
-                            className="flex-1 min-w-0 max-w-48 text-sm font-semibold text-foreground"
-                            value={category.name ?? ""}
-                            onChange={(e) => onChange({ name: e.target.value })}
-                        />
-                    </div>
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="self-start"
-                        onClick={onRemove}
-                        title={t.addWord.deleteGroup}
-                    >
-                        <IconClose size={14} data-icon="inline-start" />
-                        {category.name
-                            ? t.addWord.deleteGroupWithName.replace("{name}", category.name)
-                            : t.addWord.deleteGroup}
-                    </Button>
+        <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 mr-2">
+                    <span className="text-sm font-semibold text-purple shrink-0">{t.addWord.group}</span>
+                    <Input
+                        className="flex-1 min-w-0 max-w-48 text-sm font-semibold text-purple"
+                        value={category.name ?? ""}
+                        onChange={(e) => onChange({ name: e.target.value })}
+                    />
                 </div>
-                {/* Meanings in this category */}
-                <div className="flex flex-col gap-4">
-                    {(category.meanings ?? []).map((m, j) => (
-                        <MeaningCard
-                            key={m._tempId || j}
-                            meaning={m}
-                            index={j}
-                            onChange={(updated) => updateMeaning(j, updated)}
-                            onRemove={() => removeMeaning(j)}
-                        />
-                    ))}
-                    <Button
-                        type="button"
-                        className="self-start bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                        onClick={addMeaning}
-                    >
-                        <IconPlus size={14} data-icon="inline-start" />
-                        {t.addWord.addMeaning}
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+                <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="self-start"
+                    onClick={onRemove}
+                    title={t.addWord.deleteGroup}
+                >
+                    <IconClose size={14} data-icon="inline-start" />
+                    {category.name
+                        ? t.addWord.deleteGroupWithName.replace("{name}", category.name)
+                        : t.addWord.deleteGroup}
+                </Button>
+            </div>
+            <Separator />
+            {/* Meanings in this category */}
+            <div className="flex flex-col gap-4">
+                {(category.meanings ?? []).map((m, j) => (
+                    <MeaningCard
+                        key={m._tempId || j}
+                        meaning={m}
+                        index={j}
+                        column={column}
+                        onChange={(updated) => updateMeaning(j, updated)}
+                        onRemove={() => removeMeaning(j)}
+                    />
+                ))}
+                <Button
+                    type="button"
+                    className="self-start bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                    onClick={addMeaning}
+                >
+                    <IconPlus size={14} data-icon="inline-start" />
+                    {t.addWord.addMeaning}
+                </Button>
+            </div>
+        </div>
     );
 }
 
@@ -869,24 +856,6 @@ function normalizeMeaningSeparators(value) {
 // Meaning sau sync LUÔN lowercase (áp dụng cả vi & en).
 function normalizeMeaningSync(value) {
     return normalizeMeaningSeparators(value).toLowerCase();
-}
-
-function formatExampleHanText(text) {
-    const raw = (text ?? "").trim();
-    if (!raw) return "";
-
-    const lines = raw
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean);
-    if (lines.length >= 2) return lines.join("\n");
-
-    const tradMatch = raw.match(/【([^】]*)】/);
-    const trad = tradMatch ? tradMatch[1].trim() : "";
-    const simp = raw.replace(/【[^】]*】/g, "").trim();
-
-    if (simp && trad) return `${simp}\n${trad}`;
-    return simp || trad || raw;
 }
 
 // Font Hán cố định — PHẢI khớp giữa textarea (chữ vô hình) và backdrop (chữ màu).
@@ -929,7 +898,7 @@ function HanLineTextarea({ value, onChange, rows = 2, className }) {
     );
 }
 
-function MeaningCard({ meaning, index, onChange, onRemove }) {
+function MeaningCard({ meaning, index, column, onChange, onRemove }) {
     const { t } = useLocale();
     const [convertingJpPy, setConvertingJpPy] = useState(null);
     const [showExamples, setShowExamples] = useState(true); // examples expanded by default
@@ -997,34 +966,31 @@ function MeaningCard({ meaning, index, onChange, onRemove }) {
         updateExample(exIdx, { hanSimplified: g, hanTraditional: p });
     };
 
-    // Format the copied han example (Hanzii 【...】) into giản + phồn.
-    // Hoạt động dù text paste nằm ở field giản hay phồn.
-    const handleFormatExample = (exIdx) => {
-        const ex = (meaning.examples ?? [])[exIdx];
-        const parts = exampleHanParts(ex);
-        const raw = [parts.hanSimplified, parts.hanTraditional].filter(Boolean).join("\n");
-        const source = parts.hanSimplified.includes("【")
-            ? parts.hanSimplified
-            : parts.hanTraditional.includes("【")
-              ? parts.hanTraditional
-              : raw;
-        const formatted = formatExampleHanText(source);
-        const fl = formatted.split("\n");
-        const newG = fl[0] ?? "";
-        const newP = fl[1] ?? "";
-        if (newG !== parts.hanSimplified || newP !== parts.hanTraditional) {
-            updateExample(exIdx, { hanSimplified: newG, hanTraditional: newP });
-        }
-    };
-
     const handleConvertBoth = async (exIdx) => {
         const ex = (meaning.examples ?? [])[exIdx];
         const parts = exampleHanParts(ex);
-        const trimmed = [parts.hanSimplified, parts.hanTraditional].filter(Boolean).join("\n");
-        if (!trimmed) return;
         setConvertingJpPy(exIdx);
         try {
-            // Prefer the formatted two-line shape: line 1 = simplified, line 2 = traditional.
+            if (column === "jyutping") {
+                // Cantonese: chỉ tạo jyutping từ chữ Hán (yue / phồn thể).
+                const source = parts.hanTraditional.trim();
+                if (!source) return;
+                const res = await api.toJyutping(source);
+                if (res?.jyutping) updateExample(exIdx, { jyutpingExample: res.jyutping });
+                return;
+            }
+            if (column === "pinyin") {
+                // Mandarin: chỉ tạo pinyin từ chữ Hán (zh / giản thể).
+                const source = parts.hanSimplified.trim();
+                if (!source) return;
+                const res = await api.toPinyin(source);
+                if (res?.pinyin) updateExample(exIdx, { pinyinExample: res.pinyin });
+                return;
+            }
+
+            // Legacy (no column): tạo cả pinyin + jyutping từ 2 dòng giản/phồn.
+            const trimmed = [parts.hanSimplified, parts.hanTraditional].filter(Boolean).join("\n");
+            if (!trimmed) return;
             const lines = trimmed
                 .split("\n")
                 .map((l) => l.trim())
@@ -1035,20 +1001,15 @@ function MeaningCard({ meaning, index, onChange, onRemove }) {
                 simpSource = lines[0];
                 tradSource = lines[1];
             } else {
-                // Legacy Hanzii format 【...】:
                 const tradMatch = trimmed.match(/【(.+?)】/);
                 tradSource = tradMatch ? tradMatch[1].trim() : trimmed;
                 const simpMatch = trimmed.match(/^(.+?)【/);
                 simpSource = simpMatch ? simpMatch[1].trim() : trimmed;
             }
-
-            // Sinh pinyin từ GIẢN THỂ, jyutping từ PHỒN THỂ (quy ước mặc định).
-            const jyutpingSource = tradSource;
             const [jpRes, pyRes] = await Promise.all([
-                jyutpingSource ? api.toJyutping(jyutpingSource) : Promise.resolve(null),
+                tradSource ? api.toJyutping(tradSource) : Promise.resolve(null),
                 simpSource ? api.toPinyin(simpSource) : Promise.resolve(null),
             ]);
-
             const updates = {};
             if (jpRes?.jyutping) updates.jyutpingExample = jpRes.jyutping;
             if (pyRes?.pinyin) updates.pinyinExample = pyRes.pinyin;
@@ -1098,7 +1059,7 @@ function MeaningCard({ meaning, index, onChange, onRemove }) {
     return (
         <Card className="bg-card shadow-sm border border-border">
             <CardHeader className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-primary-foreground">{index + 1}.</CardTitle>
+                <CardTitle className="text-sm font-semibold text-viet">{index + 1}.</CardTitle>
                 <CardAction>
                     <div className="flex items-center gap-2">
                         <Button
@@ -1109,7 +1070,11 @@ function MeaningCard({ meaning, index, onChange, onRemove }) {
                             disabled={!canSync || syncingMeaning}
                             title={t.addWord.syncMeaningHint}
                         >
-                            {syncingMeaning ? <Spinner className="size-3.5" /> : <IconSpeech size={14} />}
+                            {syncingMeaning ? (
+                                <Spinner className="size-3.5" />
+                            ) : (
+                                <IconSpeech size={14} data-icon="inline-start" />
+                            )}
                             {t.addWord.syncMeaning}
                         </Button>
                         <Button
@@ -1198,31 +1163,26 @@ function MeaningCard({ meaning, index, onChange, onRemove }) {
                                                                 ? "bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
                                                                 : "bg-primary/50 text-primary-foreground/60 border-primary/50",
                                                         )}
-                                                        onClick={() => handleFormatExample(j)}
-                                                        disabled={!hasHan}
-                                                        title={t.addWord.formatExampleHint}
-                                                    >
-                                                        <IconEdit size={14} />
-                                                        {t.addWord.formatExample}
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="xs"
-                                                        className={cn(
-                                                            hasHan
-                                                                ? "bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                                                                : "bg-primary/50 text-primary-foreground/60 border-primary/50",
-                                                        )}
                                                         onClick={() => handleConvertBoth(j)}
                                                         disabled={convertingJpPy === j || !hasHan}
-                                                        title={t.addWord.generateReadings}
+                                                        title={
+                                                            column === "pinyin"
+                                                                ? t.addWord.generatePinyin
+                                                                : column === "jyutping"
+                                                                  ? t.addWord.generateJyutping
+                                                                  : t.addWord.generateReadings
+                                                        }
                                                     >
                                                         {convertingJpPy === j ? (
                                                             <Spinner className="size-3.5" />
                                                         ) : (
                                                             <IconSpeech size={14} />
                                                         )}
-                                                        {t.addWord.generateBoth}
+                                                        {column === "pinyin"
+                                                            ? t.addWord.generatePinyin
+                                                            : column === "jyutping"
+                                                              ? t.addWord.generateJyutping
+                                                              : t.addWord.generateBoth}
                                                     </Button>
                                                     <Button
                                                         type="button"
@@ -1258,51 +1218,79 @@ function MeaningCard({ meaning, index, onChange, onRemove }) {
                                         </CardHeader>
                                         <CardContent className="flex flex-col gap-2">
                                             <div className="flex flex-col gap-2 mb-2">
-                                                <label className="flex flex-col gap-0.5">
-                                                    <span className="text-sm text-primary-foreground font-semibold">
-                                                        {t.addWord.simplified}
-                                                    </span>
-                                                    <HanLineTextarea
-                                                        rows={1}
-                                                        value={hanParts.hanSimplified}
-                                                        onChange={(v) => updateHanLine(j, 0, v)}
-                                                    />
-                                                </label>
-                                                <label className="flex flex-col gap-0.5">
-                                                    <span className="text-sm text-primary-foreground font-semibold">
-                                                        {t.addWord.traditional}
-                                                    </span>
-                                                    <HanLineTextarea
-                                                        rows={1}
-                                                        value={hanParts.hanTraditional}
-                                                        onChange={(v) => updateHanLine(j, 1, v)}
-                                                    />
-                                                </label>
+                                                {column ? (
+                                                    // Model mới: mandarin → zh, cantonese → yue — 1 field tiếng Trung duy nhất.
+                                                    <label className="flex flex-col gap-0.5">
+                                                        <span className="text-sm text-primary-foreground font-semibold">
+                                                            {column === "pinyin"
+                                                                ? t.addWord.chineseMandarin
+                                                                : t.addWord.chineseCantonese}
+                                                        </span>
+                                                        <HanLineTextarea
+                                                            rows={1}
+                                                            value={
+                                                                column === "pinyin"
+                                                                    ? hanParts.hanSimplified
+                                                                    : hanParts.hanTraditional
+                                                            }
+                                                            onChange={(v) =>
+                                                                updateHanLine(j, column === "pinyin" ? 0 : 1, v)
+                                                            }
+                                                        />
+                                                    </label>
+                                                ) : (
+                                                    <>
+                                                        <label className="flex flex-col gap-0.5">
+                                                            <span className="text-sm text-primary-foreground font-semibold">
+                                                                {t.addWord.simplified}
+                                                            </span>
+                                                            <HanLineTextarea
+                                                                rows={1}
+                                                                value={hanParts.hanSimplified}
+                                                                onChange={(v) => updateHanLine(j, 0, v)}
+                                                            />
+                                                        </label>
+                                                        <label className="flex flex-col gap-0.5">
+                                                            <span className="text-sm text-primary-foreground font-semibold">
+                                                                {t.addWord.traditional}
+                                                            </span>
+                                                            <HanLineTextarea
+                                                                rows={1}
+                                                                value={hanParts.hanTraditional}
+                                                                onChange={(v) => updateHanLine(j, 1, v)}
+                                                            />
+                                                        </label>
+                                                    </>
+                                                )}
                                             </div>
-                                            <label className="flex flex-col gap-0.5 mb-2">
-                                                <span className="text-sm text-primary-foreground font-semibold">
-                                                    {t.addWord.pinyin}
-                                                </span>
-                                                <Input
-                                                    className="text-primary-foreground text-sm"
-                                                    value={ex.pinyinExample ?? ""}
-                                                    onChange={(e) =>
-                                                        updateExample(j, { pinyinExample: e.target.value })
-                                                    }
-                                                />
-                                            </label>
-                                            <label className="flex flex-col gap-0.5 mb-2">
-                                                <span className="text-sm text-primary-foreground font-semibold">
-                                                    {t.addWord.jyutping}
-                                                </span>
-                                                <Input
-                                                    className="text-primary-foreground text-sm"
-                                                    value={ex.jyutpingExample ?? ""}
-                                                    onChange={(e) =>
-                                                        updateExample(j, { jyutpingExample: e.target.value })
-                                                    }
-                                                />
-                                            </label>
+                                            {(column === "pinyin" || !column) && (
+                                                <label className="flex flex-col gap-0.5 mb-2">
+                                                    <span className="text-sm text-primary-foreground font-semibold">
+                                                        {t.addWord.pinyin}
+                                                    </span>
+                                                    <Input
+                                                        className="text-primary-foreground text-sm"
+                                                        value={ex.pinyinExample ?? ""}
+                                                        onChange={(e) =>
+                                                            updateExample(j, { pinyinExample: e.target.value })
+                                                        }
+                                                    />
+                                                </label>
+                                            )}
+                                            {(column === "jyutping" || !column) && (
+                                                <label className="flex flex-col gap-0.5 mb-2">
+                                                    <span className="text-sm text-primary-foreground font-semibold">
+                                                        {t.addWord.jyutping}
+                                                    </span>
+                                                    <Input
+                                                        className="text-primary-foreground text-sm"
+                                                        value={ex.jyutpingExample ?? ""}
+                                                        onChange={(e) =>
+                                                            updateExample(j, { jyutpingExample: e.target.value })
+                                                        }
+                                                    />
+                                                </label>
+                                            )}
                                             <label className="flex flex-col gap-0.5 mb-2">
                                                 <span className="text-sm text-primary-foreground font-semibold">
                                                     {t.addWord.vietnamese}

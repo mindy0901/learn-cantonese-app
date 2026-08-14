@@ -10,6 +10,8 @@ export const DEFAULT_PREFS = {
         sortKey: "sinoVietnamese",
         sortDir: "asc",
         searchColumn: "han",
+        columnVisibility: { search: false, sets: false, status: false },
+        pageSize: 5,
     },
     grammarBank: {
         filter: "all",

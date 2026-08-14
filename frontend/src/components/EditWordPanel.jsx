@@ -17,6 +17,7 @@ export function EditWordPanel({ vocabulary, onClose }) {
     const canMark = useIsSignedIn();
     const [resolving, setResolving] = useState(true);
     const footerRef = useRef(null);
+    const [headerEl, setHeaderEl] = useState(null);
 
     const [currentVocabularyId, setCurrentVocabularyId] = useState(vocabulary.id);
     useEffect(() => setCurrentVocabularyId(vocabulary.id), [vocabulary.id]);
@@ -60,11 +61,17 @@ export function EditWordPanel({ vocabulary, onClose }) {
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent
                 showCloseButton
-                className="max-w-360 gap-0 overflow-hidden p-0 max-h-[min(calc(100vh-2rem),calc(100dvh-2rem))] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-360"
+                className="max-w-360 gap-0 overflow-hidden p-0 h-[min(calc(100dvh-100vw+1440px),calc(100dvh-2rem))] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-360"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>{t.common.edit}</DialogTitle>
                 </DialogHeader>
+
+                {/* Header row — cụm meta chips (portaled) nằm cùng hàng với nút X */}
+                <div
+                    ref={setHeaderEl}
+                    className="col-start-1 row-start-1 flex min-h-10 w-full min-w-0 items-center px-6 py-2 pr-12"
+                />
 
                 {/* Body */}
                 <div className="col-start-1 row-start-2 flex min-h-0 flex-col overflow-y-auto overscroll-contain">
@@ -85,6 +92,7 @@ export function EditWordPanel({ vocabulary, onClose }) {
                                 initialEditing
                                 onSave={handleSave}
                                 footerRef={footerRef}
+                                headerRef={{ current: headerEl }}
                                 onNextRandom={vocabularies.length > 1 ? handleNextRandom : undefined}
                                 {...(canMark && {
                                     onToggleImportant: toggleImportant,
@@ -96,7 +104,7 @@ export function EditWordPanel({ vocabulary, onClose }) {
                 </div>
 
                 {/* Fixed footer — action bar rendered here via portal */}
-                <div ref={footerRef} className="col-start-1 row-start-3 mt-2 shrink-0" />
+                <div ref={footerRef} className="col-start-1 row-start-3 mt-2 shrink-0 px-6 pb-4" />
             </DialogContent>
         </Dialog>
     );

@@ -43,4 +43,8 @@ export const useUiStore = create((set, get) => ({
     toggleTheme: () => {
         get().setTheme(get().theme === "dark" ? "light" : "dark");
     },
+
+    // VocabularySetsManager — mở từ avatar dropdown (Layout), không phụ thuộc trang.
+    vocabSetsManagerOpen: false,
+    setVocabSetsManagerOpen: (open) => set({ vocabSetsManagerOpen: open }),
 }));

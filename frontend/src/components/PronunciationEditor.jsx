@@ -18,12 +18,20 @@ function ReadingRows({ type, rows, activeId, onChange }) {
     const sortedRows = useMemo(() => {
         const next = [...rows];
         next.sort((a, b) => {
-            const av = type === "pinyin" ? a.pinyin : a.jyutping;
-            const bv = type === "pinyin" ? b.pinyin : b.jyutping;
+            const av = String(type === "pinyin" ? a.pinyin : (a.jyutping ?? "")).trim();
+            const bv = String(type === "pinyin" ? b.pinyin : (b.jyutping ?? "")).trim();
+            // Row rỗng (mới thêm, chưa điền phiên âm) luôn xuống CUỐI.
+            if (!av && !bv) return 0;
+            if (!av) return 1;
+            if (!bv) return -1;
             return comparePinyinTone(av, bv);
         });
         return next;
     }, [rows, type]);
+
+    const valueLabel = type === "pinyin" ? t.wordBank.colPinyin : t.wordBank.colJyutping;
+    const valueClass = type === "pinyin" ? "text-pinyin" : "text-jyutping";
+    const value = (r) => (type === "pinyin" ? (r.pinyin ?? "") : (r.jyutping ?? ""));
 
     const updateRow = (index, patch) => {
         const next = sortedRows.map((r, i) => (i === index ? { ...r, ...patch } : r));
@@ -31,31 +39,24 @@ function ReadingRows({ type, rows, activeId, onChange }) {
     };
 
     const removeRow = (index) => {
-        if (sortedRows.length <= 1) return;
         onChange(sortedRows.filter((_, i) => i !== index));
     };
 
     const addRow = () => {
+        // Reading mới chưa có id DB → gán _tempId ổn định để chip/switch định danh đúng.
+        const tempId =
+            typeof crypto !== "undefined" && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `new-${Date.now()}-${Math.random()}`;
         onChange([
             ...sortedRows,
-            {
-                id: undefined,
-                type,
-                sinoVietnamese: "",
-                pinyin: "",
-                jyutping: "",
-                meanings: [],
-            },
+            { id: undefined, _tempId: tempId, type, sinoVietnamese: "", pinyin: "", jyutping: "", meanings: [] },
         ]);
     };
 
-    const valueLabel = type === "pinyin" ? t.wordBank.colPinyin : t.wordBank.colJyutping;
-    const valueClass = type === "pinyin" ? "text-pinyin" : "text-jyutping";
-    const value = (r) => (type === "pinyin" ? (r.pinyin ?? "") : (r.jyutping ?? ""));
-
     return (
         <div className="flex flex-col gap-2">
-            {/* Header + add button on the right */}
+            {/* Header + add button on the right — luôn cho thêm dòng liên tục */}
             <div className="mb-1 flex items-center justify-between gap-2">
                 <div className="grid flex-1 grid-cols-2 gap-2">
                     <p className="wd-sub m-0 font-semibold uppercase tracking-wide text-primary-foreground text-center text-xs">
@@ -76,26 +77,14 @@ function ReadingRows({ type, rows, activeId, onChange }) {
                 </Button>
             </div>
 
-            {/* Rows */}
-            {sortedRows.length === 0 ? (
-                <div className="flex justify-center py-2">
-                    <Button
-                        type="button"
-                        size="sm"
-                        className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                        onClick={addRow}
-                    >
-                        <IconPlus />
-                        {t.wordBank.addRow}
-                    </Button>
-                </div>
-            ) : (
+            {/* Rows — mặc định KHÔNG hiện field; nhấn "+" mới tạo field điền phiên âm */}
+            {sortedRows.length > 0 && (
                 <div className="flex flex-col gap-2">
                     {sortedRows.map((r, i) => {
-                        const isActive = activeId ? r.id === activeId : i === 0;
+                        const isActive = activeId ? r.id === activeId || r._tempId === activeId : i === 0;
                         return (
                             <div
-                                key={r.id ?? `row-${i}`}
+                                key={r._tempId ?? r.id ?? `row-${i}`}
                                 className={cn(
                                     "grid items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors",
                                     "grid-cols-[1fr_1fr_auto]",
@@ -129,7 +118,6 @@ function ReadingRows({ type, rows, activeId, onChange }) {
                                     variant="ghost"
                                     className="text-muted-foreground hover:text-destructive"
                                     onClick={() => removeRow(i)}
-                                    disabled={sortedRows.length <= 1}
                                     title={t.wordBank.deleteRow}
                                 >
                                     <IconClose />
@@ -150,32 +138,55 @@ export function PronunciationEditor({
     activeJyutpingId,
     onPinyinChange,
     onJyutpingChange,
+    column,
     className,
 }) {
-    return (
-        <div
-            className={cn(
-                "w-full rounded-xl border border-border/80 bg-card/80 px-4 py-4 flex flex-col gap-6",
-                className,
-            )}
-        >
-            <div className="flex flex-col gap-2">
-                <p className="wd-sub m-0 font-semibold text-primary-foreground text-sm">
-                    Mandarin <span className="text-muted-foreground font-normal">· Pinyin</span>
-                </p>
+    // `column` = "pinyin" | "jyutping" → render chỉ 1 cột không shell
+    // (dùng trong layout 2 container trái/phải tách biệt, giống view mode).
+    if (column === "pinyin") {
+        return (
+            <div className={cn("w-full flex flex-col gap-2", className)}>
                 <ReadingRows type="pinyin" rows={pinyinReadings} activeId={activePinyinId} onChange={onPinyinChange} />
             </div>
-            <div className="border-t border-border/60" />
-            <div className="flex flex-col gap-2">
-                <p className="wd-sub m-0 font-semibold text-primary-foreground text-sm">
-                    Cantonese <span className="text-muted-foreground font-normal">· Jyutping</span>
-                </p>
+        );
+    }
+    if (column === "jyutping") {
+        return (
+            <div className={cn("w-full flex flex-col gap-2", className)}>
                 <ReadingRows
                     type="jyutping"
                     rows={jyutpingReadings}
                     activeId={activeJyutpingId}
                     onChange={onJyutpingChange}
                 />
+            </div>
+        );
+    }
+    return (
+        <div className={cn("w-full rounded-xl bg-card/80 px-4 py-4", className)}>
+            <div className="w-full grid gap-6 items-start grid-cols-1 lg:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                    <p className="wd-sub m-0 font-semibold text-primary-foreground text-sm">
+                        Mandarin <span className="text-muted-foreground font-normal">· Pinyin</span>
+                    </p>
+                    <ReadingRows
+                        type="pinyin"
+                        rows={pinyinReadings}
+                        activeId={activePinyinId}
+                        onChange={onPinyinChange}
+                    />
+                </div>
+                <div className="flex flex-col gap-2">
+                    <p className="wd-sub m-0 font-semibold text-primary-foreground text-sm">
+                        Cantonese <span className="text-muted-foreground font-normal">· Jyutping</span>
+                    </p>
+                    <ReadingRows
+                        type="jyutping"
+                        rows={jyutpingReadings}
+                        activeId={activeJyutpingId}
+                        onChange={onJyutpingChange}
+                    />
+                </div>
             </div>
         </div>
     );

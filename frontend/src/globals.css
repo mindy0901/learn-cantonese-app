@@ -152,6 +152,7 @@
     --color-pinyin: var(--pinyin-color);
     --color-jyutping: var(--jyutping-color);
     --color-viet: var(--viet-color);
+    --color-purple: var(--purple-color);
     --color-han-pop-0: var(--han-popularity-0);
     --color-han-pop-1: var(--han-popularity-1);
     --color-han-pop-2: var(--han-popularity-2);
@@ -181,6 +182,7 @@
     --jyutping-color: #dc2626;
     --viet-color: #16a34a;
     --pinyin-color: #2563eb;
+    --purple-color: #7c3aed;
 
     /* Legacy tokens — map sang theme UI lib (tự theo light/dark) */
     --accent: var(--primary);
@@ -238,6 +240,7 @@
     --jyutping-color: #f87171;
     --viet-color: #4ade80;
     --pinyin-color: #60a5fa;
+    --purple-color: #a78bfa;
 }
 
 *,
@@ -278,17 +281,17 @@ h2 {
     font-size: 1.125rem;
 }
 
-p {
-    margin: 0;
-}
-
-/* NOTE: rule này để trong `@layer base` để không override utilities của Tailwind.
-   Nếu để unlayered (ngoài @layer), `button { margin: 0 }` sẽ thắng mọi class
-   `mt-*`/`mb-*` (CSS cascade: unlayered > layered) → margin trên button không hoạt động. */
+/* NOTE: các rule này để trong `@layer base` để không override utilities của Tailwind.
+   Nếu để unlayered (ngoài @layer), `p/button { margin: 0 }` sẽ thắng mọi class
+   `mt-*`/`mb-*` (CSS cascade: unlayered > layered) → margin trên p/button không hoạt động. */
 @layer base {
     button {
         font-family: inherit;
         cursor: pointer;
+        margin: 0;
+    }
+
+    p {
         margin: 0;
     }
 }

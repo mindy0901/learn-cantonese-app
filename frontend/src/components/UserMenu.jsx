@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { FolderCog } from "lucide-react";
 import { useAuthSigningOut, useAuthStore, useAuthUser } from "../store/authStore.js";
+import { useUiStore } from "../store/uiStore.js";
 import { Button } from "./shadcn/button.jsx";
 import { Dialog, DialogTrigger } from "./shadcn/dialog.jsx";
 import {
@@ -8,6 +10,7 @@ import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "./shadcn/dropdown-menu.jsx";
 import { LoginModal } from "./LoginModal.jsx";
@@ -18,6 +21,7 @@ export function UserMenu() {
     const user = useAuthUser();
     const signingOut = useAuthSigningOut();
     const { signOut, clearAuthError } = useAuthStore();
+    const setVocabSetsManagerOpen = useUiStore((s) => s.setVocabSetsManagerOpen);
 
     const [loginOpen, setLoginOpen] = useState(false);
 
@@ -66,8 +70,14 @@ export function UserMenu() {
             <DropdownMenuContent align="end" sideOffset={8}>
                 <DropdownMenuGroup>
                     <DropdownMenuLabel className="max-w-56 break-all">{user.email}</DropdownMenuLabel>
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => setVocabSetsManagerOpen(true)}>
+                        <FolderCog className="size-3.5 shrink-0" aria-hidden="true" />
+                        {t.vocabSets.manage}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                         variant="destructive"
+                        className="cursor-pointer"
                         disabled={signingOut}
                         onClick={() => {
                             signOut();
