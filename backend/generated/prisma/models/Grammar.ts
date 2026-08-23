@@ -483,10 +483,6 @@ export type GrammarUpdatenotesInput = {
   push?: string | string[]
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type GrammarCreateNestedOneWithoutGrammarExamplesInput = {
   create?: Prisma.XOR<Prisma.GrammarCreateWithoutGrammarExamplesInput, Prisma.GrammarUncheckedCreateWithoutGrammarExamplesInput>
   connectOrCreate?: Prisma.GrammarCreateOrConnectWithoutGrammarExamplesInput

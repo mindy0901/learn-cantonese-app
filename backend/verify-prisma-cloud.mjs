@@ -13,14 +13,26 @@ async function main() {
     await cloud.connect();
     for (const t of [
         "users",
+        "radicals",
         "han_characters",
-        "vocabularies",
-        "vocabulary_meanings",
-        "vocabulary_characters",
-        "user_vocabularies",
+        "cantonese_vocabularies",
+        "cantonese_vocabulary_romanizations",
+        "cantonese_vocabulary_meanings",
+        "cantonese_vocabulary_examples",
+        "cantonese_vocabulary_characters",
+        "mandarin_vocabularies",
+        "mandarin_vocabulary_romanizations",
+        "mandarin_vocabulary_meanings",
+        "mandarin_vocabulary_examples",
+        "mandarin_vocabulary_characters",
         "grammars",
-        "sentence_patterns",
+        "grammar_examples",
         "flashcard_decks",
+        "flashcard_deck_cantonese_vocabularies",
+        "flashcard_deck_mandarin_vocabularies",
+        "vocabulary_sets",
+        "vocabulary_set_cantonese_vocabularies",
+        "vocabulary_set_mandarin_vocabularies",
     ]) {
         const r = await cloud.query(`SELECT count(*) c FROM "${t}"`);
         console.log(`${t}: ${r.rows[0].c}`);

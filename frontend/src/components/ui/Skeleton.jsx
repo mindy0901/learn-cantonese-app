@@ -1,28 +1,14 @@
 import { cn } from "../../lib/cn.js";
+import { Skeleton } from "../shadcn/skeleton.jsx";
 
-const skeletonBase = cn(
-    "animate-pulse rounded-md bg-border/60",
-    "dark:bg-border/40",
-);
-
-/** Một dòng skeleton đơn */
+/** Một dòng skeleton đơn — dựng từ shadcn `Skeleton` (bg-muted, animate-pulse). */
 export function SkeletonLine({ className, width = "100%" }) {
-    return (
-        <div
-            className={cn(skeletonBase, "h-4", className)}
-            style={{ width }}
-        />
-    );
+    return <Skeleton className={cn("h-4", className)} style={{ width }} />;
 }
 
-/** Một khối skeleton (block) */
+/** Một khối skeleton (block). */
 export function SkeletonBlock({ className, height = "6rem" }) {
-    return (
-        <div
-            className={cn(skeletonBase, className)}
-            style={{ height }}
-        />
-    );
+    return <Skeleton className={cn(className)} style={{ height }} />;
 }
 
 /** Skeleton cho table — hiển thị N dòng */

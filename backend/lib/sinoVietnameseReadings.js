@@ -1,4 +1,4 @@
-import { SINO_VIETNAMESE_NONE, isSinoVietnameseNone } from "./sinoVietnameseMarkers.js";
+import { SINO_VIETNAMESE_NONE, isSinoVietnameseNone, isSinoVietnameseDash } from "./sinoVietnameseMarkers.js";
 
 const SINO_VIETNAMESE_PLACEHOLDER = "•";
 const SINO_VIETNAMESE_PLACEHOLDER_LEGACY = "·";
@@ -70,6 +70,7 @@ export function normalizeSinoVietnameseValue(sinoVietnamese) {
     const text = String(sinoVietnamese ?? "").trim();
     if (!text) return "";
     if (isSinoVietnameseNone(text)) return SINO_VIETNAMESE_NONE;
+    if (isSinoVietnameseDash(text)) return "";
 
     return text.split(/\s+/).filter(Boolean).map(normalizeSinoVietnameseSlot).filter(Boolean).join(" ");
 }

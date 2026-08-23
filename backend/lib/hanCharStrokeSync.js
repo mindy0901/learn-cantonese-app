@@ -70,7 +70,7 @@ export async function computeCharStroke(ch) {
  */
 export async function previewHanCharStrokes(mode = "fast") {
     const where = mode === "full" ? {} : { strokeCount: null };
-    const rows = await prisma.hanCharacter.findMany({
+    const rows = await prisma.hanziCharacter.findMany({
         where,
         select: { id: true, hanTraditional: true, strokeCount: true },
     });
@@ -109,7 +109,7 @@ export async function previewHanCharStrokes(mode = "fast") {
  */
 export async function backfillHanCharStrokes({ mode = "fast", onProgress = null } = {}) {
     const where = mode === "full" ? {} : { strokeCount: null };
-    const rows = await prisma.hanCharacter.findMany({
+    const rows = await prisma.hanziCharacter.findMany({
         where,
         select: { id: true, hanTraditional: true, strokeCount: true },
         orderBy: { hanTraditional: "asc" },
@@ -131,7 +131,7 @@ export async function backfillHanCharStrokes({ mode = "fast", onProgress = null 
     for (let i = 0; i < toWrite.length; i += BATCH) {
         const chunk = toWrite.slice(i, i + BATCH);
         await prisma.$transaction(
-            chunk.map((u) => prisma.hanCharacter.update({ where: { id: u.id }, data: { strokeCount: u.strokeCount } })),
+            chunk.map((u) => prisma.hanziCharacter.update({ where: { id: u.id }, data: { strokeCount: u.strokeCount } })),
         );
         updated += chunk.length;
         onProgress?.({ processed: total, total, current: "" });

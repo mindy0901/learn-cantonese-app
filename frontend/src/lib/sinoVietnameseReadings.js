@@ -1,4 +1,4 @@
-import { SINO_VIETNAMESE_NONE, isSinoVietnameseNone } from "./sinoVietnameseMarkers.js";
+import { SINO_VIETNAMESE_NONE, isSinoVietnameseNone, isSinoVietnameseDash } from "./sinoVietnameseMarkers.js";
 
 /** Placeholder for Han characters without a known Sino-Vietnamese reading yet. */
 export const SINO_VIETNAMESE_PLACEHOLDER = "•";
@@ -76,6 +76,7 @@ export function normalizeSinoVietnameseValue(sinoVietnamese) {
     const text = String(sinoVietnamese ?? "").trim();
     if (!text) return "";
     if (isSinoVietnameseNone(text)) return SINO_VIETNAMESE_NONE;
+    if (isSinoVietnameseDash(text)) return "";
 
     return text.split(/\s+/).filter(Boolean).map(normalizeSinoVietnameseSlot).filter(Boolean).join(" ");
 }

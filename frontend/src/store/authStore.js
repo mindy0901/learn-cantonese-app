@@ -3,6 +3,50 @@ import { api, signInWithGoogle as redirectGoogleSignIn } from "../lib/api.js";
 import { log } from "../lib/actionLog.js";
 import { setVocabularyBrowseCacheOwner } from "../lib/wordBrowseCache.js";
 
+// ── Auto check-in ngày đăng nhập (2026-08-24) ──
+// Ghi ngày user đăng nhập (login/register/session restore). Dedupe 1 user/ngày
+// qua localStorage để không gửi POST lặp trong cùng ngày.
+const CHECKIN_KEY = "cantonese:last-checkin";
+
+function localDateString(d = new Date()) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+function lastCheckinFor(userId) {
+    try {
+        const map = JSON.parse(localStorage.getItem(CHECKIN_KEY) || "{}");
+        return map[userId] ?? null;
+    } catch {
+        return null;
+    }
+}
+
+function markCheckin(userId, date) {
+    try {
+        const map = JSON.parse(localStorage.getItem(CHECKIN_KEY) || "{}");
+        map[userId] = date;
+        localStorage.setItem(CHECKIN_KEY, JSON.stringify(map));
+    } catch {
+        /* ignore */
+    }
+}
+
+/** Auto check-in — fire-and-forget, không chặn login nếu lỗi. */
+async function maybeCheckIn(userId) {
+    if (!userId) return;
+    const today = localDateString();
+    if (lastCheckinFor(userId) === today) return;
+    try {
+        await api.checkIn(today);
+        markCheckin(userId, today);
+    } catch {
+        /* check-in không quan trọng */
+    }
+}
+
 function readAuthErrorFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("auth_error");
@@ -40,6 +84,7 @@ export const useAuthStore = create((set, get) => ({
                 authError: urlError ? get().authError : null,
             });
             log("Getting user", user?.email?.split("@")[0] ?? "guest");
+            if (user) maybeCheckIn(user.id);
         } catch {
             setVocabularyBrowseCacheOwner(null);
             set({ user: null, googleReady: false, loading: false, initialized: true });
@@ -65,6 +110,7 @@ export const useAuthStore = create((set, get) => ({
             setVocabularyBrowseCacheOwner(user.id);
             set({ user, loading: false });
             log("Getting user", user.email.split("@")[0]);
+            maybeCheckIn(user.id);
             // Re-hydrate data
             const { useAppStore } = await import("./appStore.js");
             await useAppStore.getState().hydrateFromCloud();
@@ -86,6 +132,7 @@ export const useAuthStore = create((set, get) => ({
             setVocabularyBrowseCacheOwner(user.id);
             set({ user, loading: false });
             log("Getting user", user.email.split("@")[0]);
+            maybeCheckIn(user.id);
             // Re-hydrate data
             const { useAppStore } = await import("./appStore.js");
             await useAppStore.getState().hydrateFromCloud();

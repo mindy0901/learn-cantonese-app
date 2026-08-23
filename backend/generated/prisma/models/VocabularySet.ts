@@ -199,7 +199,8 @@ export type VocabularySetWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"VocabularySet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"VocabularySet"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  vocabularies?: Prisma.VocabularySetVocabularyListRelationFilter
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyListRelationFilter
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyListRelationFilter
 }
 
 export type VocabularySetOrderByWithRelationInput = {
@@ -211,7 +212,8 @@ export type VocabularySetOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
-  vocabularies?: Prisma.VocabularySetVocabularyOrderByRelationAggregateInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyOrderByRelationAggregateInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyOrderByRelationAggregateInput
 }
 
 export type VocabularySetWhereUniqueInput = Prisma.AtLeast<{
@@ -227,7 +229,8 @@ export type VocabularySetWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"VocabularySet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"VocabularySet"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  vocabularies?: Prisma.VocabularySetVocabularyListRelationFilter
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyListRelationFilter
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyListRelationFilter
 }, "id" | "id_userId">
 
 export type VocabularySetOrderByWithAggregationInput = {
@@ -264,7 +267,8 @@ export type VocabularySetCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutVocabularySetsInput
-  vocabularies?: Prisma.VocabularySetVocabularyCreateNestedManyWithoutSetInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyCreateNestedManyWithoutSetInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyCreateNestedManyWithoutSetInput
 }
 
 export type VocabularySetUncheckedCreateInput = {
@@ -275,7 +279,8 @@ export type VocabularySetUncheckedCreateInput = {
   color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularies?: Prisma.VocabularySetVocabularyUncheckedCreateNestedManyWithoutSetInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedCreateNestedManyWithoutSetInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedCreateNestedManyWithoutSetInput
 }
 
 export type VocabularySetUpdateInput = {
@@ -286,7 +291,8 @@ export type VocabularySetUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutVocabularySetsNestedInput
-  vocabularies?: Prisma.VocabularySetVocabularyUpdateManyWithoutSetNestedInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUpdateManyWithoutSetNestedInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUpdateManyWithoutSetNestedInput
 }
 
 export type VocabularySetUncheckedUpdateInput = {
@@ -297,7 +303,8 @@ export type VocabularySetUncheckedUpdateInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularies?: Prisma.VocabularySetVocabularyUncheckedUpdateManyWithoutSetNestedInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedUpdateManyWithoutSetNestedInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedUpdateManyWithoutSetNestedInput
 }
 
 export type VocabularySetCreateManyInput = {
@@ -421,18 +428,32 @@ export type VocabularySetUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.VocabularySetScalarWhereInput | Prisma.VocabularySetScalarWhereInput[]
 }
 
-export type VocabularySetCreateNestedOneWithoutVocabulariesInput = {
-  create?: Prisma.XOR<Prisma.VocabularySetCreateWithoutVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutVocabulariesInput>
-  connectOrCreate?: Prisma.VocabularySetCreateOrConnectWithoutVocabulariesInput
+export type VocabularySetCreateNestedOneWithoutMandarinVocabulariesInput = {
+  create?: Prisma.XOR<Prisma.VocabularySetCreateWithoutMandarinVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutMandarinVocabulariesInput>
+  connectOrCreate?: Prisma.VocabularySetCreateOrConnectWithoutMandarinVocabulariesInput
   connect?: Prisma.VocabularySetWhereUniqueInput
 }
 
-export type VocabularySetUpdateOneRequiredWithoutVocabulariesNestedInput = {
-  create?: Prisma.XOR<Prisma.VocabularySetCreateWithoutVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutVocabulariesInput>
-  connectOrCreate?: Prisma.VocabularySetCreateOrConnectWithoutVocabulariesInput
-  upsert?: Prisma.VocabularySetUpsertWithoutVocabulariesInput
+export type VocabularySetUpdateOneRequiredWithoutMandarinVocabulariesNestedInput = {
+  create?: Prisma.XOR<Prisma.VocabularySetCreateWithoutMandarinVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutMandarinVocabulariesInput>
+  connectOrCreate?: Prisma.VocabularySetCreateOrConnectWithoutMandarinVocabulariesInput
+  upsert?: Prisma.VocabularySetUpsertWithoutMandarinVocabulariesInput
   connect?: Prisma.VocabularySetWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.VocabularySetUpdateToOneWithWhereWithoutVocabulariesInput, Prisma.VocabularySetUpdateWithoutVocabulariesInput>, Prisma.VocabularySetUncheckedUpdateWithoutVocabulariesInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.VocabularySetUpdateToOneWithWhereWithoutMandarinVocabulariesInput, Prisma.VocabularySetUpdateWithoutMandarinVocabulariesInput>, Prisma.VocabularySetUncheckedUpdateWithoutMandarinVocabulariesInput>
+}
+
+export type VocabularySetCreateNestedOneWithoutCantoneseVocabulariesInput = {
+  create?: Prisma.XOR<Prisma.VocabularySetCreateWithoutCantoneseVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutCantoneseVocabulariesInput>
+  connectOrCreate?: Prisma.VocabularySetCreateOrConnectWithoutCantoneseVocabulariesInput
+  connect?: Prisma.VocabularySetWhereUniqueInput
+}
+
+export type VocabularySetUpdateOneRequiredWithoutCantoneseVocabulariesNestedInput = {
+  create?: Prisma.XOR<Prisma.VocabularySetCreateWithoutCantoneseVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutCantoneseVocabulariesInput>
+  connectOrCreate?: Prisma.VocabularySetCreateOrConnectWithoutCantoneseVocabulariesInput
+  upsert?: Prisma.VocabularySetUpsertWithoutCantoneseVocabulariesInput
+  connect?: Prisma.VocabularySetWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.VocabularySetUpdateToOneWithWhereWithoutCantoneseVocabulariesInput, Prisma.VocabularySetUpdateWithoutCantoneseVocabulariesInput>, Prisma.VocabularySetUncheckedUpdateWithoutCantoneseVocabulariesInput>
 }
 
 export type VocabularySetCreateWithoutUserInput = {
@@ -442,7 +463,8 @@ export type VocabularySetCreateWithoutUserInput = {
   color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularies?: Prisma.VocabularySetVocabularyCreateNestedManyWithoutSetInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyCreateNestedManyWithoutSetInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyCreateNestedManyWithoutSetInput
 }
 
 export type VocabularySetUncheckedCreateWithoutUserInput = {
@@ -452,7 +474,8 @@ export type VocabularySetUncheckedCreateWithoutUserInput = {
   color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularies?: Prisma.VocabularySetVocabularyUncheckedCreateNestedManyWithoutSetInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedCreateNestedManyWithoutSetInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedCreateNestedManyWithoutSetInput
 }
 
 export type VocabularySetCreateOrConnectWithoutUserInput = {
@@ -494,7 +517,7 @@ export type VocabularySetScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"VocabularySet"> | Date | string
 }
 
-export type VocabularySetCreateWithoutVocabulariesInput = {
+export type VocabularySetCreateWithoutMandarinVocabulariesInput = {
   id?: string
   name?: string
   description?: string | null
@@ -502,9 +525,10 @@ export type VocabularySetCreateWithoutVocabulariesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutVocabularySetsInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyCreateNestedManyWithoutSetInput
 }
 
-export type VocabularySetUncheckedCreateWithoutVocabulariesInput = {
+export type VocabularySetUncheckedCreateWithoutMandarinVocabulariesInput = {
   id?: string
   userId: string
   name?: string
@@ -512,25 +536,26 @@ export type VocabularySetUncheckedCreateWithoutVocabulariesInput = {
   color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedCreateNestedManyWithoutSetInput
 }
 
-export type VocabularySetCreateOrConnectWithoutVocabulariesInput = {
+export type VocabularySetCreateOrConnectWithoutMandarinVocabulariesInput = {
   where: Prisma.VocabularySetWhereUniqueInput
-  create: Prisma.XOR<Prisma.VocabularySetCreateWithoutVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutVocabulariesInput>
+  create: Prisma.XOR<Prisma.VocabularySetCreateWithoutMandarinVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutMandarinVocabulariesInput>
 }
 
-export type VocabularySetUpsertWithoutVocabulariesInput = {
-  update: Prisma.XOR<Prisma.VocabularySetUpdateWithoutVocabulariesInput, Prisma.VocabularySetUncheckedUpdateWithoutVocabulariesInput>
-  create: Prisma.XOR<Prisma.VocabularySetCreateWithoutVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutVocabulariesInput>
+export type VocabularySetUpsertWithoutMandarinVocabulariesInput = {
+  update: Prisma.XOR<Prisma.VocabularySetUpdateWithoutMandarinVocabulariesInput, Prisma.VocabularySetUncheckedUpdateWithoutMandarinVocabulariesInput>
+  create: Prisma.XOR<Prisma.VocabularySetCreateWithoutMandarinVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutMandarinVocabulariesInput>
   where?: Prisma.VocabularySetWhereInput
 }
 
-export type VocabularySetUpdateToOneWithWhereWithoutVocabulariesInput = {
+export type VocabularySetUpdateToOneWithWhereWithoutMandarinVocabulariesInput = {
   where?: Prisma.VocabularySetWhereInput
-  data: Prisma.XOR<Prisma.VocabularySetUpdateWithoutVocabulariesInput, Prisma.VocabularySetUncheckedUpdateWithoutVocabulariesInput>
+  data: Prisma.XOR<Prisma.VocabularySetUpdateWithoutMandarinVocabulariesInput, Prisma.VocabularySetUncheckedUpdateWithoutMandarinVocabulariesInput>
 }
 
-export type VocabularySetUpdateWithoutVocabulariesInput = {
+export type VocabularySetUpdateWithoutMandarinVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -538,9 +563,10 @@ export type VocabularySetUpdateWithoutVocabulariesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutVocabularySetsNestedInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUpdateManyWithoutSetNestedInput
 }
 
-export type VocabularySetUncheckedUpdateWithoutVocabulariesInput = {
+export type VocabularySetUncheckedUpdateWithoutMandarinVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -548,6 +574,67 @@ export type VocabularySetUncheckedUpdateWithoutVocabulariesInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedUpdateManyWithoutSetNestedInput
+}
+
+export type VocabularySetCreateWithoutCantoneseVocabulariesInput = {
+  id?: string
+  name?: string
+  description?: string | null
+  color?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutVocabularySetsInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyCreateNestedManyWithoutSetInput
+}
+
+export type VocabularySetUncheckedCreateWithoutCantoneseVocabulariesInput = {
+  id?: string
+  userId: string
+  name?: string
+  description?: string | null
+  color?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedCreateNestedManyWithoutSetInput
+}
+
+export type VocabularySetCreateOrConnectWithoutCantoneseVocabulariesInput = {
+  where: Prisma.VocabularySetWhereUniqueInput
+  create: Prisma.XOR<Prisma.VocabularySetCreateWithoutCantoneseVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutCantoneseVocabulariesInput>
+}
+
+export type VocabularySetUpsertWithoutCantoneseVocabulariesInput = {
+  update: Prisma.XOR<Prisma.VocabularySetUpdateWithoutCantoneseVocabulariesInput, Prisma.VocabularySetUncheckedUpdateWithoutCantoneseVocabulariesInput>
+  create: Prisma.XOR<Prisma.VocabularySetCreateWithoutCantoneseVocabulariesInput, Prisma.VocabularySetUncheckedCreateWithoutCantoneseVocabulariesInput>
+  where?: Prisma.VocabularySetWhereInput
+}
+
+export type VocabularySetUpdateToOneWithWhereWithoutCantoneseVocabulariesInput = {
+  where?: Prisma.VocabularySetWhereInput
+  data: Prisma.XOR<Prisma.VocabularySetUpdateWithoutCantoneseVocabulariesInput, Prisma.VocabularySetUncheckedUpdateWithoutCantoneseVocabulariesInput>
+}
+
+export type VocabularySetUpdateWithoutCantoneseVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutVocabularySetsNestedInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUpdateManyWithoutSetNestedInput
+}
+
+export type VocabularySetUncheckedUpdateWithoutCantoneseVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedUpdateManyWithoutSetNestedInput
 }
 
 export type VocabularySetCreateManyUserInput = {
@@ -566,7 +653,8 @@ export type VocabularySetUpdateWithoutUserInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularies?: Prisma.VocabularySetVocabularyUpdateManyWithoutSetNestedInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUpdateManyWithoutSetNestedInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUpdateManyWithoutSetNestedInput
 }
 
 export type VocabularySetUncheckedUpdateWithoutUserInput = {
@@ -576,7 +664,8 @@ export type VocabularySetUncheckedUpdateWithoutUserInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularies?: Prisma.VocabularySetVocabularyUncheckedUpdateManyWithoutSetNestedInput
+  mandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedUpdateManyWithoutSetNestedInput
+  cantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedUpdateManyWithoutSetNestedInput
 }
 
 export type VocabularySetUncheckedUpdateManyWithoutUserInput = {
@@ -594,11 +683,13 @@ export type VocabularySetUncheckedUpdateManyWithoutUserInput = {
  */
 
 export type VocabularySetCountOutputType = {
-  vocabularies: number
+  mandarinVocabularies: number
+  cantoneseVocabularies: number
 }
 
 export type VocabularySetCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  vocabularies?: boolean | VocabularySetCountOutputTypeCountVocabulariesArgs
+  mandarinVocabularies?: boolean | VocabularySetCountOutputTypeCountMandarinVocabulariesArgs
+  cantoneseVocabularies?: boolean | VocabularySetCountOutputTypeCountCantoneseVocabulariesArgs
 }
 
 /**
@@ -614,8 +705,15 @@ export type VocabularySetCountOutputTypeDefaultArgs<ExtArgs extends runtime.Type
 /**
  * VocabularySetCountOutputType without action
  */
-export type VocabularySetCountOutputTypeCountVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.VocabularySetVocabularyWhereInput
+export type VocabularySetCountOutputTypeCountMandarinVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.VocabularySetMandarinVocabularyWhereInput
+}
+
+/**
+ * VocabularySetCountOutputType without action
+ */
+export type VocabularySetCountOutputTypeCountCantoneseVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.VocabularySetCantoneseVocabularyWhereInput
 }
 
 
@@ -628,7 +726,8 @@ export type VocabularySetSelect<ExtArgs extends runtime.Types.Extensions.Interna
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  vocabularies?: boolean | Prisma.VocabularySet$vocabulariesArgs<ExtArgs>
+  mandarinVocabularies?: boolean | Prisma.VocabularySet$mandarinVocabulariesArgs<ExtArgs>
+  cantoneseVocabularies?: boolean | Prisma.VocabularySet$cantoneseVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.VocabularySetCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["vocabularySet"]>
 
@@ -667,7 +766,8 @@ export type VocabularySetSelectScalar = {
 export type VocabularySetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "description" | "color" | "createdAt" | "updatedAt", ExtArgs["result"]["vocabularySet"]>
 export type VocabularySetInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  vocabularies?: boolean | Prisma.VocabularySet$vocabulariesArgs<ExtArgs>
+  mandarinVocabularies?: boolean | Prisma.VocabularySet$mandarinVocabulariesArgs<ExtArgs>
+  cantoneseVocabularies?: boolean | Prisma.VocabularySet$cantoneseVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.VocabularySetCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type VocabularySetIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -681,7 +781,8 @@ export type $VocabularySetPayload<ExtArgs extends runtime.Types.Extensions.Inter
   name: "VocabularySet"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
-    vocabularies: Prisma.$VocabularySetVocabularyPayload<ExtArgs>[]
+    mandarinVocabularies: Prisma.$VocabularySetMandarinVocabularyPayload<ExtArgs>[]
+    cantoneseVocabularies: Prisma.$VocabularySetCantoneseVocabularyPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1086,7 +1187,8 @@ readonly fields: VocabularySetFieldRefs;
 export interface Prisma__VocabularySetClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  vocabularies<T extends Prisma.VocabularySet$vocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VocabularySet$vocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularySetVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  mandarinVocabularies<T extends Prisma.VocabularySet$mandarinVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VocabularySet$mandarinVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularySetMandarinVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  cantoneseVocabularies<T extends Prisma.VocabularySet$cantoneseVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VocabularySet$cantoneseVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularySetCantoneseVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1524,27 +1626,51 @@ export type VocabularySetDeleteManyArgs<ExtArgs extends runtime.Types.Extensions
 }
 
 /**
- * VocabularySet.vocabularies
+ * VocabularySet.mandarinVocabularies
  */
-export type VocabularySet$vocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type VocabularySet$mandarinVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the VocabularySetVocabulary
+   * Select specific fields to fetch from the VocabularySetMandarinVocabulary
    */
-  select?: Prisma.VocabularySetVocabularySelect<ExtArgs> | null
+  select?: Prisma.VocabularySetMandarinVocabularySelect<ExtArgs> | null
   /**
-   * Omit specific fields from the VocabularySetVocabulary
+   * Omit specific fields from the VocabularySetMandarinVocabulary
    */
-  omit?: Prisma.VocabularySetVocabularyOmit<ExtArgs> | null
+  omit?: Prisma.VocabularySetMandarinVocabularyOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.VocabularySetVocabularyInclude<ExtArgs> | null
-  where?: Prisma.VocabularySetVocabularyWhereInput
-  orderBy?: Prisma.VocabularySetVocabularyOrderByWithRelationInput | Prisma.VocabularySetVocabularyOrderByWithRelationInput[]
-  cursor?: Prisma.VocabularySetVocabularyWhereUniqueInput
+  include?: Prisma.VocabularySetMandarinVocabularyInclude<ExtArgs> | null
+  where?: Prisma.VocabularySetMandarinVocabularyWhereInput
+  orderBy?: Prisma.VocabularySetMandarinVocabularyOrderByWithRelationInput | Prisma.VocabularySetMandarinVocabularyOrderByWithRelationInput[]
+  cursor?: Prisma.VocabularySetMandarinVocabularyWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.VocabularySetVocabularyScalarFieldEnum | Prisma.VocabularySetVocabularyScalarFieldEnum[]
+  distinct?: Prisma.VocabularySetMandarinVocabularyScalarFieldEnum | Prisma.VocabularySetMandarinVocabularyScalarFieldEnum[]
+}
+
+/**
+ * VocabularySet.cantoneseVocabularies
+ */
+export type VocabularySet$cantoneseVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the VocabularySetCantoneseVocabulary
+   */
+  select?: Prisma.VocabularySetCantoneseVocabularySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the VocabularySetCantoneseVocabulary
+   */
+  omit?: Prisma.VocabularySetCantoneseVocabularyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.VocabularySetCantoneseVocabularyInclude<ExtArgs> | null
+  where?: Prisma.VocabularySetCantoneseVocabularyWhereInput
+  orderBy?: Prisma.VocabularySetCantoneseVocabularyOrderByWithRelationInput | Prisma.VocabularySetCantoneseVocabularyOrderByWithRelationInput[]
+  cursor?: Prisma.VocabularySetCantoneseVocabularyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.VocabularySetCantoneseVocabularyScalarFieldEnum | Prisma.VocabularySetCantoneseVocabularyScalarFieldEnum[]
 }
 
 /**

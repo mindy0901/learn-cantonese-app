@@ -3,7 +3,9 @@ import { useLocale } from "../store/localeStore.js";
 import { useAppActions, useVocabularies } from "../store/appStore.js";
 import { useIsSignedIn } from "../store/authStore.js";
 import { WordDetailContent } from "./WordDetailContent.jsx";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./shadcn/dialog.jsx";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "./shadcn/dialog.jsx";
+import { Button } from "./shadcn/button.jsx";
+import { XIcon } from "lucide-react";
 import { log, logWarn } from "../lib/actionLog.js";
 
 /**
@@ -13,7 +15,7 @@ import { log, logWarn } from "../lib/actionLog.js";
 export function EditWordPanel({ vocabulary, onClose }) {
     const { t } = useLocale();
     const vocabularies = useVocabularies();
-    const { ensureVocabulariesByIds, toggleImportant, toggleMastered, editVocabulary } = useAppActions();
+    const { ensureVocabulariesByIds, editVocabulary } = useAppActions();
     const canMark = useIsSignedIn();
     const [resolving, setResolving] = useState(true);
     const footerRef = useRef(null);
@@ -60,18 +62,23 @@ export function EditWordPanel({ vocabulary, onClose }) {
     return (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent
-                showCloseButton
+                showCloseButton={false}
                 className="max-w-360 gap-0 overflow-hidden p-0 h-[min(calc(100dvh-100vw+1440px),calc(100dvh-2rem))] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-360"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>{t.common.edit}</DialogTitle>
                 </DialogHeader>
 
-                {/* Header row — cụm meta chips (portaled) nằm cùng hàng với nút X */}
-                <div
-                    ref={setHeaderEl}
-                    className="col-start-1 row-start-1 flex min-h-10 w-full min-w-0 items-center px-6 py-2 pr-12"
-                />
+                {/* Header row — nút X nằm TRONG header (2026-08-22); meta chips portal vào headerEl */}
+                <div className="col-start-1 row-start-1 flex min-h-10 w-full min-w-0 items-center gap-2 px-6 py-2">
+                    {/* Spacer size-8 cân với nút X (icon-sm = size-8) để title căn giữa header */}
+                    <span aria-hidden="true" className="size-8 shrink-0" />
+                    <div ref={setHeaderEl} className="flex min-w-0 flex-1 items-center" />
+                    <DialogClose render={<Button variant="ghost" size="icon-sm" className="shrink-0 rounded-full" />}>
+                        <XIcon />
+                        <span className="sr-only">Close</span>
+                    </DialogClose>
+                </div>
 
                 {/* Body */}
                 <div className="col-start-1 row-start-2 flex min-h-0 flex-col overflow-y-auto overscroll-contain">
@@ -94,10 +101,7 @@ export function EditWordPanel({ vocabulary, onClose }) {
                                 footerRef={footerRef}
                                 headerRef={{ current: headerEl }}
                                 onNextRandom={vocabularies.length > 1 ? handleNextRandom : undefined}
-                                {...(canMark && {
-                                    onToggleImportant: toggleImportant,
-                                    onToggleMastered: toggleMastered,
-                                })}
+                                {...(canMark && {})}
                             />
                         </section>
                     )}

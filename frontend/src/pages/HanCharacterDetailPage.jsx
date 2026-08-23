@@ -211,7 +211,7 @@ export function HanCharacterDetailPage() {
                         <div className="absolute top-3 right-3 flex items-center gap-2">
                             {editing ? (
                                 <>
-                                    <Button type="button" variant="outline" onClick={cancelEdit}>
+                                    <Button type="button" variant="destructive" onClick={cancelEdit}>
                                         {t.common?.cancel}
                                     </Button>
                                     <Button type="button" variant="default" onClick={saveEdit} disabled={saving}>

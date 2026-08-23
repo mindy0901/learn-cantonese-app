@@ -4,7 +4,7 @@
  *
  * Source priority:
  *   1. cantowords (words.hk) full-word — read from backend/data/cantowords-jyutping-words.json.
- *   2. CC-Canto full-word — backend/data/cccanto.json.
+ *   2. CC-Canto full-word — backend/data/CCCANTO.json.
  *   3. Fallback: to-jyutping (context-aware full-word romanization).
  *
  * Also recomputes + syncs hanCharacters breakdown so each char gets its jyutping.
@@ -40,7 +40,7 @@ console.log("cantowords entries:", cantowordsMap.size);
 // ── 2. CC-Canto full-word map (trad OR simp → jyutping) ──
 const cantoMap = new Map();
 {
-    const raw = JSON.parse(readFileSync(resolve(__dirname, "data", "cccanto.json"), "utf-8"));
+    const raw = JSON.parse(readFileSync(resolve(__dirname, "data", "CCCANTO.json"), "utf-8"));
     for (const e of raw) {
         if (!e.jp) continue;
         if (!cantoMap.has(e.t)) cantoMap.set(e.t, e.jp);

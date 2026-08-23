@@ -1,13 +1,13 @@
-import { memo, useEffect, useMemo } from "react";
-import { useVocabularySets, useAppActions } from "../store/appStore.js";
+import { memo, useMemo } from "react";
 import { wordBankReturnMatches } from "../lib/wordBankReturn.js";
-import { useIsSignedIn } from "../store/authStore.js";
 import { WordBankBrowseTable } from "./WordBankBrowseTable.jsx";
 
 /**
  * Panel kho từ vựng — toolbar (search + faceted filter + sort + column toggle)
  * nằm TRONG WordBankBrowseTable (giống template shadcn data-table). Panel chỉ
- * fetch vocabulary sets + seed prefs ban đầu + restore state khi quay lại.
+ * seed prefs ban đầu + restore state khi quay lại.
+ * ⚠️ KHÔNG fetch vocabulary sets ở đây — WordBankPage (cha) đã fetch khi mount;
+ * VocabularySetsManager (avatar dropdown) tự fetch riêng. (2026-08-21)
  */
 export const WordBankListPanel = memo(function WordBankListPanel({
     filter,
@@ -20,22 +20,17 @@ export const WordBankListPanel = memo(function WordBankListPanel({
     searchColumn,
     columnVisibility,
     pageSize,
-    isSignedIn = false,
     onFilterChange,
     onView,
     onEdit,
+    onScan,
+    onAdd,
     restoreState = null,
 }) {
-    const sets = useVocabularySets();
-    const { fetchVocabularySets } = useAppActions();
     const browseContext = useMemo(
         () => ({ filter, showImportant, showMastered, hskLevel, setId, sortKey, sortDir }),
         [filter, showImportant, showMastered, hskLevel, setId, sortKey, sortDir],
     );
-    useEffect(() => {
-        if (!isSignedIn) return;
-        fetchVocabularySets().catch(() => {});
-    }, [isSignedIn, fetchVocabularySets]);
     const activeRestore = useMemo(
         () => (wordBankReturnMatches(restoreState, browseContext) ? restoreState : null),
         [restoreState, browseContext],
@@ -46,6 +41,7 @@ export const WordBankListPanel = memo(function WordBankListPanel({
             <WordBankBrowseTable
                 variant="bank"
                 initial={{
+                    filter,
                     hskLevel,
                     setId,
                     showImportant,
@@ -59,6 +55,8 @@ export const WordBankListPanel = memo(function WordBankListPanel({
                 onStateChange={onFilterChange}
                 onView={onView}
                 onEdit={onEdit}
+                onScan={onScan}
+                onAdd={onAdd}
                 restoreState={activeRestore}
             />
         </div>

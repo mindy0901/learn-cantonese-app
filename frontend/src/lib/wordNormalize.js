@@ -60,9 +60,10 @@ export function capitalizeSentences(value, opts = {}) {
  *   collectMeaningsField(vocab.meanings, "vietMeanings") → "A; B"
  * Returns "" when there are no meanings or none have the field.
  */
-export function collectMeaningsField(meanings, field) {
+export function collectMeaningsField(meanings, field, limit) {
     if (!Array.isArray(meanings) || meanings.length === 0) return "";
-    const parts = meanings.map((m) => String(m?.[field] ?? "").trim()).filter(Boolean);
+    const sliced = typeof limit === "number" && limit > 0 ? meanings.slice(0, limit) : meanings;
+    const parts = sliced.map((m) => String(m?.[field] ?? "").trim()).filter(Boolean);
     return displayMeaning(parts.join("; "));
 }
 
@@ -174,6 +175,7 @@ export function vocabularyContentEqual(a, b) {
         Boolean(a.mastered) === Boolean(b.mastered) &&
         String(a.hskLevel ?? "").trim() === String(b.hskLevel ?? "").trim() &&
         Boolean(a.pureCantonese) === Boolean(b.pureCantonese) &&
+        JSON.stringify(a.relatedWords ?? null) === JSON.stringify(b.relatedWords ?? null) &&
         jsonNoTemp(a.meanings) === jsonNoTemp(b.meanings) &&
         jsonNoTemp(a.romanization) === jsonNoTemp(b.romanization)
     );

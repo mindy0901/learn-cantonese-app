@@ -18,11 +18,6 @@ export const DEFAULT_PREFS = {
         sortKey: "title",
         sortDir: "asc",
     },
-    sentenceBank: {
-        filter: "all",
-        sortKey: "hanTraditional",
-        sortDir: "asc",
-    },
     flashcard: {},
 };
 
@@ -43,7 +38,6 @@ function normalizePrefs(parsed) {
     return {
         wordBank: mergeWordBankPrefs(DEFAULT_PREFS.wordBank, parsed.wordBank),
         grammarBank: mergeSection(DEFAULT_PREFS.grammarBank, parsed.grammarBank),
-        sentenceBank: mergeSection(DEFAULT_PREFS.sentenceBank, parsed.sentenceBank),
         flashcard: mergeSection(DEFAULT_PREFS.flashcard, parsed.flashcard ?? parsed.study),
     };
 }

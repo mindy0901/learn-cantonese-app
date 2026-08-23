@@ -20,7 +20,7 @@ function loadUiState() {
 }
 
 const initialUi = loadUiState();
-document.documentElement.dataset.theme = initialUi.theme;
+document.documentElement.classList.toggle("dark", initialUi.theme === "dark");
 
 export const useUiStore = create((set, get) => ({
     theme: initialUi.theme,
@@ -36,7 +36,7 @@ export const useUiStore = create((set, get) => ({
     },
 
     setTheme: (theme) => {
-        document.documentElement.dataset.theme = theme;
+        document.documentElement.classList.toggle("dark", theme === "dark");
         get().persistUi({ theme });
     },
 

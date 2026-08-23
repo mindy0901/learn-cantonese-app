@@ -7,6 +7,7 @@ import { SkeletonBlock } from "./ui/Skeleton.jsx";
 import { EmptyState } from "./ui/EmptyState.jsx";
 import { ConfirmDialog } from "./ConfirmDialog.jsx";
 import { IconFlashcard } from "./NavIcons.jsx";
+import { Button } from "./shadcn/button.jsx";
 import { normalizeSearchText } from "../lib/wordSearch.js";
 import { collectMeaningsField, displayMeaning } from "../lib/wordNormalize.js";
 import { vocabRomanizationField, vocabMeanings } from "../lib/wordDisplay.js";
@@ -216,9 +217,9 @@ function DeckCard({ deck, onSelect, onManage, onEdit, onDelete }) {
                 <button type="button" className={btnClass("ghost", "sm")} onClick={() => onEdit(deck)}>
                     {t.common.edit}
                 </button>
-                <button type="button" className={btnClass("danger-ghost", "sm")} onClick={() => onDelete(deck)}>
+                <Button type="button" variant="destructive" size="sm" onClick={() => onDelete(deck)}>
                     {t.common.delete}
-                </button>
+                </Button>
             </div>
         </div>
     );
@@ -319,9 +320,9 @@ function DeckForm({ deck, onSave, onCancel }) {
             </div>
 
             <div className="flex gap-2 justify-end">
-                <button type="button" className={btnClass("ghost")} onClick={onCancel}>
+                <Button type="button" variant="destructive" onClick={onCancel}>
                     {t.common.cancel}
-                </button>
+                </Button>
                 <button type="submit" className={btnClass("primary")} disabled={saving || !name.trim()}>
                     {saving ? t.common.loading : t.common.save}
                 </button>
@@ -533,14 +534,15 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
                                         );
                                     })()}
                                 </div>
-                                <button
+                                <Button
                                     type="button"
-                                    className={btnClass("danger-ghost", "sm")}
+                                    variant="destructive"
+                                    size="sm"
                                     disabled={removingId === vocab.id}
                                     onClick={() => handleRemove(vocab)}
                                 >
                                     {removingId === vocab.id ? "…" : "×"}
-                                </button>
+                                </Button>
                             </div>
                         ))}
                     </div>

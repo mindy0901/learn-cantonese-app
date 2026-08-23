@@ -28,7 +28,7 @@
             /* = --primary (light) */
         }
 
-        html[data-theme="dark"] #boot-fallback {
+        html.dark #boot-fallback {
             background: oklch(0.148 0.004 228.8);
             color: oklch(0.432 0.095 166.913);
             /* = --primary (dark) */
@@ -55,11 +55,11 @@
         try {
             var s = JSON.parse(localStorage.getItem("cantonese-app-ui") || "{}");
             if (s.theme === "dark" || s.theme === "light") {
-                document.documentElement.dataset.theme = s.theme;
+                document.documentElement.classList.toggle("dark", s.theme === "dark");
             }
         } catch (e) { /* ignore */ }
     </script>
-    <title>Learn Cantonese</title>
+    <title>3107Hanzi</title>
 </head>
 
 <body>

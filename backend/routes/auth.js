@@ -1,5 +1,5 @@
 import { log, logWarn } from "../lib/actionLog.js";
-import { ensureUser, ensureUserVocabulary } from "../lib/prismaService.js";
+import { ensureUser } from "../lib/prismaService.js";
 import { getAdminEmails, isAppAdmin } from "../lib/appAdmin.js";
 import bcrypt from "bcryptjs";
 
@@ -88,9 +88,6 @@ export async function authRoutes(fastify) {
                 email: profile.email,
                 name: profile.name ?? profile.email,
             });
-
-            // Link shared vocabulary to new users
-            await ensureUserVocabulary(user.id);
 
             request.session.userId = user.id;
             request.session.email = profile.email;
@@ -196,9 +193,6 @@ export async function authRoutes(fastify) {
             if (!valid) {
                 return reply.code(401).send({ error: "Invalid email or password" });
             }
-
-            // Link shared vocabulary to new users
-            await ensureUserVocabulary(user.id);
 
             request.session.userId = user.id;
             request.session.email = user.email;

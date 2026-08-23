@@ -17,10 +17,9 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from "./shadcn/dropdown-menu.jsx";
-import { diffHanChars } from "../lib/hanScriptDisplay.js";
 import { vocabularyLookupDisplay } from "../lib/hanLookup.js";
 import { collectMeaningsField, displayMeaning } from "../lib/wordNormalize.js";
-import { vocabRomanizationField, vocabMeanings } from "../lib/wordDisplay.js";
+import { vocabRomanizationField, vocabMeanings, vocabRomanizations } from "../lib/wordDisplay.js";
 import { normalizeSearchText } from "../lib/wordSearch.js";
 import { HanziiHanCellLink } from "./HanziiHanCellLink.jsx";
 import { WordFieldText } from "./WordFieldText.jsx";
@@ -68,7 +67,7 @@ function searchFieldValue(word, field) {
  * Text tìm kiếm (chuẩn hóa bỏ dấu) theo searchColumn — dùng cho hidden column
  * "search" để filter native (includesString) khớp kiểu "nhat" ~ "nhất".
  */
-function searchableText(word, searchColumn) {
+export function searchableText(word, searchColumn) {
     return searchFieldsForColumn(searchColumn)
         .map((f) => normalizeSearchText(searchFieldValue(word, f)))
         .filter(Boolean)
@@ -95,6 +94,24 @@ function hskColorClass(level) {
     if (num <= 6)
         return "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800";
     return "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800";
+}
+
+/** Giá trị timestamp ms (number hoặc ISO string) — 0 nếu không hợp lệ. (2026-08-22) */
+function vocabTimestampMs(v) {
+    const ms = typeof v === "number" ? v : Date.parse(String(v ?? ""));
+    return Number.isFinite(ms) ? ms : 0;
+}
+
+/** Cell hiển thị ngày tạo / cập nhật (compact, full datetime trong tooltip). */
+function TimeCell({ value }) {
+    const ms = vocabTimestampMs(value);
+    if (!ms) return <span className="text-muted-foreground">-</span>;
+    const d = new Date(ms);
+    return (
+        <span className="whitespace-nowrap text-sm text-muted-foreground" title={d.toLocaleString()}>
+            {d.toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "numeric" })}
+        </span>
+    );
 }
 
 /**
@@ -208,55 +225,130 @@ function SinoCell({ word, sinoVietnamese, hanLookup, t }) {
     );
 }
 
-/** Ô chữ Hán & phiên âm — luôn 2 cột (Mandarin | Cantonese) như detail. */
-function HanCell({ word, pickerMode, isPureCantonese, pinyin, jyutping }) {
+/**
+ * Ô GỘP chữ Hán + phiên âm — mỗi cặp: hán tự TRÊN, phiên âm DƯỚI.
+ * - Mandarin: 1 cặp (giản thể + pinyin).
+ * - Pure Cantonese: 1 cặp (HK + jyutping).
+ * - Cả 2: 2 cặp — trái (giản thể + pinyin) | phải (phồn thể/HK + jyutping).
+ */
+function HanReadingCell({ word, pickerMode, pinyin, jyutping, language }) {
     const hanDisplay = vocabularyLookupDisplay(word);
-    const hanLookup = hanDisplay.traditional || hanDisplay.simplified || hanDisplay.hongKong;
-    const hanDiff = diffHanChars({
-        traditional: hanDisplay.traditional,
-        simplified: hanDisplay.simplified,
-    });
-    return (
-        <div className="grid grid-cols-2 justify-center gap-x-3 gap-y-1 items-end pt-1.5 whitespace-nowrap">
-            <div className="flex flex-col items-center gap-1">
+
+    // Mandarin: giản/phồn phiên âm giống hệt → chỉ 1 cặp (simp + pinyin).
+    if (language === "mandarin") {
+        return (
+            <div className="flex flex-col items-center gap-1 pt-1.5 whitespace-nowrap">
                 <HanVariantCell
                     text={hanDisplay.simplified}
-                    diffChars={hanDiff.simp}
+                    diffChars={undefined}
                     pickerMode={pickerMode}
                     lookupSimp={hanDisplay.simplified}
                     className="text-3xl text-center text-han-simp"
                 />
-                {!isPureCantonese && pinyin && <span className="text-base font-medium text-pinyin">{pinyin}</span>}
+                {pinyin ? (
+                    <span className="text-base font-medium text-pinyin">{pinyin}</span>
+                ) : (
+                    <span className="text-base font-medium text-muted-foreground">-</span>
+                )}
             </div>
-            <div className="flex flex-col items-center gap-1">
-                <HanVariantCell
-                    text={hanDisplay.traditional}
-                    diffChars={undefined}
-                    pickerMode={pickerMode}
-                    lookupSimp={hanDisplay.simplified}
-                    className="text-3xl text-center text-han-trad"
-                />
-                {jyutping && <span className="text-base font-medium text-jyutping">{jyutping}</span>}
-            </div>
+        );
+    }
+    // Cantonese: LUÔN 1 cột (HK + jyutping). ⚠️ 2026-08-22: bỏ hẳn cấu trúc 2 cột — trước đây
+    // từ Cantonese chỉ có HK (không simplified) vẫn vào grid 2 cột → cột simplified rỗng hiện
+    // "Updating" (VD 生意). Từ chưa có phiên âm → HK + "-".
+    return (
+        <div className="flex flex-col items-center gap-1 pt-1.5 whitespace-nowrap">
+            <HanVariantCell
+                text={hanDisplay.traditional}
+                diffChars={undefined}
+                pickerMode={pickerMode}
+                lookupSimp={hanDisplay.simplified}
+                className="text-3xl text-center text-han-trad"
+            />
+            {jyutping ? (
+                <span className="text-base font-medium text-jyutping">{jyutping}</span>
+            ) : (
+                <span className="text-base font-medium text-muted-foreground">-</span>
+            )}
         </div>
     );
 }
 
 /** Ô nghĩa (Việt hoặc Anh) — giống detail: text-foreground. */
 function MeaningCell({ word, meanings, field, t }) {
+    // Ưu tiên meaning nằm TRÊN CÙNG (position đầu) của từng reading:
+    // 1 của Mandarin (pinyin) + 1 của Cantonese (jyutping), tối đa 2 dòng.
+    // Fallback: nếu 1 cột thiếu meaning → dùng meaning KẾ TIẾP của cột có meaning.
+    const roms = vocabRomanizations(word);
+    const valuesOf = (type) => {
+        const out = [];
+        for (const r of roms) {
+            if (r?.type !== type) continue;
+            for (const m of Array.isArray(r?.meanings) ? r.meanings : []) {
+                const v = String(m?.[field] ?? "").trim();
+                if (v) out.push(v);
+            }
+        }
+        return out;
+    };
+    const py = valuesOf("pinyin");
+    const jp = valuesOf("jyutping");
+    const values = [];
+    if (py[0]) values.push(py[0]);
+    if (jp[0]) values.push(jp[0]);
+    // Thiếu 1 cột → fallback sang meaning kế tiếp của cột có meaning.
+    if (values.length === 1) {
+        if (py[0] && !jp[0] && py[1]) values.push(py[1]);
+        else if (jp[0] && !py[0] && jp[1]) values.push(jp[1]);
+    }
+    const seen = new Set();
+    const final = values
+        .filter((v) => {
+            const k = v.trim().toLowerCase();
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+        })
+        .slice(0, 2);
+    if (final.length === 0) {
+        const flat = displayMeaning(word[field] || "");
+        return flat ? (
+            <span className="text-foreground text-sm block max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                {flat}
+            </span>
+        ) : (
+            <span className="italic text-muted-foreground">-</span>
+        );
+    }
     return (
-        <span className="text-foreground text-sm line-clamp-2">
-            {collectMeaningsField(meanings, field) || word[field] ? (
-                collectMeaningsField(meanings, field) || displayMeaning(word[field])
-            ) : (
-                <span className="italic text-muted-foreground">-</span>
-            )}
-        </span>
+        <div className="flex flex-col gap-2">
+            {final.map((v, i) => (
+                <div key={i} className="flex min-w-0 items-baseline gap-1.5">
+                    <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground/70" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 text-foreground text-sm overflow-hidden text-ellipsis whitespace-nowrap">
+                        {displayMeaning(v)}
+                    </span>
+                </div>
+            ))}
+        </div>
     );
 }
 
 /** Ô cấp độ HSK / custom badge. */
 function HskCell({ word, isPicker, t }) {
+    if (word.pureCantonese) {
+        return (
+            <span
+                className={cn(
+                    "inline-flex items-center justify-center h-5 text-xs font-semibold rounded-full border",
+                    "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-300",
+                )}
+                style={{ minWidth: 82 }}
+            >
+                {t.wordBank.pureCantoneseBadge}
+            </span>
+        );
+    }
     if (word.hskLevel) {
         return (
             <span
@@ -274,9 +366,7 @@ function HskCell({ word, isPicker, t }) {
         <span
             className={cn(
                 "inline-flex items-center justify-center h-5 text-xs font-medium rounded-full border",
-                !isPicker
-                    ? "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
-                    : "text-muted-foreground",
+                !isPicker ? "bg-muted text-muted-foreground border-border" : "text-muted-foreground",
             )}
             style={{ minWidth: 82 }}
         >
@@ -414,6 +504,7 @@ const RowActionsCell = memo(function RowActionsCell({ word, onView, onEdit, onDe
  */
 export function buildWordRowColumns({
     t,
+    language = "cantonese",
     canMark,
     isPicker,
     selectable = false,
@@ -427,6 +518,7 @@ export function buildWordRowColumns({
     onEdit,
     onDelete,
     searchColumn = "han",
+    searchQuery = "",
     setVocabularyIds = {},
     getDisplayIndex = (row) => row.index,
 }) {
@@ -523,25 +615,25 @@ export function buildWordRowColumns({
                 return <SinoCell word={word} sinoVietnamese={sinoVietnamese} hanLookup={hanLookup} t={t} />;
             }),
         }),
-        // Sort theo hán tự — ƯU TIÊN giản thể (hanSimplified) trước; không có
-        // giản thể thì dùng phồn thể (hanTraditional), rồi tới hanHongKong.
-        columnHelper.accessor((row) => row.hanSimplified || row.hanTraditional || row.hanHongKong || "", {
+        // Sort theo hán tự — dùng form PHỒN THỂ (hanTraditional → hanHongKong → hanSimplified):
+        // stroke map key theo phồn thể (hanStroke.js) nên giản thể (vd 于/过) không nét chính xác.
+        columnHelper.accessor((row) => row.hanTraditional || row.hanHongKong || row.hanSimplified || "", {
             id: "han",
             enableSorting: sortable,
             enableHiding: !isPicker,
             sortFn: "han", // đăng ký trong data-table-features.js
-            header: ({ column }) => <DataTableColumnHeader column={column} title={t.wordBank.colHanChars} />,
+            header: ({ column }) => <DataTableColumnHeader column={column} title={t.wordBank.colHanChars} centered />,
             meta: { className: "py-1.5 align-middle", label: t.wordBank.colHanChars },
             cell: cellFor((word) => {
                 const pinyin = vocabRomanizationField(word, "pinyin") || word.pinyin || "";
                 const jyutping = vocabRomanizationField(word, "jyutping") || word.jyutping || "";
                 return (
-                    <HanCell
+                    <HanReadingCell
                         word={word}
                         pickerMode={isPicker}
-                        isPureCantonese={Boolean(word.pureCantonese)}
                         pinyin={pinyin}
                         jyutping={jyutping}
+                        language={language}
                     />
                 );
             }),
@@ -585,24 +677,80 @@ export function buildWordRowColumns({
         );
     }
 
-    columns.push(
-        columnHelper.accessor((row) => row.hskLevel || "", {
-            id: "hsk",
-            enableSorting: sortable,
-            enableHiding: !isPicker,
-            sortFn: "text", // v9 dùng sortFn
-            filterFn: multiValueFilter,
-            header: ({ column }) => <DataTableColumnHeader column={column} title={t.wordBank.colLevel} />,
-            meta: { className: "px-5 py-2.5 align-middle text-center whitespace-nowrap", label: t.wordBank.colLevel },
-            cell: cellFor((word) => <HskCell word={word} isPicker={isPicker} t={t} />),
-        }),
-    );
+    // Cột cấp độ CHỈ ở Mandarin — Cantonese không có level.
+    if (language === "mandarin") {
+        columns.push(
+            columnHelper.accessor((row) => (row.pureCantonese ? "YSK" : row.hskLevel || ""), {
+                id: "hsk",
+                enableSorting: sortable,
+                enableHiding: !isPicker,
+                sortFn: "text", // v9 dùng sortFn
+                filterFn: multiValueFilter,
+                header: ({ column }) => <DataTableColumnHeader column={column} title={t.wordBank.colLevel} centered />,
+                meta: {
+                    className: "px-5 py-2.5 align-middle text-center whitespace-nowrap",
+                    label: t.wordBank.colLevel,
+                },
+                cell: cellFor((word) => <HskCell word={word} isPicker={isPicker} t={t} />),
+            }),
+        );
+    }
+
+    // Cột thời gian TẠO / CẬP NHẬT — sort theo ngày (2026-08-22). Bank mode chỉ.
+    if (!isPicker) {
+        columns.push(
+            columnHelper.accessor((row) => vocabTimestampMs(row.createdAt ?? row.updatedAt ?? row.addedAt), {
+                id: "created",
+                enableSorting: sortable,
+                enableHiding: !isPicker,
+                sortFn: (rowA, rowB) => rowA.getValue("created") - rowB.getValue("created"),
+                header: ({ column }) => (
+                    <DataTableColumnHeader column={column} title={t.wordBank.colCreated} centered />
+                ),
+                meta: {
+                    className: "px-5 py-2.5 align-middle text-center whitespace-nowrap",
+                    label: t.wordBank.colCreated,
+                },
+                cell: cellFor((word) => <TimeCell value={word.createdAt ?? word.updatedAt ?? word.addedAt} />),
+            }),
+            columnHelper.accessor((row) => vocabTimestampMs(row.updatedAt ?? row.createdAt), {
+                id: "updated",
+                enableSorting: sortable,
+                enableHiding: !isPicker,
+                sortFn: (rowA, rowB) => rowA.getValue("updated") - rowB.getValue("updated"),
+                header: ({ column }) => (
+                    <DataTableColumnHeader column={column} title={t.wordBank.colUpdated} centered />
+                ),
+                meta: {
+                    className: "px-5 py-2.5 align-middle text-center whitespace-nowrap",
+                    label: t.wordBank.colUpdated,
+                },
+                cell: cellFor((word) => <TimeCell value={word.updatedAt ?? word.createdAt} />),
+            }),
+        );
+    }
 
     // Hidden helper columns — chỉ phục vụ filter (search/faceted), không hiển thị.
     columns.push(
         columnHelper.accessor((row) => searchableText(row, searchColumn), {
             id: "search",
-            enableSorting: false,
+            // sortFn prefix-first: khi đang search, từ BẮT ĐẦU bằng query xếp trước
+            // (rồi theo text). Không tắt sort → pagination vẫn hoạt động.
+            enableSorting: Boolean(searchQuery),
+            sortFn: (rowA, rowB) => {
+                // ⚠️ Dùng rowA.getValue("search") — giá trị CACHE của accessor (tính 1 lần/dòng).
+                // Trước đây gọi lại searchableText(rowA.original,...) mỗi lần so sánh → sort
+                // 14k dòng = ~200k lần normalize → LAG nặng khi search. (2026-08-17)
+                const a = rowA.getValue("search");
+                const b = rowB.getValue("search");
+                const q = searchQuery;
+                if (q) {
+                    const pa = a.startsWith(q) ? 0 : 1;
+                    const pb = b.startsWith(q) ? 0 : 1;
+                    if (pa !== pb) return pa - pb;
+                }
+                return a < b ? -1 : a > b ? 1 : 0;
+            },
             filterFn: "includesString",
             meta: { hidden: true },
         }),

@@ -43,17 +43,6 @@ export function IconGrammar({ className, size }) {
     );
 }
 
-export function IconSentences({ className, size }) {
-    const p = iconProps(className, size);
-    return (
-        <svg {...p}>
-            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-            <path d="M8 9h8" />
-            <path d="M8 13h6" />
-        </svg>
-    );
-}
-
 export function IconFlashcard({ className, size }) {
     const p = iconProps(className, size);
     return (
@@ -360,6 +349,18 @@ export function IconVocab({ className, size = 16 }) {
         <svg {...p}>
             <path d="M12 20h9" />
             <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+    );
+}
+
+export function IconPalette({ className, size = 20 }) {
+    const p = iconProps(className, size);
+    return (
+        <svg {...p}>
+            <path d="M12 22a10 10 0 110-20c2.5 0 3 1.2 3 2.4 0 1.6-1.4 1.9-1.4 3 0 1 .8 1.6 2.4 1.6 2.9 0 4-2.3 4-4.6A10 10 0 0112 22z" />
+            <circle cx="7.5" cy="10.5" r="1.2" />
+            <circle cx="12" cy="7.5" r="1.2" />
+            <circle cx="16.5" cy="10.5" r="1.2" />
         </svg>
     );
 }

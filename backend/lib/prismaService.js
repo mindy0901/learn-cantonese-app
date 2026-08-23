@@ -111,11 +111,11 @@ export function buildRomanizationJson(vocab) {
 
     const structured = Array.isArray(vocab?.romanization) ? vocab.romanization : null;
     if (structured && structured.length > 0) {
-        const hanS = String(vocab?.hanSimplified ?? "");
-        const hanT = String(vocab?.hanTraditional ?? "");
+        const hanS = String(vocab?.hanziSimplified ?? "");
+        const hanT = String(vocab?.hanziTraditional ?? "");
         return {
             mandarin: blockFromLegacy(structured, "mandarin", hanS, hanT),
-            cantonese: blockFromLegacy(structured, "cantonese", hanS, String(vocab?.hanHongKong ?? hanT)),
+            cantonese: blockFromLegacy(structured, "cantonese", hanS, String(vocab?.hanziTraditionalHk ?? hanT)),
         };
     }
 
@@ -127,9 +127,9 @@ export function buildRomanizationJson(vocab) {
     const jp = String(vocab?.jyutping ?? "")
         .toLowerCase()
         .trim();
-    const hanS = String(vocab?.hanSimplified ?? "");
-    const hanT = String(vocab?.hanTraditional ?? "");
-    const hanHK = String(vocab?.hanHongKong ?? hanT);
+    const hanS = String(vocab?.hanziSimplified ?? "");
+    const hanT = String(vocab?.hanziTraditional ?? "");
+    const hanHK = String(vocab?.hanziTraditionalHk ?? hanT);
     const legacyMeanings = Array.isArray(vocab?.meanings) ? vocab.meanings : [];
     const blocks = {
         mandarin: { hanzi_simplified: hanS, hanzi_traditional: hanT, system: "pinyin", readings: [] },
@@ -168,37 +168,103 @@ export function romanizationToVocab(base, entry) {
 
 export function vocabularyToRow(vocab, userId, { includeCreatedAt = true } = {}) {
     const now = new Date().toISOString();
-    // Model mới: blocks từ mandarin/cantonese (+ fallback legacy typed array / flat).
-    const romanizationJson = buildRomanizationJson(vocab);
-    const blocks =
-        romanizationJson && typeof romanizationJson === "object" && !Array.isArray(romanizationJson)
-            ? romanizationJson
-            : blocksFromRow(vocab);
-    const flat = flatDerivedFromBlocks(blocks);
+    // Blocks từ mandarin/cantonese (+ fallback legacy typed array / flat).
+    // Đây là nguồn để ghi readings/meanings/examples (schema mới — hết romanization_json).
+    const blocks = buildRomanizationJson(vocab);
     const meta = vocab?.metadata ?? {};
 
     return {
         id: vocab.id,
-        hanSimplified: (blocks.mandarin?.hanzi_simplified || blocks.cantonese?.hanzi_simplified || "").trim() || null,
-        hanTraditional:
+        hanziSimplified: (blocks.mandarin?.hanzi_simplified || blocks.cantonese?.hanzi_simplified || "").trim() || null,
+        hanziTraditional:
             (
                 blocks.mandarin?.hanzi_traditional ||
                 blocks.cantonese?.hanzi_traditional ||
-                (vocab.hanTraditional ?? vocab.han ?? "")
+                (vocab.hanziTraditional ?? vocab.han ?? "")
             ).trim() || "",
-        hanHongKong: (blocks.cantonese?.hanzi_traditional || "").trim() || null,
+        hanziTraditionalHk: (blocks.cantonese?.hanzi_traditional || "").trim() || null,
         hskLevel: String(meta.hsk_level ?? vocab.hskLevel ?? "").trim() || null,
-        pureCantonese: Boolean(vocab.pureCantonese),
-        searchKey: flat.searchKey || null,
         hanCharacters: vocab.hanCharacters ?? undefined,
-        romanizationJson,
-        boost: meta.popularity ?? vocab.boost ?? vocab.popularity ?? undefined,
+        popularity: meta.popularity ?? vocab.popularity ?? undefined,
         frequency: meta.frequency ?? vocab.frequency ?? undefined,
-        movieWordRank: meta.movie_word_rank ?? vocab.movieWordRank ?? undefined,
-        bookWordRank: meta.book_word_rank ?? vocab.bookWordRank ?? undefined,
         createdAt: includeCreatedAt ? (vocab.createdAt ?? now) : undefined,
         updatedAt: now,
+        // Blocks để ghi readings/meanings/examples vào bảng quan hệ.
+        blocks,
     };
+}
+
+/**
+ * Ghi readings/meanings/examples cho 1 vocabulary (schema bảng quan hệ).
+ * Xóa readings cũ (cascade meanings/examples) rồi tạo lại từ blocks.
+ * Id thiếu / trùng trong batch → sinh UUID mới để tránh P2002.
+ */
+async function writeVocabularyReadings(vocabularyId, blocks) {
+    await prisma.$transaction(async (tx) => {
+        await tx.vocabularyRomanization.deleteMany({ where: { vocabularyId } });
+        const used = new Set();
+        const uniq = (id) => {
+            if (id && !used.has(id)) {
+                used.add(id);
+                return id;
+            }
+            const fresh = randomUUID();
+            used.add(fresh);
+            return fresh;
+        };
+        // Chống double-PUT đồng thời (lưu 2 lần cùng lúc): nếu id từ payload đã bị request khác
+        // tạo ra (P2002 unique) → sinh UUID mới + thử lại, giữ nguyên transaction (không rollback).
+        const retryCreate = async (model, data) => {
+            try {
+                return await tx[model].create({ data });
+            } catch (err) {
+                if (err?.code === "P2002") {
+                    return await tx[model].create({ data: { ...data, id: randomUUID() } });
+                }
+                throw err;
+            }
+        };
+        let order = 0;
+        for (const [system, block] of [
+            ["pinyin", blocks?.mandarin ?? {}],
+            ["jyutping", blocks?.cantonese ?? {}],
+        ]) {
+            for (const r of block.readings ?? []) {
+                const reading = await retryCreate("vocabularyRomanization", {
+                    id: uniq(r?.id),
+                    vocabularyId,
+                    system,
+                    romanization: String(r?.romanization ?? ""),
+                    sinoVietnamese: String(r?.sino_vietnamese ?? ""),
+                    position: order++,
+                });
+                for (const m of r?.meanings ?? []) {
+                    const meaning = await retryCreate("vocabularyMeaning", {
+                        id: uniq(m?.id),
+                        romanizationId: reading.id,
+                        position: m?.position ?? 0,
+                        category: String(m?.category ?? ""),
+                        zh: String(m?.zh ?? ""),
+                        yue: String(m?.yue ?? ""),
+                        vi: String(m?.vi ?? ""),
+                        en: String(m?.en ?? ""),
+                    });
+                    for (const ex of m?.examples ?? []) {
+                        await retryCreate("vocabularyExample", {
+                            id: uniq(ex?.id),
+                            meaningId: meaning.id,
+                            position: ex?.position ?? 0,
+                            zh: String(ex?.zh ?? ""),
+                            yue: String(ex?.yue ?? ""),
+                            romanization: String(ex?.romanization ?? ""),
+                            vi: String(ex?.vi ?? ""),
+                            en: String(ex?.en ?? ""),
+                        });
+                    }
+                }
+            }
+        }
+    });
 }
 
 /** Extract UserWord progress fields from a vocabulary payload */
@@ -225,11 +291,9 @@ export function rowToVocabulary(row) {
         cantonese: blocks.cantonese,
         metadata: {
             hsk_level: vocab.hskLevel ?? "",
-            popularity: vocab.boost ?? null,
+            popularity: vocab.popularity ?? null,
             frequency: vocab.frequency ?? null,
-            movie_word_rank: vocab.movieWordRank ?? null,
-            book_word_rank: vocab.bookWordRank ?? null,
-            pure_cantonese: Boolean(vocab.pureCantonese),
+            pure_cantonese: vocab.pureCantonese ?? false,
             created_at: vocab.createdAt ?? vocab.updatedAt ?? null,
             updated_at: vocab.updatedAt ?? vocab.createdAt ?? null,
         },
@@ -237,7 +301,7 @@ export function rowToVocabulary(row) {
 }
 
 /** Summary flat-shape cho list responses (flashcard decks/sets) — derive từ blocks. */
-function vocabListSummary(vocab) {
+export function vocabListSummary(vocab) {
     const blocks = blocksFromRow(vocab);
     const flat = flatDerivedFromBlocks(blocks);
     return {
@@ -251,6 +315,7 @@ function vocabListSummary(vocab) {
         vietMeanings: flat.vietMeanings ?? "",
         engMeanings: flat.engMeanings ?? "",
         hskLevel: vocab.hskLevel ?? undefined,
+        pureCantonese: vocab.pureCantonese ?? false,
     };
 }
 
@@ -292,42 +357,6 @@ export function rowToGrammar(row) {
             engExample: ex.engExample ?? "",
             position: ex.position ?? 0,
         })),
-    };
-}
-
-export function sentencePatternToRow(item, userId, { includeCreatedAt = true } = {}) {
-    const now = new Date().toISOString();
-    return {
-        id: item.id,
-        userId,
-        hanTraditional: item.hanTraditional ?? "",
-        hanSimplified: item.hanSimplified ?? null,
-        jyutping: item.jyutping ?? null,
-        pinyin: item.pinyin ?? null,
-        vietnamese: item.vietnamese ?? "",
-        english: item.english ?? "",
-        wordIds: item.wordIds ?? [],
-        important: item.important ?? false,
-        mastered: item.mastered ?? false,
-        createdAt: includeCreatedAt ? (item.createdAt ?? now) : undefined,
-        updatedAt: now,
-    };
-}
-
-export function rowToSentencePattern(row) {
-    return {
-        id: row.id,
-        hanTraditional: row.hanTraditional ?? "",
-        hanSimplified: row.hanSimplified ?? "",
-        jyutping: row.jyutping ?? "",
-        pinyin: row.pinyin ?? "",
-        vietnamese: row.vietnamese ?? "",
-        english: row.english ?? "",
-        wordIds: row.wordIds ?? [],
-        important: row.important ?? false,
-        mastered: row.mastered ?? false,
-        createdAt: row.createdAt ?? row.updatedAt,
-        updatedAt: row.updatedAt ?? row.createdAt,
     };
 }
 
@@ -380,10 +409,34 @@ export function rowToHanCharacter(row) {
 // ── Data fetching ──
 
 export async function fetchAppData(userId) {
-    // Always return all vocab — accessible to everyone
-    const vocabQuery = prisma.vocabulary
-        .findMany({ orderBy: { createdAt: "desc" }, ...vocabularyInclude })
-        .then((rows) => rows.map(rowToVocabulary));
+    // Schema bảng quan hệ (2026-08-16): query 4 bảng phẳng song song rồi ghép
+    // trong memory — tránh deep include toàn bộ 14k vocab bị P2029 (join vượt limit).
+    const [vocabs, readings, meanings, examples] = await Promise.all([
+        prisma.vocabulary.findMany({ orderBy: { createdAt: "desc" } }),
+        prisma.vocabularyRomanization.findMany({ orderBy: { position: "asc" } }),
+        prisma.vocabularyMeaning.findMany({ orderBy: { position: "asc" } }),
+        prisma.vocabularyExample.findMany({ orderBy: { position: "asc" } }),
+    ]);
+
+    const exByMeaning = new Map();
+    for (const ex of examples) {
+        const arr = exByMeaning.get(ex.meaningId) ?? [];
+        arr.push(ex);
+        exByMeaning.set(ex.meaningId, arr);
+    }
+    const meaningByReading = new Map();
+    for (const m of meanings) {
+        const arr = meaningByReading.get(m.romanizationId) ?? [];
+        arr.push({ ...m, examples: exByMeaning.get(m.id) ?? [] });
+        meaningByReading.set(m.romanizationId, arr);
+    }
+    const readingByVocab = new Map();
+    for (const r of readings) {
+        const arr = readingByVocab.get(r.vocabularyId) ?? [];
+        arr.push({ ...r, meanings: meaningByReading.get(r.id) ?? [] });
+        readingByVocab.set(r.vocabularyId, arr);
+    }
+    const vocabQuery = vocabs.map((v) => rowToVocabulary({ ...v, readings: readingByVocab.get(v.id) ?? [] }));
 
     // If signed in, fetch user progress flags separately
     let userVocabMap = new Map();
@@ -397,18 +450,16 @@ export async function fetchAppData(userId) {
         }
     }
 
-    const [vocabularies, grammars, sentencePatterns, hanCharacters] = await Promise.all([
-        vocabQuery,
+    const [grammars, hanCharacters] = await Promise.all([
         prisma.grammar.findMany({
             orderBy: { createdAt: "desc" },
             include: { grammarExamples: { orderBy: { position: "asc" } } },
         }),
-        prisma.sentencePattern.findMany({ orderBy: { createdAt: "desc" } }),
-        prisma.hanCharacter.findMany({ orderBy: { createdAt: "desc" } }),
+        prisma.hanziCharacter.findMany({ orderBy: { createdAt: "desc" } }),
     ]);
 
     // Merge user progress into vocab results
-    const mergedVocab = vocabularies.map((v) => {
+    const mergedVocab = vocabQuery.map((v) => {
         const progress = userVocabMap.get(v.id);
         if (progress) {
             return {
@@ -425,7 +476,6 @@ export async function fetchAppData(userId) {
     return {
         vocabularies: mergedVocab,
         grammars: grammars.map(rowToGrammar),
-        sentencePatterns: sentencePatterns.map(rowToSentencePattern),
         hanCharacters: hanCharacters.map(rowToHanCharacter),
     };
 }
@@ -434,23 +484,26 @@ export async function fetchAllData(userId) {
     return fetchAppData(userId);
 }
 
-export async function fetchSentencePatternRows(userId) {
-    const rows = await prisma.sentencePattern.findMany({ where: { userId } });
-    return rows;
-}
-
 // ── Query vocabularies (browse) ──
 
 // Sau migration (2026-08-14) các cột flat pinyin/jyutping/sino/viet/eng đã drop.
 const SORT_FIELDS = {
-    hanTraditional: "hanTraditional",
-    hanSimplified: "hanSimplified",
-    hanHongKong: "hanHongKong",
+    hanziTraditional: "hanziTraditional",
+    hanziSimplified: "hanziSimplified",
+    hanziTraditionalHk: "hanziTraditionalHk",
     hskLevel: "hskLevel",
     createdAt: "createdAt",
     studyProgressAt: "studyProgressAt",
 };
-const vocabularyInclude = {};
+const vocabularyInclude = {
+    readings: {
+        orderBy: { position: "asc" },
+        include: {
+            meanings: { orderBy: { position: "asc" }, include: { examples: { orderBy: { position: "asc" } } } },
+        },
+    },
+};
+export { vocabularyInclude };
 export async function queryVocabularies(
     userId,
     {
@@ -478,10 +531,10 @@ export async function queryVocabularies(
     if (search && search.trim()) {
         const q = search.trim();
         wordWhere.OR = [
-            { hanTraditional: { contains: q, mode: "insensitive" } },
-            { hanSimplified: { contains: q, mode: "insensitive" } },
-            { hanHongKong: { contains: q, mode: "insensitive" } },
-            { searchKey: { contains: q, mode: "insensitive" } },
+            { hanziTraditional: { contains: q, mode: "insensitive" } },
+            { hanziSimplified: { contains: q, mode: "insensitive" } },
+            { hanziTraditionalHk: { contains: q, mode: "insensitive" } },
+            { readings: { some: { romanization: { contains: q, mode: "insensitive" } } } },
         ];
     }
 
@@ -536,7 +589,7 @@ export async function queryVocabularies(
             orderBy,
             skip: (safePage - 1) * safePageSize,
             take: safePageSize,
-            ...vocabularyInclude,
+            include: vocabularyInclude,
         }),
         prisma.vocabulary.count({ where: wordWhere }),
     ]);
@@ -569,7 +622,7 @@ export async function fetchVocabulariesByIds(userId, ids) {
     if (!ids.length) return [];
     const rows = await prisma.vocabulary.findMany({
         where: { id: { in: ids } },
-        ...vocabularyInclude,
+        include: vocabularyInclude,
     });
     const results = rows.map(rowToVocabulary);
     if (userId) {
@@ -640,9 +693,32 @@ export async function ensureUserVocabulary(userId) {
     return { linked, total: allVocabs.length };
 }
 
+// ── Check-in (auto check-in ngày đăng nhập) (2026-08-24) ──
+// dateStr dạng "YYYY-MM-DD" (local date của user) — parse UTC midnight để lưu @db.Date
+// cho nhất quán thời gian (không phụ thuộc timezone server). Idempotent: skipDuplicates.
+
+export async function recordCheckin(userId, dateStr) {
+    const date = new Date(`${dateStr}T00:00:00.000Z`);
+    if (Number.isNaN(date.getTime())) return { ok: false };
+    await prisma.userCheckin.createMany({
+        data: [{ userId, date }],
+        skipDuplicates: true,
+    });
+    return { ok: true, date: dateStr };
+}
+
+export async function listCheckins(userId) {
+    const rows = await prisma.userCheckin.findMany({
+        where: { userId },
+        select: { date: true },
+        orderBy: { date: "asc" },
+    });
+    return rows.map((r) => r.date.toISOString().slice(0, 10));
+}
+
 // ── Replace data (upload) ──
 
-export async function replacePartialData(userId, { types, words, grammarBank, sentencePatterns }) {
+export async function replacePartialData(userId, { types, words, grammarBank }) {
     const counts = {};
 
     if (types.includes("vocabularies") || types.includes("words")) {
@@ -653,7 +729,7 @@ export async function replacePartialData(userId, { types, words, grammarBank, se
                 const wordId = w.id || randomUUID();
                 const vocabDict = vocabularyToRow({ ...w, id: wordId }, userId);
                 const progress = userWordFields(w);
-                const { id: _id, createdAt, updatedAt, ...dictData } = vocabDict;
+                const { id: _id, createdAt, updatedAt, blocks, ...dictData } = vocabDict;
 
                 // Create new Vocabulary entry — never overwrite existing ones
                 // (different pronunciations of the same word are separate entries)
@@ -661,8 +737,15 @@ export async function replacePartialData(userId, { types, words, grammarBank, se
                     data: { id: wordId, ...dictData },
                 });
 
+                // Ghi readings/meanings/examples (schema bảng quan hệ)
+                await writeVocabularyReadings(wordId, blocks);
+
                 // Compute + store hanCharacters breakdown, then sync to HanCharacter store
-                const breakdown = computeHanCharacters(dictData);
+                const full = await prisma.vocabulary.findUnique({
+                    where: { id: wordId },
+                    include: vocabularyInclude,
+                });
+                const breakdown = computeHanCharacters(full ?? {});
                 if (breakdown.length > 0) {
                     await prisma.vocabulary.update({
                         where: { id: wordId },
@@ -714,15 +797,6 @@ export async function replacePartialData(userId, { types, words, grammarBank, se
         counts.grammarBank = grammarBank.length;
     }
 
-    if (types.includes("sentencePatterns")) {
-        await prisma.sentencePattern.deleteMany({ where: { userId } });
-        if (sentencePatterns.length) {
-            const rows = sentencePatterns.map((s) => sentencePatternToRow({ ...s, id: s.id || randomUUID() }, userId));
-            await prisma.sentencePattern.createMany({ data: rows.map(({ createdAt, updatedAt, ...r }) => ({ ...r })) });
-        }
-        counts.sentencePatterns = sentencePatterns.length;
-    }
-
     return counts;
 }
 
@@ -734,13 +808,20 @@ export async function createVocabulary(userId, body) {
 
     // Create a new Vocabulary entry — never overwrite existing ones
     // (different pronunciations of the same word are separate entries)
-    const { id: _dictId, createdAt, updatedAt, ...dictData } = vocabDict;
+    const { id: _dictId, createdAt, updatedAt, blocks, ...dictData } = vocabDict;
     const vocab = await prisma.vocabulary.create({
         data: { id: _dictId, ...dictData },
     });
 
+    // Ghi readings/meanings/examples (schema bảng quan hệ — hết romanization_json)
+    await writeVocabularyReadings(vocab.id, blocks);
+
     // Compute + store hanCharacters breakdown, then sync to HanCharacter store
-    const breakdown = computeHanCharacters(vocab);
+    const full = await prisma.vocabulary.findUnique({
+        where: { id: vocab.id },
+        include: vocabularyInclude,
+    });
+    const breakdown = computeHanCharacters(full ?? {});
     if (breakdown.length > 0) {
         await prisma.vocabulary.update({
             where: { id: vocab.id },
@@ -761,8 +842,11 @@ export async function createVocabulary(userId, body) {
         update: {}, // no-op if already linked
     });
 
-    const full = { ...userVocab, vocabulary: { ...vocab, hanCharacters: breakdown } };
-    const base = rowToVocabulary(full);
+    const linked = await prisma.userVocabulary.findUnique({
+        where: { userId_vocabularyId: { userId, vocabularyId: vocab.id } },
+        include: { vocabulary: { include: vocabularyInclude } },
+    });
+    const base = rowToVocabulary(linked);
     return {
         ...base,
         important: userVocab.important ?? false,
@@ -785,27 +869,64 @@ export async function updateVocabulary(userId, id, body) {
             const hanT = String(body?.hanTraditional ?? "");
             const existingRow = await prisma.vocabulary.findUnique({
                 where: { id },
-                select: { hanSimplified: true, hanTraditional: true, hanHongKong: true },
+                select: { hanziSimplified: true, hanziTraditional: true, hanziTraditionalHk: true },
             });
             romanizationJson = {
                 mandarin: blockFromLegacy(
                     body.romanization,
                     "mandarin",
-                    hanS || existingRow?.hanSimplified,
-                    hanT || existingRow?.hanTraditional,
+                    hanS || existingRow?.hanziSimplified,
+                    hanT || existingRow?.hanziTraditional,
                 ),
                 cantonese: blockFromLegacy(
                     body.romanization,
                     "cantonese",
-                    hanS || existingRow?.hanSimplified,
-                    body?.hanHongKong ?? existingRow?.hanHongKong ?? hanT ?? existingRow?.hanTraditional,
+                    hanS || existingRow?.hanziSimplified,
+                    body?.hanHongKong ?? existingRow?.hanziTraditionalHk ?? hanT ?? existingRow?.hanziTraditional,
                 ),
             };
         } else {
             // Legacy single-pronunciation edit → merge vào blocks hiện có (format mới).
             const existing = await prisma.vocabulary.findUnique({
                 where: { id },
-                select: { romanizationJson: true, hanSimplified: true, hanTraditional: true, hanHongKong: true },
+                select: {
+                    hanziSimplified: true,
+                    hanziTraditional: true,
+                    hanziTraditionalHk: true,
+                    readings: {
+                        orderBy: { position: "asc" },
+                        select: {
+                            id: true,
+                            system: true,
+                            romanization: true,
+                            sinoVietnamese: true,
+                            meanings: {
+                                orderBy: { position: "asc" },
+                                select: {
+                                    id: true,
+                                    position: true,
+                                    category: true,
+                                    zh: true,
+                                    yue: true,
+                                    vi: true,
+                                    en: true,
+                                    examples: {
+                                        orderBy: { position: "asc" },
+                                        select: {
+                                            id: true,
+                                            position: true,
+                                            zh: true,
+                                            yue: true,
+                                            romanization: true,
+                                            vi: true,
+                                            en: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             });
             const blocks = blocksFromRow(existing ?? {});
             const entryPy = (body?.pinyin ?? "").toLowerCase().trim();
@@ -831,31 +952,35 @@ export async function updateVocabulary(userId, id, body) {
         const vocab = await prisma.vocabulary.update({
             where: { id },
             data: {
-                hanSimplified: dictData.hanSimplified ?? undefined,
-                hanTraditional: dictData.hanTraditional,
-                hanHongKong: dictData.hanHongKong ?? undefined,
+                hanziSimplified: dictData.hanziSimplified ?? undefined,
+                hanziTraditional: dictData.hanziTraditional,
+                hanziTraditionalHk: dictData.hanziTraditionalHk ?? undefined,
                 hskLevel: dictData.hskLevel ?? undefined,
-                pureCantonese: dictData.pureCantonese ?? undefined,
-                searchKey: dictData.searchKey ?? undefined,
-                romanizationJson: romanizationJson ?? undefined,
-                boost: dictData.boost ?? undefined,
+                popularity: dictData.popularity ?? undefined,
                 frequency: dictData.frequency ?? undefined,
-                movieWordRank: dictData.movieWordRank ?? undefined,
-                bookWordRank: dictData.bookWordRank ?? undefined,
             },
         });
 
+        // Ghi readings/meanings/examples từ blocks (đã merge ở nhánh trên)
+        if (romanizationJson) {
+            await writeVocabularyReadings(id, romanizationJson);
+        }
+
         // Recompute + store hanCharacters breakdown, then sync to HanCharacter store
-        const breakdown = computeHanCharacters(vocab);
+        const updatedFull = await prisma.vocabulary.findUnique({
+            where: { id },
+            include: vocabularyInclude,
+        });
+        const breakdown = computeHanCharacters(updatedFull ?? {});
         if (breakdown.length > 0) {
             await prisma.vocabulary.update({
-                where: { id: vocab.id },
+                where: { id },
                 data: { hanCharacters: breakdown, updatedAt: new Date() },
             });
-            await syncVocabularyHanCharacters(vocab.id, breakdown);
+            await syncVocabularyHanCharacters(id, breakdown);
         } else {
             await prisma.vocabulary.update({
-                where: { id: vocab.id },
+                where: { id },
                 data: { hanCharacters: null, updatedAt: new Date() },
             });
         }
@@ -876,7 +1001,7 @@ export async function updateVocabulary(userId, id, body) {
         // Re-fetch with meanings/examples included
         const refreshed = await prisma.userVocabulary.findUnique({
             where: { userId_vocabularyId: { userId, vocabularyId: id } },
-            include: { vocabulary: vocabularyInclude },
+            include: { vocabulary: { include: vocabularyInclude } },
         });
         const base = rowToVocabulary(refreshed);
         return {
@@ -910,7 +1035,7 @@ export async function patchVocabularyFlags(userId, id, flags) {
             ...data,
         },
         update: data,
-        include: { vocabulary: vocabularyInclude },
+        include: { vocabulary: { include: vocabularyInclude } },
     });
 
     const base = rowToVocabulary(userVocab);
@@ -990,28 +1115,6 @@ export async function deleteGrammar(userId, id) {
     await prisma.grammar.delete({ where: { id_userId: { id, userId } } });
 }
 
-// Sentence CRUD
-export async function createSentence(userId, body) {
-    const row = sentencePatternToRow(body, userId);
-    const { id, createdAt, updatedAt, ...data } = row;
-    const created = await prisma.sentencePattern.create({ data: { id, ...data } });
-    return rowToSentencePattern(created);
-}
-
-export async function updateSentence(userId, id, body) {
-    const row = sentencePatternToRow({ ...body, id }, userId, { includeCreatedAt: false });
-    const { createdAt, ...data } = row;
-    const updated = await prisma.sentencePattern.update({
-        where: { id_userId: { id, userId } },
-        data,
-    });
-    return rowToSentencePattern(updated);
-}
-
-export async function deleteSentence(userId, id) {
-    await prisma.sentencePattern.delete({ where: { id_userId: { id, userId } } });
-}
-
 // Han character CRUD
 export async function createHanChar(userId, body) {
     const { randomUUID } = await import("crypto");
@@ -1028,7 +1131,7 @@ export async function createHanChar(userId, body) {
         searchKey: rest.searchKey || null,
         strokeCount: await computeStrokeCount(rest.hanTraditional || rest.hanSimplified || ""),
     };
-    const created = await prisma.hanCharacter.create({ data });
+    const created = await prisma.hanziCharacter.create({ data });
     return rowToHanCharacter(created);
 }
 
@@ -1048,7 +1151,7 @@ export async function updateHanChar(userId, id, body) {
     if (rest.hskLevel !== undefined) data.hskLevel = rest.hskLevel;
     if (rest.searchKey !== undefined) data.searchKey = rest.searchKey;
     data.updatedAt = new Date();
-    const updated = await prisma.hanCharacter.update({
+    const updated = await prisma.hanziCharacter.update({
         where: { id },
         data,
     });
@@ -1059,7 +1162,7 @@ export async function patchHanCharFlags(userId, id, flags) {
     const data = { updatedAt: new Date() };
     if ("important" in flags) data.important = flags.important;
     if ("mastered" in flags) data.mastered = flags.mastered;
-    const updated = await prisma.hanCharacter.update({
+    const updated = await prisma.hanziCharacter.update({
         where: { id },
         data,
     });
@@ -1067,7 +1170,7 @@ export async function patchHanCharFlags(userId, id, flags) {
 }
 
 export async function deleteHanChar(userId, id) {
-    await prisma.hanCharacter.delete({ where: { id } });
+    await prisma.hanziCharacter.delete({ where: { id } });
 }
 
 // ── Flashcard Deck CRUD ──
@@ -1105,7 +1208,7 @@ export async function getFlashcardDeck(userId, id) {
         include: {
             vocabularies: {
                 orderBy: { position: "asc" },
-                include: { vocabulary: true },
+                include: { vocabulary: { include: vocabularyInclude } },
             },
         },
     });
@@ -1167,7 +1270,7 @@ export async function addVocabularyToDeck(userId, deckId, vocabularyId) {
                 vocabularyId,
                 position: nextPosition,
             },
-            include: { vocabulary: true },
+            include: { vocabulary: { include: vocabularyInclude } },
         });
         return { ...vocabListSummary(created.vocabulary), position: created.position };
     } catch (err) {
@@ -1200,7 +1303,7 @@ export async function getDeckVocabularies(userId, deckId) {
     const items = await prisma.flashcardDeckVocabulary.findMany({
         where: { deckId },
         orderBy: { position: "asc" },
-        include: { vocabulary: true },
+        include: { vocabulary: { include: vocabularyInclude } },
     });
 
     return items.map((dv) => ({ ...vocabListSummary(dv.vocabulary), position: dv.position }));

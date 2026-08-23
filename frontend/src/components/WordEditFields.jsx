@@ -1,25 +1,41 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/cn.js";
 import { useLocale } from "../store/localeStore.js";
 import { vocabularyFieldSummary } from "../lib/wordDisplay.js";
 import { normalizeSinoVietnameseValue } from "../lib/sinoVietnameseReadings.js";
+import { capitalizeSentences } from "../lib/wordNormalize.js";
 import { emptyVocabulary } from "../types/word.js";
 import { useHanCharacters } from "../store/appStore.js";
 import { TagInput } from "./TagInput.jsx";
+import { MeaningExamples } from "./MeaningExamples.jsx";
 import { api } from "../lib/api.js";
-import { IconStar, IconPlus, IconClose, IconSpeech, IconChevronDown, IconChevronRight } from "./NavIcons.jsx";
+import { IconStar, IconPlus, IconClose } from "./NavIcons.jsx";
 import { Spinner } from "./shadcn/spinner.jsx";
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "./shadcn/card.jsx";
+import { Card, CardContent, CardHeader, CardTitle } from "./shadcn/card.jsx";
+import { Badge } from "./shadcn/badge.jsx";
 import { Button } from "./shadcn/button.jsx";
 import { Input } from "./shadcn/input.jsx";
 import { Textarea } from "./shadcn/textarea.jsx";
 import { Separator } from "./shadcn/separator.jsx";
+import { MeaningGroup } from "./MeaningGroup.jsx";
+import { Checkbox } from "./shadcn/checkbox.jsx";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./shadcn/select.jsx";
 
 /** Capitalize only the first letter of the string */
 function capitalizeFirst(value) {
     const s = (value ?? "").trim();
     if (!s) return s;
     return s.charAt(0).toLocaleUpperCase("vi") + s.slice(1);
+}
+
+/** Split chuỗi Hanzii "giản【phồn】" thành 2 phần giản thể + phồn thể. */
+export function splitHanBracketed(value) {
+    const s = String(value ?? "").trim();
+    const m = s.match(/^([^【]*)(?:【([^】]*)】)?[\s\S]*$/);
+    return {
+        hanSimplified: (m?.[1] ?? "").trim(),
+        hanTraditional: (m?.[2] ?? "").trim(),
+    };
 }
 
 /**
@@ -117,7 +133,7 @@ function resolveCharReadings(hanText, lookupMap) {
     });
 }
 
-export function buildVocabularyDraft(vocabulary) {
+export function buildVocabularyDraft(vocabulary, { seedEmptyReadings = true } = {}) {
     if (!vocabulary?.id) return emptyVocabulary();
     // Chuẩn hóa mỗi entry về dạng typed (pinyin | jyutping) — 1 entry = 1 reading.
     const normalizeEntry = (r) => {
@@ -163,7 +179,7 @@ export function buildVocabularyDraft(vocabulary) {
     };
     const rawRoms =
         Array.isArray(vocabulary.romanization) && vocabulary.romanization.length > 0 ? vocabulary.romanization : null;
-    const roms = rawRoms
+    let roms = rawRoms
         ? rawRoms.flatMap((r) => normalizeEntry(r) ?? [])
         : (() => {
               const out = [];
@@ -192,6 +208,37 @@ export function buildVocabularyDraft(vocabulary) {
               }
               return out;
           })();
+    // Vocab không có reading nào (từ mới/trống) → seed 2 reading rỗng (pinyin + jyutping)
+    // để form edit hiện đủ field (hán, phiên âm, nghĩa). Empty reading bị lọc khi lưu
+    // (vocabularyDraftPayload/Legacy filter theo pinyin/jyutping) nên không tạo data thừa.
+    // ⚠️ 2026-08-21: Add mode (seedEmptyReadings=false) KHÔNG seed — modal mở ra chỉ có nút
+    // "+ Add Sino-Vietnamese & Jyutping Pair" để tự thêm reading.
+    if (roms.length === 0 && seedEmptyReadings) {
+        const tempId = () =>
+            typeof crypto !== "undefined" && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `new-${Date.now()}-${Math.random()}`;
+        roms = [
+            {
+                id: undefined,
+                _tempId: tempId(),
+                type: "pinyin",
+                sinoVietnamese: "",
+                pinyin: "",
+                jyutping: "",
+                meanings: [],
+            },
+            {
+                id: undefined,
+                _tempId: tempId(),
+                type: "jyutping",
+                sinoVietnamese: "",
+                pinyin: "",
+                jyutping: "",
+                meanings: [],
+            },
+        ];
+    }
     return {
         ...vocabulary,
         romanization: roms,
@@ -249,11 +296,12 @@ export function vocabularyDraftPayloadLegacy(draft, { activePinyinId, activeJyut
     // Lọc meaning rỗng + chuẩn hóa (giữ id cũ, không sinh lại).
     const normalizeMeanings = (meanings) =>
         (meanings ?? [])
-            .filter((m) => (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim())
+            .filter((m) => (m.gloss ?? "").trim() || (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim())
             .map((m, i) => ({
                 id: m.id,
                 _tempId: m._tempId,
                 category: capitalizeFirst((m.category ?? "").trim()),
+                gloss: capitalizeFirst((m.gloss ?? "").trim()),
                 vietMeanings: capitalizeFirst((m.vietMeanings ?? "").trim()),
                 engMeanings: capitalizeFirst((m.engMeanings ?? "").trim()),
                 position: i,
@@ -358,16 +406,16 @@ function meaningsNewFromLegacy(meanings, side) {
     const hanField = side === "mandarin" ? "zh" : "yue";
     const romanField = side === "mandarin" ? "pinyinExample" : "jyutpingExample";
     return (meanings ?? [])
-        .filter((m) => (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim())
+        .filter((m) => (m.gloss ?? "").trim() || (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim())
         .map((m, i) => {
-            const gloss = capitalizeFirst((m.vietMeanings ?? "").trim());
-            const isDict = isDictCategory(m.category);
+            const gloss = capitalizeFirst((m.gloss ?? "").trim());
+            const viet = capitalizeFirst((m.vietMeanings ?? "").trim());
             return {
                 id: m.id,
                 position: i,
                 category: capitalizeFirst((m.category ?? "").trim()),
-                [hanField]: isDict ? gloss : "",
-                vi: isDict ? "" : gloss,
+                [hanField]: gloss,
+                vi: viet,
                 en: capitalizeFirst((m.engMeanings ?? "").trim()),
                 examples: (m.examples ?? [])
                     .filter((ex) => {
@@ -379,7 +427,10 @@ function meaningsNewFromLegacy(meanings, side) {
                         return {
                             id: ex.id,
                             position: j,
-                            [hanField]: side === "mandarin" ? parts.hanSimplified : parts.hanTraditional,
+                            // ⚠️ 2026-08-23: cantonese fallback hanSimplified khi hanTraditional rỗng (giản==phồn,
+                            // ex.zh không có 【】) — trước chỉ đọc hanTraditional → MẤT yue.
+                            [hanField]:
+                                side === "mandarin" ? parts.hanSimplified : parts.hanTraditional || parts.hanSimplified,
                             romanization: (ex[romanField] ?? "").trim(),
                             vi: capitalizeFirst((ex.vietExamples ?? "").trim()),
                             en: (ex.engExamples ?? "").trim(),
@@ -599,7 +650,10 @@ export function WordEditFields({ draft, onChange, validationError, showDetail = 
     );
 }
 
-export function MeaningsEditor({ meanings, onChange, flat = false, column }) {
+export const MeaningsEditor = forwardRef(function MeaningsEditor(
+    { meanings, onChange, flat = false, column, hasReading = true },
+    ref,
+) {
     const { t } = useLocale();
     const [expanded, setExpanded] = useState((meanings ?? []).length > 0);
     const skipSyncRef = useRef(false);
@@ -642,6 +696,11 @@ export function MeaningsEditor({ meanings, onChange, flat = false, column }) {
             if (cats.length > 0 || localCategories.length === 0) {
                 setLocalCategories(cats);
             }
+            // Tự mở editor khi có meanings mới từ ngoài (vd scrap Hanzii): trước đó collapsed
+            // vì meanings rỗng lúc mount — giờ có dữ liệu phải hiện ra ngay, không cần đổi tab.
+            if ((meanings ?? []).length > 0) {
+                setExpanded((prev) => prev || true);
+            }
         }
     }, [meanings]);
 
@@ -657,7 +716,91 @@ export function MeaningsEditor({ meanings, onChange, flat = false, column }) {
         onChange(flat);
     };
 
+    // ── Di chuyển examples sang meaning khác (2026-08-22) ──
+    const [selectedEx, setSelectedEx] = useState(new Map()); // key (id/_tempId) → { catIdx, mIdx }
+    const [moveTarget, setMoveTarget] = useState("");
+    const toggleSelectExample = (ex, catIdx, mIdx) => {
+        const key = ex?._tempId || ex?.id;
+        if (!key) return;
+        setSelectedEx((prev) => {
+            const next = new Map(prev);
+            if (next.has(key)) next.delete(key);
+            else next.set(key, { catIdx, mIdx });
+            return next;
+        });
+    };
+    const clearSelection = () => setSelectedEx(new Map());
+    const moveSelectedExamples = () => {
+        if (!moveTarget || selectedEx.size === 0) return;
+        const [tCat, tM] = moveTarget.split(":").map(Number);
+        if (tCat == null || tM == null) return;
+        const next = localCategories.map((cat) => ({
+            ...cat,
+            meanings: (cat.meanings ?? []).map((m) => ({ ...m, examples: [...(m.examples ?? [])] })),
+        }));
+        const moved = [];
+        for (const [key, { catIdx, mIdx }] of selectedEx) {
+            const src = next[catIdx]?.meanings?.[mIdx];
+            if (!src) continue;
+            const idx = (src.examples ?? []).findIndex((e) => (e?._tempId || e?.id) === key);
+            if (idx === -1) continue;
+            moved.push(src.examples[idx]);
+            src.examples.splice(idx, 1);
+        }
+        const target = next[tCat]?.meanings?.[tM];
+        if (target && moved.length) target.examples = [...(target.examples ?? []), ...moved];
+        setLocalCategories(next);
+        flushToParent(next);
+        setSelectedEx(new Map());
+        setMoveTarget("");
+    };
+    const selectedExKeys = new Set(selectedEx.keys());
+    // Tổng examples + số đã chọn (floating quick-move bar) (2026-08-22)
+    const totalExamples = localCategories.reduce(
+        (acc, cat) => acc + (cat.meanings ?? []).reduce((a, m) => a + (m.examples ?? []).length, 0),
+        0,
+    );
+    const selectedCount = selectedEx.size;
+    // Select-all CHO TỪNG MEANING — checkbox nằm trong header examples của meaning (2026-08-22)
+    const toggleSelectAllInMeaning = (catIdx, mIdx) => {
+        const meaning = localCategories[catIdx]?.meanings?.[mIdx];
+        const keys = (meaning?.examples ?? []).map((ex) => ex?._tempId || ex?.id).filter(Boolean);
+        if (!keys.length) return;
+        setSelectedEx((prev) => {
+            const next = new Map(prev);
+            const allSelected = keys.every((k) => next.has(k));
+            for (const k of keys) {
+                if (allSelected) next.delete(k);
+                else next.set(k, { catIdx, mIdx });
+            }
+            return next;
+        });
+    };
+    // Loại trừ meaning nguồn của examples đang chọn khỏi target options.
+    const sourceMeaningKeys = new Set([...selectedEx.values()].map(({ catIdx, mIdx }) => `${catIdx}:${mIdx}`));
+    const moveTargetOptions = localCategories
+        .flatMap((cat, ci) =>
+            (cat.meanings ?? []).map((m, mi) => {
+                const preview = (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim();
+                return {
+                    key: `${ci}:${mi}`,
+                    // ⚠️ KHÔNG prefix "Danh từ #1" — chỉ hiển thị nghĩa preview (2026-08-22)
+                    label: preview
+                        ? preview.length > 40
+                            ? `${preview.slice(0, 40)}…`
+                            : preview
+                        : (cat.name || "Nghĩa").trim(),
+                };
+            }),
+        )
+        .filter((o) => !sourceMeaningKeys.has(o.key));
+    // Mô tả ngắn cho floating bar — chỉ "Di chuyển N ví dụ đến" (đích hiển thị trong Select) (2026-08-22)
+    const moveDesc =
+        t.addWord?.moveTo?.replace("{count}", String(selectedCount)) ?? `Di chuyển ${selectedCount} ví dụ đến`;
+
     const addCategory = () => {
+        // ⚠️ 2026-08-21: không cho thêm group meaning khi chưa có reading (sino-romanization group).
+        if (!hasReading) return;
         if (!expanded) setExpanded(true);
         const next = [
             ...localCategories,
@@ -677,6 +820,246 @@ export function MeaningsEditor({ meanings, onChange, flat = false, column }) {
         setLocalCategories(next);
         flushToParent(next);
     };
+
+    const [syncingAllViEn, setSyncingAllViEn] = useState(false);
+
+    // Liệt kê các cặp nghĩa Việt↔Anh (meaning + ví dụ) còn thiếu 1 chiều cần sync.
+    // ⚠️ 2026-08-21: thêm job fill pinyin-pro cho VÍ DỤ thiếu pinyin (chỉ column pinyin — mandarin).
+    const buildJobs = () => {
+        const jobs = [];
+        localCategories.forEach((cat, catIdx) => {
+            cat.meanings.forEach((m, mIdx) => {
+                const mv = (m.vietMeanings ?? "").trim();
+                const me = (m.engMeanings ?? "").trim();
+                const mg = (m.gloss ?? "").trim();
+                // Việt↔Anh lệch 1 chiều, HOẶC gloss zh (CHỈ mandarin) trống nhưng có eng/việt làm nguồn.
+                // ⚠️ 2026-08-22: cantonese KHÔNG còn gloss (bỏ yue) → không tạo job fill gloss.
+                if (Boolean(mv) !== Boolean(me) || (column === "pinyin" && !mg && (me || mv)))
+                    jobs.push({ catIdx, mIdx, exIdx: null, mv, me, mg });
+                (m.examples ?? []).forEach((ex, exIdx) => {
+                    const ev = (ex.vietExamples ?? "").trim();
+                    const ee = (ex.engExamples ?? "").trim();
+                    if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ catIdx, mIdx, exIdx, ev, ee });
+                    // Ví dụ thiếu pinyin (có chữ Hán) → fill pinyin-pro (chỉ mandarin).
+                    if (column === "pinyin") {
+                        const exHan = (ex.hanSimplified ?? "").trim() || (ex.hanTraditional ?? "").trim();
+                        if (!(ex.pinyinExample ?? "").trim() && exHan)
+                            jobs.push({ catIdx, mIdx, exIdx, fillPinyin: true, exHan });
+                    }
+                });
+            });
+        });
+        return jobs;
+    };
+    // Có mục nào cần sync không? (dùng để chờ editor nhận đủ dữ liệu trước khi sync)
+    const hasSyncJobs = () => buildJobs().length > 0;
+    // Số job hiện tại — dùng để chờ số job ỔN ĐỊNH (meanings đã propagate đầy đủ xuống editor)
+    // trước khi chạy sync, tránh miss ô do chạy trên state chưa đủ.
+    const getSyncJobCount = () => buildJobs().length;
+
+    // Footer "Đồng bộ nghĩa Việt - Anh" (WordDetailContent) gọi qua ref — 1 click sync TẤT CẢ
+    // nghĩa Việt↔Anh của mọi meaning + ví dụ trong editor này (chỉ điền phía còn trống).
+    const syncAllViEn = async (onProgress) => {
+        if (syncingAllViEn) return 0;
+        const jobs = buildJobs();
+        if (!jobs.length) {
+            onProgress?.(0, 0);
+            return 0;
+        }
+        setSyncingAllViEn(true);
+        try {
+            // Deep copy categories để áp patch, rồi flush 1 lần cuối (tránh nhiều onChange).
+            const next = localCategories.map((c) => ({
+                ...c,
+                meanings: c.meanings.map((m) => ({ ...m, examples: (m.examples ?? []).map((e) => ({ ...e })) })),
+            }));
+            let done = 0;
+            let synced = 0;
+            const runJob = async (job) => {
+                try {
+                    if (job.fillPinyin) {
+                        // Ví dụ thiếu pinyin → fill pinyin-pro từ chữ Hán giản thể (mandarin).
+                        const ex = next[job.catIdx].meanings[job.mIdx].examples[job.exIdx];
+                        const res = await api.toPinyin(job.exHan);
+                        if (res?.pinyin) ex.pinyinExample = res.pinyin;
+                    } else if (job.exIdx === null) {
+                        const m = next[job.catIdx].meanings[job.mIdx];
+                        // 1) Điền chiều Việt↔Anh còn thiếu — CHỈ khi lệch 1 chiều (không đè nếu cả 2 đã có).
+                        if (job.mv && !job.me) {
+                            const res = await api.translate(job.mv, "vi", "en");
+                            const translated = normalizeMeaningSync(res?.translated ?? "");
+                            m.vietMeanings = normalizeMeaningSync(job.mv);
+                            if (translated) m.engMeanings = translated;
+                        } else if (job.me && !job.mv) {
+                            const res = await api.translate(job.me, "en", "vi");
+                            const translated = normalizeMeaningSync(res?.translated ?? "");
+                            m.engMeanings = normalizeMeaningSync(job.me);
+                            if (translated) m.vietMeanings = translated;
+                        }
+                        // 2) Tự động điền gloss zh (CHỈ mandarin) nếu trống — nguồn ưu tiên eng → việt.
+                        // Gloss dùng gtx (deep_translator chặn 'yue'). ⚠️ 2026-08-22: cantonese bỏ gloss (yue).
+                        if (column === "pinyin") {
+                            const curMv = (m.vietMeanings ?? "").trim();
+                            const curMe = (m.engMeanings ?? "").trim();
+                            if (!(m.gloss ?? "").trim() && (curMe || curMv)) {
+                                const gSource = curMe ? "en" : "vi";
+                                const gRes = await api.translateGoogle(curMe || curMv, gSource, "zh");
+                                const gTranslated = String(gRes?.translated ?? "").trim();
+                                if (gTranslated) m.gloss = gTranslated;
+                            }
+                        }
+                    } else {
+                        // Example: chuẩn hóa dấu tách, giữ nguyên chữ hoa đầu câu.
+                        const source = job.ev ? "vi" : "en";
+                        const target = job.ev ? "en" : "vi";
+                        const res = await api.translate(job.ev || job.ee, source, target);
+                        const translated = normalizeGlossSeparators(res?.translated ?? "");
+                        const ex = next[job.catIdx].meanings[job.mIdx].examples[job.exIdx];
+                        if (job.ev) {
+                            ex.vietExamples = normalizeGlossSeparators(job.ev);
+                            if (translated) ex.engExamples = translated;
+                        } else {
+                            ex.engExamples = normalizeGlossSeparators(job.ee);
+                            if (translated) ex.vietExamples = translated;
+                        }
+                    }
+                    synced += 1;
+                } catch (err) {
+                    if (isRateLimited(err)) throw err; // Google rate limit → dừng sync, báo lỗi
+                    // Bỏ qua job lỗi khác (network tạm thời...) — vẫn xử lý các job còn lại.
+                } finally {
+                    done += 1;
+                    onProgress?.(done, jobs.length);
+                }
+            };
+            // Chạy tối đa CONCURRENT job cùng lúc (cân bằng tốc độ vs rate-limit).
+            const CONCURRENT = 3;
+            let idx = 0;
+            await Promise.all(
+                Array.from({ length: Math.min(CONCURRENT, jobs.length) }, async () => {
+                    while (idx < jobs.length) {
+                        const job = jobs[idx++];
+                        await runJob(job);
+                    }
+                }),
+            );
+            setLocalCategories(next);
+            flushToParent(next);
+            return synced;
+        } finally {
+            setSyncingAllViEn(false);
+        }
+    };
+
+    // Footer "Đồng bộ nghĩa + Jyutping" (cantonese) — 1 click đồng bộ nghĩa/ví dụ từ nguồn có sẵn
+    // (vi↔en) rồi điền Jyutping còn thiếu cho từng ví dụ (pipeline 3 fallback).
+    // ⚠️ 2026-08-22: bỏ hẳn gloss yue (KHÔNG còn fill/dịch yue — chỉ cần vi/en).
+    const syncAllCantonese = async (onProgress) => {
+        if (syncingAllViEn) return 0;
+        // Build jobs riêng cho cantonese: nghĩa thiếu 1 chiều (vi↔en), ví dụ thiếu vi/en,
+        // và ví dụ thiếu jyutpingExample.
+        const jobs = [];
+        localCategories.forEach((cat, catIdx) => {
+            cat.meanings.forEach((m, mIdx) => {
+                const mv = (m.vietMeanings ?? "").trim();
+                const me = (m.engMeanings ?? "").trim();
+                if (Boolean(mv) !== Boolean(me)) {
+                    jobs.push({ catIdx, mIdx, exIdx: null, mv, me });
+                }
+                (m.examples ?? []).forEach((ex, exIdx) => {
+                    const ev = (ex.vietExamples ?? "").trim();
+                    const ee = (ex.engExamples ?? "").trim();
+                    const ej = (ex.jyutpingExample ?? "").trim();
+                    const exHan = (ex.hanTraditional ?? "").trim() || (ex.hanSimplified ?? "").trim();
+                    if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ catIdx, mIdx, exIdx, ev, ee });
+                    else if (!ej && exHan) jobs.push({ catIdx, mIdx, exIdx, fillJyutping: true, exHan });
+                });
+            });
+        });
+        if (!jobs.length) {
+            onProgress?.(0, 0);
+            return 0;
+        }
+        setSyncingAllViEn(true);
+        try {
+            const next = localCategories.map((c) => ({
+                ...c,
+                meanings: c.meanings.map((m) => ({ ...m, examples: (m.examples ?? []).map((e) => ({ ...e })) })),
+            }));
+            let done = 0;
+            let synced = 0;
+            const runJob = async (job) => {
+                try {
+                    if (job.fillJyutping) {
+                        // Ví dụ thiếu jyutping → điền qua pipeline 3 fallback (words.hk → CC-Canto → to-jyutping).
+                        const ex = next[job.catIdx].meanings[job.mIdx].examples[job.exIdx];
+                        const res = await api.toJyutping(job.exHan);
+                        if (res?.jyutping) ex.jyutpingExample = res.jyutping;
+                    } else if (job.exIdx !== null) {
+                        // Ví dụ thiếu 1 chiều vi/en.
+                        const source = job.ev ? "vi" : "en";
+                        const target = job.ev ? "en" : "vi";
+                        const res = await api.translate(job.ev || job.ee, source, target);
+                        const translated = normalizeGlossSeparators(res?.translated ?? "");
+                        const ex = next[job.catIdx].meanings[job.mIdx].examples[job.exIdx];
+                        if (job.ev) {
+                            ex.vietExamples = normalizeGlossSeparators(job.ev);
+                            if (translated) ex.engExamples = translated;
+                        } else {
+                            ex.engExamples = normalizeGlossSeparators(job.ee);
+                            if (translated) ex.vietExamples = translated;
+                        }
+                    } else {
+                        const m = next[job.catIdx].meanings[job.mIdx];
+                        // Điền chiều Việt↔Anh còn thiếu — CHỈ khi lệch 1 chiều.
+                        // ⚠️ 2026-08-22: cantonese KHÔNG còn gloss yue → chỉ sync vi↔en.
+                        if (job.mv && !job.me) {
+                            // Việt có, Anh trống → dịch vi → en.
+                            const res = await api.translate(job.mv, "vi", "en");
+                            const translated = normalizeMeaningSync(res?.translated ?? "");
+                            m.vietMeanings = normalizeMeaningSync(job.mv);
+                            if (translated) m.engMeanings = translated;
+                        } else if (job.me && !job.mv) {
+                            // Anh có, Việt trống → dịch en → vi.
+                            const res = await api.translate(job.me, "en", "vi");
+                            const translated = normalizeMeaningSync(res?.translated ?? "");
+                            m.engMeanings = normalizeMeaningSync(job.me);
+                            if (translated) m.vietMeanings = translated;
+                        }
+                    }
+                    synced += 1;
+                } catch (err) {
+                    if (isRateLimited(err)) throw err; // Google rate limit → dừng sync, báo lỗi
+                    // Bỏ qua job lỗi khác (network tạm thời...) — vẫn xử lý các job còn lại.
+                } finally {
+                    done += 1;
+                    onProgress?.(done, jobs.length);
+                }
+            };
+            const CONCURRENT = 3;
+            let idx = 0;
+            await Promise.all(
+                Array.from({ length: Math.min(CONCURRENT, jobs.length) }, async () => {
+                    while (idx < jobs.length) {
+                        const job = jobs[idx++];
+                        await runJob(job);
+                    }
+                }),
+            );
+            setLocalCategories(next);
+            flushToParent(next);
+            return synced;
+        } finally {
+            setSyncingAllViEn(false);
+        }
+    };
+
+    // Footer "Thêm nhóm" / "Đồng bộ Việt - Anh" (WordDetailContent) gọi qua ref.
+    useImperativeHandle(
+        ref,
+        () => ({ addGroup: addCategory, syncAllViEn, syncAllCantonese, hasSyncJobs, getSyncJobCount }),
+        [addCategory, syncAllViEn, syncAllCantonese, hasSyncJobs, getSyncJobCount],
+    );
 
     const handleExpand = () => {
         setExpanded(true);
@@ -699,16 +1082,20 @@ export function MeaningsEditor({ meanings, onChange, flat = false, column }) {
         if (next.length === 0) setExpanded(false);
     };
 
+    // ⚠️ 2026-08-21: nút "Add meaning & example" CHỈ hiện khi có reading (sino-romanization group).
+    // Chưa có reading → không cho thêm meaning (ẩn nút hoàn toàn).
     if (!expanded) {
+        if (!hasReading) return null;
         return (
             <div className="flex justify-center">
                 <Button
                     type="button"
-                    className="size-10 rounded-lg bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90 shadow-sm"
+                    className="rounded-lg bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90 shadow-sm"
                     onClick={handleExpand}
                     title={t.addWord.addMeaningExample}
                 >
-                    <IconPlus size={22} />
+                    <IconPlus size={18} data-icon="inline-start" />
+                    {t.addWord.addMeaningExample}
                 </Button>
             </div>
         );
@@ -721,11 +1108,11 @@ export function MeaningsEditor({ meanings, onChange, flat = false, column }) {
             )}
         >
             <CardHeader className={cn("flex-row items-center gap-2", flat && "px-0")}>
-                <CardTitle className="flex-1 text-center text-lg font-semibold text-foreground">
+                <CardTitle className="flex-1 text-center text-xl font-semibold uppercase text-viet">
                     {t.addWord.detailedMeanings}
                 </CardTitle>
             </CardHeader>
-            <CardContent className={cn("flex flex-col gap-4", flat && "p-0")}>
+            <CardContent className={cn("flex flex-col gap-2", flat && "p-0")}>
                 {localCategories.map((cat, i) => (
                     <CategoryCard
                         key={cat._tempId || i}
@@ -734,23 +1121,71 @@ export function MeaningsEditor({ meanings, onChange, flat = false, column }) {
                         column={column}
                         onChange={(updated) => updateCategory(i, updated)}
                         onRemove={() => removeCategory(i)}
+                        selectedExKeys={selectedExKeys}
+                        onToggleSelect={(ex, mIdx) => toggleSelectExample(ex, i, mIdx)}
+                        onToggleSelectAll={(mIdx) => toggleSelectAllInMeaning(i, mIdx)}
                     />
                 ))}
-                <Button
-                    type="button"
-                    className="self-start bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                    onClick={addCategory}
-                >
-                    <IconPlus size={14} data-icon="inline-start" />
-                    {t.addWord.addGroup}
-                </Button>
+                {/* Quick-move floating bar (fixed bottom — KHÔNG cần kéo lên trên) (2026-08-22) */}
+                {selectedCount > 0 && (
+                    <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2 shadow-2xl">
+                        <span className="text-sm font-semibold text-foreground">{moveDesc}</span>
+                        <Select value={moveTarget} onValueChange={setMoveTarget}>
+                            <SelectTrigger className="h-8 w-auto min-w-52">
+                                {/* ⚠️ Phải truyền children cho SelectValue — Base UI render RAW value */}
+                                <SelectValue placeholder={t.addWord?.chooseTargetMeaning ?? "Chọn meaning đích"}>
+                                    {moveTargetOptions.find((o) => o.key === moveTarget)?.label ?? moveTarget}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent side="top">
+                                <SelectGroup>
+                                    {moveTargetOptions.map((o) => (
+                                        <SelectItem key={o.key} value={o.key}>
+                                            {o.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+                            onClick={moveSelectedExamples}
+                            disabled={!moveTarget}
+                        >
+                            {t.addWord?.moveExamples ?? "Di chuyển"}
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={clearSelection}>
+                            {t.common?.cancel ?? "Hủy"}
+                        </Button>
+                    </div>
+                )}
+                {/* Nút "Thêm nhóm" dưới group cuối — căn TRÁI + default button (2026-08-22) */}
+                <div className="flex justify-start">
+                    <Button type="button" onClick={addCategory} title={t.addWord.addGroup}>
+                        <IconPlus size={18} data-icon="inline-start" />
+                        {t.addWord.addGroup}
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );
-}
+});
 
-function CategoryCard({ category, index, column, onChange, onRemove }) {
+function CategoryCard({
+    category,
+    index,
+    column,
+    onChange,
+    onRemove,
+    selectedExKeys = new Set(),
+    onToggleSelect = () => {},
+    onToggleSelectAll = () => {},
+}) {
     const { t } = useLocale();
+    // Số La Mã cho nhóm (I., II., III.…) — khớp style view mode (ReadingMeaningsBlock).
+    const roman = (i) => ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][i] ?? String(i + 1);
     const addMeaning = () => {
         const nextMeanings = [
             ...(category.meanings ?? []),
@@ -774,17 +1209,21 @@ function CategoryCard({ category, index, column, onChange, onRemove }) {
         onChange({ meanings: nextMeanings });
     };
 
+    // Container nhóm dùng chung MeaningGroup — flat giống detail (2026-08-20).
     return (
-        <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1 mr-2">
-                    <span className="text-sm font-semibold text-purple shrink-0">{t.addWord.group}</span>
-                    <Input
-                        className="flex-1 min-w-0 max-w-48 text-sm font-semibold text-purple"
-                        value={category.name ?? ""}
-                        onChange={(e) => onChange({ name: e.target.value })}
-                    />
-                </div>
+        <MeaningGroup
+            className="rounded-xl bg-muted/40 border border-border/60"
+            romanLabel={roman(index)}
+            titleElement={
+                <Input
+                    className="flex-1 min-w-0 max-w-48 text-xl! font-semibold text-muted-foreground"
+                    value={category.name ?? ""}
+                    onChange={(e) => onChange({ name: e.target.value })}
+                />
+            }
+            count={category.meanings?.length ?? 0}
+            titleAsTrigger={false}
+            actions={
                 <Button
                     type="button"
                     variant="destructive"
@@ -798,8 +1237,8 @@ function CategoryCard({ category, index, column, onChange, onRemove }) {
                         ? t.addWord.deleteGroupWithName.replace("{name}", category.name)
                         : t.addWord.deleteGroup}
                 </Button>
-            </div>
-            <Separator />
+            }
+        >
             {/* Meanings in this category */}
             <div className="flex flex-col gap-4">
                 {(category.meanings ?? []).map((m, j) => (
@@ -810,6 +1249,9 @@ function CategoryCard({ category, index, column, onChange, onRemove }) {
                         column={column}
                         onChange={(updated) => updateMeaning(j, updated)}
                         onRemove={() => removeMeaning(j)}
+                        selectedExKeys={selectedExKeys}
+                        onToggleSelect={(ex) => onToggleSelect(ex, j)}
+                        onToggleSelectAll={() => onToggleSelectAll(j)}
                     />
                 ))}
                 <Button
@@ -821,7 +1263,7 @@ function CategoryCard({ category, index, column, onChange, onRemove }) {
                     {t.addWord.addMeaning}
                 </Button>
             </div>
-        </div>
+        </MeaningGroup>
     );
 }
 
@@ -858,6 +1300,250 @@ function normalizeMeaningSync(value) {
     return normalizeMeaningSeparators(value).toLowerCase();
 }
 
+/**
+ * Đếm số job sync Việt↔Anh (meaning + ví dụ) còn thiếu 1 chiều trong mảng meanings FLAT
+ * (shape: {vietMeanings, engMeanings, gloss, examples:[{vietExamples, engExamples}]}).
+ * Dùng chung để tính tổng tiến trình khi sync TẤT CẢ reading pinyin (từ đa phiên âm).
+ */
+export function countViEnSyncJobs(meanings, column) {
+    let jobs = 0;
+    for (const m of meanings ?? []) {
+        const mv = (m.vietMeanings ?? "").trim();
+        const me = (m.engMeanings ?? "").trim();
+        const mg = (m.gloss ?? "").trim();
+        // ⚠️ 2026-08-22: chỉ tính job fill gloss zh cho mandarin (column pinyin); cantonese bỏ gloss (yue).
+        if (Boolean(mv) !== Boolean(me) || (column === "pinyin" && !mg && (me || mv))) jobs += 1;
+        for (const ex of m.examples ?? []) {
+            const ev = (ex.vietExamples ?? "").trim();
+            const ee = (ex.engExamples ?? "").trim();
+            if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs += 1;
+        }
+    }
+    return jobs;
+}
+
+/** Google rate-limit (HTTP 429) — cần báo lỗi cho user (không bỏ qua im lặng). (2026-08-24) */
+function isRateLimited(err) {
+    return Boolean(err && (err.status === 429 || err.code === 429));
+}
+
+/** Retry lời gọi API (translate/toJyutping) với backoff khi lỗi tạm thời (network) —
+ *  tránh Full Sync bỏ sót nghĩa/ví dụ. ⚠️ 429 (Google rate limit) KHÔNG retry — throw ngay
+ *  để sync dừng + báo lỗi "Google limit". (2026-08-23) */
+async function withRetry(fn, attempts = 3) {
+    for (let i = 0; i < attempts; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (isRateLimited(err) || i >= attempts - 1) throw err;
+            await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+        }
+    }
+    throw new Error("unreachable");
+}
+
+/**
+ * Sync Việt↔Anh cho mảng meanings FLAT (meaning + ví dụ) — chỉ điền phía còn trống.
+ * Không mutate đầu vào; trả { meanings: mảng mới đã sync, synced }.
+ * Dùng chung cho flow gộp "Hanzii + Đồng bộ" (sync TẤT CẢ reading pinyin — từ đa phiên âm),
+ * KHÔNG phụ thuộc editor đang active (trước đây chỉ sync 1 reading).
+ */
+export async function syncMeaningsViEn(meanings, column, onProgress) {
+    const src = Array.isArray(meanings) ? meanings : [];
+    const jobs = [];
+    src.forEach((m, mIdx) => {
+        const mv = (m.vietMeanings ?? "").trim();
+        const me = (m.engMeanings ?? "").trim();
+        const mg = (m.gloss ?? "").trim();
+        if (Boolean(mv) !== Boolean(me) || (column === "pinyin" && !mg && (me || mv)))
+            jobs.push({ mIdx, exIdx: null, mv, me, mg });
+        (m.examples ?? []).forEach((ex, exIdx) => {
+            const ev = (ex.vietExamples ?? "").trim();
+            const ee = (ex.engExamples ?? "").trim();
+            if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ mIdx, exIdx, ev, ee });
+        });
+    });
+    if (!jobs.length) {
+        onProgress?.(0, 0);
+        return { meanings: src, synced: 0 };
+    }
+    // Deep copy để patch rồi trả mảng mới (không mutate đầu vào).
+    const next = src.map((m) => ({ ...m, examples: (m.examples ?? []).map((e) => ({ ...e })) }));
+    let done = 0;
+    let synced = 0;
+    const runJob = async (job) => {
+        try {
+            if (job.exIdx === null) {
+                const m = next[job.mIdx];
+                if (job.mv && !job.me) {
+                    const res = await withRetry(() => api.translate(job.mv, "vi", "en"));
+                    const translated = normalizeMeaningSync(res?.translated ?? "");
+                    m.vietMeanings = normalizeMeaningSync(job.mv);
+                    if (translated) m.engMeanings = translated;
+                } else if (job.me && !job.mv) {
+                    const res = await withRetry(() => api.translate(job.me, "en", "vi"));
+                    const translated = normalizeMeaningSync(res?.translated ?? "");
+                    m.engMeanings = normalizeMeaningSync(job.me);
+                    if (translated) m.vietMeanings = translated;
+                }
+                const curMv = (m.vietMeanings ?? "").trim();
+                const curMe = (m.engMeanings ?? "").trim();
+                // ⚠️ 2026-08-22: chỉ fill gloss zh cho mandarin (column pinyin); cantonese bỏ gloss (yue).
+                if (column === "pinyin" && !(m.gloss ?? "").trim() && (curMe || curMv)) {
+                    const gSource = curMe ? "en" : "vi";
+                    const gRes = await withRetry(() => api.translateGoogle(curMe || curMv, gSource, "zh"));
+                    const gTranslated = String(gRes?.translated ?? "").trim();
+                    if (gTranslated) m.gloss = gTranslated;
+                }
+            } else {
+                const source = job.ev ? "vi" : "en";
+                const target = job.ev ? "en" : "vi";
+                const res = await withRetry(() => api.translate(job.ev || job.ee, source, target));
+                const translated = normalizeGlossSeparators(res?.translated ?? "");
+                const ex = next[job.mIdx].examples[job.exIdx];
+                if (job.ev) {
+                    ex.vietExamples = normalizeGlossSeparators(job.ev);
+                    if (translated) ex.engExamples = translated;
+                } else {
+                    ex.engExamples = normalizeGlossSeparators(job.ee);
+                    if (translated) ex.vietExamples = translated;
+                }
+            }
+            synced += 1;
+        } catch (err) {
+            if (isRateLimited(err)) throw err; // Google rate limit → dừng sync, báo lỗi
+            // Bỏ qua job lỗi khác (network tạm thời...) — vẫn xử lý các job còn lại.
+        } finally {
+            done += 1;
+            onProgress?.(done, jobs.length);
+        }
+    };
+    const CONCURRENT = 3;
+    let idx = 0;
+    await Promise.all(
+        Array.from({ length: Math.min(CONCURRENT, jobs.length) }, async () => {
+            while (idx < jobs.length) {
+                const job = jobs[idx++];
+                await runJob(job);
+            }
+        }),
+    );
+    return { meanings: next, synced };
+}
+
+/**
+ * Đếm số job sync CANTONESE (nghĩa vi↔en + ví dụ vi/en + jyutping) trong mảng meanings
+ * FLAT — dùng tính tiến trình khi Full Sync chạy trực tiếp trên base.
+ * ⚠️ 2026-08-22: bỏ gloss yue — chỉ còn sync vi↔en + jyutping.
+ */
+export function countCantoneseSyncJobs(meanings) {
+    let jobs = 0;
+    for (const m of meanings ?? []) {
+        const mv = (m.vietMeanings ?? "").trim();
+        const me = (m.engMeanings ?? "").trim();
+        if (Boolean(mv) !== Boolean(me)) jobs += 1;
+        for (const ex of m.examples ?? []) {
+            const ev = (ex.vietExamples ?? "").trim();
+            const ee = (ex.engExamples ?? "").trim();
+            const ej = (ex.jyutpingExample ?? "").trim();
+            const exHan = (ex.hanTraditional ?? "").trim() || (ex.hanSimplified ?? "").trim();
+            if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs += 1;
+            else if (!ej && exHan) jobs += 1;
+        }
+    }
+    return jobs;
+}
+
+/**
+ * Sync CANTONESE cho mảng meanings FLAT — đồng bộ nghĩa (vi↔en) + điền Jyutping còn
+ * thiếu cho ví dụ. Không mutate đầu vào; trả { meanings: mảng mới đã sync, synced }.
+ * KHÔNG phụ thuộc editor state → Full Sync Cantonese chạy trực tiếp trên base (giống
+ * syncMeaningsViEn của Mandarin), tránh race propagate scrap xuống editor khiến sync chạy
+ * trên dữ liệu cũ. ⚠️ 2026-08-22: bỏ gloss yue — chỉ sync vi↔en + jyutping. (2026-08-21)
+ */
+export async function syncMeaningsCantonese(meanings, onProgress) {
+    const src = Array.isArray(meanings) ? meanings : [];
+    const jobs = [];
+    src.forEach((m, mIdx) => {
+        const mv = (m.vietMeanings ?? "").trim();
+        const me = (m.engMeanings ?? "").trim();
+        if (Boolean(mv) !== Boolean(me)) jobs.push({ mIdx, exIdx: null, mv, me });
+        (m.examples ?? []).forEach((ex, exIdx) => {
+            const ev = (ex.vietExamples ?? "").trim();
+            const ee = (ex.engExamples ?? "").trim();
+            const ej = (ex.jyutpingExample ?? "").trim();
+            const exHan = (ex.hanTraditional ?? "").trim() || (ex.hanSimplified ?? "").trim();
+            if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ mIdx, exIdx, ev, ee });
+            else if (!ej && exHan) jobs.push({ mIdx, exIdx, fillJyutping: true, exHan });
+        });
+    });
+    if (!jobs.length) {
+        onProgress?.(0, 0);
+        return { meanings: src, synced: 0 };
+    }
+    // Deep copy để patch rồi trả mảng mới (không mutate đầu vào).
+    const next = src.map((m) => ({ ...m, examples: (m.examples ?? []).map((e) => ({ ...e })) }));
+    let done = 0;
+    let synced = 0;
+    const runJob = async (job) => {
+        try {
+            if (job.fillJyutping) {
+                // Ví dụ thiếu jyutping → điền qua pipeline 3 fallback (words.hk → CC-Canto → to-jyutping).
+                const ex = next[job.mIdx].examples[job.exIdx];
+                const res = await withRetry(() => api.toJyutping(job.exHan));
+                if (res?.jyutping) ex.jyutpingExample = res.jyutping;
+            } else if (job.exIdx !== null) {
+                // Ví dụ thiếu 1 chiều vi/en.
+                const source = job.ev ? "vi" : "en";
+                const target = job.ev ? "en" : "vi";
+                const res = await withRetry(() => api.translate(job.ev || job.ee, source, target));
+                const translated = normalizeGlossSeparators(res?.translated ?? "");
+                const ex = next[job.mIdx].examples[job.exIdx];
+                if (job.ev) {
+                    ex.vietExamples = normalizeGlossSeparators(job.ev);
+                    if (translated) ex.engExamples = translated;
+                } else {
+                    ex.engExamples = normalizeGlossSeparators(job.ee);
+                    if (translated) ex.vietExamples = translated;
+                }
+            } else {
+                const m = next[job.mIdx];
+                // Điền chiều Việt↔Anh còn thiếu — CHỈ khi lệch 1 chiều.
+                // ⚠️ 2026-08-22: cantonese KHÔNG còn gloss yue → chỉ sync vi↔en.
+                if (job.mv && !job.me) {
+                    const res = await withRetry(() => api.translate(job.mv, "vi", "en"));
+                    const translated = normalizeMeaningSync(res?.translated ?? "");
+                    m.vietMeanings = normalizeMeaningSync(job.mv);
+                    if (translated) m.engMeanings = translated;
+                } else if (job.me && !job.mv) {
+                    const res = await withRetry(() => api.translate(job.me, "en", "vi"));
+                    const translated = normalizeMeaningSync(res?.translated ?? "");
+                    m.engMeanings = normalizeMeaningSync(job.me);
+                    if (translated) m.vietMeanings = translated;
+                }
+            }
+            synced += 1;
+        } catch (err) {
+            if (isRateLimited(err)) throw err; // Google rate limit → dừng sync, báo lỗi
+            // Bỏ qua job lỗi khác (network tạm thời...) — vẫn xử lý các job còn lại.
+        } finally {
+            done += 1;
+            onProgress?.(done, jobs.length);
+        }
+    };
+    const CONCURRENT = 3;
+    let idx = 0;
+    await Promise.all(
+        Array.from({ length: Math.min(CONCURRENT, jobs.length) }, async () => {
+            while (idx < jobs.length) {
+                const job = jobs[idx++];
+                await runJob(job);
+            }
+        }),
+    );
+    return { meanings: next, synced };
+}
+
 // Font Hán cố định — PHẢI khớp giữa textarea (chữ vô hình) và backdrop (chữ màu).
 // Nếu 2 lớp lệch font/size/line-height, khi bôi đen text sẽ thấy "bóng mờ" text
 // to hơn (do vùng selection tính theo metrics của textarea ≠ glyph backdrop).
@@ -890,7 +1576,8 @@ function HanLineTextarea({ value, onChange, rows = 2, className }) {
             />
             <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 z-10 overflow-hidden whitespace-pre-wrap wrap-break-word px-2.5 py-2 text-[0.9375rem] leading-normal text-foreground"
+                className="pointer-events-none absolute inset-0 z-10 overflow-hidden whitespace-pre-wrap wrap-break-word px-3 py-3 text-[0.9375rem] leading-normal text-muted-foreground"
+                style={{ fontFamily: HAN_EXAMPLE_FONT }}
             >
                 {text}
             </div>
@@ -898,43 +1585,18 @@ function HanLineTextarea({ value, onChange, rows = 2, className }) {
     );
 }
 
-function MeaningCard({ meaning, index, column, onChange, onRemove }) {
+function MeaningCard({
+    meaning,
+    index,
+    column,
+    onChange,
+    onRemove,
+    selectedExKeys = new Set(),
+    onToggleSelect = () => {},
+    onToggleSelectAll = () => {},
+}) {
     const { t } = useLocale();
-    const [convertingJpPy, setConvertingJpPy] = useState(null);
     const [showExamples, setShowExamples] = useState(true); // examples expanded by default
-    const [syncingMeaning, setSyncingMeaning] = useState(false);
-    const [syncingExample, setSyncingExample] = useState(null); // exIdx being synced
-
-    // Sync the empty side from the filled one (vi <-> en) via the translate pipeline.
-    const viet = (meaning.vietMeanings ?? "").trim();
-    const eng = (meaning.engMeanings ?? "").trim();
-    const canSync = Boolean(viet) !== Boolean(eng);
-    const handleSyncMeaning = async () => {
-        if (!canSync) return;
-        setSyncingMeaning(true);
-        try {
-            const source = viet ? "vi" : "en";
-            const target = viet ? "en" : "vi";
-            // Chuẩn hóa dấu tách (; 、…) về phẩy cho cả phía đã có và phía vừa dịch.
-            // Meaning sau sync LUÔN lowercase (cả vi & en), không giữ dấu chấm cuối câu.
-            const patch = viet
-                ? { vietMeanings: normalizeMeaningSync(meaning.vietMeanings ?? "") }
-                : { engMeanings: normalizeMeaningSync(meaning.engMeanings ?? "") };
-            const res = await api.translate(viet || eng, source, target);
-            const translated = normalizeMeaningSync(res?.translated ?? "");
-            if (translated) {
-                if (viet) patch.engMeanings = translated;
-                else patch.vietMeanings = translated;
-            }
-            onChange(patch);
-        } catch {
-            // Vẫn chuẩn hóa phía đã có nếu dịch lỗi.
-            if (viet) onChange({ vietMeanings: normalizeMeaningSync(meaning.vietMeanings ?? "") });
-            else onChange({ engMeanings: normalizeMeaningSync(meaning.engMeanings ?? "") });
-        } finally {
-            setSyncingMeaning(false);
-        }
-    };
 
     const addExample = () => {
         const nextExamples = [
@@ -966,117 +1628,40 @@ function MeaningCard({ meaning, index, column, onChange, onRemove }) {
         updateExample(exIdx, { hanSimplified: g, hanTraditional: p });
     };
 
-    const handleConvertBoth = async (exIdx) => {
-        const ex = (meaning.examples ?? [])[exIdx];
-        const parts = exampleHanParts(ex);
-        setConvertingJpPy(exIdx);
-        try {
-            if (column === "jyutping") {
-                // Cantonese: chỉ tạo jyutping từ chữ Hán (yue / phồn thể).
-                const source = parts.hanTraditional.trim();
-                if (!source) return;
-                const res = await api.toJyutping(source);
-                if (res?.jyutping) updateExample(exIdx, { jyutpingExample: res.jyutping });
-                return;
-            }
-            if (column === "pinyin") {
-                // Mandarin: chỉ tạo pinyin từ chữ Hán (zh / giản thể).
-                const source = parts.hanSimplified.trim();
-                if (!source) return;
-                const res = await api.toPinyin(source);
-                if (res?.pinyin) updateExample(exIdx, { pinyinExample: res.pinyin });
-                return;
-            }
-
-            // Legacy (no column): tạo cả pinyin + jyutping từ 2 dòng giản/phồn.
-            const trimmed = [parts.hanSimplified, parts.hanTraditional].filter(Boolean).join("\n");
-            if (!trimmed) return;
-            const lines = trimmed
-                .split("\n")
-                .map((l) => l.trim())
-                .filter(Boolean);
-            let tradSource = "";
-            let simpSource = "";
-            if (lines.length >= 2) {
-                simpSource = lines[0];
-                tradSource = lines[1];
-            } else {
-                const tradMatch = trimmed.match(/【(.+?)】/);
-                tradSource = tradMatch ? tradMatch[1].trim() : trimmed;
-                const simpMatch = trimmed.match(/^(.+?)【/);
-                simpSource = simpMatch ? simpMatch[1].trim() : trimmed;
-            }
-            const [jpRes, pyRes] = await Promise.all([
-                tradSource ? api.toJyutping(tradSource) : Promise.resolve(null),
-                simpSource ? api.toPinyin(simpSource) : Promise.resolve(null),
-            ]);
-            const updates = {};
-            if (jpRes?.jyutping) updates.jyutpingExample = jpRes.jyutping;
-            if (pyRes?.pinyin) updates.pinyinExample = pyRes.pinyin;
-            if (Object.keys(updates).length > 0) {
-                updateExample(exIdx, updates);
-            }
-        } catch {
-            // silently fail
-        } finally {
-            setConvertingJpPy(null);
-        }
-    };
-
     const removeExample = (exIdx) => {
         const nextExamples = (meaning.examples ?? []).filter((_, i) => i !== exIdx);
         onChange({ examples: nextExamples });
     };
 
-    // Sync the empty side of a single example (vi <-> en) via the translate pipeline.
-    const handleSyncExample = async (exIdx) => {
-        const ex = (meaning.examples ?? [])[exIdx];
-        const exViet = (ex?.vietExamples ?? "").trim();
-        const exEng = (ex?.engExamples ?? "").trim();
-        if ((!exViet && !exEng) || (exViet && exEng)) return; // nothing to fill
-        setSyncingExample(exIdx);
-        try {
-            const source = exViet ? "vi" : "en";
-            const target = exViet ? "en" : "vi";
-            const patch = exViet
-                ? { vietExamples: normalizeGlossSeparators(ex?.vietExamples ?? "") }
-                : { engExamples: normalizeGlossSeparators(ex?.engExamples ?? "") };
-            const res = await api.translate(exViet || exEng, source, target);
-            const translated = normalizeGlossSeparators(res?.translated ?? "");
-            if (translated) {
-                if (exViet) patch.engExamples = translated;
-                else patch.vietExamples = translated;
-            }
-            updateExample(exIdx, patch);
-        } catch {
-            if (exViet) updateExample(exIdx, { vietExamples: normalizeGlossSeparators(ex?.vietExamples ?? "") });
-            else updateExample(exIdx, { engExamples: normalizeGlossSeparators(ex?.engExamples ?? "") });
-        } finally {
-            setSyncingExample(null);
-        }
-    };
+    const exampleCount = (meaning.examples ?? []).length;
+    // Select-all cho TỪNG MEANING này (checkbox trong header examples) (2026-08-22)
+    const meaningKeys = (meaning.examples ?? []).map((ex) => ex?._tempId || ex?.id).filter(Boolean);
+    const meaningSelCount = meaningKeys.filter((k) => selectedExKeys.has(k)).length;
+    const meaningAll = meaningKeys.length > 0 && meaningSelCount === meaningKeys.length;
+    const meaningSome = meaningSelCount > 0 && meaningSelCount < meaningKeys.length;
+    const addExampleButton = (
+        <Button
+            type="button"
+            size="sm"
+            className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
+            onClick={() => {
+                if (!showExamples) setShowExamples(true);
+                addExample();
+            }}
+        >
+            <IconPlus size={10} data-icon="inline-start" />
+            {t.addWord.addExample}
+        </Button>
+    );
 
     return (
-        <Card className="bg-card shadow-sm border border-border">
-            <CardHeader className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-viet">{index + 1}.</CardTitle>
-                <CardAction>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            type="button"
-                            size="xs"
-                            className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                            onClick={handleSyncMeaning}
-                            disabled={!canSync || syncingMeaning}
-                            title={t.addWord.syncMeaningHint}
-                        >
-                            {syncingMeaning ? (
-                                <Spinner className="size-3.5" />
-                            ) : (
-                                <IconSpeech size={14} data-icon="inline-start" />
-                            )}
-                            {t.addWord.syncMeaning}
-                        </Button>
+        <div className="flex flex-col">
+            <div className="grid grid-cols-[auto_1fr] items-start gap-x-2">
+                <Badge variant="outline" className="shrink-0 rounded-md px-1.5 text-sm text-viet">
+                    {index + 1}
+                </Badge>
+                <div className="flex flex-col gap-2 text-base">
+                    <div className="flex items-center justify-end gap-2">
                         <Button
                             type="button"
                             variant="destructive"
@@ -1088,121 +1673,86 @@ function MeaningCard({ meaning, index, column, onChange, onRemove }) {
                             {t.addWord.deleteMeaning}
                         </Button>
                     </div>
-                </CardAction>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-                {/* Line 1: Vietnamese meaning */}
-                <label className="flex flex-col gap-0.5 mb-2">
-                    <span className="text-sm text-primary-foreground font-semibold">{t.addWord.vietnameseMeaning}</span>
-                    <Textarea
-                        className="text-foreground font-medium"
-                        rows={2}
-                        value={meaning.vietMeanings ?? ""}
-                        onChange={(e) => onChange({ vietMeanings: e.target.value })}
-                    />
-                </label>
-                {/* Line 2: English meaning (replaces Chinese definition) */}
-                <label className="flex flex-col gap-0.5 mb-2">
-                    <span className="text-sm text-primary-foreground font-semibold">{t.addWord.englishMeaning}</span>
-                    <Textarea
-                        className="text-foreground"
-                        rows={2}
-                        value={meaning.engMeanings ?? ""}
-                        onChange={(e) => onChange({ engMeanings: e.target.value })}
-                    />
-                </label>
+                    {/* Meaning — cả mục size md (text-base), label riêng vẫn sm (2026-08-19) */}
+                    {/* Line 1: Vietnamese meaning */}
+                    <label className="flex flex-col gap-0.5 mb-2">
+                        <span className="text-sm text-viet font-semibold">{t.addWord.vietnameseMeaning}</span>
+                        <Textarea
+                            className="text-muted-foreground font-medium text-base! min-h-10!"
+                            rows={1}
+                            value={meaning.vietMeanings ?? ""}
+                            onChange={(e) => onChange({ vietMeanings: e.target.value })}
+                        />
+                    </label>
+                    {/* Line 2: English meaning (replaces Chinese definition) */}
+                    <label className="flex flex-col gap-0.5 mb-2">
+                        <span className="text-sm text-viet font-semibold">{t.addWord.englishMeaning}</span>
+                        <Textarea
+                            className="text-muted-foreground text-base! min-h-10!"
+                            rows={1}
+                            value={meaning.engMeanings ?? ""}
+                            onChange={(e) => onChange({ engMeanings: e.target.value })}
+                        />
+                    </label>
+                    {/* Line 3: Gloss zh — CHỈ mandarin. ⚠️ 2026-08-22: cantonese bỏ gloss (yue). */}
+                    {column === "pinyin" && (
+                        <label className="flex flex-col gap-0.5 mb-2">
+                            <span className="text-sm text-viet font-semibold">{t.addWord.glossMandarin}</span>
+                            <Textarea
+                                className="text-muted-foreground text-base! min-h-10!"
+                                rows={1}
+                                value={meaning.gloss ?? ""}
+                                onChange={(e) => onChange({ gloss: e.target.value })}
+                            />
+                        </label>
+                    )}
 
-                {/* Examples for this meaning */}
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                        <Button
-                            type="button"
-                            size="sm"
-                            className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                            onClick={() => {
-                                if (!showExamples) setShowExamples(true);
-                                addExample();
-                            }}
-                        >
-                            <IconPlus size={10} data-icon="inline-start" />
-                            {t.addWord.addExample}
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                            onClick={() => setShowExamples((v) => !v)}
-                        >
-                            {showExamples ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
-                            {(meaning.examples ?? []).length > 0
-                                ? t.addWord.examplesWithCount.replace("{count}", (meaning.examples ?? []).length)
-                                : t.addWord.examples}
-                        </Button>
-                    </div>
-                    {showExamples && (
-                        <>
-                            {(meaning.examples ?? []).map((ex, j) => {
-                                const hanParts = exampleHanParts(ex);
-                                const hasHan = Boolean(hanParts.hanSimplified || hanParts.hanTraditional);
-                                return (
-                                    <Card
-                                        key={ex._tempId || j}
-                                        className="rounded-lg border border-border/70 bg-background p-4 shadow-none ring-0"
-                                    >
-                                        <CardHeader className="flex items-center justify-between">
-                                            <CardTitle className="text-sm text-primary-foreground font-semibold">
-                                                {t.addWord.example.replace("{index}", j + 1)}
-                                            </CardTitle>
-                                            <CardAction>
+                    {/* Examples for this meaning */}
+                    <div className="flex flex-col gap-2">
+                        {exampleCount > 0 && (
+                            <MeaningExamples
+                                open={showExamples}
+                                onOpenChange={setShowExamples}
+                                label={t.addWord.examplesWithCount.replace("{count}", exampleCount)}
+                                headerExtra={
+                                    <label className="flex cursor-pointer items-center gap-1.5 text-sm text-muted-foreground select-none">
+                                        <Checkbox
+                                            checked={meaningAll ? true : meaningSome ? "indeterminate" : false}
+                                            onCheckedChange={onToggleSelectAll}
+                                            aria-label={t.addWord?.selectAllExamples ?? "Select all examples"}
+                                        />
+                                        {t.addWord?.selectAllExamples ?? "Select all examples"}
+                                    </label>
+                                }
+                            >
+                                {(meaning.examples ?? []).map((ex, j) => {
+                                    const hanParts = exampleHanParts(ex);
+                                    const hasHan = Boolean(hanParts.hanSimplified || hanParts.hanTraditional);
+                                    const isSelected = selectedExKeys.has(ex._tempId || ex.id);
+                                    return (
+                                        <div
+                                            key={ex._tempId || j}
+                                            className={cn(
+                                                "rounded-lg border border-border/70 bg-muted p-4 grid grid-cols-[auto_1fr] items-start gap-x-2 gap-y-2",
+                                                isSelected && "border-primary/60 ring-1 ring-primary/40",
+                                            )}
+                                        >
+                                            <Badge
+                                                variant="outline"
+                                                className="shrink-0 rounded-md px-1.5 text-sm text-viet"
+                                            >
+                                                {j + 1}
+                                            </Badge>
+                                            <div className="flex flex-col gap-2">
                                                 <div className="flex flex-wrap items-center justify-end gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        size="xs"
-                                                        className={cn(
-                                                            hasHan
-                                                                ? "bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                                                                : "bg-primary/50 text-primary-foreground/60 border-primary/50",
-                                                        )}
-                                                        onClick={() => handleConvertBoth(j)}
-                                                        disabled={convertingJpPy === j || !hasHan}
-                                                        title={
-                                                            column === "pinyin"
-                                                                ? t.addWord.generatePinyin
-                                                                : column === "jyutping"
-                                                                  ? t.addWord.generateJyutping
-                                                                  : t.addWord.generateReadings
-                                                        }
-                                                    >
-                                                        {convertingJpPy === j ? (
-                                                            <Spinner className="size-3.5" />
-                                                        ) : (
-                                                            <IconSpeech size={14} />
-                                                        )}
-                                                        {column === "pinyin"
-                                                            ? t.addWord.generatePinyin
-                                                            : column === "jyutping"
-                                                              ? t.addWord.generateJyutping
-                                                              : t.addWord.generateBoth}
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="xs"
-                                                        className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                                                        onClick={() => handleSyncExample(j)}
-                                                        disabled={
-                                                            syncingExample === j ||
-                                                            Boolean((ex.vietExamples ?? "").trim()) ===
-                                                                Boolean((ex.engExamples ?? "").trim())
-                                                        }
-                                                        title={t.addWord.syncExampleHint}
-                                                    >
-                                                        {syncingExample === j ? (
-                                                            <Spinner className="size-3.5" />
-                                                        ) : (
-                                                            <IconSpeech size={14} />
-                                                        )}
-                                                        {t.addWord.syncExample}
-                                                    </Button>
+                                                    {/* Checkbox chọn ví dụ để di chuyển sang meaning khác */}
+                                                    <label className="flex cursor-pointer items-center gap-1.5 text-sm text-muted-foreground select-none">
+                                                        <Checkbox
+                                                            checked={isSelected}
+                                                            onCheckedChange={() => onToggleSelect(ex)}
+                                                        />
+                                                        {t.addWord?.selectForMove ?? "Chọn để di chuyển"}
+                                                    </label>
                                                     <Button
                                                         type="button"
                                                         variant="destructive"
@@ -1214,111 +1764,122 @@ function MeaningCard({ meaning, index, column, onChange, onRemove }) {
                                                         {t.addWord.deleteExample}
                                                     </Button>
                                                 </div>
-                                            </CardAction>
-                                        </CardHeader>
-                                        <CardContent className="flex flex-col gap-2">
-                                            <div className="flex flex-col gap-2 mb-2">
-                                                {column ? (
-                                                    // Model mới: mandarin → zh, cantonese → yue — 1 field tiếng Trung duy nhất.
-                                                    <label className="flex flex-col gap-0.5">
-                                                        <span className="text-sm text-primary-foreground font-semibold">
-                                                            {column === "pinyin"
-                                                                ? t.addWord.chineseMandarin
-                                                                : t.addWord.chineseCantonese}
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex flex-col gap-2 mb-2">
+                                                        {column === "pinyin" ? (
+                                                            // ⚠️ 2026-08-22: mandarin → zh — 1 field tiếng Trung duy nhất.
+                                                            <label className="flex flex-col gap-0.5">
+                                                                <span className="text-sm text-foreground font-semibold">
+                                                                    {t.addWord.chineseMandarin}
+                                                                </span>
+                                                                <HanLineTextarea
+                                                                    rows={1}
+                                                                    value={hanParts.hanSimplified}
+                                                                    onChange={(v) => updateHanLine(j, 0, v)}
+                                                                />
+                                                            </label>
+                                                        ) : column === "jyutping" ? (
+                                                            // ⚠️ 2026-08-22: cantonese → yue — field chữ Hán câu ví dụ (đã thêm lại cột yue).
+                                                            <label className="flex flex-col gap-0.5">
+                                                                <span className="text-sm text-foreground font-semibold">
+                                                                    {t.addWord.chineseCantonese}
+                                                                </span>
+                                                                <HanLineTextarea
+                                                                    rows={1}
+                                                                    value={hanParts.hanTraditional}
+                                                                    onChange={(v) => updateHanLine(j, 1, v)}
+                                                                />
+                                                            </label>
+                                                        ) : !column ? (
+                                                            <>
+                                                                <label className="flex flex-col gap-0.5">
+                                                                    <span className="text-sm text-foreground font-semibold">
+                                                                        {t.addWord.simplified}
+                                                                    </span>
+                                                                    <HanLineTextarea
+                                                                        rows={1}
+                                                                        value={hanParts.hanSimplified}
+                                                                        onChange={(v) => updateHanLine(j, 0, v)}
+                                                                    />
+                                                                </label>
+                                                                <label className="flex flex-col gap-0.5">
+                                                                    <span className="text-sm text-foreground font-semibold">
+                                                                        {t.addWord.traditional}
+                                                                    </span>
+                                                                    <HanLineTextarea
+                                                                        rows={1}
+                                                                        value={hanParts.hanTraditional}
+                                                                        onChange={(v) => updateHanLine(j, 1, v)}
+                                                                    />
+                                                                </label>
+                                                            </>
+                                                        ) : null}
+                                                    </div>
+                                                    {(column === "pinyin" || !column) && (
+                                                        <label className="flex flex-col gap-0.5 mb-2">
+                                                            <span className="text-sm text-foreground font-semibold">
+                                                                {t.addWord.pinyin}
+                                                            </span>
+                                                            <Input
+                                                                className="text-muted-foreground text-sm"
+                                                                value={ex.pinyinExample ?? ""}
+                                                                onChange={(e) =>
+                                                                    updateExample(j, { pinyinExample: e.target.value })
+                                                                }
+                                                            />
+                                                        </label>
+                                                    )}
+                                                    {(column === "jyutping" || !column) && (
+                                                        <label className="flex flex-col gap-0.5 mb-2">
+                                                            <span className="text-sm text-foreground font-semibold">
+                                                                {t.addWord.jyutping}
+                                                            </span>
+                                                            <Input
+                                                                className="text-muted-foreground text-sm"
+                                                                value={ex.jyutpingExample ?? ""}
+                                                                onChange={(e) =>
+                                                                    updateExample(j, {
+                                                                        jyutpingExample: e.target.value,
+                                                                    })
+                                                                }
+                                                            />
+                                                        </label>
+                                                    )}
+                                                    <label className="flex flex-col gap-0.5 mb-2">
+                                                        <span className="text-sm text-foreground font-semibold">
+                                                            {t.addWord.vietnamese}
                                                         </span>
-                                                        <HanLineTextarea
-                                                            rows={1}
-                                                            value={
-                                                                column === "pinyin"
-                                                                    ? hanParts.hanSimplified
-                                                                    : hanParts.hanTraditional
-                                                            }
-                                                            onChange={(v) =>
-                                                                updateHanLine(j, column === "pinyin" ? 0 : 1, v)
+                                                        <Input
+                                                            className="text-muted-foreground text-sm"
+                                                            value={ex.vietExamples ?? ""}
+                                                            onChange={(e) =>
+                                                                updateExample(j, { vietExamples: e.target.value })
                                                             }
                                                         />
                                                     </label>
-                                                ) : (
-                                                    <>
-                                                        <label className="flex flex-col gap-0.5">
-                                                            <span className="text-sm text-primary-foreground font-semibold">
-                                                                {t.addWord.simplified}
-                                                            </span>
-                                                            <HanLineTextarea
-                                                                rows={1}
-                                                                value={hanParts.hanSimplified}
-                                                                onChange={(v) => updateHanLine(j, 0, v)}
-                                                            />
-                                                        </label>
-                                                        <label className="flex flex-col gap-0.5">
-                                                            <span className="text-sm text-primary-foreground font-semibold">
-                                                                {t.addWord.traditional}
-                                                            </span>
-                                                            <HanLineTextarea
-                                                                rows={1}
-                                                                value={hanParts.hanTraditional}
-                                                                onChange={(v) => updateHanLine(j, 1, v)}
-                                                            />
-                                                        </label>
-                                                    </>
-                                                )}
+                                                    <label className="flex flex-col gap-0.5">
+                                                        <span className="text-sm text-foreground font-semibold">
+                                                            {t.addWord.english}
+                                                        </span>
+                                                        <Input
+                                                            className="text-muted-foreground text-sm"
+                                                            value={ex.engExamples ?? ""}
+                                                            onChange={(e) =>
+                                                                updateExample(j, { engExamples: e.target.value })
+                                                            }
+                                                        />
+                                                    </label>
+                                                </div>
                                             </div>
-                                            {(column === "pinyin" || !column) && (
-                                                <label className="flex flex-col gap-0.5 mb-2">
-                                                    <span className="text-sm text-primary-foreground font-semibold">
-                                                        {t.addWord.pinyin}
-                                                    </span>
-                                                    <Input
-                                                        className="text-primary-foreground text-sm"
-                                                        value={ex.pinyinExample ?? ""}
-                                                        onChange={(e) =>
-                                                            updateExample(j, { pinyinExample: e.target.value })
-                                                        }
-                                                    />
-                                                </label>
-                                            )}
-                                            {(column === "jyutping" || !column) && (
-                                                <label className="flex flex-col gap-0.5 mb-2">
-                                                    <span className="text-sm text-primary-foreground font-semibold">
-                                                        {t.addWord.jyutping}
-                                                    </span>
-                                                    <Input
-                                                        className="text-primary-foreground text-sm"
-                                                        value={ex.jyutpingExample ?? ""}
-                                                        onChange={(e) =>
-                                                            updateExample(j, { jyutpingExample: e.target.value })
-                                                        }
-                                                    />
-                                                </label>
-                                            )}
-                                            <label className="flex flex-col gap-0.5 mb-2">
-                                                <span className="text-sm text-primary-foreground font-semibold">
-                                                    {t.addWord.vietnamese}
-                                                </span>
-                                                <Input
-                                                    className="text-primary-foreground text-sm"
-                                                    value={ex.vietExamples ?? ""}
-                                                    onChange={(e) => updateExample(j, { vietExamples: e.target.value })}
-                                                />
-                                            </label>
-                                            <label className="flex flex-col gap-0.5">
-                                                <span className="text-sm text-primary-foreground font-semibold">
-                                                    {t.addWord.english}
-                                                </span>
-                                                <Input
-                                                    className="text-primary-foreground text-sm"
-                                                    value={ex.engExamples ?? ""}
-                                                    onChange={(e) => updateExample(j, { engExamples: e.target.value })}
-                                                />
-                                            </label>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
-                        </>
-                    )}
+                                        </div>
+                                    );
+                                })}
+                            </MeaningExamples>
+                        )}
+                        <div className="flex justify-start">{addExampleButton}</div>
+                    </div>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }

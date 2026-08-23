@@ -5,6 +5,7 @@ import { useLocale } from "../store/localeStore.js";
 import { emptyGrammarBankItem } from "../types/word.js";
 import { api } from "../lib/api.js";
 import { IconPlus, IconTrash, IconClose } from "./NavIcons.jsx";
+import { Button } from "./shadcn/button.jsx";
 
 const backdropClass =
     "fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/40 px-4 py-[max(1.25rem,env(safe-area-inset-top,0px))] pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]";
@@ -41,14 +42,16 @@ const ArrayField = memo(function ArrayField({ label, items, onChange }) {
                         value={val}
                         onChange={(e) => updateItem(idx, e.target.value)}
                     />
-                    <button
+                    <Button
                         type="button"
-                        className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-lg border text-sm font-medium transition-colors bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900"
+                        variant="destructive"
+                        size="icon"
+                        className="size-11! shrink-0"
                         onClick={() => removeItem(idx)}
                         title={t.common.delete}
                     >
                         <IconTrash size={18} />
-                    </button>
+                    </Button>
                 </div>
             ))}
             <button
@@ -102,14 +105,16 @@ const ExampleField = memo(function ExampleField({ example, index, onChange, onRe
                     >
                         {autoGenerating ? "..." : t.grammarBank.autoGen}
                     </button>
-                    <button
+                    <Button
                         type="button"
-                        className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-lg border text-sm font-medium transition-colors bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900"
+                        variant="destructive"
+                        size="icon"
+                        className="size-11! shrink-0"
                         onClick={onRemove}
                         title={t.grammarBank.deleteExample}
                     >
                         <IconTrash size={18} />
-                    </button>
+                    </Button>
                 </div>
             </div>
             <div className="flex flex-col gap-2">
@@ -298,7 +303,11 @@ export function AddGrammarModal({ onSave, onClose, item: editItem, existingItems
                     </label>
 
                     {/* Details — always has 1 input ready */}
-                    <ArrayField label={t.grammarBank.details} items={draft.details ?? [""]} onChange={(val) => set("details", val)} />
+                    <ArrayField
+                        label={t.grammarBank.details}
+                        items={draft.details ?? [""]}
+                        onChange={(val) => set("details", val)}
+                    />
 
                     {/* Structure — click "+ Add" to create field */}
                     <ArrayField
@@ -308,7 +317,11 @@ export function AddGrammarModal({ onSave, onClose, item: editItem, existingItems
                     />
 
                     {/* Notes */}
-                    <ArrayField label={t.grammarBank.note} items={draft.notes ?? []} onChange={(val) => set("notes", val)} />
+                    <ArrayField
+                        label={t.grammarBank.note}
+                        items={draft.notes ?? []}
+                        onChange={(val) => set("notes", val)}
+                    />
 
                     {/* Examples */}
                     <div className="flex flex-col gap-2">

@@ -199,7 +199,8 @@ export type FlashcardDeckWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"FlashcardDeck"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FlashcardDeck"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  vocabularies?: Prisma.FlashcardDeckVocabularyListRelationFilter
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyListRelationFilter
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyListRelationFilter
 }
 
 export type FlashcardDeckOrderByWithRelationInput = {
@@ -211,7 +212,8 @@ export type FlashcardDeckOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
-  vocabularies?: Prisma.FlashcardDeckVocabularyOrderByRelationAggregateInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyOrderByRelationAggregateInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyOrderByRelationAggregateInput
 }
 
 export type FlashcardDeckWhereUniqueInput = Prisma.AtLeast<{
@@ -227,7 +229,8 @@ export type FlashcardDeckWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"FlashcardDeck"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FlashcardDeck"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  vocabularies?: Prisma.FlashcardDeckVocabularyListRelationFilter
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyListRelationFilter
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyListRelationFilter
 }, "id" | "id_userId">
 
 export type FlashcardDeckOrderByWithAggregationInput = {
@@ -264,7 +267,8 @@ export type FlashcardDeckCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutFlashcardDecksInput
-  vocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutDeckInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyCreateNestedManyWithoutDeckInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyCreateNestedManyWithoutDeckInput
 }
 
 export type FlashcardDeckUncheckedCreateInput = {
@@ -275,7 +279,8 @@ export type FlashcardDeckUncheckedCreateInput = {
   color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutDeckInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedCreateNestedManyWithoutDeckInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedCreateNestedManyWithoutDeckInput
 }
 
 export type FlashcardDeckUpdateInput = {
@@ -286,7 +291,8 @@ export type FlashcardDeckUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutFlashcardDecksNestedInput
-  vocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutDeckNestedInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUpdateManyWithoutDeckNestedInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUpdateManyWithoutDeckNestedInput
 }
 
 export type FlashcardDeckUncheckedUpdateInput = {
@@ -297,7 +303,8 @@ export type FlashcardDeckUncheckedUpdateInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutDeckNestedInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedUpdateManyWithoutDeckNestedInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedUpdateManyWithoutDeckNestedInput
 }
 
 export type FlashcardDeckCreateManyInput = {
@@ -421,18 +428,32 @@ export type FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.FlashcardDeckScalarWhereInput | Prisma.FlashcardDeckScalarWhereInput[]
 }
 
-export type FlashcardDeckCreateNestedOneWithoutVocabulariesInput = {
-  create?: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutVocabulariesInput>
-  connectOrCreate?: Prisma.FlashcardDeckCreateOrConnectWithoutVocabulariesInput
+export type FlashcardDeckCreateNestedOneWithoutMandarinVocabulariesInput = {
+  create?: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutMandarinVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutMandarinVocabulariesInput>
+  connectOrCreate?: Prisma.FlashcardDeckCreateOrConnectWithoutMandarinVocabulariesInput
   connect?: Prisma.FlashcardDeckWhereUniqueInput
 }
 
-export type FlashcardDeckUpdateOneRequiredWithoutVocabulariesNestedInput = {
-  create?: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutVocabulariesInput>
-  connectOrCreate?: Prisma.FlashcardDeckCreateOrConnectWithoutVocabulariesInput
-  upsert?: Prisma.FlashcardDeckUpsertWithoutVocabulariesInput
+export type FlashcardDeckUpdateOneRequiredWithoutMandarinVocabulariesNestedInput = {
+  create?: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutMandarinVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutMandarinVocabulariesInput>
+  connectOrCreate?: Prisma.FlashcardDeckCreateOrConnectWithoutMandarinVocabulariesInput
+  upsert?: Prisma.FlashcardDeckUpsertWithoutMandarinVocabulariesInput
   connect?: Prisma.FlashcardDeckWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.FlashcardDeckUpdateToOneWithWhereWithoutVocabulariesInput, Prisma.FlashcardDeckUpdateWithoutVocabulariesInput>, Prisma.FlashcardDeckUncheckedUpdateWithoutVocabulariesInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.FlashcardDeckUpdateToOneWithWhereWithoutMandarinVocabulariesInput, Prisma.FlashcardDeckUpdateWithoutMandarinVocabulariesInput>, Prisma.FlashcardDeckUncheckedUpdateWithoutMandarinVocabulariesInput>
+}
+
+export type FlashcardDeckCreateNestedOneWithoutCantoneseVocabulariesInput = {
+  create?: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutCantoneseVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutCantoneseVocabulariesInput>
+  connectOrCreate?: Prisma.FlashcardDeckCreateOrConnectWithoutCantoneseVocabulariesInput
+  connect?: Prisma.FlashcardDeckWhereUniqueInput
+}
+
+export type FlashcardDeckUpdateOneRequiredWithoutCantoneseVocabulariesNestedInput = {
+  create?: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutCantoneseVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutCantoneseVocabulariesInput>
+  connectOrCreate?: Prisma.FlashcardDeckCreateOrConnectWithoutCantoneseVocabulariesInput
+  upsert?: Prisma.FlashcardDeckUpsertWithoutCantoneseVocabulariesInput
+  connect?: Prisma.FlashcardDeckWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.FlashcardDeckUpdateToOneWithWhereWithoutCantoneseVocabulariesInput, Prisma.FlashcardDeckUpdateWithoutCantoneseVocabulariesInput>, Prisma.FlashcardDeckUncheckedUpdateWithoutCantoneseVocabulariesInput>
 }
 
 export type FlashcardDeckCreateWithoutUserInput = {
@@ -442,7 +463,8 @@ export type FlashcardDeckCreateWithoutUserInput = {
   color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularies?: Prisma.FlashcardDeckVocabularyCreateNestedManyWithoutDeckInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyCreateNestedManyWithoutDeckInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyCreateNestedManyWithoutDeckInput
 }
 
 export type FlashcardDeckUncheckedCreateWithoutUserInput = {
@@ -452,7 +474,8 @@ export type FlashcardDeckUncheckedCreateWithoutUserInput = {
   color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularies?: Prisma.FlashcardDeckVocabularyUncheckedCreateNestedManyWithoutDeckInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedCreateNestedManyWithoutDeckInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedCreateNestedManyWithoutDeckInput
 }
 
 export type FlashcardDeckCreateOrConnectWithoutUserInput = {
@@ -494,7 +517,7 @@ export type FlashcardDeckScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"FlashcardDeck"> | Date | string
 }
 
-export type FlashcardDeckCreateWithoutVocabulariesInput = {
+export type FlashcardDeckCreateWithoutMandarinVocabulariesInput = {
   id?: string
   name?: string
   description?: string | null
@@ -502,9 +525,10 @@ export type FlashcardDeckCreateWithoutVocabulariesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutFlashcardDecksInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyCreateNestedManyWithoutDeckInput
 }
 
-export type FlashcardDeckUncheckedCreateWithoutVocabulariesInput = {
+export type FlashcardDeckUncheckedCreateWithoutMandarinVocabulariesInput = {
   id?: string
   userId: string
   name?: string
@@ -512,25 +536,26 @@ export type FlashcardDeckUncheckedCreateWithoutVocabulariesInput = {
   color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedCreateNestedManyWithoutDeckInput
 }
 
-export type FlashcardDeckCreateOrConnectWithoutVocabulariesInput = {
+export type FlashcardDeckCreateOrConnectWithoutMandarinVocabulariesInput = {
   where: Prisma.FlashcardDeckWhereUniqueInput
-  create: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutVocabulariesInput>
+  create: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutMandarinVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutMandarinVocabulariesInput>
 }
 
-export type FlashcardDeckUpsertWithoutVocabulariesInput = {
-  update: Prisma.XOR<Prisma.FlashcardDeckUpdateWithoutVocabulariesInput, Prisma.FlashcardDeckUncheckedUpdateWithoutVocabulariesInput>
-  create: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutVocabulariesInput>
+export type FlashcardDeckUpsertWithoutMandarinVocabulariesInput = {
+  update: Prisma.XOR<Prisma.FlashcardDeckUpdateWithoutMandarinVocabulariesInput, Prisma.FlashcardDeckUncheckedUpdateWithoutMandarinVocabulariesInput>
+  create: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutMandarinVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutMandarinVocabulariesInput>
   where?: Prisma.FlashcardDeckWhereInput
 }
 
-export type FlashcardDeckUpdateToOneWithWhereWithoutVocabulariesInput = {
+export type FlashcardDeckUpdateToOneWithWhereWithoutMandarinVocabulariesInput = {
   where?: Prisma.FlashcardDeckWhereInput
-  data: Prisma.XOR<Prisma.FlashcardDeckUpdateWithoutVocabulariesInput, Prisma.FlashcardDeckUncheckedUpdateWithoutVocabulariesInput>
+  data: Prisma.XOR<Prisma.FlashcardDeckUpdateWithoutMandarinVocabulariesInput, Prisma.FlashcardDeckUncheckedUpdateWithoutMandarinVocabulariesInput>
 }
 
-export type FlashcardDeckUpdateWithoutVocabulariesInput = {
+export type FlashcardDeckUpdateWithoutMandarinVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -538,9 +563,10 @@ export type FlashcardDeckUpdateWithoutVocabulariesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutFlashcardDecksNestedInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUpdateManyWithoutDeckNestedInput
 }
 
-export type FlashcardDeckUncheckedUpdateWithoutVocabulariesInput = {
+export type FlashcardDeckUncheckedUpdateWithoutMandarinVocabulariesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -548,6 +574,67 @@ export type FlashcardDeckUncheckedUpdateWithoutVocabulariesInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedUpdateManyWithoutDeckNestedInput
+}
+
+export type FlashcardDeckCreateWithoutCantoneseVocabulariesInput = {
+  id?: string
+  name?: string
+  description?: string | null
+  color?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutFlashcardDecksInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyCreateNestedManyWithoutDeckInput
+}
+
+export type FlashcardDeckUncheckedCreateWithoutCantoneseVocabulariesInput = {
+  id?: string
+  userId: string
+  name?: string
+  description?: string | null
+  color?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedCreateNestedManyWithoutDeckInput
+}
+
+export type FlashcardDeckCreateOrConnectWithoutCantoneseVocabulariesInput = {
+  where: Prisma.FlashcardDeckWhereUniqueInput
+  create: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutCantoneseVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutCantoneseVocabulariesInput>
+}
+
+export type FlashcardDeckUpsertWithoutCantoneseVocabulariesInput = {
+  update: Prisma.XOR<Prisma.FlashcardDeckUpdateWithoutCantoneseVocabulariesInput, Prisma.FlashcardDeckUncheckedUpdateWithoutCantoneseVocabulariesInput>
+  create: Prisma.XOR<Prisma.FlashcardDeckCreateWithoutCantoneseVocabulariesInput, Prisma.FlashcardDeckUncheckedCreateWithoutCantoneseVocabulariesInput>
+  where?: Prisma.FlashcardDeckWhereInput
+}
+
+export type FlashcardDeckUpdateToOneWithWhereWithoutCantoneseVocabulariesInput = {
+  where?: Prisma.FlashcardDeckWhereInput
+  data: Prisma.XOR<Prisma.FlashcardDeckUpdateWithoutCantoneseVocabulariesInput, Prisma.FlashcardDeckUncheckedUpdateWithoutCantoneseVocabulariesInput>
+}
+
+export type FlashcardDeckUpdateWithoutCantoneseVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutFlashcardDecksNestedInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUpdateManyWithoutDeckNestedInput
+}
+
+export type FlashcardDeckUncheckedUpdateWithoutCantoneseVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedUpdateManyWithoutDeckNestedInput
 }
 
 export type FlashcardDeckCreateManyUserInput = {
@@ -566,7 +653,8 @@ export type FlashcardDeckUpdateWithoutUserInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularies?: Prisma.FlashcardDeckVocabularyUpdateManyWithoutDeckNestedInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUpdateManyWithoutDeckNestedInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUpdateManyWithoutDeckNestedInput
 }
 
 export type FlashcardDeckUncheckedUpdateWithoutUserInput = {
@@ -576,7 +664,8 @@ export type FlashcardDeckUncheckedUpdateWithoutUserInput = {
   color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularies?: Prisma.FlashcardDeckVocabularyUncheckedUpdateManyWithoutDeckNestedInput
+  mandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedUpdateManyWithoutDeckNestedInput
+  cantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedUpdateManyWithoutDeckNestedInput
 }
 
 export type FlashcardDeckUncheckedUpdateManyWithoutUserInput = {
@@ -594,11 +683,13 @@ export type FlashcardDeckUncheckedUpdateManyWithoutUserInput = {
  */
 
 export type FlashcardDeckCountOutputType = {
-  vocabularies: number
+  mandarinVocabularies: number
+  cantoneseVocabularies: number
 }
 
 export type FlashcardDeckCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  vocabularies?: boolean | FlashcardDeckCountOutputTypeCountVocabulariesArgs
+  mandarinVocabularies?: boolean | FlashcardDeckCountOutputTypeCountMandarinVocabulariesArgs
+  cantoneseVocabularies?: boolean | FlashcardDeckCountOutputTypeCountCantoneseVocabulariesArgs
 }
 
 /**
@@ -614,8 +705,15 @@ export type FlashcardDeckCountOutputTypeDefaultArgs<ExtArgs extends runtime.Type
 /**
  * FlashcardDeckCountOutputType without action
  */
-export type FlashcardDeckCountOutputTypeCountVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.FlashcardDeckVocabularyWhereInput
+export type FlashcardDeckCountOutputTypeCountMandarinVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FlashcardDeckMandarinVocabularyWhereInput
+}
+
+/**
+ * FlashcardDeckCountOutputType without action
+ */
+export type FlashcardDeckCountOutputTypeCountCantoneseVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FlashcardDeckCantoneseVocabularyWhereInput
 }
 
 
@@ -628,7 +726,8 @@ export type FlashcardDeckSelect<ExtArgs extends runtime.Types.Extensions.Interna
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  vocabularies?: boolean | Prisma.FlashcardDeck$vocabulariesArgs<ExtArgs>
+  mandarinVocabularies?: boolean | Prisma.FlashcardDeck$mandarinVocabulariesArgs<ExtArgs>
+  cantoneseVocabularies?: boolean | Prisma.FlashcardDeck$cantoneseVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.FlashcardDeckCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["flashcardDeck"]>
 
@@ -667,7 +766,8 @@ export type FlashcardDeckSelectScalar = {
 export type FlashcardDeckOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "description" | "color" | "createdAt" | "updatedAt", ExtArgs["result"]["flashcardDeck"]>
 export type FlashcardDeckInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  vocabularies?: boolean | Prisma.FlashcardDeck$vocabulariesArgs<ExtArgs>
+  mandarinVocabularies?: boolean | Prisma.FlashcardDeck$mandarinVocabulariesArgs<ExtArgs>
+  cantoneseVocabularies?: boolean | Prisma.FlashcardDeck$cantoneseVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.FlashcardDeckCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type FlashcardDeckIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -681,7 +781,8 @@ export type $FlashcardDeckPayload<ExtArgs extends runtime.Types.Extensions.Inter
   name: "FlashcardDeck"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
-    vocabularies: Prisma.$FlashcardDeckVocabularyPayload<ExtArgs>[]
+    mandarinVocabularies: Prisma.$FlashcardDeckMandarinVocabularyPayload<ExtArgs>[]
+    cantoneseVocabularies: Prisma.$FlashcardDeckCantoneseVocabularyPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1086,7 +1187,8 @@ readonly fields: FlashcardDeckFieldRefs;
 export interface Prisma__FlashcardDeckClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  vocabularies<T extends Prisma.FlashcardDeck$vocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FlashcardDeck$vocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  mandarinVocabularies<T extends Prisma.FlashcardDeck$mandarinVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FlashcardDeck$mandarinVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckMandarinVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  cantoneseVocabularies<T extends Prisma.FlashcardDeck$cantoneseVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FlashcardDeck$cantoneseVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckCantoneseVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1524,27 +1626,51 @@ export type FlashcardDeckDeleteManyArgs<ExtArgs extends runtime.Types.Extensions
 }
 
 /**
- * FlashcardDeck.vocabularies
+ * FlashcardDeck.mandarinVocabularies
  */
-export type FlashcardDeck$vocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type FlashcardDeck$mandarinVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the FlashcardDeckVocabulary
+   * Select specific fields to fetch from the FlashcardDeckMandarinVocabulary
    */
-  select?: Prisma.FlashcardDeckVocabularySelect<ExtArgs> | null
+  select?: Prisma.FlashcardDeckMandarinVocabularySelect<ExtArgs> | null
   /**
-   * Omit specific fields from the FlashcardDeckVocabulary
+   * Omit specific fields from the FlashcardDeckMandarinVocabulary
    */
-  omit?: Prisma.FlashcardDeckVocabularyOmit<ExtArgs> | null
+  omit?: Prisma.FlashcardDeckMandarinVocabularyOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.FlashcardDeckVocabularyInclude<ExtArgs> | null
-  where?: Prisma.FlashcardDeckVocabularyWhereInput
-  orderBy?: Prisma.FlashcardDeckVocabularyOrderByWithRelationInput | Prisma.FlashcardDeckVocabularyOrderByWithRelationInput[]
-  cursor?: Prisma.FlashcardDeckVocabularyWhereUniqueInput
+  include?: Prisma.FlashcardDeckMandarinVocabularyInclude<ExtArgs> | null
+  where?: Prisma.FlashcardDeckMandarinVocabularyWhereInput
+  orderBy?: Prisma.FlashcardDeckMandarinVocabularyOrderByWithRelationInput | Prisma.FlashcardDeckMandarinVocabularyOrderByWithRelationInput[]
+  cursor?: Prisma.FlashcardDeckMandarinVocabularyWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.FlashcardDeckVocabularyScalarFieldEnum | Prisma.FlashcardDeckVocabularyScalarFieldEnum[]
+  distinct?: Prisma.FlashcardDeckMandarinVocabularyScalarFieldEnum | Prisma.FlashcardDeckMandarinVocabularyScalarFieldEnum[]
+}
+
+/**
+ * FlashcardDeck.cantoneseVocabularies
+ */
+export type FlashcardDeck$cantoneseVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the FlashcardDeckCantoneseVocabulary
+   */
+  select?: Prisma.FlashcardDeckCantoneseVocabularySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the FlashcardDeckCantoneseVocabulary
+   */
+  omit?: Prisma.FlashcardDeckCantoneseVocabularyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FlashcardDeckCantoneseVocabularyInclude<ExtArgs> | null
+  where?: Prisma.FlashcardDeckCantoneseVocabularyWhereInput
+  orderBy?: Prisma.FlashcardDeckCantoneseVocabularyOrderByWithRelationInput | Prisma.FlashcardDeckCantoneseVocabularyOrderByWithRelationInput[]
+  cursor?: Prisma.FlashcardDeckCantoneseVocabularyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FlashcardDeckCantoneseVocabularyScalarFieldEnum | Prisma.FlashcardDeckCantoneseVocabularyScalarFieldEnum[]
 }
 
 /**

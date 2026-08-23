@@ -1,0 +1,13 @@
+# pnpm 11 config cho backend (Docker build đọc file này trong context ./backend)
+confirmModulesPurge: false
+allowBuilds:
+    esbuild: true
+    "@prisma/client": true
+    "@prisma/engines": true
+    prisma: true
+    "@parcel/watcher": true
+    "@napi-rs/cli": true
+    sharp: true
+    "@swc/core": true
+    "@sentry/cli": true
+    lightningcss: true

@@ -33,7 +33,6 @@ export function logFetchDone(counts) {
     const parts = [];
     if (counts.words != null) parts.push(`Word:${counts.words}`);
     if (counts.grammar != null) parts.push(`Grammar:${counts.grammar}`);
-    if (counts.sentences != null) parts.push(`Sentence:${counts.sentences}`);
     if (counts.hanCharacters != null) parts.push(`HanChar:${counts.hanCharacters}`);
     const label = `Fetch all Data (${parts.join(", ")})`;
     emit("info", label);
@@ -91,7 +90,7 @@ function subjectLabel(subject) {
     if (typeof o.error === "string" && o.error.trim()) return o.error.trim();
     if (typeof o.path === "string" && o.path.trim()) return o.path.trim();
 
-    for (const key of ["wordId", "grammarId", "sentenceId", "id"]) {
+    for (const key of ["wordId", "grammarId", "id"]) {
         if (o[key] != null && o[key] !== "") return `#${String(o[key]).slice(0, 8)}`;
     }
 

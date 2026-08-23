@@ -1,26 +1,22 @@
 import { Link } from "react-router-dom";
-import {
-    useVocabularyCount,
-    useMasteredVocabularyCount,
-    useGrammarCount,
-    useSentenceCount,
-} from "../store/appStore.js";
+import { useVocabularyCount, useMasteredVocabularyCount, useGrammarCount } from "../store/appStore.js";
 import { useLocale } from "../store/localeStore.js";
+import { vocabularyBankPath } from "../lib/wordRoutes.js";
 import { FlashcardStatsPanel } from "../components/FlashcardStatsPanel.jsx";
+import { CheckinCalendar } from "../components/CheckinCalendar.jsx";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/shadcn/card.jsx";
-import { IconWordBank, IconGrammar, IconSentences, IconFlashcard } from "../components/NavIcons.jsx";
+import { IconWordBank, IconGrammar, IconFlashcard } from "../components/NavIcons.jsx";
 
 export function HomePage() {
     const wordCount = useVocabularyCount();
     const masteredCount = useMasteredVocabularyCount();
     const grammarCount = useGrammarCount();
-    const sentenceCount = useSentenceCount();
     const { t, fmt } = useLocale();
     const remaining = wordCount - masteredCount;
 
     const quickLinks = [
         {
-            to: "/vocabulary",
+            to: vocabularyBankPath(),
             icon: IconWordBank,
             title: t.home.goWordBank,
             meta: fmt(t.home.wordCountMeta, { count: wordCount }),
@@ -30,12 +26,6 @@ export function HomePage() {
             icon: IconGrammar,
             title: t.home.goGrammar,
             meta: fmt(t.home.grammarCountMeta, { count: grammarCount }),
-        },
-        {
-            to: "/sentences",
-            icon: IconSentences,
-            title: t.nav.sentenceBank,
-            meta: `${sentenceCount} ${t.nav.sentenceBank.toLowerCase()}`,
         },
         {
             to: "/flashcard",
@@ -90,6 +80,11 @@ export function HomePage() {
                 {/* ── Stats ── */}
                 <section className="mt-7 mb-7">
                     <FlashcardStatsPanel />
+                </section>
+
+                {/* ── Check-in calendar (2026-08-24) ── */}
+                <section className="mb-7">
+                    <CheckinCalendar className="max-w-md" />
                 </section>
 
                 {/* ── Quick Nav ── */}

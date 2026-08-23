@@ -5,6 +5,7 @@ import { cn } from "../lib/cn.js";
 import { uiCompactIconButtonClass } from "./ui/controlStyles.js";
 import { api } from "../lib/api.js";
 import { IconTrash, IconClose } from "./NavIcons.jsx";
+import { Button } from "./shadcn/button.jsx";
 import MarkdownText from "./ui/MarkdownText.jsx";
 
 const tdClass = "px-3.5 py-2.5 text-left align-middle truncate max-w-[200px]";
@@ -13,8 +14,6 @@ const cellInputClass =
     "w-full min-w-20 px-2 py-1.5 border border-primary/25 rounded-md bg-card text-sm outline-none focus:border-primary";
 const cellTextareaClass =
     "w-full min-w-20 px-2 py-1.5 border border-primary/25 rounded-md bg-card text-sm outline-none focus:border-primary resize-y min-h-[60px]";
-const deleteButtonClass =
-    "shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-lg border text-sm font-medium bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900 cursor-pointer transition-all active:enabled:scale-[0.97]";
 
 // ========== Sub-components for editing ==========
 
@@ -43,14 +42,16 @@ const ArrayFieldEditor = memo(function ArrayFieldEditor({ label, items = [], onC
                         value={val}
                         onChange={(e) => updateItem(idx, e.target.value)}
                     />
-                    <button
+                    <Button
                         type="button"
-                        className={deleteButtonClass}
+                        variant="destructive"
+                        size="icon"
+                        className="size-11! shrink-0"
                         onClick={() => removeItem(idx)}
                         title={t.common.delete}
                     >
                         <IconTrash size={18} />
-                    </button>
+                    </Button>
                 </div>
             ))}
         </div>
@@ -95,14 +96,16 @@ const GrammarExampleEditor = memo(function GrammarExampleEditor({ example, index
                     >
                         {autoGenerating ? "..." : t.grammarBank.autoGen}
                     </button>
-                    <button
+                    <Button
                         type="button"
-                        className={deleteButtonClass}
+                        variant="destructive"
+                        size="icon"
+                        className="size-11! shrink-0"
                         onClick={onRemove}
                         title={t.grammarBank.deleteExample}
                     >
                         <IconTrash size={18} />
-                    </button>
+                    </Button>
                 </div>
             </div>
             <div className="flex flex-col gap-2">
@@ -268,7 +271,7 @@ export const GrammarRow = memo(function GrammarRow({
 
     // Collapsed row
     const collapsedRow = (
-        <tr className={cn(rowClass, item.important && "bg-orange-600/[0.04]", item.mastered && "opacity-75")}>
+        <tr className={cn(rowClass, item.important && "bg-primary/5", item.mastered && "opacity-75")}>
             <td className={numClass}>{index + 1}</td>
             {canMark && (
                 <td className={flagColClass} onClick={stop}>
@@ -288,7 +291,10 @@ export const GrammarRow = memo(function GrammarRow({
                 </td>
             )}
             <td
-                className={cn(tdClass, "font-semibold text-foreground max-w-56 truncate cursor-pointer hover:text-primary")}
+                className={cn(
+                    tdClass,
+                    "font-semibold text-foreground max-w-56 truncate cursor-pointer hover:text-primary",
+                )}
                 onClick={() => setShowPopup(true)}
             >
                 {item.title}
@@ -319,14 +325,16 @@ export const GrammarRow = memo(function GrammarRow({
             )}
             {canEdit && (
                 <td className={cn(tdClass, "whitespace-nowrap")} onClick={stop}>
-                    <button
+                    <Button
                         type="button"
-                        className={cn(uiCompactIconButtonClass, "size-7 text-base rounded", deleteButtonClass)}
+                        variant="destructive"
+                        size="icon"
+                        className="size-7! rounded"
                         onClick={() => onDelete(item)}
                         title={t.common.delete}
                     >
                         <IconTrash size={18} />
-                    </button>
+                    </Button>
                 </td>
             )}
         </tr>
@@ -335,14 +343,16 @@ export const GrammarRow = memo(function GrammarRow({
     // Editing mode (inline)
     if (editing) {
         return (
-            <tr className={cn("bg-amber-50/30 border-b border-border")} onClick={stop}>
+            <tr className={cn("bg-muted/40 border-b border-border")} onClick={stop}>
                 <td className={numClass}>{index + 1}</td>
                 {canMark && <td className={flagColClass} />}
                 <td colSpan={canMark ? 2 : 1} className="px-3.5 py-2.5">
                     <div className="space-y-3 min-w-0 max-w-3xl" onKeyDown={(e) => e.key === "Escape" && cancelEdit(e)}>
                         {/* Title */}
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-muted-foreground">{t.grammarBank.grammarName}</label>
+                            <label className="text-xs font-medium text-muted-foreground">
+                                {t.grammarBank.grammarName}
+                            </label>
                             <input
                                 className={cn(cellInputClass, "font-semibold")}
                                 value={draft.title}
@@ -352,7 +362,9 @@ export const GrammarRow = memo(function GrammarRow({
 
                         {/* Structure */}
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-muted-foreground">{t.grammarBank.structure}</label>
+                            <label className="text-xs font-medium text-muted-foreground">
+                                {t.grammarBank.structure}
+                            </label>
                             <input
                                 className={cellInputClass}
                                 value={draft.structure ?? ""}
@@ -377,7 +389,9 @@ export const GrammarRow = memo(function GrammarRow({
                         {/* Examples */}
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                                <label className="text-xs font-medium text-muted-foreground">{t.grammarBank.examples}</label>
+                                <label className="text-xs font-medium text-muted-foreground">
+                                    {t.grammarBank.examples}
+                                </label>
                                 <button
                                     type="button"
                                     className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[0.6875rem] font-medium text-primary hover:bg-primary/20"
@@ -411,25 +425,17 @@ export const GrammarRow = memo(function GrammarRow({
                             >
                                 ✓ {t.common.save}
                             </button>
-                            <button
-                                type="button"
-                                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-background"
-                                onClick={cancelEdit}
-                            >
+                            <Button type="button" variant="destructive" size="sm" onClick={cancelEdit}>
                                 × {t.common.cancel}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </td>
                 {canMark && <td className={flagColClass} />}
                 <td className={cn(tdClass, "whitespace-nowrap")} onClick={stop}>
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-background"
-                        onClick={cancelEdit}
-                    >
+                    <Button type="button" variant="destructive" size="sm" onClick={cancelEdit}>
                         × {t.common.cancel}
-                    </button>
+                    </Button>
                 </td>
             </tr>
         );
@@ -464,10 +470,15 @@ export const GrammarRow = memo(function GrammarRow({
                                 )}
                                 {hasDetails && (
                                     <div>
-                                        <span className="text-xs font-medium text-muted-foreground">{t.grammarBank.details}</span>
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                            {t.grammarBank.details}
+                                        </span>
                                         <div className="mt-1.5 space-y-1">
                                             {(item.details ?? []).map((d, i) => (
-                                                <div key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                                                <div
+                                                    key={i}
+                                                    className="text-sm text-muted-foreground flex items-start gap-2"
+                                                >
                                                     <span className="text-primary mt-1.5 shrink-0">•</span>
                                                     <MarkdownText className="flex-1 min-w-0">{d}</MarkdownText>
                                                 </div>
@@ -477,7 +488,9 @@ export const GrammarRow = memo(function GrammarRow({
                                 )}
                                 {hasNotes && (
                                     <div>
-                                        <span className="text-xs font-medium text-muted-foreground">{t.grammarBank.note}</span>
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                            {t.grammarBank.note}
+                                        </span>
                                         <div className="mt-1.5 space-y-1">
                                             {(item.notes ?? []).map((n, i) => (
                                                 <div
@@ -492,7 +505,9 @@ export const GrammarRow = memo(function GrammarRow({
                                     </div>
                                 )}
                                 {item.content && (
-                                    <MarkdownText className="text-sm text-muted-foreground">{item.content}</MarkdownText>
+                                    <MarkdownText className="text-sm text-muted-foreground">
+                                        {item.content}
+                                    </MarkdownText>
                                 )}
                                 {hasExamples && (
                                     <div>
@@ -516,7 +531,9 @@ export const GrammarRow = memo(function GrammarRow({
                                                         </div>
                                                     )}
                                                     {ex.vietExample && (
-                                                        <div className="text-sm text-muted-foreground mt-1">{ex.vietExample}</div>
+                                                        <div className="text-sm text-muted-foreground mt-1">
+                                                            {ex.vietExample}
+                                                        </div>
                                                     )}
                                                     {ex.engExample && (
                                                         <div className="text-xs text-muted-foreground italic mt-0.5">

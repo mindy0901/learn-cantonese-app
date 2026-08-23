@@ -41,17 +41,27 @@ export function CloudGate() {
         }
     }, [dataError, navigate]);
 
-    if (!authInitialized || !hydrated || showLoading) {
+    if (!authInitialized || !hydrated || showLoading || dataLoading) {
         // Full-screen overlay covering everything (incl. navbar) so no
-        // interaction is possible during the initial load / hard refresh.
-        // Show a step checklist so users can see what's loading.
-        const steps = [
-            { key: "checking-user", label: t.data.stepCheckingUser },
-            { key: "loading-data", label: t.data.stepLoadingData },
-            { key: "saving-cache", label: t.data.stepSavingCache },
-            { key: "indexing", label: t.data.stepIndexing },
-        ];
-        const activeStep = !authInitialized ? "checking-user" : dataLoadingStep || "loading-data";
+        // interaction is possible during the initial load / hard refresh
+        // AND khi đổi mode học (dataLoading).
+        // - Load đầu: checklist đầy đủ 4 bước (checking-user → indexing).
+        // - Đổi mode: CHỈ hiện bước loading-data (không check/pending giả —
+        //   các bước khác không chạy trong flow này).
+        const isModeSwitch = dataLoading && hydrated;
+        const steps = isModeSwitch
+            ? [{ key: "loading-data", label: t.data.stepLoadingData }]
+            : [
+                  { key: "checking-user", label: t.data.stepCheckingUser },
+                  { key: "loading-data", label: t.data.stepLoadingData },
+                  { key: "saving-cache", label: t.data.stepSavingCache },
+                  { key: "indexing", label: t.data.stepIndexing },
+              ];
+        const activeStep = isModeSwitch
+            ? "loading-data"
+            : !authInitialized
+              ? "checking-user"
+              : dataLoadingStep || "loading-data";
         // When loading finished, mark every step as done (✓) so users see the
         // full checklist complete before the overlay fades away.
         const activeIdx = activeStep === "done" ? steps.length : steps.findIndex((s) => s.key === activeStep);

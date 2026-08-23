@@ -5,6 +5,7 @@ import { cn } from "../lib/cn.js";
 import { uiCompactIconButtonClass } from "./ui/controlStyles.js";
 import { HanziiHanCellLink } from "./HanziiHanCellLink.jsx";
 import { hanCharacterDetailPath } from "../lib/hanCharacterRoutes.js";
+import { Button } from "./shadcn/button.jsx";
 
 const tdClass = "px-3.5 py-2.5 text-left align-middle truncate max-w-[200px]";
 const tdEditClass = "px-3.5 py-2.5 text-left align-top truncate max-w-[200px]";
@@ -153,24 +154,23 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                             type="button"
                             className={cn(
                                 uiCompactIconButtonClass,
-                                "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-green-600 rounded hover:bg-background",
+                                "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-success rounded hover:bg-background",
                             )}
                             onClick={saveEdit}
                             title={t.common.save}
                         >
                             ✓
                         </button>
-                        <button
+                        <Button
                             type="button"
-                            className={cn(
-                                uiCompactIconButtonClass,
-                                "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] text-muted-foreground rounded hover:bg-background",
-                            )}
+                            variant="destructive"
+                            size="icon"
+                            className="h-6! min-w-6! px-1.5! py-1! text-[0.9375rem]! rounded!"
                             onClick={cancelEdit}
                             title={t.common.cancel}
                         >
                             ×
-                        </button>
+                        </Button>
                     </span>
                 </td>
             </tr>
@@ -255,24 +255,23 @@ export const HanCharacterRow = memo(function HanCharacterRow({ item, index, canE
                                 type="button"
                                 className={cn(
                                     uiCompactIconButtonClass,
-                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-amber-50 hover:text-amber-600",
+                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-muted hover:text-foreground",
                                 )}
                                 onClick={startEdit}
                                 title={t.common.edit}
                             >
                                 ✎
                             </button>
-                            <button
+                            <Button
                                 type="button"
-                                className={cn(
-                                    uiCompactIconButtonClass,
-                                    "min-w-6 min-h-6 px-1.5 py-1 text-[0.9375rem] rounded hover:bg-red-50 hover:text-red-600",
-                                )}
+                                variant="destructive"
+                                size="icon"
+                                className="h-6! min-w-6! px-1.5! py-1! text-[0.9375rem]! rounded!"
                                 onClick={() => onDelete(item)}
                                 title={t.common.delete}
                             >
                                 ×
-                            </button>
+                            </Button>
                             <Link
                                 to={hanCharacterDetailPath(item.id)}
                                 className="inline-flex items-center justify-center size-8 rounded-lg border border-border bg-card text-muted-foreground no-underline transition-colors duration-150 hover:border-primary/25 hover:text-primary hover:bg-primary/10"

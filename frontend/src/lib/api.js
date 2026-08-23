@@ -45,6 +45,29 @@ async function request(path, options = {}) {
     }
 }
 
+// Ngôn ngữ học mặc định — persist qua F5 (localStorage) để không mất mode khi refresh.
+const LANGUAGE_KEY = "learn-cantonese:language";
+function readStoredLanguage() {
+    try {
+        const v = typeof localStorage !== "undefined" ? localStorage.getItem(LANGUAGE_KEY) : null;
+        return v === "mandarin" || v === "cantonese" ? v : "cantonese";
+    } catch {
+        return "cantonese";
+    }
+}
+let apiLanguage = readStoredLanguage();
+export const getApiLanguage = () => apiLanguage;
+export function setApiLanguage(lang) {
+    if (lang === "mandarin" || lang === "cantonese") {
+        apiLanguage = lang;
+        try {
+            if (typeof localStorage !== "undefined") localStorage.setItem(LANGUAGE_KEY, lang);
+        } catch {
+            // bỏ qua — không persist được cũng không sao
+        }
+    }
+}
+
 export const api = {
     getAuthStatus: () => request("/auth/status"),
     getMe: () => request("/auth/me"),
@@ -53,9 +76,16 @@ export const api = {
         request("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) }),
     logout: () => request("/auth/logout", { method: "POST" }),
 
+    // Check-in — auto check-in ngày đăng nhập (2026-08-24)
+    checkIn: (date) => request("/api/checkins", { method: "POST", body: JSON.stringify({ date: date ?? null }) }),
+    fetchCheckins: () => request("/api/checkins"),
+
     fetchFromCloud: () => request("/api/data"),
 
     fetchFullData: () => api.fetchFromCloud(),
+
+    // Tải toàn bộ 1 kho từ theo ngôn ngữ (on-demand).
+    fetchLanguageData: (lang = apiLanguage) => request(`/api/${lang}-vocabularies`),
 
     browseVocabularies: async ({
         page = 1,
@@ -82,61 +112,55 @@ export const api = {
         if (maxProgress != null && maxProgress !== "") params.set("maxProgress", String(maxProgress));
         if (hskLevel) params.set("hskLevel", hskLevel);
         const query = params.toString();
-        try {
-            return await request(`/api/vocabulary/browse?${query}`);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            if (!/not found|404/i.test(message)) throw err;
-            return request(`/api/vocabulary?${query}`);
-        }
+        return request(`/api/${apiLanguage}-vocabularies?${query}`);
     },
 
     fetchVocabulariesByIds: (ids) => {
         const list = [...new Set((ids ?? []).map(String).filter(Boolean))];
         if (list.length === 0) return Promise.resolve([]);
-        return request(`/api/vocabulary/by-ids?ids=${encodeURIComponent(list.join(","))}`);
+        return request(`/api/${apiLanguage}-vocabularies/by-ids?ids=${encodeURIComponent(list.join(","))}`);
     },
 
-    createVocabulary: (vocab) => request("/api/vocabulary", { method: "POST", body: JSON.stringify(vocab) }),
+    // Tra cứu từ đã tồn tại theo hán tự (duplicate detection khi tạo từ mới).
+    findVocabularyByHan: async (han) => {
+        const h = String(han ?? "").trim();
+        if (!h) return { items: [] };
+        return request(`/api/${apiLanguage}-vocabularies/find-by-han?han=${encodeURIComponent(h)}`);
+    },
+
+    // Tra cứu trùng theo BANK NGÔN NGỮ tường minh (mandarin/cantonese) — không phụ thuộc
+    // mode hiện tại. Dùng cho dup-check tách cột: Mandarin check bank mandarin,
+    // Cantonese check bank cantonese. (2026-08-21)
+    findVocabularyByHanLang: async (han, lang) => {
+        const h = String(han ?? "").trim();
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        if (!h) return { items: [] };
+        return request(`/api/${valid}-vocabularies/find-by-han?han=${encodeURIComponent(h)}`);
+    },
+
+    // Gợi ý giản thể cho form HK (hero Cantonese) — HK → giản thể qua hk2s, chỉ trả
+    // khi tìm thấy trong kho Mandarin.
+    hanziSimplifiedSuggestion: async (hk) => {
+        const h = String(hk ?? "").trim();
+        if (!h) return { found: false, simplified: "" };
+        return request(`/api/hanzi/simplified-suggestion?hk=${encodeURIComponent(h)}`);
+    },
+
+    // Toàn bộ map HK → gợi ý mandarin (precompute lúc load — tra map thay vì gọi từng từ).
+    fetchHkSuggestionMap: () => request("/api/hanzi/hk-suggestion-map"),
+
+    createVocabulary: (vocab) =>
+        request(`/api/${apiLanguage}-vocabularies`, { method: "POST", body: JSON.stringify(vocab) }),
     ocrVocabulary: (imageBase64, engine = "local") =>
         request("/api/ocr-vocabulary", { method: "POST", body: JSON.stringify({ image: imageBase64, engine }) }),
     ocrDerive: (text) => request("/api/ocr-derive", { method: "POST", body: JSON.stringify({ text }) }),
-    updateVocabulary: (id, vocab) => request(`/api/vocabulary/${id}`, { method: "PUT", body: JSON.stringify(vocab) }),
-    patchVocabularyFlags: async (id, flags, vocab) => {
-        const payload = { ...flags };
-        try {
-            return await request(`/api/vocabulary/${id}/flags`, {
-                method: "PATCH",
-                body: JSON.stringify(payload),
-            });
-        } catch (err) {
-            const status = err?.status;
-            const message = err instanceof Error ? err.message : String(err);
-            const patchUnavailable = status === 404 || /cannot patch|not found/i.test(message);
-            const patchRejected =
-                status === 400 &&
-                ("popularity" in payload ||
-                    "important" in payload ||
-                    "mastered" in payload ||
-                    "studyProgress" in payload);
-            if ((!patchUnavailable && !patchRejected) || !vocab) throw err;
-            return request(`/api/vocabulary/${id}`, {
-                method: "PUT",
-                body: JSON.stringify({ ...vocab, ...payload }),
-            });
-        }
-    },
-    deleteVocabulary: (id) => request(`/api/vocabulary/${id}`, { method: "DELETE" }),
+    updateVocabulary: (id, vocab) =>
+        request(`/api/${apiLanguage}-vocabularies/${id}`, { method: "PUT", body: JSON.stringify(vocab) }),
+    deleteVocabulary: (id) => request(`/api/${apiLanguage}-vocabularies/${id}`, { method: "DELETE" }),
 
     createGrammar: (item) => request("/api/grammar", { method: "POST", body: JSON.stringify(item) }),
     updateGrammar: (id, item) => request(`/api/grammar/${id}`, { method: "PUT", body: JSON.stringify(item) }),
     deleteGrammar: (id) => request(`/api/grammar/${id}`, { method: "DELETE" }),
-
-    createSentencePattern: (item) => request("/api/sentence-patterns", { method: "POST", body: JSON.stringify(item) }),
-    updateSentencePattern: (id, item) =>
-        request(`/api/sentence-patterns/${id}`, { method: "PUT", body: JSON.stringify(item) }),
-    deleteSentencePattern: (id) => request(`/api/sentence-patterns/${id}`, { method: "DELETE" }),
-    fetchSentencePatternsForWord: (wordId) => request(`/api/sentence-patterns/by-word/${wordId}`),
 
     backfillHanVariants: () => request("/api/data/backfill-han-variants", { method: "POST", body: "{}" }),
 
@@ -256,8 +280,31 @@ export const api = {
             method: "POST",
             body: JSON.stringify({ text, source, target }),
         }),
+    /** Google Translate web (gtx) — bypass deep_translator */
+    translateGoogle: (text, source, target) =>
+        request("/api/translate-google", {
+            method: "POST",
+            body: JSON.stringify({ text, source, target }),
+        }),
+    /**
+     * Lấy nghĩa (vi + zh) + ví dụ từ Hanzii.
+     * - Có `pinyin` → trả { word, groups } cho 1 phiên âm đó.
+     * - KHÔNG có `pinyin` → trả { word, tones: [{ pinyin, groups }] } cho TOÀN BỘ thanh điệu.
+     */
+    hanziiMeanings: (query, pinyin, hl = "vi") =>
+        request("/api/hanzii/meanings", {
+            method: "POST",
+            body: JSON.stringify({ query, ...(pinyin ? { pinyin } : {}), hl }),
+        }),
     toJyutping: (text) =>
         request("/api/jyutping", {
+            method: "POST",
+            body: JSON.stringify({ text }),
+        }),
+
+    /** Convert Chinese text to Traditional (OpenCC s2t) */
+    toTraditional: (text) =>
+        request("/api/s2t", {
             method: "POST",
             body: JSON.stringify({ text }),
         }),

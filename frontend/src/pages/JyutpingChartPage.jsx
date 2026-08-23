@@ -18,7 +18,11 @@ import { Button } from "../components/shadcn/button.jsx";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/shadcn/table.jsx";
 import { ToneDiagram } from "../components/ToneDiagram.jsx";
 import { JyutpingSyllableGrid } from "../components/JyutpingSyllableGrid.jsx";
-import { JYUTPING_SYL_INITIAL_COUNT, JYUTPING_SYL_FINAL_COUNT } from "../data/jyutpingSyllableTable.js";
+import {
+    JYUTPING_SYL_INITIAL_COUNT,
+    JYUTPING_SYL_FINAL_COUNT,
+    JYUTPING_SYL_TOTAL,
+} from "../data/jyutpingSyllableTable.js";
 
 /** Phát âm click-to-speech — ngắt phát trước nếu đang chạy, không gắn vào DOM.
  *  Nhận danh sách nguồn (local trước, CDN sau); nguồn trước lỗi → thử nguồn sau. */
@@ -48,9 +52,12 @@ export function JyutpingChartPage() {
 
     return (
         <main className="mx-auto flex-1 w-full max-w-280 px-4 py-8 pb-12">
-            <div className="mb-6 flex flex-col gap-2">
+            <div className="mb-6 flex flex-col items-center gap-1.5 text-center">
                 <h1 className="text-2xl font-bold tracking-tight">{t.jyutping.title}</h1>
-                <p className="text-sm text-muted-foreground">{t.jyutping.subtitle}</p>
+                <p className="text-sm text-muted-foreground">
+                    {t.jyutping.subtitle} — <span className="font-medium text-foreground">{JYUTPING_SYL_TOTAL}</span>{" "}
+                    {t.jyutping.syllables}
+                </p>
             </div>
 
             {/* 6 Thanh điệu — bảng giống Open Cantonese: Tone Number / Tone Name / Diagram */}
@@ -64,14 +71,14 @@ export function JyutpingChartPage() {
                         <TableBody>
                             {/* Hàng 1: Tone Number */}
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="w-28 bg-muted/40 text-center font-semibold">
+                                <TableHead className="w-28 bg-muted/40 text-center font-semibold text-viet">
                                     {t.jyutping.toneNumber}
                                 </TableHead>
                                 {JYUTPING_TONES.map((tn) => (
                                     <TableCell key={tn} className="h-12 text-center">
                                         <button
                                             type="button"
-                                            className="font-mono font-semibold text-primary underline-offset-2 hover:underline"
+                                            className="font-mono text-base font-semibold text-foreground underline-offset-2 hover:underline"
                                             onClick={() => play(jyutpingToneAudioUrl(tn), jyutpingToneCdnUrl(tn))}
                                         >
                                             {t.jyutping.toneNumbers[tn - 1]}
@@ -81,14 +88,14 @@ export function JyutpingChartPage() {
                             </TableRow>
                             {/* Hàng 2: Ví dụ jyutping */}
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="bg-muted/40 text-center font-semibold">
+                                <TableHead className="bg-muted/40 text-center font-semibold text-viet">
                                     {t.jyutping.toneExample}
                                 </TableHead>
                                 {JYUTPING_TONES.map((tn) => (
                                     <TableCell key={tn} className="h-10 text-center">
                                         <button
                                             type="button"
-                                            className="font-mono text-sm font-medium text-foreground underline-offset-2 hover:underline"
+                                            className="font-mono text-base font-medium text-foreground underline-offset-2 hover:underline"
                                             onClick={() => play(jyutpingToneAudioUrl(tn), jyutpingToneCdnUrl(tn))}
                                         >
                                             {t.jyutping.toneExamples[tn - 1]}
@@ -98,14 +105,14 @@ export function JyutpingChartPage() {
                             </TableRow>
                             {/* Hàng 3: Diagram */}
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="bg-muted/40 text-center font-semibold">
+                                <TableHead className="bg-muted/40 text-center font-semibold text-viet">
                                     {t.jyutping.toneDiagram}
                                 </TableHead>
                                 {JYUTPING_TONES.map((tn) => (
                                     <TableCell key={tn} className="h-20 text-center">
                                         <button
                                             type="button"
-                                            className="text-primary transition-colors hover:text-primary/70"
+                                            className="text-foreground transition-colors hover:text-primary/70"
                                             onClick={() => play(jyutpingToneAudioUrl(tn), jyutpingToneCdnUrl(tn))}
                                         >
                                             <ToneDiagram tone={tn} />
@@ -128,10 +135,10 @@ export function JyutpingChartPage() {
                     <Table containerClassName="overflow-visible">
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="bg-muted/40 text-center font-semibold">
+                                <TableHead className="bg-muted/40 text-center font-semibold text-viet">
                                     {t.jyutping.unaspirated}
                                 </TableHead>
-                                <TableHead className="bg-muted/40 text-center font-semibold">
+                                <TableHead className="bg-muted/40 text-center font-semibold text-viet">
                                     {t.jyutping.aspirated} 💨
                                 </TableHead>
                                 <TableHead className="bg-muted/40" />
@@ -182,7 +189,7 @@ export function JyutpingChartPage() {
                     <Table containerClassName="overflow-visible">
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="sticky top-0 left-0 z-20 will-change-transform bg-background text-center font-semibold text-primary shadow-[inset_-2px_0_0_0_var(--color-border),inset_0_-2px_0_0_var(--color-border)]">
+                                <TableHead className="sticky top-0 left-0 z-20 will-change-transform bg-background text-center font-semibold text-viet shadow-[inset_-2px_0_0_0_var(--color-border),inset_0_-2px_0_0_var(--color-border)]">
                                     {t.jyutping.codaHeader}
                                 </TableHead>
                                 {JYUTPING_FINAL_COLS.map((final, index) => {
@@ -198,7 +205,7 @@ export function JyutpingChartPage() {
                                                     variant="ghost"
                                                     size="sm"
                                                     className={cn(
-                                                        "h-7 w-full px-1 font-mono text-xs font-semibold text-primary",
+                                                        "h-7 w-full px-1 font-mono text-base font-semibold text-viet",
                                                         !hasAudio &&
                                                             "cursor-default text-muted-foreground/40 hover:bg-transparent hover:text-muted-foreground/40",
                                                     )}
@@ -218,7 +225,7 @@ export function JyutpingChartPage() {
                         <TableBody>
                             {JYUTPING_FINALS.map((row) => (
                                 <TableRow key={row.coda} className="hover:bg-transparent">
-                                    <TableHead className="sticky left-0 z-10 will-change-transform bg-background px-2 text-center font-mono font-semibold text-primary shadow-[inset_-2px_0_0_0_var(--color-border)]">
+                                    <TableHead className="sticky left-0 z-10 will-change-transform bg-background px-2 text-center font-mono text-base font-semibold text-viet shadow-[inset_-2px_0_0_0_var(--color-border)]">
                                         {row.coda}
                                     </TableHead>
                                     {JYUTPING_FINAL_COLS.map((final, index) => {
@@ -233,7 +240,7 @@ export function JyutpingChartPage() {
                                                         variant="ghost"
                                                         size="sm"
                                                         className={cn(
-                                                            "h-7 w-full px-1 font-mono text-sm font-medium",
+                                                            "h-7 w-full px-1 font-mono text-base font-medium",
                                                             !hasAudio &&
                                                                 "cursor-default text-muted-foreground/40 hover:bg-transparent hover:text-muted-foreground/40",
                                                         )}

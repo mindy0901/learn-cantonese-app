@@ -69,10 +69,13 @@ function splitSinoVietnameseParts(sinoVietnamese) {
 export function computeHanCharacters(vocab) {
     const trad = (vocab?.hanTraditional ?? "").trim();
     const simp = (vocab?.hanSimplified ?? "").trim();
+    const hk = (vocab?.hanHongKong ?? "").trim();
 
     const tradChars = splitHanChars(trad);
     const simpChars = splitHanChars(simp);
-    const chars = tradChars.length > 0 ? tradChars : simpChars;
+    const hkChars = splitHanChars(hk);
+    // Ưu tiên trad; pure Cantonese (ko simp/trad) → fallback HK.
+    const chars = tradChars.length > 0 ? tradChars : hkChars.length > 0 ? hkChars : simpChars;
     if (chars.length === 0) return [];
 
     const romanizations =

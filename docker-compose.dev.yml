@@ -18,6 +18,7 @@ services:
         env_file:
             - .env.dev
         environment:
+            DATABASE_URL: postgres://cantonese:cantonese@db:5432/cantonese
             BACKEND_HOST: 0.0.0.0
             BACKEND_PORT: ${BACKEND_PORT:-3001}
             FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
@@ -38,6 +39,8 @@ services:
             target: dev
         env_file:
             - .env.dev
+        environment:
+            DATABASE_URL: postgres://cantonese:cantonese@db:5432/cantonese
         ports:
             - "5555:5555"
         volumes:

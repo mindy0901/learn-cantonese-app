@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 
@@ -6,6 +8,18 @@ import { Button } from "@/components/shadcn/button";
 import { XIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react";
 
 const toast = ToastPrimitive.createToastManager();
+
+// ⚠️ Base UI tự ẩn toast theo `timeout` (ms), mặc định 5000.
+// 2026-08-23: ÉP MỌI toast ẩn sau đúng 1s (TOAST_DEFAULT_TIMEOUT) — bỏ qua duration/timeout
+// mà call site truyền (có nơi truyền 2500/4000) để tất cả thống nhất.
+// User yêu cầu toast biến mất NHANH — chỉ 1 giây.
+const TOAST_DEFAULT_TIMEOUT = 1000;
+
+const toastAdd = toast.add.bind(toast);
+toast.add = (options) => {
+    const { duration, ...rest } = options;
+    return toastAdd({ ...rest, timeout: TOAST_DEFAULT_TIMEOUT });
+};
 
 function ToastProvider({ ...props }) {
     return <ToastPrimitive.Provider {...props} />;
@@ -20,7 +34,7 @@ function ToastViewport({ className, ...props }) {
         <ToastPrimitive.Viewport
             data-slot="toast-viewport"
             className={cn(
-                "pointer-events-none fixed inset-x-4 bottom-4 z-50 mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full",
+                "pointer-events-none fixed inset-x-4 bottom-4 z-70 mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full",
                 className,
             )}
             {...props}
@@ -153,9 +167,11 @@ function ToastList() {
     return toasts.map((toastItem) => (
         <Toast key={toastItem.id} toast={toastItem}>
             <ToastContent>
-                <ToastIcon type={toastItem.type} />
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <ToastTitle />
+                    <div className="flex items-center gap-2">
+                        <ToastIcon type={toastItem.type} />
+                        <ToastTitle />
+                    </div>
                     <ToastDescription />
                 </div>
                 <ToastAction />

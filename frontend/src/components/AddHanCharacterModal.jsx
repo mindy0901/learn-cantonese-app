@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "../lib/cn.js";
 import { btnClass } from "./ui/buttonStyles.js";
 import { uiInputClass, uiModalCloseButtonClass } from "./ui/controlStyles.js";
+import { Button } from "./shadcn/button.jsx";
 import { useLocale } from "../store/localeStore.js";
 
 const backdropClass =
@@ -152,9 +153,9 @@ export function AddHanCharacterModal({ onSave, onClose, item: editItem }) {
                     )}
                 </div>
                 <div className="flex shrink-0 items-center justify-between gap-3 px-6 py-4">
-                    <button type="button" className={btnClass("ghost")} onClick={onClose}>
+                    <Button type="button" variant="destructive" onClick={onClose}>
                         {t.common.cancel}
-                    </button>
+                    </Button>
                     <button type="button" className={btnClass(isEdit ? "warning" : "success")} onClick={handleSave}>
                         {isEdit ? t.common.save : t.common.add}
                     </button>

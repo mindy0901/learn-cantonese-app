@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { api } from "../lib/api.js";
 import { logError } from "../lib/actionLog.js";
 import { useDebouncedValue } from "../hooks/useDebouncedValue.js";
+import { SEARCH_DEBOUNCE_MS } from "../lib/timing.js";
 import { AddHanCharacterModal } from "../components/AddHanCharacterModal.jsx";
 import { HanCharacterRow } from "../components/HanCharacterRow.jsx";
 import { BankSearchInput } from "../components/BankSearchInput.jsx";
@@ -52,7 +53,7 @@ export function HanCharactersPage() {
     const [totalPages, setTotalPages] = useState(0);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
-    const debouncedSearch = useDebouncedValue(search, 300);
+    const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
     const [addOpen, setAddOpen] = useState(false);
@@ -625,11 +626,11 @@ export function HanCharactersPage() {
                                                 {t.hanCharacters.totalUnique}{" "}
                                                 <strong className="tabular-nums">{preview.total}</strong>
                                             </p>
-                                            <p className="text-green-600 dark:text-green-400">
+                                            <p className="text-success">
                                                 {t.hanCharacters.newToCreate}{" "}
                                                 <strong className="tabular-nums">{preview.newCount}</strong>
                                             </p>
-                                            <p className="text-amber-600 dark:text-amber-400">
+                                            <p className="text-amber-600 dark:text-amber-300">
                                                 {t.hanCharacters.existingToUpdate}{" "}
                                                 <strong className="tabular-nums">{preview.updateCount}</strong>
                                             </p>
@@ -751,13 +752,13 @@ export function HanCharactersPage() {
                                         )}
 
                                         {syncMode === "full" && (
-                                            <p className="text-sm text-amber-600 dark:text-amber-400">
+                                            <p className="text-sm text-amber-600 dark:text-amber-300">
                                                 {t.hanCharacters.fullWarning}
                                             </p>
                                         )}
 
                                         <div className="flex justify-end gap-2 border-t border-border pt-4">
-                                            <Button type="button" variant="ghost" onClick={closePreview}>
+                                            <Button type="button" variant="destructive" onClick={closePreview}>
                                                 {t.common.cancel}
                                             </Button>
                                             <Button type="button" variant="default" onClick={confirmSync}>
@@ -774,7 +775,9 @@ export function HanCharactersPage() {
                     {progress && (
                         <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/40 p-4">
                             <div className="w-full max-w-md rounded-2xl bg-card shadow-xl p-6 flex flex-col gap-4">
-                                <h3 className="text-base font-semibold text-foreground">{t.hanCharacters.syncingTitle}</h3>
+                                <h3 className="text-base font-semibold text-foreground">
+                                    {t.hanCharacters.syncingTitle}
+                                </h3>
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-muted-foreground">
                                         {progress.job.status === "error"
@@ -783,10 +786,12 @@ export function HanCharactersPage() {
                                               ? t.hanCharacters.complete
                                               : t.hanCharacters.inProgress}
                                     </span>
-                                    <span className="text-foreground font-semibold tabular-nums">{progress.percent}%</span>
+                                    <span className="text-foreground font-semibold tabular-nums">
+                                        {progress.percent}%
+                                    </span>
                                 </div>
                                 {progress.job.mode === "full" && !progress.job.done && (
-                                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                                    <p className="text-xs text-amber-600 dark:text-amber-300">
                                         {t.hanCharacters.fullProgressHint}
                                     </p>
                                 )}
@@ -812,11 +817,11 @@ export function HanCharactersPage() {
                                 </div>
                                 {progress.job.done && (
                                     <div className="flex flex-col gap-1 text-sm">
-                                        <p className="text-green-600 dark:text-green-400">
+                                        <p className="text-success">
                                             {t.hanCharacters.created}{" "}
                                             <strong className="tabular-nums">{progress.job.created}</strong>
                                         </p>
-                                        <p className="text-amber-600 dark:text-amber-400">
+                                        <p className="text-amber-600 dark:text-amber-300">
                                             {t.hanCharacters.updated}{" "}
                                             <strong className="tabular-nums">{progress.job.updated}</strong>
                                         </p>
@@ -903,11 +908,11 @@ export function HanCharactersPage() {
                                                 {t.hanCharacters.totalUnique}{" "}
                                                 <strong className="tabular-nums">{strokePreview.total}</strong>
                                             </p>
-                                            <p className="text-green-600 dark:text-green-400">
+                                            <p className="text-success">
                                                 {t.hanCharacters.strokeNew}{" "}
                                                 <strong className="tabular-nums">{strokePreview.newCount}</strong>
                                             </p>
-                                            <p className="text-amber-600 dark:text-amber-400">
+                                            <p className="text-amber-600 dark:text-amber-300">
                                                 {t.hanCharacters.strokeUpdate}{" "}
                                                 <strong className="tabular-nums">{strokePreview.updateCount}</strong>
                                             </p>
@@ -971,7 +976,7 @@ export function HanCharactersPage() {
                                         )}
 
                                         <div className="flex justify-end gap-2 border-t border-border pt-4">
-                                            <Button type="button" variant="ghost" onClick={closeStrokePreview}>
+                                            <Button type="button" variant="destructive" onClick={closeStrokePreview}>
                                                 {t.common.cancel}
                                             </Button>
                                             <Button type="button" variant="default" onClick={confirmStrokeSync}>
@@ -1025,7 +1030,7 @@ export function HanCharactersPage() {
                                 </div>
                                 {strokeProgress.job.done && (
                                     <div className="flex flex-col gap-1 text-sm">
-                                        <p className="text-green-600 dark:text-green-400">
+                                        <p className="text-success">
                                             {t.hanCharacters.strokeUpdated}{" "}
                                             <strong className="tabular-nums">{strokeProgress.job.updated}</strong>
                                         </p>

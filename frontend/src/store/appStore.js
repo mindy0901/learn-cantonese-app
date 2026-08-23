@@ -2,33 +2,45 @@ import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import {
     deleteGrammarFromList,
-    deleteSentenceFromList,
     deleteVocabularyFromList,
     indexCloudPayload,
     indexGrammarItem,
-    indexSentencePattern,
     indexVocabulary,
+    indexVocabularies,
     stripSearchIndex,
     toggleGrammarField,
-    toggleSentenceField,
     toggleVocabularyField,
     updateGrammarInList,
-    updateSentenceInList,
     updateVocabularyInList,
+    vocabLangToLegacy,
     vocabNewToLegacy,
+    vocabularyLangPayload,
 } from "../lib/dataTransforms.js";
 import { invalidateVocabularyBrowseCache, patchVocabularyInBrowseCache } from "../lib/wordBrowseCache.js";
-import { api } from "../lib/api.js";
+import { api, getApiLanguage, setApiLanguage } from "../lib/api.js";
 import { log, logWarn, logError, logFetchDone, logMutStart, logMutDone } from "../lib/actionLog.js";
 import { normalizeVocabularyFields, vocabularyContentEqual } from "../lib/wordNormalize.js";
 import { useAuthStore } from "./authStore.js";
-import { findWordIdsInSentence } from "../lib/sentencePatternMatch.js";
 import { saveDataCache, invalidateDataCache } from "../lib/dataCache.js";
 
 const LEGACY_DATA_KEY = "cantonese-app-data";
+const LANGUAGE_KEY = "learn-cantonese:language";
+
+/** Đọc ngôn ngữ học đã lưu (persist qua F5) — trùng key với api.js. */
+function getInitialLanguage() {
+    try {
+        const v = typeof localStorage !== "undefined" ? localStorage.getItem(LANGUAGE_KEY) : null;
+        return v === "mandarin" || v === "cantonese" ? v : "cantonese";
+    } catch {
+        return "cantonese";
+    }
+}
 
 /** Dedupe concurrent cloud hydrates (e.g. React Strict Mode). */
 let hydrateFromCloudPromise = null;
+
+/** Dedupe concurrent vocabulary-sets fetches (WordBankPage + WordBankListPanel). */
+let vocabularySetsFetchPromise = null;
 
 function assertAdmin() {
     if (!useAuthStore.getState().user?.isAdmin) {
@@ -123,7 +135,6 @@ export const useAppStore = create((set, get) => ({
     masteredVocabularyCount: 0,
     vocabulariesRevision: 0,
     grammarBank: [],
-    sentencePatterns: [],
     hanCharacters: [],
     hanCharacterTotal: 0,
     hanCharactersRevision: 0,
@@ -132,6 +143,13 @@ export const useAppStore = create((set, get) => ({
     dataError: null, // { message: string, status?: number } | null
     dataLoadingStep: "", // "" | "checking-user" | "loading-data" | "saving-cache" | "indexing" | "done"
     hydrated: false,
+    // Ngôn ngữ học — đọc từ localStorage (persist qua F5). `setApiLanguage` cũng lưu localStorage
+    // nên key này đồng bộ với api.js; đọc lại để giữ mode khi refresh. (2026-08-21)
+    language: getInitialLanguage(),
+    mandarinVocabularies: [], // bank từ đã index theo ngôn ngữ
+    cantoneseVocabularies: [],
+    // Map HK → gợi ý mandarin (precompute lúc load — tra map khi click vocab thay vì gọi API từng từ).
+    hkSuggestionMap: {},
 
     clearData: () => {
         log("Clear app data");
@@ -142,11 +160,13 @@ export const useAppStore = create((set, get) => ({
             masteredVocabularyCount: 0,
             vocabulariesRevision: 0,
             grammarBank: [],
-            sentencePatterns: [],
             hanCharacters: [],
             hanCharacterTotal: 0,
             hanCharactersRevision: 0,
             vocabularySets: [],
+            mandarinVocabularies: [],
+            cantoneseVocabularies: [],
+            hkSuggestionMap: {},
             dataLoading: false,
             dataError: null,
             dataLoadingStep: "",
@@ -165,28 +185,40 @@ export const useAppStore = create((set, get) => ({
                     await migrateLegacyLocalIfNeeded();
                 }
                 set({ dataLoadingStep: "loading-data" });
-                const remote = await api.fetchFullData();
+                // Tải song song: full data + map HK→mandarin gợi ý (precompute — tra map khi
+                // click vocab thay vì gọi API từng từ, hết giật). (2026-08-21)
+                const [remote, hkSuggestionMap] = await Promise.all([
+                    api.fetchFullData(),
+                    api.fetchHkSuggestionMap().catch(() => ({})),
+                ]);
                 logFetchDone({
-                    vocabularies: remote.vocabularies?.length ?? 0,
+                    mandarin: remote.mandarinVocabularies?.length ?? 0,
+                    cantonese: remote.cantoneseVocabularies?.length ?? 0,
                     grammar: remote.grammars?.length ?? 0,
-                    sentences: remote.sentencePatterns?.length ?? 0,
                     hanCharacters: remote.hanCharacterTotal ?? remote.hanCharacters?.length ?? 0,
                 });
                 // Save raw payload to cache for next cold start
                 set({ dataLoadingStep: "saving-cache" });
                 await saveDataCache(remote);
                 set({ dataLoadingStep: "indexing" });
-                const indexed = indexCloudPayload({
-                    vocabularies: remote.vocabularies ?? [],
-                    grammars: remote.grammars ?? [],
-                    sentencePatterns: remote.sentencePatterns ?? [],
-                });
+                const grammarIndexed = indexCloudPayload({ vocabularies: [], grammars: remote.grammars ?? [] });
+                const mandarinBank = indexVocabularies(
+                    (remote.mandarinVocabularies ?? []).map((v) => vocabLangToLegacy(v, "mandarin")),
+                );
+                const cantoneseBank = indexVocabularies(
+                    (remote.cantoneseVocabularies ?? []).map((v) => vocabLangToLegacy(v, "cantonese")),
+                );
+                const active = get().language === "mandarin" ? mandarinBank : cantoneseBank;
                 set({
-                    ...indexed,
-                    vocabularyTotal: remote.vocabularyTotal ?? indexed.vocabularies.length,
-                    masteredVocabularyCount: remote.masteredVocabularyCount ?? 0,
+                    mandarinVocabularies: mandarinBank,
+                    cantoneseVocabularies: cantoneseBank,
+                    vocabularies: active,
+                    vocabularyTotal: active.length,
+                    masteredVocabularyCount: 0, // user_vocabularies đã bỏ
+                    grammarBank: grammarIndexed.grammarBank,
                     hanCharacters: remote.hanCharacters ?? [],
-                    hanCharacterTotal: remote.hanCharacterTotal ?? remote.hanCharacters?.length ?? 0,
+                    hanCharacterTotal: remote.hanCharacters?.length ?? 0,
+                    hkSuggestionMap,
                     dataLoading: false,
                     dataError: null,
                     dataLoadingStep: "done",
@@ -211,39 +243,124 @@ export const useAppStore = create((set, get) => ({
         return hydrateFromCloudPromise;
     },
 
+    // ── Chọn ngôn ngữ học (mandarin / cantonese) — LUÔN tải lại database (2026-08-18) ──
+    setLanguage: (lang) => {
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        setApiLanguage(valid);
+        set({ language: valid });
+        // Đổi mode → tải lại dữ liệu từ server (không dùng bank cache).
+        get().loadLanguage(valid);
+    },
+
+    loadLanguage: async (lang) => {
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        set({ dataLoading: true, dataError: null, dataLoadingStep: "loading-data" });
+        try {
+            // ⚠️ 2026-08-21: LUÔN tải CẢ 2 bank (mandarin + cantonese) — vì detail cantonese mode
+            // cần cột Mandarin gợi ý (mandarinVariants) từ store mandarin. Trước đây chỉ tải bank
+            // của ngôn ngữ active → khi ở cantonese mode, mandarinVocabularies rỗng → cột gợi ý
+            // không có details dù dữ liệu mandarin có đủ trong DB.
+            const [mandarinRows, cantoneseRows, hkSuggestionMap] = await Promise.all([
+                api.fetchLanguageData("mandarin"),
+                api.fetchLanguageData("cantonese"),
+                api.fetchHkSuggestionMap().catch(() => ({})),
+            ]);
+            const mandarinBank = indexVocabularies((mandarinRows ?? []).map((v) => vocabLangToLegacy(v, "mandarin")));
+            const cantoneseBank = indexVocabularies(
+                (cantoneseRows ?? []).map((v) => vocabLangToLegacy(v, "cantonese")),
+            );
+            const bank = valid === "mandarin" ? mandarinBank : cantoneseBank;
+            setApiLanguage(valid);
+            set({
+                language: valid,
+                mandarinVocabularies: mandarinBank,
+                cantoneseVocabularies: cantoneseBank,
+                vocabularies: bank,
+                vocabularyTotal: bank.length,
+                masteredVocabularyCount: 0,
+                hkSuggestionMap,
+                dataLoading: false,
+                dataError: null,
+                dataLoadingStep: "done",
+                hydrated: true,
+            });
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            const status = err instanceof Error && "status" in err ? err.status : undefined;
+            logError("Fetch language data failed", message);
+            set({ dataLoading: false, dataError: { message, status }, dataLoadingStep: "", hydrated: false });
+            throw err;
+        }
+    },
+
+    // ── Route-driven active language (2026-08-22) — KHÔNG còn nút toggle mode ──
+    // Route /c/... hoặc /m/... quyết định ngôn ngữ active. Cả 2 bank đã tải sẵn lúc hydrate
+    // → chỉ chuyển con trỏ `vocabularies` + api language, KHÔNG gọi lại mạng (không loading screen).
+    setActiveLanguage: (lang) => {
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        if (get().language === valid && get().vocabularies) return;
+        const bank = valid === "mandarin" ? get().mandarinVocabularies : get().cantoneseVocabularies;
+        setApiLanguage(valid);
+        set({ language: valid, vocabularies: bank, vocabularyTotal: bank.length });
+    },
+
     createVocabulary: (vocab) => {
         const label = vocab.hanTraditional || vocab.vietMeanings || vocab.engMeanings || "";
         logMutStart("Create vocabulary", label, vocab);
         assertAdmin();
+        const bankKey = get().language === "mandarin" ? "mandarinVocabularies" : "cantoneseVocabularies";
         const prev = get().vocabularies;
+        const prevBank = get()[bankKey];
         const item = indexVocabulary(vocab, prev.length);
-        set({ vocabularies: [...prev, item], vocabularyTotal: get().vocabularyTotal + 1 });
+        set({
+            vocabularies: [...prev, item],
+            [bankKey]: [...prevBank, item],
+            vocabularyTotal: get().vocabularyTotal + 1,
+        });
         return syncMutation(async () => {
-            const saved = await api.createVocabulary(stripSearchIndex(item));
+            const saved = await api.createVocabulary(vocabularyLangPayload(stripSearchIndex(item), get().language));
             logMutDone("Create vocabulary", label, saved);
             invalidateVocabularyBrowseCache();
+            const savedLegacy = indexVocabulary(vocabLangToLegacy(saved, get().language));
             set({
                 vocabularies: updateVocabularyInList(get().vocabularies, item.id, {
-                    ...saved,
+                    ...savedLegacy,
+                    _sortSeq: item._sortSeq,
+                }),
+                [bankKey]: updateVocabularyInList(get()[bankKey], item.id, {
+                    ...savedLegacy,
                     _sortSeq: item._sortSeq,
                 }),
                 vocabulariesRevision: get().vocabulariesRevision + 1,
             });
-        }).catch(() => set({ vocabularies: prev, vocabularyTotal: Math.max(0, get().vocabularyTotal - 1) }));
+        }).catch(() =>
+            set({ vocabularies: prev, [bankKey]: prevBank, vocabularyTotal: Math.max(0, get().vocabularyTotal - 1) }),
+        );
     },
 
     createVocabularyAwait: async (vocab) => {
         assertAdmin();
+        const bankKey = get().language === "mandarin" ? "mandarinVocabularies" : "cantoneseVocabularies";
         const prev = get().vocabularies;
+        const prevBank = get()[bankKey];
         const item = indexVocabulary(normalizeVocabularyFields(vocab), prev.length);
-        set({ vocabularies: [...prev, item], vocabularyTotal: get().vocabularyTotal + 1 });
+        set({
+            vocabularies: [...prev, item],
+            [bankKey]: [...prevBank, item],
+            vocabularyTotal: get().vocabularyTotal + 1,
+        });
         try {
-            const saved = await api.createVocabulary(stripSearchIndex(item));
+            const saved = await api.createVocabulary(vocabularyLangPayload(stripSearchIndex(item), get().language));
             invalidateVocabularyBrowseCache();
             invalidateDataCache();
+            const savedLegacy = indexVocabulary(vocabLangToLegacy(saved, get().language));
             set({
                 vocabularies: updateVocabularyInList(get().vocabularies, item.id, {
-                    ...saved,
+                    ...savedLegacy,
+                    _sortSeq: item._sortSeq,
+                }),
+                [bankKey]: updateVocabularyInList(get()[bankKey], item.id, {
+                    ...savedLegacy,
                     _sortSeq: item._sortSeq,
                 }),
                 vocabulariesRevision: get().vocabulariesRevision + 1,
@@ -251,7 +368,7 @@ export const useAppStore = create((set, get) => ({
             });
             return saved;
         } catch (err) {
-            set({ vocabularies: prev, vocabularyTotal: Math.max(0, get().vocabularyTotal - 1) });
+            set({ vocabularies: prev, [bankKey]: prevBank, vocabularyTotal: Math.max(0, get().vocabularyTotal - 1) });
             throw err;
         }
     },
@@ -293,20 +410,26 @@ export const useAppStore = create((set, get) => ({
     editVocabulary: (idOrVocab, patch) => {
         assertAdmin();
         const { id, snapshot } = resolveVocabularyTarget(idOrVocab);
+        const bankKey = get().language === "mandarin" ? "mandarinVocabularies" : "cantoneseVocabularies";
         const prev = get().vocabularies;
+        const prevBank = get()[bankKey];
         let existing = prev.find((w) => w.id === id);
         if (!existing && snapshot) {
             existing = indexVocabulary(snapshot);
         }
         if (!existing) return;
 
-        // Payload model mới (mandarin/cantonese) → convert về legacy cho store
-        // so sánh + optimistic update; gửi payload MỚI lên API.
+        // Payload model mới (mandarin/cantonese) hoặc per-language (readings) → convert
+        // về legacy cho store so sánh + optimistic update; gửi payload MỚI lên API.
+        const isLangPayload =
+            patch && typeof patch === "object" && !Array.isArray(patch) && Array.isArray(patch.readings);
         const isNewPayload =
             patch && typeof patch === "object" && !Array.isArray(patch) && (patch.mandarin || patch.cantonese);
-        const legacyPatch = isNewPayload
-            ? vocabNewToLegacy({ id, mandarin: patch.mandarin, cantonese: patch.cantonese, metadata: patch.metadata })
-            : patch;
+        const legacyPatch = isLangPayload
+            ? vocabLangToLegacy({ id, ...patch }, get().language)
+            : isNewPayload
+              ? vocabNewToLegacy({ id, mandarin: patch.mandarin, cantonese: patch.cantonese, metadata: patch.metadata })
+              : patch;
         const patchFlags = patch ?? {};
         const legacyPatchWithFlags = {
             ...legacyPatch,
@@ -330,9 +453,18 @@ export const useAppStore = create((set, get) => ({
                       prev.length,
                   ),
               ];
+        const nextBank = prevBank.some((w) => w.id === id)
+            ? updateVocabularyInList(prevBank, id, { ...legacyPatchWithFlags, updatedAt: new Date().toISOString() })
+            : [
+                  ...prevBank,
+                  indexVocabulary(
+                      { ...existing, ...legacyPatchWithFlags, updatedAt: new Date().toISOString() },
+                      prevBank.length,
+                  ),
+              ];
 
         const vocab = nextVocabularies.find((w) => w.id === id);
-        set({ vocabularies: nextVocabularies });
+        set({ vocabularies: nextVocabularies, [bankKey]: nextBank });
         if (vocab) {
             patchVocabularyInBrowseCache(id, {
                 engMeanings: vocab.engMeanings,
@@ -350,11 +482,16 @@ export const useAppStore = create((set, get) => ({
                 if (!current) return;
                 const saved = await api.updateVocabulary(
                     id,
-                    isNewPayload ? { id, ...patch } : stripSearchIndex(current),
+                    isLangPayload || isNewPayload
+                        ? { id, ...patch }
+                        : vocabularyLangPayload(stripSearchIndex(current), get().language),
                 );
-                const savedLegacy = indexVocabulary(saved);
+                const savedLegacy = indexVocabulary(vocabLangToLegacy(saved, get().language));
                 logMutDone("Update vocabulary", label, saved);
-                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, savedLegacy) });
+                set({
+                    vocabularies: updateVocabularyInList(get().vocabularies, id, savedLegacy),
+                    [bankKey]: updateVocabularyInList(get()[bankKey], id, savedLegacy),
+                });
                 patchVocabularyInBrowseCache(id, {
                     engMeanings: savedLegacy.engMeanings,
                     engExamples: savedLegacy.engExamples,
@@ -367,9 +504,63 @@ export const useAppStore = create((set, get) => ({
                     important: savedLegacy.important,
                 });
             }).catch((err) => {
-                set({ vocabularies: prev });
+                set({ vocabularies: prev, [bankKey]: prevBank });
                 throw err;
             });
+        }
+    },
+
+    // Cập nhật vocab theo NGÔN NGỮ TƯỜNG MINH (không phụ thuộc get().language) — dùng khi
+    // full sync từ Mandarin ngay trong mode Cantonese (editVocabularyLang(id, "mandarin", payload)).
+    // Payload là per-language (vocabularyLangPayload). (2026-08-21)
+    editVocabularyLang: async (id, lang, patch) => {
+        assertAdmin();
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        const bankKey = valid === "mandarin" ? "mandarinVocabularies" : "cantoneseVocabularies";
+        const prev = get()[bankKey];
+        const existing = prev.find((w) => w.id === id);
+        if (!existing) return;
+        const legacyPatch = vocabLangToLegacy({ id, ...patch }, valid);
+        const merged = normalizeVocabularyFields({ ...existing, ...legacyPatch });
+        if (vocabularyContentEqual(existing, merged)) return;
+        const label =
+            existing.hanTraditional || existing.vietMeanings || existing.engMeanings || `#${String(id).slice(0, 8)}`;
+        logMutStart("Update vocabulary (lang)", label, patch);
+        const nextBank = prev.some((w) => w.id === id)
+            ? updateVocabularyInList(prev, id, { ...legacyPatch, updatedAt: new Date().toISOString() })
+            : [
+                  ...prev,
+                  indexVocabulary({ ...existing, ...legacyPatch, updatedAt: new Date().toISOString() }, prev.length),
+              ];
+        const patchActive = get().language === valid;
+        set({ [bankKey]: nextBank });
+        if (patchActive) set({ vocabularies: nextBank, vocabularyTotal: nextBank.length });
+        const prevApiLang = getApiLanguage();
+        try {
+            setApiLanguage(valid);
+            const saved = await api.updateVocabulary(id, patch);
+            const savedLegacy = indexVocabulary(vocabLangToLegacy(saved, valid));
+            const syncedBank = updateVocabularyInList(get()[bankKey], id, savedLegacy);
+            set({ [bankKey]: syncedBank });
+            if (patchActive) set({ vocabularies: syncedBank, vocabularyTotal: syncedBank.length });
+            logMutDone("Update vocabulary (lang)", label, saved);
+            patchVocabularyInBrowseCache(id, {
+                engMeanings: savedLegacy.engMeanings,
+                engExamples: savedLegacy.engExamples,
+                hanTraditional: savedLegacy.hanTraditional,
+                vietMeanings: savedLegacy.vietMeanings,
+                vietExamples: savedLegacy.vietExamples,
+                sinoVietnamese: savedLegacy.sinoVietnamese,
+                jyutping: savedLegacy.jyutping,
+                romanization: savedLegacy.romanization,
+                important: savedLegacy.important,
+            });
+        } catch (err) {
+            set({ [bankKey]: prev });
+            if (patchActive) set({ vocabularies: prev, vocabularyTotal: prev.length });
+            throw err;
+        } finally {
+            setApiLanguage(prevApiLang);
         }
     },
 
@@ -418,25 +609,7 @@ export const useAppStore = create((set, get) => ({
         }
     },
 
-    toggleImportant: (idOrVocab) => {
-        const { id, snapshot } = resolveVocabularyTarget(idOrVocab);
-        log("Toggle vocabulary important", snapshot ?? id);
-        assertSignedIn();
-        const prev = get().vocabularies;
-        const toggled = toggleVocabularyFlagInStore(prev, id, "important", snapshot);
-        if (!toggled) return;
-        const { vocabularies, vocab } = toggled;
-        set({ vocabularies });
-        patchVocabularyInBrowseCache(id, { important: vocab.important });
-        syncMutation(
-            async () => {
-                const saved = await api.patchVocabularyFlags(id, { important: vocab.important }, snapshot ?? vocab);
-                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, saved) });
-                patchVocabularyInBrowseCache(id, { important: saved.important });
-            },
-            { requireAdmin: false },
-        ).catch(() => set({ vocabularies: prev }));
-    },
+    toggleImportant: () => {}, // user_vocabularies đã bỏ (2026-08-17) — progress vocabulary không còn
 
     toggleGrammarImportant: (id) => {
         log("Toggle grammar important", id);
@@ -450,77 +623,9 @@ export const useAppStore = create((set, get) => ({
         }
     },
 
-    toggleMastered: (idOrVocab) => {
-        const { id, snapshot } = resolveVocabularyTarget(idOrVocab);
-        log("Toggle vocabulary mastered", snapshot ?? id);
-        assertSignedIn();
-        const prev = get().vocabularies;
-        const existing = prev.find((w) => w.id === id) ?? snapshot;
-        const toggled = toggleVocabularyFlagInStore(prev, id, "mastered", snapshot);
-        if (!toggled) return;
-        const { vocabularies, vocab } = toggled;
-        const masteredDelta =
-            existing && vocab && Boolean(existing.mastered) !== Boolean(vocab.mastered) ? (vocab.mastered ? 1 : -1) : 0;
-        const prevMastered = get().masteredVocabularyCount;
-        set({
-            vocabularies,
-            masteredVocabularyCount: Math.max(0, prevMastered + masteredDelta),
-        });
-        patchVocabularyInBrowseCache(id, { mastered: vocab.mastered });
-        syncMutation(
-            async () => {
-                const saved = await api.patchVocabularyFlags(id, { mastered: vocab.mastered }, snapshot ?? vocab);
-                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, saved) });
-                patchVocabularyInBrowseCache(id, { mastered: saved.mastered });
-            },
-            { requireAdmin: false },
-        ).catch(() => set({ vocabularies: prev, masteredVocabularyCount: prevMastered }));
-    },
+    toggleMastered: () => {}, // user_vocabularies đã bỏ (2026-08-17) — progress vocabulary không còn
 
-    setVocabularyStudyProgress: (idOrVocab, progress, options = {}) => {
-        const { id, snapshot } = resolveVocabularyTarget(idOrVocab);
-        const clamped = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
-        const nextMastered = "mastered" in options ? Boolean(options.mastered) : clamped >= 100;
-        log("Update vocabulary progress", snapshot ?? id);
-        assertSignedIn();
-        const prev = get().vocabularies;
-        let existing = prev.find((w) => w.id === id);
-        if (!existing && snapshot) {
-            existing = indexVocabulary(snapshot);
-        }
-        if (!existing) return;
-
-        const studiedAt = new Date().toISOString();
-        const patch = { studyProgress: clamped, mastered: nextMastered, studyProgressAt: studiedAt };
-        const nextVocabularies = prev.some((w) => w.id === id)
-            ? updateVocabularyInList(prev, id, patch)
-            : [...prev, indexVocabulary({ ...existing, ...patch }, prev.length)];
-
-        const masteredDelta = Boolean(existing.mastered) !== Boolean(nextMastered) ? (nextMastered ? 1 : -1) : 0;
-        const prevMastered = get().masteredVocabularyCount;
-        set({
-            vocabularies: nextVocabularies,
-            masteredVocabularyCount: Math.max(0, prevMastered + masteredDelta),
-        });
-        patchVocabularyInBrowseCache(id, patch);
-        const vocab = nextVocabularies.find((w) => w.id === id);
-        return syncMutation(
-            async () => {
-                const saved = await api.patchVocabularyFlags(
-                    id,
-                    { studyProgress: clamped, mastered: nextMastered },
-                    snapshot ?? vocab,
-                );
-                set({ vocabularies: updateVocabularyInList(get().vocabularies, id, saved) });
-                patchVocabularyInBrowseCache(id, {
-                    studyProgress: saved.studyProgress,
-                    studyProgressAt: saved.studyProgressAt,
-                    mastered: saved.mastered,
-                });
-            },
-            { requireAdmin: false },
-        ).catch(() => set({ vocabularies: prev, masteredVocabularyCount: prevMastered }));
-    },
+    setVocabularyStudyProgress: () => {}, // user_vocabularies đã bỏ (2026-08-17) — progress vocabulary không còn
 
     toggleGrammarMastered: (id) => {
         log("Toggle grammar mastered", id);
@@ -538,17 +643,24 @@ export const useAppStore = create((set, get) => ({
 
     removeVocabulary: (id) => {
         assertAdmin();
+        // 2026-08-23: đồng bộ CẢ bank index (mandarin/cantoneseVocabularies) — nếu chỉ xóa
+        // khỏi `vocabularies` (active) thì khi đổi ngôn ngữ setActiveLanguage lấy lại từ bank
+        // cũ → từ đã xóa HIỆN LẠI trong bảng. (cùng pattern editVocabularyLang)
+        const bankKey = get().language === "mandarin" ? "mandarinVocabularies" : "cantoneseVocabularies";
         const prevVocabularies = get().vocabularies;
+        const prevBank = get()[bankKey];
         const removed = prevVocabularies.find((w) => w.id === id);
         const label =
             removed?.hanTraditional || removed?.vietMeanings || removed?.engMeanings || `#${String(id).slice(0, 8)}`;
         logMutStart("Delete vocabulary", label);
         const nextVocabularies = deleteVocabularyFromList(prevVocabularies, id);
+        const nextBank = deleteVocabularyFromList(prevBank, id);
         const prevVocabularyTotal = get().vocabularyTotal;
         const prevMastered = get().masteredVocabularyCount;
         const prevRevision = get().vocabulariesRevision;
         set({
             vocabularies: nextVocabularies,
+            [bankKey]: nextBank,
             vocabularyTotal: Math.max(0, prevVocabularyTotal - 1),
             masteredVocabularyCount: removed?.mastered ? Math.max(0, prevMastered - 1) : prevMastered,
             vocabulariesRevision: prevRevision + 1,
@@ -561,6 +673,7 @@ export const useAppStore = create((set, get) => ({
         ).catch(() =>
             set({
                 vocabularies: prevVocabularies,
+                [bankKey]: prevBank,
                 vocabularyTotal: prevVocabularyTotal,
                 masteredVocabularyCount: prevMastered,
                 vocabulariesRevision: prevRevision,
@@ -624,7 +737,6 @@ export const useAppStore = create((set, get) => ({
         const indexed = indexCloudPayload({
             vocabularies: remote.vocabularies ?? [],
             grammars: [],
-            sentencePatterns: [],
         });
         set({
             vocabularies: indexed.vocabularies,
@@ -712,169 +824,21 @@ export const useAppStore = create((set, get) => ({
         syncMutation(() => api.deleteGrammar(id)).catch(() => set({ grammarBank: prev }));
     },
 
-    createSentence: (item) => {
-        log("Create sentence", item);
-        assertAdmin();
-        const wordIds = findWordIdsInSentence(item, get().vocabularies);
-        const entry = indexSentencePattern({ ...item, wordIds });
-        const prev = get().sentencePatterns;
-        set({ sentencePatterns: [...prev, entry] });
-        syncMutation(async () => {
-            const saved = await api.createSentencePattern(stripSearchIndex(entry));
-            set({
-                sentencePatterns: updateSentenceInList(get().sentencePatterns, entry.id, saved),
-            });
-        }).catch(() => set({ sentencePatterns: prev }));
-    },
-
-    createSentenceAwait: async (item) => {
-        assertAdmin();
-        const prev = get().sentencePatterns;
-        const wordIds = findWordIdsInSentence(item, get().vocabularies);
-        const entry = indexSentencePattern({ ...item, wordIds }, prev.length);
-        set({ sentencePatterns: [...prev, entry] });
-        try {
-            const saved = await syncMutation(() => api.createSentencePattern(stripSearchIndex(entry)));
-            set({
-                sentencePatterns: updateSentenceInList(get().sentencePatterns, entry.id, saved),
-            });
-            return saved;
-        } catch (err) {
-            set({ sentencePatterns: prev });
-            throw err;
-        }
-    },
-
-    editSentence: (id, patch) => {
-        assertAdmin();
-        const prev = get().sentencePatterns;
-        const existing = prev.find((s) => s.id === id);
-        if (!existing) return;
-
-        const hanTraditional = (patch.hanTraditional ?? existing.hanTraditional).trim();
-        const hanSimplified = (patch.hanSimplified ?? existing.hanSimplified ?? "").trim();
-        const jyutping = (patch.jyutping ?? existing.jyutping ?? "").trim();
-        const pinyin = (patch.pinyin ?? existing.pinyin ?? "").trim();
-        const vietnamese = (patch.vietnamese ?? existing.vietnamese).trim();
-        const english = (patch.english ?? existing.english ?? "").trim();
-        const important = "important" in patch ? Boolean(patch.important) : Boolean(existing.important);
-        const mastered = "mastered" in patch ? Boolean(patch.mastered) : Boolean(existing.mastered);
-
-        log("Update sentence", existing);
-        const merged = {
-            ...existing,
-            ...patch,
-            hanTraditional,
-            hanSimplified,
-            jyutping,
-            pinyin,
-            vietnamese,
-            english,
-            important,
-            mastered,
-        };
-        const wordIds = findWordIdsInSentence(merged, get().vocabularies);
-        const sentencePatterns = updateSentenceInList(prev, id, { ...merged, wordIds });
-        const item = sentencePatterns.find((s) => s.id === id);
-        set({ sentencePatterns });
-        if (item) {
-            syncMutation(async () => {
-                const saved = await api.updateSentencePattern(id, stripSearchIndex(item));
-                set({
-                    sentencePatterns: updateSentenceInList(get().sentencePatterns, id, saved),
-                });
-            }).catch(() => set({ sentencePatterns: prev }));
-        }
-    },
-
-    editSentenceAwait: async (id, patch) => {
-        assertAdmin();
-        const prev = get().sentencePatterns;
-        const existing = prev.find((s) => s.id === id);
-        if (!existing) return;
-
-        const hanTraditional = (patch.hanTraditional ?? existing.hanTraditional).trim();
-        const hanSimplified = (patch.hanSimplified ?? existing.hanSimplified ?? "").trim();
-        const jyutping = (patch.jyutping ?? existing.jyutping ?? "").trim();
-        const pinyin = (patch.pinyin ?? existing.pinyin ?? "").trim();
-        const vietnamese = (patch.vietnamese ?? existing.vietnamese).trim();
-        const english = (patch.english ?? existing.english ?? "").trim();
-        const important = "important" in patch ? Boolean(patch.important) : Boolean(existing.important);
-        const mastered = "mastered" in patch ? Boolean(patch.mastered) : Boolean(existing.mastered);
-
-        log("Update sentence", existing);
-        const merged = {
-            ...existing,
-            ...patch,
-            hanTraditional,
-            hanSimplified,
-            jyutping,
-            pinyin,
-            vietnamese,
-            english,
-            important,
-            mastered,
-        };
-        const wordIds = findWordIdsInSentence(merged, get().vocabularies);
-        const sentencePatterns = updateSentenceInList(prev, id, { ...merged, wordIds });
-        const item = sentencePatterns.find((s) => s.id === id);
-        if (!item) return;
-        set({ sentencePatterns });
-        try {
-            const saved = await syncMutation(() => api.updateSentencePattern(id, stripSearchIndex(item)));
-            set({
-                sentencePatterns: updateSentenceInList(get().sentencePatterns, id, saved),
-            });
-            return saved;
-        } catch (err) {
-            set({ sentencePatterns: prev });
-            throw err;
-        }
-    },
-
-    toggleSentenceImportant: (id) => {
-        log("Toggle sentence important", id);
-        assertAdmin();
-        const prev = get().sentencePatterns;
-        const sentencePatterns = toggleSentenceField(prev, id, "important");
-        const item = sentencePatterns.find((s) => s.id === id);
-        set({ sentencePatterns });
-        if (item) {
-            syncMutation(() => api.updateSentencePattern(id, stripSearchIndex(item))).catch(() =>
-                set({ sentencePatterns: prev }),
-            );
-        }
-    },
-
-    toggleSentenceMastered: (id) => {
-        log("Toggle sentence mastered", id);
-        assertSignedIn();
-        const prev = get().sentencePatterns;
-        const sentencePatterns = toggleSentenceField(prev, id, "mastered");
-        const item = sentencePatterns.find((s) => s.id === id);
-        set({ sentencePatterns });
-        if (item) {
-            syncMutation(() => api.updateSentencePattern(id, stripSearchIndex(item)), { requireAdmin: false }).catch(
-                () => set({ sentencePatterns: prev }),
-            );
-        }
-    },
-
-    removeSentence: (id) => {
-        assertAdmin();
-        const prev = get().sentencePatterns;
-        log("Delete sentence", prev.find((s) => s.id === id) ?? id);
-        const sentencePatterns = deleteSentenceFromList(prev, id);
-        set({ sentencePatterns });
-        syncMutation(() => api.deleteSentencePattern(id)).catch(() => set({ sentencePatterns: prev }));
-    },
-
     // ── Vocabulary Sets (custom user groups) ──
 
     fetchVocabularySets: async () => {
-        const result = await api.fetchVocabularySets();
-        set({ vocabularySets: result });
-        return result;
+        // Dedupe concurrent fetches (WordBankPage + WordBankListPanel mount cùng lúc → 2 API call).
+        if (vocabularySetsFetchPromise) return vocabularySetsFetchPromise;
+        vocabularySetsFetchPromise = (async () => {
+            try {
+                const result = await api.fetchVocabularySets();
+                set({ vocabularySets: result });
+                return result;
+            } finally {
+                vocabularySetsFetchPromise = null;
+            }
+        })();
+        return vocabularySetsFetchPromise;
     },
 
     createVocabularySet: async (payload) => {
@@ -923,10 +887,13 @@ export const useAppStore = create((set, get) => ({
     },
 }));
 
+export const useLanguage = () => useAppStore((s) => s.language);
 export const useVocabularies = () => useAppStore((s) => s.vocabularies);
+export const useMandarinVocabularies = () => useAppStore((s) => s.mandarinVocabularies);
+export const useCantoneseVocabularies = () => useAppStore((s) => s.cantoneseVocabularies);
+export const useHkSuggestionMap = () => useAppStore((s) => s.hkSuggestionMap);
 export const useVocabularySets = () => useAppStore((s) => s.vocabularySets);
 export const useGrammarBank = () => useAppStore((s) => s.grammarBank);
-export const useSentencePatterns = () => useAppStore((s) => s.sentencePatterns);
 export const useDataLoading = () => useAppStore((s) => s.dataLoading);
 export const useDataError = () => useAppStore((s) => s.dataError);
 export const useDataHydrated = () => useAppStore((s) => s.hydrated);
@@ -935,7 +902,6 @@ export const useVocabularyCount = () => useAppStore((s) => s.vocabularyTotal);
 export const useVocabulariesRevision = () => useAppStore((s) => s.vocabulariesRevision);
 export const useHanCharacters = () => useAppStore((s) => s.hanCharacters);
 export const useGrammarCount = () => useAppStore((s) => s.grammarBank.length);
-export const useSentenceCount = () => useAppStore((s) => s.sentencePatterns.length);
 export const useMasteredVocabularyCount = () => useAppStore((s) => s.masteredVocabularyCount);
 
 export const useAppActions = () =>
@@ -945,22 +911,16 @@ export const useAppActions = () =>
             createVocabularyAwait: s.createVocabularyAwait,
             createGrammar: s.createGrammar,
             createGrammarAwait: s.createGrammarAwait,
-            createSentence: s.createSentence,
-            createSentenceAwait: s.createSentenceAwait,
             editVocabulary: s.editVocabulary,
+            editVocabularyLang: s.editVocabularyLang,
             editGrammar: s.editGrammar,
-            editSentence: s.editSentence,
-            editSentenceAwait: s.editSentenceAwait,
             toggleImportant: s.toggleImportant,
             toggleGrammarImportant: s.toggleGrammarImportant,
-            toggleSentenceImportant: s.toggleSentenceImportant,
             toggleMastered: s.toggleMastered,
             setVocabularyStudyProgress: s.setVocabularyStudyProgress,
             toggleGrammarMastered: s.toggleGrammarMastered,
-            toggleSentenceMastered: s.toggleSentenceMastered,
             removeVocabulary: s.removeVocabulary,
             removeGrammar: s.removeGrammar,
-            removeSentence: s.removeSentence,
             hydrateFromCloud: s.hydrateFromCloud,
             clearData: s.clearData,
             mergeVocabularies: s.mergeVocabularies,

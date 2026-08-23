@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SEARCH_DEBOUNCE_MS } from "../lib/timing.js";
 import { useLocale } from "../store/localeStore.js";
-import { useAppActions, useVocabularies, useHanCharacters, useVocabularySets } from "../store/appStore.js";
+import { useAppActions, useLanguage, useVocabularies, useHanCharacters, useVocabularySets } from "../store/appStore.js";
 import { normalizeSearchText } from "../lib/wordSearch.js";
 import { saveWordBankReturnState, clearWordBankReturnState, restoreWordBankScroll } from "../lib/wordBankReturn.js";
 import { useIsSignedIn, useIsAdmin } from "../store/authStore.js";
@@ -35,10 +36,12 @@ const COL_ID_TO_SORT_KEY = {
     viet: "vietMeanings",
     eng: "engMeanings",
     hsk: "hskLevel",
+    created: "createdAt",
+    updated: "updatedAt",
 };
 const SORT_KEY_TO_COL_ID = Object.fromEntries(Object.entries(COL_ID_TO_SORT_KEY).map(([k, v]) => [v, k]));
 
-const HSK_VALUES = ["HSK 1", "HSK 2", "HSK 3", "HSK 4", "HSK 5", "HSK 6", "HSK 7-9"];
+const HSK_VALUES = ["YSK", "HSK 1", "HSK 2", "HSK 3", "HSK 4", "HSK 5", "HSK 6", "HSK 7-9"];
 
 /** Prefs lưu "1".."7-9" (legacy) hoặc "HSK 1".."HSK 7-9" (mới) → giá trị faceted. */
 function seedHskFilter(v) {
@@ -58,20 +61,23 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
     emptyNoMatch,
     restoreState = null,
     onAddNew,
+    onScan,
+    onAdd,
 }) {
     const { t, fmt } = useLocale();
     const isPicker = variant === "picker";
     const isSignedIn = useIsSignedIn();
-    const canMark = !isPicker && isSignedIn;
+    const canMark = false; // user_vocabularies đã bỏ (2026-08-17) — không còn đánh dấu quan trọng
     const isAdmin = useIsAdmin();
     const storeWords = useVocabularies();
+    const language = useLanguage();
     const hanCharacters = useHanCharacters();
     const vocabSets = useVocabularySets();
     const setVocabularyIds = useMemo(
         () => Object.fromEntries(vocabSets.map((s) => [s.id, s.vocabularyIds])),
         [vocabSets],
     );
-    const { toggleImportant, toggleMastered, removeVocabulary, addVocabularyToSet } = useAppActions();
+    const { removeVocabulary, addVocabularyToSet } = useAppActions();
     const restoredScrollRef = useRef(false);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
@@ -90,23 +96,46 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
 
     // ── TanStack Table state (native sort / filter / paginate / select / visibility) ──
     const [searchColumn, setSearchColumn] = useState(() => initial.searchColumn ?? "han");
-    const [searchValue, setSearchValue] = useState(() => restoreState?.search ?? "");
+    const [searchValue, setSearchValue] = useState(
+        () => new URLSearchParams(window.location.search).get("q")?.trim() || restoreState?.search || "",
+    );
+    // Debounce search (rule 700ms — lib/timing.js) — tránh lọc lại toàn bộ từ vựng mỗi lần gõ.
+    const [debouncedSearch, setDebouncedSearch] = useState(searchValue);
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(searchValue), SEARCH_DEBOUNCE_MS);
+        return () => clearTimeout(t);
+    }, [searchValue]);
+    // Query search chuẩn hóa — dùng cho prefix sort (cột hidden "search").
+    const normalizedQuery = debouncedSearch ? normalizeSearchText(debouncedSearch) : "";
+    const searchQuery = normalizedQuery;
     const [sorting, setSorting] = useState(() => {
         const key = restoreState?.sortKey ?? initial.sortKey;
         if (!key) return [];
-        return [{ id: SORT_KEY_TO_COL_ID[key] ?? key, desc: (restoreState?.sortDir ?? initial.sortDir) === "desc" }];
+        const id = SORT_KEY_TO_COL_ID[key] ?? key;
+        // Cantonese không có cột cấp độ → bỏ sort cấp độ còn sót.
+        if (language === "cantonese" && id === "hsk") return [];
+        return [{ id, desc: (restoreState?.sortDir ?? initial.sortDir) === "desc" }];
     });
     const [columnFilters, setColumnFilters] = useState(() => {
         const filters = [];
-        const hsk = seedHskFilter(initial.hskLevel);
-        if (hsk) filters.push({ id: "hsk", value: [hsk] });
+        // Filter cấp độ CHỈ ở Mandarin (Cantonese không có level).
+        if (language === "mandarin") {
+            let hsk = seedHskFilter(initial.hskLevel);
+            if (hsk === "YSK") hsk = null;
+            if (hsk) filters.push({ id: "hsk", value: [hsk] });
+        }
         if (initial.setId && initial.setId !== "all") filters.push({ id: "sets", value: [initial.setId] });
-        const status = [];
-        if (initial.showImportant) status.push("important");
-        if (initial.showMastered) status.push("mastered");
-        if (status.length) filters.push({ id: "status", value: status });
         return filters;
     });
+    // Đổi sang Mandarin khi đang filter YSK → tự bỏ filter đó.
+    useEffect(() => {
+        if (language !== "mandarin") return;
+        setColumnFilters((prev) =>
+            prev.some((f) => f.id === "hsk" && f.value?.[0] === "YSK")
+                ? prev.filter((f) => !(f.id === "hsk" && f.value?.[0] === "YSK"))
+                : prev,
+        );
+    }, [language]);
     // Helper columns (search/sets/status) LUÔN ẩn — merge chồng lên setting đã lưu.
     const [columnVisibility, setColumnVisibility] = useState(() => ({
         search: false,
@@ -125,35 +154,59 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
     const indexByRowIdRef = useRef({});
     const getDisplayIndex = useCallback((row) => indexByRowIdRef.current[String(row.original?.id)] ?? 0, []);
 
-    const handleToggleImportant = useCallback((word) => toggleImportant(word), [toggleImportant]);
-    const handleToggleMastered = useCallback((word) => toggleMastered(word), [toggleMastered]);
-
     const handleDelete = useCallback((word) => {
         setDeleteTarget(word);
     }, []);
 
+    // Ref đọc searchValue MỚI NHẤT mà không khiến handleViewWord đổi tham chiếu mỗi keystroke.
+    // Trước đây handleViewWord phụ thuộc searchValue → columns useMemo rebuild toàn bộ column
+    // definitions mỗi lần gõ → LAG khi gõ search. (2026-08-17)
+    const searchValueRef = useRef(searchValue);
+    searchValueRef.current = searchValue;
+
+    // Ref đọc `filter` hiện tại (pref word bank) — cần lưu vào return state để
+    // wordBankReturnMatches(restore, browse) khớp, nếu không restore bị vứt bỏ → bảng
+    // luôn nhảy về trang 1 khi quay lại từ trang chi tiết. (2026-08-23)
+    const filterRef = useRef(initial.filter ?? "all");
+    filterRef.current = initial.filter ?? "all";
+
+    // Ref tới table instance (gán sau useTable) — để handleViewWord đọc thứ tự bảng hiện tại
+    // (filtered + sorted rows) mà không phụ thuộc state → tránh rebuild columns.
+    const tableRef = useRef(null);
+
     const handleViewWord = useCallback(
         (word) => {
             if (!isPicker && onView) {
+                // Thứ tự bảng hiện tại = getSortedRowModel (đã filter + sort, chưa paginate).
+                // ⚠️ KHÔNG dùng getFilteredRowModel — nó trả rows sau filter nhưng CHƯA sort
+                // (pipeline: filter → sort → paginate) → "Từ tiếp theo" đi theo data gốc (random).
+                const orderIds =
+                    tableRef.current
+                        ?.getSortedRowModel?.()
+                        .rows.map((r) => String(r.original?.id))
+                        .filter(Boolean) ?? [];
                 saveWordBankReturnState({
                     wordId: word.id,
                     page: pagination.pageIndex + 1,
                     scrollY: window.scrollY,
-                    search: searchValue,
+                    search: searchValueRef.current,
+                    filter: filterRef.current,
                     sortKey: sorting[0] ? (COL_ID_TO_SORT_KEY[sorting[0].id] ?? sorting[0].id) : "sinoVietnamese",
                     sortDir: sorting[0]?.desc ? "desc" : "asc",
                     searchColumn,
+                    orderIds,
                 });
                 onView(word);
             }
         },
-        [isPicker, onView, pagination.pageIndex, searchValue, sorting, searchColumn],
+        [isPicker, onView, pagination.pageIndex, sorting, searchColumn],
     );
 
     const columns = useMemo(
         () =>
             buildWordRowColumns({
                 t,
+                language,
                 canMark,
                 isPicker,
                 selectable: !isPicker,
@@ -161,40 +214,48 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                 startIndex: pagination.pageIndex * pagination.pageSize,
                 selected,
                 onToggleSelect,
-                onToggleImportant: handleToggleImportant,
-                onToggleMastered: handleToggleMastered,
                 onView: handleViewWord,
                 onEdit: isAdmin ? onEdit : undefined,
                 onDelete: isAdmin ? handleDelete : undefined,
                 searchColumn,
+                searchQuery,
                 setVocabularyIds,
                 getDisplayIndex,
             }),
         [
             t,
+            language,
             canMark,
             isPicker,
             pagination.pageIndex,
             pagination.pageSize,
             selected,
             onToggleSelect,
-            handleToggleImportant,
-            handleToggleMastered,
             handleViewWord,
             onEdit,
             isAdmin,
             handleDelete,
             searchColumn,
+            searchQuery,
             setVocabularyIds,
             getDisplayIndex,
         ],
+    );
+
+    // Ưu tiên prefix match khi search (sortFn custom trên cột hidden "search").
+    // Không tắt sort → pagination vẫn hoạt động. useMemo để state.sorting giữ
+    // tham chiếu ỔN ĐỊNH giữa các render — nếu là mảng mới mỗi render, TanStack
+    // pagination không advance được trang (đã reproduce).
+    const effectiveSorting = useMemo(
+        () => (normalizedQuery ? [{ id: "search", desc: false }, ...sorting] : sorting),
+        [normalizedQuery, sorting],
     );
 
     const table = useTable({
         features,
         data: storeWords,
         columns,
-        state: { sorting, columnFilters, columnVisibility, rowSelection, pagination },
+        state: { sorting: effectiveSorting, columnFilters, columnVisibility, rowSelection, pagination },
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
@@ -215,13 +276,12 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
     const selectedWords = table.getFilteredSelectedRowModel().rows.map((r) => r.original);
 
     // ── Search (native column filter trên hidden "search" column) ──
-    const tableRef = useRef(null);
     tableRef.current = table;
     useEffect(() => {
         tableRef.current
             ?.getColumn("search")
-            ?.setFilterValue(searchValue ? normalizeSearchText(searchValue) : undefined);
-    }, [searchValue, searchColumn]);
+            ?.setFilterValue(debouncedSearch ? normalizeSearchText(debouncedSearch) : undefined);
+    }, [debouncedSearch, searchColumn]);
 
     // ── Persist prefs (fire-and-forget, không sync ngược về state) ──
     const onStateChangeRef = useRef(onStateChange);
@@ -231,14 +291,11 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
         if (!cb) return;
         const s = sorting[0];
         const f = Object.fromEntries(columnFilters.map((cf) => [cf.id, cf.value]));
-        const status = f.status ?? [];
         cb({
             sortKey: s ? (COL_ID_TO_SORT_KEY[s.id] ?? s.id) : "sinoVietnamese",
             sortDir: s?.desc ? "desc" : "asc",
             hskLevel: f.hsk?.[0] ?? "all",
             setId: f.sets?.[0] ?? "all",
-            showImportant: status.includes("important"),
-            showMastered: status.includes("mastered"),
             searchColumn,
             columnVisibility,
             pageSize: pagination.pageSize,
@@ -292,8 +349,10 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
         requestAnimationFrame(tryRestore);
     }, [isPicker, restoreState, loading, pageRows, loadError]);
 
-    const hasQuery = searchValue.trim().length > 0;
-    const showEmpty = !loading && filteredTotal === 0;
+    const hasQuery = debouncedSearch.trim().length > 0;
+    // Debounce đang chạy (user vừa gõ, chưa áp filter) → hiện loading trong table body.
+    const searching = searchValue !== debouncedSearch;
+    const showEmpty = !loading && !searching && filteredTotal === 0;
     const colCount = columns.length;
     const placeholderCount = Math.max(0, PAGE_SIZE - (showEmpty ? 1 : pageRows.length));
 
@@ -363,20 +422,17 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
         { value: "sinoVietnamese", label: t.wordBank.colSinoVietnamese },
         { value: "meaning", label: t.wordBank.colMeaning },
     ];
-    const hskOptions = HSK_VALUES.map((v) => ({ value: v, label: v }));
+    // Mandarin: không có cấp độ YSK → chỉ hiện HSK.
+    const levelValues = language === "mandarin" ? HSK_VALUES.filter((v) => v !== "YSK") : HSK_VALUES;
+    const hskOptions = levelValues.map((v) => ({ value: v, label: v }));
     const setOptions = vocabSets.map((s) => ({ value: s.id, label: s.name, dot: s.color || "#7c3aed" }));
-    const statusOptions = [
-        { value: "important", label: t.wordBank.filterImportant },
-        { value: "mastered", label: t.wordBank.filterMastered },
-    ];
-
     const toolbar = !isPicker && (
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
             <div className="flex flex-wrap items-center gap-2">
                 <BankSearchInput
                     onChange={setSearchValue}
                     placeholder={t.wordBank.searchPlaceholder}
-                    initialValue={restoreState?.search ?? ""}
+                    initialValue={searchValue}
                     className="w-48 min-w-40"
                 />
                 <Select value={searchColumn} onValueChange={setSearchColumn}>
@@ -393,12 +449,14 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                         ))}
                     </SelectContent>
                 </Select>
-                <DataTableFacetedFilter
-                    column={table.getColumn("hsk")}
-                    title={t.wordBank.levelFilter}
-                    options={hskOptions}
-                    className="min-w-28"
-                />
+                {language === "mandarin" && (
+                    <DataTableFacetedFilter
+                        column={table.getColumn("hsk")}
+                        title={t.wordBank.levelFilter}
+                        options={hskOptions}
+                        className="min-w-28"
+                    />
+                )}
                 {vocabSets.length > 0 && (
                     <DataTableFacetedFilter
                         column={table.getColumn("sets")}
@@ -407,16 +465,20 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                         className="min-w-28"
                     />
                 )}
-                <DataTableFacetedFilter
-                    column={table.getColumn("status")}
-                    title={t.wordBank.statusFilter}
-                    options={statusOptions}
-                    className="min-w-28"
-                />
+                <DataTableViewOptions table={table} />
             </div>
             <div className="flex flex-wrap items-center gap-2">
                 <DropdownMenu>
-                    <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="min-w-28" />}>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                variant="default"
+                                size="sm"
+                                className="min-w-28"
+                                disabled={selectedWords.length === 0}
+                            />
+                        }
+                    >
                         {t.vocabSets.addToSet}
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -442,13 +504,22 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                 <Button
                     variant="destructive"
                     size="sm"
-                    className="min-w-24"
+                    className="bg-destructive! text-destructive-foreground! border-destructive! hover:enabled:bg-destructive/90! min-w-24"
                     disabled={selectedWords.length === 0}
                     onClick={() => setBulkDeleteOpen(true)}
                 >
                     {t.common.delete}
                 </Button>
-                <DataTableViewOptions table={table} />
+                {isAdmin && onScan && (
+                    <Button type="button" variant="default" size="sm" onClick={onScan}>
+                        {t.addWord.ocrScan}
+                    </Button>
+                )}
+                {isAdmin && onAdd && (
+                    <Button type="button" variant="default" size="sm" onClick={onAdd}>
+                        + {t.wordBank.addWord}
+                    </Button>
+                )}
             </div>
         </div>
     );
@@ -510,6 +581,12 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                                     <SkeletonTable rows={8} />
                                 </TableCell>
                             </TableRow>
+                        ) : searching ? (
+                            <TableRow className="hover:bg-transparent">
+                                <TableCell colSpan={colCount} className="p-0">
+                                    <SkeletonTable rows={6} />
+                                </TableCell>
+                            </TableRow>
                         ) : loadError ? (
                             <TableRow className="hover:bg-transparent">
                                 <TableCell colSpan={colCount}>
@@ -561,7 +638,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                                                 "bg-primary/10 hover:bg-primary/10",
                                             !isPicker && "transition-colors hover:bg-background/60",
                                             !isPicker && onView && "cursor-pointer",
-                                            word.important && "bg-orange-600/4",
+                                            word.important && "bg-primary/5",
                                             word.mastered && "opacity-75",
                                         )}
                                         onClick={
@@ -581,7 +658,7 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
                                 );
                             })
                         )}
-                        {!loading && placeholderRows}
+                        {!loading && !searching && placeholderRows}
                     </TableBody>
                 </Table>
             </div>
@@ -590,7 +667,15 @@ export const WordBankBrowseTable = memo(function WordBankBrowseTable({
             {deleteTarget && (
                 <ConfirmDialog
                     title={t.confirm.deleteTitle}
-                    message={fmt(t.confirm.deleteVocabulary, { label: deleteTarget.hanTraditional })}
+                    message={fmt(t.confirm.deleteVocabulary, {
+                        // 2026-08-18: fallback qua hanHongKong — từ Cantonese chỉ có Phồn thể HK.
+                        label:
+                            deleteTarget.hanTraditional ||
+                            deleteTarget.hanSimplified ||
+                            deleteTarget.hanHongKong ||
+                            deleteTarget.id?.slice(0, 8) ||
+                            "",
+                    })}
                     confirmLabel={t.confirm.deleteYes}
                     cancelLabel={t.common.cancel}
                     onConfirm={confirmDelete}

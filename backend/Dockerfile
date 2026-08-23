@@ -2,17 +2,19 @@
 # by RapidOCR. Alpine/musl cannot build opencv-python for the Python 3.14 venv.
 FROM node:22-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3 python3-venv python3-pip gcc g++ make \
+        wget python3 python3-venv python3-pip gcc g++ make \
         libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/* \
     && python3 -m venv /opt/translate-venv \
     && /opt/translate-venv/bin/pip install --no-cache-dir \
         deep-translator psycopg2-binary rapidocr onnxruntime
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+ENV PNPM_HOME=/usr/local/share/pnpm
+ENV PATH="$PNPM_HOME/bin:$PATH"
+RUN wget -qO- https://get.pnpm.io/install.sh | env PNPM_VERSION=11.22.0 ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
 WORKDIR /app
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile
 
 FROM base AS dev

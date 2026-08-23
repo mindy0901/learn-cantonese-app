@@ -1,9 +1,11 @@
 FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+ENV PNPM_HOME=/usr/local/share/pnpm
+ENV PATH="$PNPM_HOME/bin:$PATH"
+RUN wget -qO- https://get.pnpm.io/install.sh | env PNPM_VERSION=11.22.0 ENV="$HOME/.shrc" SHELL="$(command -v sh)" sh -
 WORKDIR /app
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile
 
 FROM base AS dev

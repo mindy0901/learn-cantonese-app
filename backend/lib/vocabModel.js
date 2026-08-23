@@ -162,33 +162,84 @@ export function normalizeBlock(block, side, fallbackHanSimplified, fallbackHanTr
 }
 
 /**
- * DB romanization_json → { mandarin, cantonese }.
- * Hỗ trợ cả format MỚI ({ mandarin, cantonese }) lẫn LEGACY (typed array).
+ * DB row (bảng quan hệ mới) → { mandarin, cantonese } blocks.
+ * Ưu tiên `vocab.readings` (relation) — schema MỚI 2026-08-16 (hết romanization_json).
+ * Fallback: `vocab.romanizationJson` (JSONB cũ — script legacy).
  */
 export function blocksFromRow(vocab) {
+    // ── Mới: readings relation (bảng vocabulary_readings/meanings/examples) ──
+    if (Array.isArray(vocab?.readings) && vocab.readings.length > 0) {
+        const md = vocab.readings.filter((r) => (r.system || "") === "pinyin");
+        const ct = vocab.readings.filter((r) => (r.system || "") === "jyutping");
+        return {
+            mandarin: {
+                hanzi_simplified: String(vocab?.hanziSimplified ?? ""),
+                hanzi_traditional: String(vocab?.hanziTraditional ?? ""),
+                system: "pinyin",
+                readings: md.map((r) => readingFromRow(r, "mandarin")),
+            },
+            cantonese: {
+                hanzi_simplified: String(vocab?.hanziSimplified ?? ""),
+                hanzi_traditional: String(vocab?.hanziTraditionalHk ?? vocab?.hanziTraditional ?? ""),
+                system: "jyutping",
+                readings: ct.map((r) => readingFromRow(r, "cantonese")),
+            },
+        };
+    }
+
     const raw = vocab?.romanizationJson;
     const isNew = raw && typeof raw === "object" && !Array.isArray(raw) && (raw.mandarin || raw.cantonese);
     if (isNew) {
         return {
-            mandarin: normalizeBlock(raw.mandarin, "mandarin", vocab?.hanSimplified, vocab?.hanTraditional),
+            mandarin: normalizeBlock(raw.mandarin, "mandarin", vocab?.hanziSimplified, vocab?.hanziTraditional),
             cantonese: normalizeBlock(
                 raw.cantonese,
                 "cantonese",
-                vocab?.hanSimplified,
-                vocab?.hanHongKong ?? vocab?.hanTraditional,
+                vocab?.hanziSimplified,
+                vocab?.hanziTraditionalHk ?? vocab?.hanziTraditional,
             ),
         };
     }
     const roms = Array.isArray(raw) ? raw : [];
     return {
-        mandarin: blockFromLegacy(roms, "mandarin", vocab?.hanSimplified, vocab?.hanTraditional),
+        mandarin: blockFromLegacy(roms, "mandarin", vocab?.hanziSimplified, vocab?.hanziTraditional),
         cantonese: blockFromLegacy(
             roms,
             "cantonese",
-            vocab?.hanSimplified,
-            vocab?.hanHongKong ?? vocab?.hanTraditional,
+            vocab?.hanziSimplified,
+            vocab?.hanziTraditionalHk ?? vocab?.hanziTraditional,
         ),
     };
+}
+
+/** vocabulary_readings row (relation) → reading object model mới. */
+function readingFromRow(r, side) {
+    const field = side === "mandarin" ? "zh" : "yue";
+    const out = {
+        id: r.id,
+        romanization: String(r.romanization ?? ""),
+        sino_vietnamese: String(r.sinoVietnamese ?? ""),
+        meanings: (r.meanings ?? []).map((m) => {
+            const mo = {
+                id: m.id,
+                position: m.position ?? 0,
+                category: m.category ?? "",
+            };
+            mo[field] = String(m[field] ?? "");
+            mo.vi = String(m.vi ?? "");
+            mo.en = String(m.en ?? "");
+            mo.examples = (m.examples ?? []).map((ex) => {
+                const eo = { id: ex.id, position: ex.position ?? 0 };
+                eo[field] = String(ex[field] ?? "");
+                eo.romanization = String(ex.romanization ?? "");
+                eo.vi = String(ex.vi ?? "");
+                eo.en = String(ex.en ?? "");
+                return eo;
+            });
+            return mo;
+        }),
+    };
+    return out;
 }
 
 /** Payload (model mới) → DB romanization_json `{ mandarin, cantonese }` (canonical order, gán id thiếu). */

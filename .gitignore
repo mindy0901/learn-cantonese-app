@@ -44,3 +44,5 @@ pnpm-debug.log*
 **/.codewhale/*
 !**/.codewhale/constitution.json
 .deepseek/
+
+.env.r2

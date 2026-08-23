@@ -14,6 +14,8 @@ import { authRoutes } from "./routes/auth.js";
 import { dataRoutes } from "./routes/data.js";
 import { translateRoutes } from "./routes/translate.js";
 import { ocrRoutes } from "./routes/ocr.js";
+import { hanziiRoutes } from "./routes/hanzii.js";
+import { checkinRoutes } from "./routes/checkins.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 const cookieSecure =
@@ -24,6 +26,17 @@ export async function buildApp(opts = {}) {
     const app = Fastify({
         trustProxy: true,
         ...opts,
+    });
+
+    // Request logging — hiển thị trong docker logs (F5 / đổi mode / mọi API call).
+    app.addHook("onRequest", (req, _reply, done) => {
+        req.__startHr = process.hrtime.bigint();
+        done();
+    });
+    app.addHook("onResponse", (req, reply, done) => {
+        const ms = Number(process.hrtime.bigint() - (req.__startHr ?? 0n)) / 1e6;
+        console.log(`${req.method} ${req.url} -> ${reply.statusCode} (${ms.toFixed(1)}ms)`);
+        done();
     });
 
     // CORS
@@ -71,6 +84,8 @@ export async function buildApp(opts = {}) {
     await app.register(dataRoutes, { prefix: "/api" });
     await app.register(translateRoutes, { prefix: "/api" });
     await app.register(ocrRoutes, { prefix: "/api" });
+    await app.register(hanziiRoutes, { prefix: "/api" });
+    await app.register(checkinRoutes, { prefix: "/api" });
 
     // Error handler
     app.setErrorHandler((error, _request, reply) => {

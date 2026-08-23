@@ -9,9 +9,15 @@ let charStroke = new Map(); // char -> strokeCount (number)
 export function setHanStrokeMap(hanCharacters) {
     const map = new Map();
     for (const h of hanCharacters || []) {
-        const c = h?.hanTraditional;
         const n = h?.strokeCount;
-        if (c && typeof n === "number" && n > 0) map.set(c, n);
+        if (typeof n !== "number" || n <= 0) continue;
+        // Chỉ key các form PHỒN THỂ (traditional + HK) — strokeCount khớp glyph.
+        // KHÔNG đăng ký hanSimplified: simplified của 1 chữ có thể là chữ KHÁC
+        // với số nét khác (vd 於=8 nét nhưng giản thể 于=3 nét) → đăng ký nhầm.
+        // (2026-08-20) Sort cột "Chữ Hán" phải dùng form phồn thể (xem accessor "han").
+        for (const c of [h?.hanTraditional, h?.hanTraditionalHk, h?.hanHongKong]) {
+            if (c) map.set(c, n);
+        }
     }
     charStroke = map;
 }

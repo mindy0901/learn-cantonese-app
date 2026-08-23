@@ -1,0 +1,14 @@
+# pnpm 11 config cho frontend (Docker build đọc file này trong context ./frontend)
+confirmModulesPurge: false
+allowBuilds:
+    esbuild: true
+    "@tailwindcss/oxide": true
+    "@parcel/watcher": true
+    "@napi-rs/cli": true
+    rolldown: true
+    lightningcss: true
+    oxlint: true
+    unrs-resolver: true
+    sharp: true
+    "@swc/core": true
+    "@sentry/cli": true

@@ -68,7 +68,7 @@ export function PinyinTablePage() {
 
     return (
         <main className="mx-auto flex-1 w-full max-w-280 px-4 py-8 pb-12">
-            <div className="mb-6 flex flex-col gap-2">
+            <div className="mb-6 flex flex-col items-center gap-1.5 text-center">
                 <h1 className="text-2xl font-bold tracking-tight">{t.pinyin.title}</h1>
                 <p className="text-sm text-muted-foreground">
                     {t.pinyin.subtitle} — <span className="font-medium text-foreground">{total}</span>{" "}
@@ -99,6 +99,7 @@ export function PinyinTablePage() {
                 <Button
                     type="button"
                     size="sm"
+                    className="text-base"
                     variant={activeInitial === "all" ? "default" : "outline"}
                     onClick={() => setActiveInitial("all")}
                 >
@@ -109,6 +110,7 @@ export function PinyinTablePage() {
                         key={initial}
                         type="button"
                         size="sm"
+                        className="text-base"
                         variant={activeInitial === initial ? "default" : "outline"}
                         onClick={() => setActiveInitial(initial)}
                     >
@@ -127,13 +129,13 @@ export function PinyinTablePage() {
                 <Table containerClassName="overflow-visible">
                     <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                            <TableHead className="sticky top-0 left-0 z-20 will-change-transform bg-background text-center font-semibold text-primary shadow-[inset_-2px_0_0_0_var(--color-border),inset_0_-2px_0_0_var(--color-border)]">
+                            <TableHead className="sticky top-0 left-0 z-20 will-change-transform bg-background text-center text-base font-semibold text-viet shadow-[inset_-2px_0_0_0_var(--color-border),inset_0_-2px_0_0_var(--color-border)]">
                                 {t.pinyin.initialHeader}
                             </TableHead>
                             {filteredFinals.map(({ final, index }) => (
                                 <TableHead
                                     key={final}
-                                    className="sticky top-0 z-10 will-change-transform bg-background px-2 text-center text-xs font-semibold text-primary shadow-[inset_0_-2px_0_0_var(--color-border)]"
+                                    className="sticky top-0 z-10 will-change-transform bg-background px-2 text-center text-base font-semibold text-viet shadow-[inset_0_-2px_0_0_var(--color-border)]"
                                 >
                                     {final}
                                 </TableHead>
@@ -153,7 +155,7 @@ export function PinyinTablePage() {
                         )}
                         {filteredRows.map((row) => (
                             <TableRow key={row.initial} className="hover:bg-transparent">
-                                <TableHead className="sticky left-0 z-10 will-change-transform bg-background px-2 text-center font-semibold text-primary shadow-[inset_-2px_0_0_0_var(--color-border)]">
+                                <TableHead className="sticky left-0 z-10 will-change-transform bg-background px-2 text-center text-base font-semibold text-viet shadow-[inset_-2px_0_0_0_var(--color-border)]">
                                     {row.initial}
                                 </TableHead>
                                 {filteredFinals.map(({ final, index }) => {
@@ -166,8 +168,8 @@ export function PinyinTablePage() {
                                                     variant="ghost"
                                                     size="sm"
                                                     className={cn(
-                                                        "h-7 w-full px-1 text-sm font-medium",
-                                                        query && "bg-primary/15 font-semibold text-primary",
+                                                        "h-7 w-full px-1 text-base font-medium",
+                                                        query && "bg-primary/15 font-semibold text-foreground",
                                                     )}
                                                     onClick={() =>
                                                         setSelected({
@@ -195,7 +197,7 @@ export function PinyinTablePage() {
                     <Card key={tone.mark} size="sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <span className="text-2xl leading-none text-primary" aria-hidden="true">
+                                <span className="text-5xl leading-none text-foreground" aria-hidden="true">
                                     {tone.mark}
                                 </span>
                                 {tone.name}

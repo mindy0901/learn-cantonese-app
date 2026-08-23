@@ -5,6 +5,7 @@ import { api } from "../lib/api.js";
 import { cn } from "../lib/cn.js";
 import { diffHanChars } from "../lib/hanScriptDisplay.js";
 import { btnClass } from "./ui/buttonStyles.js";
+import { Button } from "./shadcn/button.jsx";
 import { ReadingPair } from "./ReadingPair.jsx";
 import { Spinner } from "./shadcn/spinner.jsx";
 import { IconChevronDown, IconEdit } from "./NavIcons.jsx";
@@ -451,7 +452,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
     const ocr = t.addWord;
 
     return (
-        <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-slate-200 p-4 dark:bg-background">
+        <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-muted p-4">
             <input
                 ref={fileInputRef}
                 type="file"
@@ -483,9 +484,9 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                     />
                     <span
                         aria-hidden="true"
-                        className="pointer-events-none absolute -bottom-12 -left-8 size-28 rounded-full bg-violet-400/15 blur-2xl"
+                        className="pointer-events-none absolute -bottom-12 -left-8 size-28 rounded-full bg-purple/15 blur-2xl"
                     />
-                    <span className="grid size-16 shrink-0 place-items-center rounded-full bg-linear-to-br from-primary to-violet-500 text-white shadow-[0_8px_20px_rgb(124_58_237/35%)] transition-transform duration-200 group-hover:scale-105">
+                    <span className="grid size-16 shrink-0 place-items-center rounded-full bg-linear-to-br from-primary to-purple text-white shadow-[0_8px_20px_rgb(124_58_237/35%)] transition-transform duration-200 group-hover:scale-105">
                         <IconImage size={30} />
                     </span>
                     <div className="flex flex-col items-center gap-1">
@@ -635,14 +636,15 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                                                                 ocr.ocrEditSave
                                                             )}
                                                         </button>
-                                                        <button
+                                                        <Button
                                                             type="button"
-                                                            className={btnClass("ghost", "sm")}
+                                                            variant="destructive"
+                                                            size="sm"
                                                             onClick={cancelEdit}
                                                             disabled={deriving}
                                                         >
                                                             {ocr.ocrEditCancel}
-                                                        </button>
+                                                        </Button>
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -804,14 +806,15 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                                                                             ocr.ocrEditSave
                                                                         )}
                                                                     </button>
-                                                                    <button
+                                                                    <Button
                                                                         type="button"
-                                                                        className={btnClass("ghost", "sm")}
+                                                                        variant="destructive"
+                                                                        size="sm"
                                                                         onClick={cancelEdit}
                                                                         disabled={deriving}
                                                                     >
                                                                         {ocr.ocrEditCancel}
-                                                                    </button>
+                                                                    </Button>
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

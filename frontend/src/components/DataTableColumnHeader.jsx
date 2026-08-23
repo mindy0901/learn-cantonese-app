@@ -16,18 +16,24 @@ import {
  * Header cột có thể sort + ẩn (Reusable Components — Column header của shadcn
  * data-table). Click → dropdown: Sắp xếp tăng/giảm, Ẩn cột.
  */
-export function DataTableColumnHeader({ column, title, className }) {
+export function DataTableColumnHeader({ column, title, className, centered }) {
     const { t } = useLocale();
 
     if (!column.getCanSort()) {
-        return <div className={cn("whitespace-nowrap", className)}>{title}</div>;
+        return <div className={cn("whitespace-nowrap", centered && "text-center", className)}>{title}</div>;
     }
 
     return (
-        <div className={cn("flex items-center whitespace-nowrap", className)}>
+        <div className={cn("flex items-center whitespace-nowrap", centered && "justify-center", className)}>
             <DropdownMenu>
                 <DropdownMenuTrigger
-                    render={<Button variant="ghost" size="sm" className="-ml-2 h-8 data-[state=open]:bg-accent" />}
+                    render={
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn("h-8 data-[state=open]:bg-accent", !centered && "-ml-2")}
+                        />
+                    }
                 >
                     <span>{title}</span>
                     {column.getIsSorted() === "desc" ? (

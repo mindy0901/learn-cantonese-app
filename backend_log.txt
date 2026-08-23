@@ -1,0 +1,8 @@
+backend-1  | Lockfile is up to date, resolution step is skipped
+backend-1  | Already up to date
+backend-1  | 
+backend-1  | Done in 466ms using pnpm v9.15.9
+backend-1  | 
+backend-1  | > learn-cantonese-backend@0.0.0 dev /app
+backend-1  | > tsx --watch index.js
+backend-1  | 

@@ -26,13 +26,13 @@ export function JyutpingSyllableGrid({ play }) {
                 <Table containerClassName="overflow-visible">
                     <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                            <TableHead className="sticky top-0 left-0 z-20 will-change-transform bg-background text-center font-semibold text-primary shadow-[inset_-2px_0_0_0_var(--color-border),inset_0_-2px_0_0_var(--color-border)]">
+                            <TableHead className="sticky top-0 left-0 z-20 will-change-transform bg-background text-center font-semibold text-viet shadow-[inset_-2px_0_0_0_var(--color-border),inset_0_-2px_0_0_var(--color-border)]">
                                 {t.jyutping.syllableGridCorner}
                             </TableHead>
                             {JYUTPING_SYL_FINALS.map((f) => (
                                 <TableHead
                                     key={f}
-                                    className="sticky top-0 z-10 will-change-transform bg-background px-2 text-center font-mono text-xs font-semibold text-primary shadow-[inset_0_-2px_0_0_var(--color-border)]"
+                                    className="sticky top-0 z-10 will-change-transform bg-background px-2 text-center font-mono text-base font-semibold text-viet shadow-[inset_0_-2px_0_0_var(--color-border)]"
                                 >
                                     {f}
                                 </TableHead>
@@ -42,7 +42,7 @@ export function JyutpingSyllableGrid({ play }) {
                     <TableBody>
                         {JYUTPING_SYL_ROWS.map((row) => (
                             <TableRow key={row.initial} className="hover:bg-transparent">
-                                <TableHead className="sticky left-0 z-10 will-change-transform bg-background px-2 text-center font-mono font-semibold text-primary shadow-[inset_-2px_0_0_0_var(--color-border)]">
+                                <TableHead className="sticky left-0 z-10 will-change-transform bg-background px-2 text-center font-mono text-base font-semibold text-viet shadow-[inset_-2px_0_0_0_var(--color-border)]">
                                     {row.initial}
                                 </TableHead>
                                 {row.cells.map((s, i) => {
@@ -54,7 +54,7 @@ export function JyutpingSyllableGrid({ play }) {
                                                 <button
                                                     type="button"
                                                     title={t.jyutping.syllableGridPlay}
-                                                    className="h-7 w-full rounded-md px-1 font-mono text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+                                                    className="h-7 w-full rounded-md px-1 font-mono text-base font-medium transition-colors hover:bg-muted hover:text-foreground"
                                                     onClick={() => url && play(url, jyutpingFinalCdnUrl(final))}
                                                 >
                                                     {s}

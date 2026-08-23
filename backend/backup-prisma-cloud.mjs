@@ -24,20 +24,30 @@ const CLOUD_URL = m[1];
 
 const APPLY = process.argv.includes("--apply");
 
-// FK-safe copy order
+// FK-safe copy order (2026-08-18 — schema SPLIT: cantonese_*/mandarin_* riêng,
+// bỏ user_vocabularies, bỏ sentence_patterns; thêm vocabulary_sets + set_vocabularies + radicals)
 const TABLES = [
     "users",
+    "radicals",
     "han_characters",
-    "vocabularies",
-    "vocabulary_meanings",
-    "vocabulary_examples",
-    "vocabulary_characters",
-    "user_vocabularies",
+    "cantonese_vocabularies",
+    "cantonese_vocabulary_romanizations",
+    "cantonese_vocabulary_meanings",
+    "cantonese_vocabulary_examples",
+    "cantonese_vocabulary_characters",
+    "mandarin_vocabularies",
+    "mandarin_vocabulary_romanizations",
+    "mandarin_vocabulary_meanings",
+    "mandarin_vocabulary_examples",
+    "mandarin_vocabulary_characters",
     "grammars",
     "grammar_examples",
-    "sentence_patterns",
     "flashcard_decks",
-    "flashcard_deck_vocabularies",
+    "flashcard_deck_cantonese_vocabularies",
+    "flashcard_deck_mandarin_vocabularies",
+    "vocabulary_sets",
+    "vocabulary_set_cantonese_vocabularies",
+    "vocabulary_set_mandarin_vocabularies",
 ];
 
 // parse jsonb/json from local into JS objects (so we can re-stringify on insert)
@@ -74,15 +84,23 @@ async function main() {
     const cloud = new pg.Pool({ connectionString: CLOUD_URL, ssl: { rejectUnauthorized: false } });
 
     // sanity: local reachable
-    const lv = await local.query("SELECT count(*) c FROM vocabularies").catch((e) => {
+    const lv = await local.query('SELECT count(*) c FROM "cantonese_vocabularies"').catch((e) => {
         console.error("local ERR", e.message);
         process.exit(1);
     });
-    const cv = await cloud.query("SELECT count(*) c FROM vocabularies").catch((e) => {
-        console.error("cloud ERR", e.message);
+    const lm = await local.query('SELECT count(*) c FROM "mandarin_vocabularies"').catch((e) => {
+        console.error("local ERR", e.message);
         process.exit(1);
     });
-    console.log(`local vocabularies: ${lv.rows[0].c} | cloud vocabularies (current): ${cv.rows[0].c}`);
+    const cv = await cloud
+        .query('SELECT count(*) c FROM "cantonese_vocabularies"')
+        .catch(() => ({ rows: [{ c: "N/A" }] }));
+    const cm = await cloud
+        .query('SELECT count(*) c FROM "mandarin_vocabularies"')
+        .catch(() => ({ rows: [{ c: "N/A" }] }));
+    console.log(
+        `local cantonese: ${lv.rows[0].c} | mandarin: ${lm.rows[0].c} | cloud cantonese: ${cv.rows[0].c} | mandarin: ${cm.rows[0].c}`,
+    );
     console.log(`MODE: ${APPLY ? "APPLY (resets + copies)" : "DRY (preview)"}`);
 
     const counts = {};
@@ -102,8 +120,6 @@ async function main() {
     const client = await cloud.connect();
     try {
         await client.query("BEGIN");
-        // ensure cloud schema matches local (columns added locally after cloud baseline)
-        await client.query('ALTER TABLE "han_characters" ADD COLUMN IF NOT EXISTS frequency INTEGER');
         // reset cloud (reverse FK order)
         for (const t of [...TABLES].reverse()) {
             await client.query(`DELETE FROM "${t}"`);

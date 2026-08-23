@@ -53,22 +53,3 @@ export function emptyHanCharacter(partial) {
         ...partial,
     };
 }
-
-export function emptySentencePattern(partial) {
-    const now = new Date().toISOString();
-    return {
-        id: crypto.randomUUID(),
-        hanTraditional: "",
-        hanSimplified: "",
-        jyutping: "",
-        pinyin: "",
-        vietnamese: "",
-        english: "",
-        wordIds: [],
-        important: false,
-        mastered: false,
-        createdAt: now,
-        updatedAt: now,
-        ...partial,
-    };
-}

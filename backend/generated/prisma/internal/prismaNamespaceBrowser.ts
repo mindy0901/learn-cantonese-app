@@ -51,19 +51,28 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  HanCharacter: 'HanCharacter',
-  Radical: 'Radical',
-  Vocabulary: 'Vocabulary',
-  VocabularyCharacter: 'VocabularyCharacter',
+  HanziCharacter: 'HanziCharacter',
+  HanziRadical: 'HanziRadical',
+  MandarinVocabulary: 'MandarinVocabulary',
+  MandarinVocabularyRomanization: 'MandarinVocabularyRomanization',
+  MandarinVocabularyMeaning: 'MandarinVocabularyMeaning',
+  MandarinVocabularyExample: 'MandarinVocabularyExample',
+  MandarinVocabularyCharacter: 'MandarinVocabularyCharacter',
+  CantoneseVocabulary: 'CantoneseVocabulary',
+  CantoneseVocabularyRomanization: 'CantoneseVocabularyRomanization',
+  CantoneseVocabularyMeaning: 'CantoneseVocabularyMeaning',
+  CantoneseVocabularyExample: 'CantoneseVocabularyExample',
+  CantoneseVocabularyCharacter: 'CantoneseVocabularyCharacter',
   Grammar: 'Grammar',
   GrammarExample: 'GrammarExample',
   User: 'User',
-  UserVocabulary: 'UserVocabulary',
-  SentencePattern: 'SentencePattern',
+  UserCheckin: 'UserCheckin',
   FlashcardDeck: 'FlashcardDeck',
-  FlashcardDeckVocabulary: 'FlashcardDeckVocabulary',
+  FlashcardDeckMandarinVocabulary: 'FlashcardDeckMandarinVocabulary',
+  FlashcardDeckCantoneseVocabulary: 'FlashcardDeckCantoneseVocabulary',
   VocabularySet: 'VocabularySet',
-  VocabularySetVocabulary: 'VocabularySetVocabulary'
+  VocabularySetMandarinVocabulary: 'VocabularySetMandarinVocabulary',
+  VocabularySetCantoneseVocabulary: 'VocabularySetCantoneseVocabulary'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -82,26 +91,26 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const HanCharacterScalarFieldEnum = {
+export const HanziCharacterScalarFieldEnum = {
   id: 'id',
   sinoVietnamese: 'sinoVietnamese',
   hanSimplified: 'hanSimplified',
-  pinyin: 'pinyin',
   hanTraditional: 'hanTraditional',
+  pinyin: 'pinyin',
+  hanziSimplifiedHk: 'hanziSimplifiedHk',
+  hanziTraditionalHk: 'hanziTraditionalHk',
   jyutping: 'jyutping',
-  hskLevel: 'hskLevel',
-  searchKey: 'searchKey',
-  frequency: 'frequency',
   strokeCount: 'strokeCount',
   radicalId: 'radicalId',
+  popularity: 'popularity',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type HanCharacterScalarFieldEnum = (typeof HanCharacterScalarFieldEnum)[keyof typeof HanCharacterScalarFieldEnum]
+export type HanziCharacterScalarFieldEnum = (typeof HanziCharacterScalarFieldEnum)[keyof typeof HanziCharacterScalarFieldEnum]
 
 
-export const RadicalScalarFieldEnum = {
+export const HanziRadicalScalarFieldEnum = {
   id: 'id',
   number: 'number',
   char: 'char',
@@ -114,42 +123,127 @@ export const RadicalScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type RadicalScalarFieldEnum = (typeof RadicalScalarFieldEnum)[keyof typeof RadicalScalarFieldEnum]
+export type HanziRadicalScalarFieldEnum = (typeof HanziRadicalScalarFieldEnum)[keyof typeof HanziRadicalScalarFieldEnum]
 
 
-export const VocabularyScalarFieldEnum = {
+export const MandarinVocabularyScalarFieldEnum = {
   id: 'id',
-  hanSimplified: 'hanSimplified',
-  hanTraditional: 'hanTraditional',
-  hanHongKong: 'hanHongKong',
+  hanziSimplified: 'hanziSimplified',
+  hanziTraditional: 'hanziTraditional',
+  hanziCharacters: 'hanziCharacters',
   hskLevel: 'hskLevel',
-  pureCantonese: 'pureCantonese',
-  searchKey: 'searchKey',
-  partOfSpeech: 'partOfSpeech',
-  frequency: 'frequency',
-  radical: 'radical',
-  classifiers: 'classifiers',
-  movieWordRank: 'movieWordRank',
-  bookWordRank: 'bookWordRank',
+  popularity: 'popularity',
   relatedWords: 'relatedWords',
-  hanCharacters: 'hanCharacters',
-  boost: 'boost',
-  romanizationJson: 'romanizationJson',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type VocabularyScalarFieldEnum = (typeof VocabularyScalarFieldEnum)[keyof typeof VocabularyScalarFieldEnum]
+export type MandarinVocabularyScalarFieldEnum = (typeof MandarinVocabularyScalarFieldEnum)[keyof typeof MandarinVocabularyScalarFieldEnum]
 
 
-export const VocabularyCharacterScalarFieldEnum = {
+export const MandarinVocabularyRomanizationScalarFieldEnum = {
   id: 'id',
-  vocabularyId: 'vocabularyId',
-  hanCharacterId: 'hanCharacterId',
+  mandarinVocabularyId: 'mandarinVocabularyId',
+  pinyin: 'pinyin',
+  sinoVietnamese: 'sinoVietnamese'
+} as const
+
+export type MandarinVocabularyRomanizationScalarFieldEnum = (typeof MandarinVocabularyRomanizationScalarFieldEnum)[keyof typeof MandarinVocabularyRomanizationScalarFieldEnum]
+
+
+export const MandarinVocabularyMeaningScalarFieldEnum = {
+  id: 'id',
+  mandarinVocabularyRomanizationId: 'mandarinVocabularyRomanizationId',
+  category: 'category',
+  zh: 'zh',
+  vi: 'vi',
+  en: 'en'
+} as const
+
+export type MandarinVocabularyMeaningScalarFieldEnum = (typeof MandarinVocabularyMeaningScalarFieldEnum)[keyof typeof MandarinVocabularyMeaningScalarFieldEnum]
+
+
+export const MandarinVocabularyExampleScalarFieldEnum = {
+  id: 'id',
+  mandarinVocabularyMeaningId: 'mandarinVocabularyMeaningId',
+  zh: 'zh',
+  romanization: 'romanization',
+  vi: 'vi',
+  en: 'en'
+} as const
+
+export type MandarinVocabularyExampleScalarFieldEnum = (typeof MandarinVocabularyExampleScalarFieldEnum)[keyof typeof MandarinVocabularyExampleScalarFieldEnum]
+
+
+export const MandarinVocabularyCharacterScalarFieldEnum = {
+  id: 'id',
+  mandarinVocabularyId: 'mandarinVocabularyId',
+  hanziCharacterId: 'hanziCharacterId',
   position: 'position'
 } as const
 
-export type VocabularyCharacterScalarFieldEnum = (typeof VocabularyCharacterScalarFieldEnum)[keyof typeof VocabularyCharacterScalarFieldEnum]
+export type MandarinVocabularyCharacterScalarFieldEnum = (typeof MandarinVocabularyCharacterScalarFieldEnum)[keyof typeof MandarinVocabularyCharacterScalarFieldEnum]
+
+
+export const CantoneseVocabularyScalarFieldEnum = {
+  id: 'id',
+  hanziTraditionalHk: 'hanziTraditionalHk',
+  pureCantonese: 'pureCantonese',
+  popularity: 'popularity',
+  hanziCharacters: 'hanziCharacters',
+  relatedWords: 'relatedWords',
+  hanziAudio: 'hanziAudio',
+  englishAudio: 'englishAudio',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CantoneseVocabularyScalarFieldEnum = (typeof CantoneseVocabularyScalarFieldEnum)[keyof typeof CantoneseVocabularyScalarFieldEnum]
+
+
+export const CantoneseVocabularyRomanizationScalarFieldEnum = {
+  id: 'id',
+  cantoneseVocabularyId: 'cantoneseVocabularyId',
+  jyutping: 'jyutping',
+  sinoVietnamese: 'sinoVietnamese'
+} as const
+
+export type CantoneseVocabularyRomanizationScalarFieldEnum = (typeof CantoneseVocabularyRomanizationScalarFieldEnum)[keyof typeof CantoneseVocabularyRomanizationScalarFieldEnum]
+
+
+export const CantoneseVocabularyMeaningScalarFieldEnum = {
+  id: 'id',
+  cantoneseVocabularyRomanizationId: 'cantoneseVocabularyRomanizationId',
+  category: 'category',
+  vi: 'vi',
+  en: 'en'
+} as const
+
+export type CantoneseVocabularyMeaningScalarFieldEnum = (typeof CantoneseVocabularyMeaningScalarFieldEnum)[keyof typeof CantoneseVocabularyMeaningScalarFieldEnum]
+
+
+export const CantoneseVocabularyExampleScalarFieldEnum = {
+  id: 'id',
+  cantoneseVocabularyMeaningId: 'cantoneseVocabularyMeaningId',
+  yue: 'yue',
+  romanization: 'romanization',
+  vi: 'vi',
+  en: 'en',
+  hanziAudio: 'hanziAudio',
+  englishAudio: 'englishAudio'
+} as const
+
+export type CantoneseVocabularyExampleScalarFieldEnum = (typeof CantoneseVocabularyExampleScalarFieldEnum)[keyof typeof CantoneseVocabularyExampleScalarFieldEnum]
+
+
+export const CantoneseVocabularyCharacterScalarFieldEnum = {
+  id: 'id',
+  cantoneseVocabularyId: 'cantoneseVocabularyId',
+  hanziCharacterId: 'hanziCharacterId',
+  position: 'position'
+} as const
+
+export type CantoneseVocabularyCharacterScalarFieldEnum = (typeof CantoneseVocabularyCharacterScalarFieldEnum)[keyof typeof CantoneseVocabularyCharacterScalarFieldEnum]
 
 
 export const GrammarScalarFieldEnum = {
@@ -199,38 +293,14 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
-export const UserVocabularyScalarFieldEnum = {
+export const UserCheckinScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  vocabularyId: 'vocabularyId',
-  important: 'important',
-  mastered: 'mastered',
-  studyProgress: 'studyProgress',
-  studyProgressAt: 'studyProgressAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  date: 'date',
+  createdAt: 'createdAt'
 } as const
 
-export type UserVocabularyScalarFieldEnum = (typeof UserVocabularyScalarFieldEnum)[keyof typeof UserVocabularyScalarFieldEnum]
-
-
-export const SentencePatternScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  hanTraditional: 'hanTraditional',
-  hanSimplified: 'hanSimplified',
-  jyutping: 'jyutping',
-  pinyin: 'pinyin',
-  vietnamese: 'vietnamese',
-  english: 'english',
-  wordIds: 'wordIds',
-  important: 'important',
-  mastered: 'mastered',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type SentencePatternScalarFieldEnum = (typeof SentencePatternScalarFieldEnum)[keyof typeof SentencePatternScalarFieldEnum]
+export type UserCheckinScalarFieldEnum = (typeof UserCheckinScalarFieldEnum)[keyof typeof UserCheckinScalarFieldEnum]
 
 
 export const FlashcardDeckScalarFieldEnum = {
@@ -246,15 +316,26 @@ export const FlashcardDeckScalarFieldEnum = {
 export type FlashcardDeckScalarFieldEnum = (typeof FlashcardDeckScalarFieldEnum)[keyof typeof FlashcardDeckScalarFieldEnum]
 
 
-export const FlashcardDeckVocabularyScalarFieldEnum = {
+export const FlashcardDeckMandarinVocabularyScalarFieldEnum = {
   id: 'id',
   deckId: 'deckId',
-  vocabularyId: 'vocabularyId',
+  mandarinVocabularyId: 'mandarinVocabularyId',
   position: 'position',
   createdAt: 'createdAt'
 } as const
 
-export type FlashcardDeckVocabularyScalarFieldEnum = (typeof FlashcardDeckVocabularyScalarFieldEnum)[keyof typeof FlashcardDeckVocabularyScalarFieldEnum]
+export type FlashcardDeckMandarinVocabularyScalarFieldEnum = (typeof FlashcardDeckMandarinVocabularyScalarFieldEnum)[keyof typeof FlashcardDeckMandarinVocabularyScalarFieldEnum]
+
+
+export const FlashcardDeckCantoneseVocabularyScalarFieldEnum = {
+  id: 'id',
+  deckId: 'deckId',
+  cantoneseVocabularyId: 'cantoneseVocabularyId',
+  position: 'position',
+  createdAt: 'createdAt'
+} as const
+
+export type FlashcardDeckCantoneseVocabularyScalarFieldEnum = (typeof FlashcardDeckCantoneseVocabularyScalarFieldEnum)[keyof typeof FlashcardDeckCantoneseVocabularyScalarFieldEnum]
 
 
 export const VocabularySetScalarFieldEnum = {
@@ -270,15 +351,26 @@ export const VocabularySetScalarFieldEnum = {
 export type VocabularySetScalarFieldEnum = (typeof VocabularySetScalarFieldEnum)[keyof typeof VocabularySetScalarFieldEnum]
 
 
-export const VocabularySetVocabularyScalarFieldEnum = {
+export const VocabularySetMandarinVocabularyScalarFieldEnum = {
   id: 'id',
   setId: 'setId',
-  vocabularyId: 'vocabularyId',
+  mandarinVocabularyId: 'mandarinVocabularyId',
   position: 'position',
   createdAt: 'createdAt'
 } as const
 
-export type VocabularySetVocabularyScalarFieldEnum = (typeof VocabularySetVocabularyScalarFieldEnum)[keyof typeof VocabularySetVocabularyScalarFieldEnum]
+export type VocabularySetMandarinVocabularyScalarFieldEnum = (typeof VocabularySetMandarinVocabularyScalarFieldEnum)[keyof typeof VocabularySetMandarinVocabularyScalarFieldEnum]
+
+
+export const VocabularySetCantoneseVocabularyScalarFieldEnum = {
+  id: 'id',
+  setId: 'setId',
+  cantoneseVocabularyId: 'cantoneseVocabularyId',
+  position: 'position',
+  createdAt: 'createdAt'
+} as const
+
+export type VocabularySetCantoneseVocabularyScalarFieldEnum = (typeof VocabularySetCantoneseVocabularyScalarFieldEnum)[keyof typeof VocabularySetCantoneseVocabularyScalarFieldEnum]
 
 
 export const SortOrder = {

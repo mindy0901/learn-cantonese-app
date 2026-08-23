@@ -31,8 +31,8 @@ export * from "./enums.ts"
  * const prisma = new PrismaClient({
  *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
  * })
- * // Fetch zero or more HanCharacters
- * const hanCharacters = await prisma.hanCharacter.findMany()
+ * // Fetch zero or more HanziCharacters
+ * const hanziCharacters = await prisma.hanziCharacter.findMany()
  * ```
  * 
  * Read more in our [docs](https://pris.ly/d/client).
@@ -42,25 +42,65 @@ export type PrismaClient<LogOpts extends Prisma.LogLevel = never, OmitOpts exten
 export { Prisma }
 
 /**
- * Model HanCharacter
+ * Model HanziCharacter
  * 
  */
-export type HanCharacter = Prisma.HanCharacterModel
+export type HanziCharacter = Prisma.HanziCharacterModel
 /**
- * Model Radical
+ * Model HanziRadical
  * 
  */
-export type Radical = Prisma.RadicalModel
+export type HanziRadical = Prisma.HanziRadicalModel
 /**
- * Model Vocabulary
+ * Model MandarinVocabulary
  * 
  */
-export type Vocabulary = Prisma.VocabularyModel
+export type MandarinVocabulary = Prisma.MandarinVocabularyModel
 /**
- * Model VocabularyCharacter
+ * Model MandarinVocabularyRomanization
  * 
  */
-export type VocabularyCharacter = Prisma.VocabularyCharacterModel
+export type MandarinVocabularyRomanization = Prisma.MandarinVocabularyRomanizationModel
+/**
+ * Model MandarinVocabularyMeaning
+ * 
+ */
+export type MandarinVocabularyMeaning = Prisma.MandarinVocabularyMeaningModel
+/**
+ * Model MandarinVocabularyExample
+ * 
+ */
+export type MandarinVocabularyExample = Prisma.MandarinVocabularyExampleModel
+/**
+ * Model MandarinVocabularyCharacter
+ * 
+ */
+export type MandarinVocabularyCharacter = Prisma.MandarinVocabularyCharacterModel
+/**
+ * Model CantoneseVocabulary
+ * 
+ */
+export type CantoneseVocabulary = Prisma.CantoneseVocabularyModel
+/**
+ * Model CantoneseVocabularyRomanization
+ * 
+ */
+export type CantoneseVocabularyRomanization = Prisma.CantoneseVocabularyRomanizationModel
+/**
+ * Model CantoneseVocabularyMeaning
+ * 
+ */
+export type CantoneseVocabularyMeaning = Prisma.CantoneseVocabularyMeaningModel
+/**
+ * Model CantoneseVocabularyExample
+ * 
+ */
+export type CantoneseVocabularyExample = Prisma.CantoneseVocabularyExampleModel
+/**
+ * Model CantoneseVocabularyCharacter
+ * 
+ */
+export type CantoneseVocabularyCharacter = Prisma.CantoneseVocabularyCharacterModel
 /**
  * Model Grammar
  * 
@@ -77,32 +117,37 @@ export type GrammarExample = Prisma.GrammarExampleModel
  */
 export type User = Prisma.UserModel
 /**
- * Model UserVocabulary
+ * Model UserCheckin
  * 
  */
-export type UserVocabulary = Prisma.UserVocabularyModel
-/**
- * Model SentencePattern
- * 
- */
-export type SentencePattern = Prisma.SentencePatternModel
+export type UserCheckin = Prisma.UserCheckinModel
 /**
  * Model FlashcardDeck
  * 
  */
 export type FlashcardDeck = Prisma.FlashcardDeckModel
 /**
- * Model FlashcardDeckVocabulary
+ * Model FlashcardDeckMandarinVocabulary
  * 
  */
-export type FlashcardDeckVocabulary = Prisma.FlashcardDeckVocabularyModel
+export type FlashcardDeckMandarinVocabulary = Prisma.FlashcardDeckMandarinVocabularyModel
+/**
+ * Model FlashcardDeckCantoneseVocabulary
+ * 
+ */
+export type FlashcardDeckCantoneseVocabulary = Prisma.FlashcardDeckCantoneseVocabularyModel
 /**
  * Model VocabularySet
  * 
  */
 export type VocabularySet = Prisma.VocabularySetModel
 /**
- * Model VocabularySetVocabulary
+ * Model VocabularySetMandarinVocabulary
  * 
  */
-export type VocabularySetVocabulary = Prisma.VocabularySetVocabularyModel
+export type VocabularySetMandarinVocabulary = Prisma.VocabularySetMandarinVocabularyModel
+/**
+ * Model VocabularySetCantoneseVocabulary
+ * 
+ */
+export type VocabularySetCantoneseVocabulary = Prisma.VocabularySetCantoneseVocabularyModel

@@ -1,4 +1,7 @@
 import { spawn } from "node:child_process";
+import { resolve, dirname } from "node:path";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { prisma } from "../lib/prisma.js";
 import { toPinyin } from "../lib/pinyin.js";
 import { lookupJyutping } from "../lib/jyutpingLookup.js";
@@ -6,7 +9,18 @@ import { normVocabularyField, vocabularyMergeKey } from "../lib/wordNormalize.js
 import { buildMergedSinoVietnameseMap } from "../lib/sinoVietnamesesMap.js";
 import { applyDictMeanings, enrichMissingMeanings } from "../lib/meaningPipeline.js";
 
-const PYTHON_BIN = "/opt/translate-venv/bin/python3";
+const __ocr_dirname = dirname(fileURLToPath(import.meta.url));
+// Python binary: env override > Windows native (project venv nếu có, fallback `python` trong
+// PATH) > docker (venv /opt/translate-venv). Scripts nằm cạnh backend (docker /app/scripts).
+const OCR_VENV_PY = resolve(__ocr_dirname, "..", "..", ".venv", "Scripts", "python.exe");
+const PYTHON_BIN =
+    process.env.TRANSLATE_PYTHON_BIN ||
+    (process.platform === "win32"
+        ? existsSync(OCR_VENV_PY)
+            ? OCR_VENV_PY
+            : "python"
+        : "/opt/translate-venv/bin/python3");
+const SCRIPTS_DIR = resolve(__ocr_dirname, "..", "scripts");
 
 /** Optional OCR.space cloud API key (set in .env.dev — server-side only). */
 const OCR_SPACE_API_KEY = process.env.OCR_SPACE_API_KEY?.trim() ?? "";
@@ -49,8 +63,9 @@ function deriveSinoVietnamese(text, sinoMap) {
  */
 function ocrViaRapid(buffer) {
     return new Promise((resolve) => {
-        const proc = spawn(PYTHON_BIN, ["/app/scripts/ocr_rapid.py"], {
+        const proc = spawn(PYTHON_BIN, [resolve(SCRIPTS_DIR, "ocr_rapid.py")], {
             stdio: ["pipe", "pipe", "pipe"],
+            env: { ...process.env, PYTHONIOENCODING: "utf-8" },
         });
         let stdout = "";
         let stderr = "";
@@ -226,23 +241,84 @@ function betterRow(a, b) {
     return score(b) > score(a) ? b : a;
 }
 
-/** Load existing vocabularies: han → row index (for segmentation) + merge-key set (for dedupe). */
+/** Load existing vocabularies (cả 2 ngôn ngữ): han → row index (segmentation) + merge-key (dedupe). */
 async function buildVocabIndex() {
-    const rows = await prisma.vocabulary.findMany({
-        select: {
-            hanTraditional: true,
-            hanSimplified: true,
-            pinyin: true,
-            jyutping: true,
-            vietMeanings: true,
-            engMeanings: true,
-        },
-    });
+    const [mandarin, cantonese] = await Promise.all([
+        prisma.mandarinVocabulary.findMany({
+            select: {
+                id: true,
+                hanziSimplified: true,
+                hanziTraditional: true,
+                romanizations: {
+                    select: {
+                        pinyin: true,
+                        sinoVietnamese: true,
+                        meanings: { select: { zh: true, vi: true, en: true } },
+                    },
+                },
+            },
+        }),
+        prisma.cantoneseVocabulary.findMany({
+            select: {
+                id: true,
+                hanziTraditionalHk: true,
+                pureCantonese: true,
+                romanizations: {
+                    select: {
+                        jyutping: true,
+                        sinoVietnamese: true,
+                        meanings: { select: { vi: true, en: true } },
+                    },
+                },
+            },
+        }),
+    ]);
+
+    const rows = [];
+    for (const v of mandarin) {
+        const first = v.romanizations?.[0];
+        const m = first?.meanings?.[0];
+        rows.push({
+            id: v.id,
+            lang: "mandarin",
+            hanziTraditional: v.hanziTraditional ?? "",
+            hanziSimplified: v.hanziSimplified ?? "",
+            hanziTraditionalHk: "",
+            pinyin: (v.romanizations ?? [])
+                .map((r) => r.pinyin ?? "")
+                .filter(Boolean)
+                .join(" / "),
+            jyutping: "",
+            sinoVietnamese: first?.sinoVietnamese ?? "",
+            vietMeanings: m ? m.vi || m.zh || "" : "",
+            engMeanings: m?.en ?? "",
+        });
+    }
+    for (const v of cantonese) {
+        const first = v.romanizations?.[0];
+        const m = first?.meanings?.[0];
+        rows.push({
+            id: v.id,
+            lang: "cantonese",
+            hanziTraditional: v.hanziTraditionalHk ?? "",
+            hanziSimplified: "",
+            hanziTraditionalHk: v.hanziTraditionalHk ?? "",
+            pinyin: "",
+            jyutping: (v.romanizations ?? [])
+                .map((r) => r.jyutping ?? "")
+                .filter(Boolean)
+                .join(" / "),
+            sinoVietnamese: first?.sinoVietnamese ?? "",
+            vietMeanings: m ? m.vi || "" : "",
+            engMeanings: m?.en ?? "",
+        });
+    }
+
     const byHan = new Map();
     const keys = new Set();
     for (const r of rows) {
         keys.add(vocabularyMergeKey(r));
-        for (const han of [r.hanTraditional, r.hanSimplified]) {
+        for (const han of [r.hanziTraditional, r.hanziSimplified, r.hanziTraditionalHk]) {
             const h = normVocabularyField(han);
             if (!h) continue;
             byHan.set(h, betterRow(byHan.get(h), r));
@@ -288,8 +364,8 @@ function makeSuggestion(hanText, existing, converters, keys, byHan, sinoMap, for
     let hanTraditional;
     let hanSimplified;
     if (existing) {
-        hanTraditional = existing.hanTraditional;
-        hanSimplified = existing.hanSimplified || null;
+        hanTraditional = existing.hanziTraditional;
+        hanSimplified = existing.hanziSimplified || null;
     } else {
         // Convert BOTH directions so we always propose the correct pair.
         hanTraditional = converters.toTrad(hanText);
@@ -366,10 +442,10 @@ function derivePinyin(text, byHan) {
             continue; // Cantonese-only, no Mandarin reading
         else {
             // pinyin-pro returns the ORIGINAL char when it has no Mandarin reading
-            // (e.g. 㗎 → "㗎"). That is NOT a pinyin — skip it so the word can be
-            // flagged pure Cantonese instead of showing a fake pinyin.
+            // (e.g. 㗎 → "㗎") hoặc " - " (không đủ âm). Đó KHÔNG phải pinyin — bỏ
+            // qua để từ có thể được gắn cờ pure Cantonese thay vì hiện pinyin giả.
             const py = toPinyin(ch);
-            if (py && py !== ch) parts.push(py);
+            if (py && py !== ch && py !== " - ") parts.push(py);
         }
     }
     return parts.filter(Boolean).join(" ");
@@ -385,7 +461,7 @@ function charHasPinyin(ch, byHan) {
     if (row?.pinyin) return true;
     if (row && row.jyutping) return false; // Cantonese-only, no Mandarin reading
     const py = toPinyin(ch);
-    return Boolean(py && py !== ch);
+    return Boolean(py && py !== ch && py !== " - ");
 }
 
 /**

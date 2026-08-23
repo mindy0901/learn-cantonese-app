@@ -77,9 +77,10 @@ function splitSinoVietnameseParts(sinoVietnamese) {
  * @param {{ hanTraditional?: string, hanSimplified?: string, pinyin?: string, jyutping?: string, sinoVietnamese?: string, romanization?: Array, romanizationJson?: Array }} vocab
  * @returns {Array<{ sinoVietnamese: string|null, hanSimplified: string, hanTraditional: string, pinyin: string|null, jyutping: string|null }>}
  */
-export function computeHanCharacters(vocab) {
-    const trad = (vocab.hanTraditional ?? "").trim();
-    const simp = (vocab.hanSimplified ?? "").trim();
+export function computeHanCharacters(vocab, lang = "cantonese") {
+    const isMandarin = lang === "mandarin";
+    const trad = String(vocab.hanziTraditional ?? (isMandarin ? "" : vocab.hanziTraditionalHk) ?? "").trim();
+    const simp = (vocab.hanziSimplified ?? "").trim();
 
     const tradChars = splitHanChars(trad);
     const simpChars = splitHanChars(simp);
@@ -87,11 +88,29 @@ export function computeHanCharacters(vocab) {
     if (chars.length === 0) return [];
 
     // Gather readings from ALL pronunciations.
-    // Model mới (2026-08-14): romanization_json = { mandarin, cantonese } blocks;
-    // fallback legacy typed array / flat.
+    // Schema TÁCH (2026-08-17): `vocab.romanizations` relation (mandarin: pinyin / cantonese: jyutping).
+    // Fallback: readings cũ (system) / romanization_json blocks / legacy typed array / flat.
     let sources = [];
+    const romanizations = Array.isArray(vocab?.romanizations) ? vocab.romanizations : null;
+    const readings = Array.isArray(vocab?.readings) ? vocab.readings : null;
     const rj = vocab?.romanizationJson;
-    if (rj && typeof rj === "object" && !Array.isArray(rj) && (rj.mandarin || rj.cantonese)) {
+    if (romanizations && romanizations.length > 0) {
+        for (const r of romanizations) {
+            sources.push({
+                pinyin: r?.pinyin ?? "",
+                jyutping: r?.jyutping ?? "",
+                sinoVietnamese: r?.sinoVietnamese ?? "",
+            });
+        }
+    } else if (readings && readings.length > 0) {
+        for (const r of readings) {
+            if ((r.system || "") === "jyutping") {
+                sources.push({ pinyin: "", jyutping: r?.romanization ?? "", sinoVietnamese: r?.sinoVietnamese ?? "" });
+            } else {
+                sources.push({ pinyin: r?.romanization ?? "", jyutping: "", sinoVietnamese: r?.sinoVietnamese ?? "" });
+            }
+        }
+    } else if (rj && typeof rj === "object" && !Array.isArray(rj) && (rj.mandarin || rj.cantonese)) {
         for (const r of rj.mandarin?.readings ?? []) {
             sources.push({ pinyin: r?.romanization ?? "", jyutping: "", sinoVietnamese: r?.sino_vietnamese ?? "" });
         }
@@ -204,7 +223,7 @@ function hanCharScore(h) {
  */
 async function resolveHanCharacter(ch) {
     if (!ch) return { han: null, merged: 0 };
-    const matches = await prisma.hanCharacter.findMany({
+    const matches = await prisma.hanziCharacter.findMany({
         where: { OR: [{ hanTraditional: ch }, { hanSimplified: ch }] },
         orderBy: { createdAt: "asc" },
     });
@@ -252,15 +271,19 @@ async function resolveHanCharacter(ch) {
         (keeper.hanSimplified ?? "").trim() || dupes.find((d) => (d.hanSimplified ?? "").trim())?.hanSimplified || null;
     const trad = (keeper.hanTraditional ?? "").trim() || ch;
 
-    // Re-link any vocabulary_characters pointing to dupes → keeper (before deleting)
+    // Re-link any vocabulary_character links (mandarin + cantonese) → keeper (before deleting)
     for (const d of dupes) {
-        await prisma.vocabularyCharacter.updateMany({
-            where: { hanCharacterId: d.id },
-            data: { hanCharacterId: keeper.id },
+        await prisma.mandarinVocabularyCharacter.updateMany({
+            where: { hanziCharacterId: d.id },
+            data: { hanziCharacterId: keeper.id },
+        });
+        await prisma.cantoneseVocabularyCharacter.updateMany({
+            where: { hanziCharacterId: d.id },
+            data: { hanziCharacterId: keeper.id },
         });
     }
 
-    await prisma.hanCharacter.update({
+    await prisma.hanziCharacter.update({
         where: { id: keeper.id },
         data: {
             hanTraditional: trad,
@@ -273,9 +296,9 @@ async function resolveHanCharacter(ch) {
     });
 
     // Delete duplicates
-    await prisma.hanCharacter.deleteMany({ where: { id: { in: dupes.map((d) => d.id) } } });
+    await prisma.hanziCharacter.deleteMany({ where: { id: { in: dupes.map((d) => d.id) } } });
 
-    return { han: await prisma.hanCharacter.findUnique({ where: { id: keeper.id } }), merged: dupes.length };
+    return { han: await prisma.hanziCharacter.findUnique({ where: { id: keeper.id } }), merged: dupes.length };
 }
 
 /**
@@ -326,7 +349,10 @@ function mergeSinoReadings(existingArr, newVal) {
  * @param {Array<{ hanTraditional?: string, character?: string, pinyin?: string|null, jyutping?: string|null, hanSimplified?: string, sinoVietnamese?: string|null }>} hanChars
  * @returns {Promise<{ created: number, updated: number, linked: number }>}
  */
-export async function syncVocabularyHanCharacters(vocabularyId, hanChars) {
+export async function syncVocabularyHanCharacters(lang, vocabularyId, hanChars) {
+    const isMandarin = lang === "mandarin";
+    const linkModel = isMandarin ? "mandarinVocabularyCharacter" : "cantoneseVocabularyCharacter";
+    const linkVocabField = isMandarin ? "mandarinVocabularyId" : "cantoneseVocabularyId";
     if (!vocabularyId || !Array.isArray(hanChars) || hanChars.length === 0) {
         return { created: 0, updated: 0, linked: 0 };
     }
@@ -338,7 +364,7 @@ export async function syncVocabularyHanCharacters(vocabularyId, hanChars) {
     const seenChars = new Set();
 
     // Delete old links for this vocabulary (only unique-char links exist)
-    await prisma.vocabularyCharacter.deleteMany({ where: { vocabularyId } });
+    await prisma[linkModel].deleteMany({ where: { [linkVocabField]: vocabularyId } });
 
     for (let i = 0; i < hanChars.length; i++) {
         const item = hanChars[i];
@@ -368,7 +394,7 @@ export async function syncVocabularyHanCharacters(vocabularyId, hanChars) {
             // Fill missing simplified variant when known (never overwrite existing)
             const simpMissing = !(han.hanSimplified ?? "") && simpVariant && simpVariant !== han.hanTraditional;
             if (pyChanged || jpChanged || svChanged || simpMissing) {
-                await prisma.hanCharacter.update({
+                await prisma.hanziCharacter.update({
                     where: { id: han.id },
                     data: {
                         pinyin: newPinyin,
@@ -383,7 +409,7 @@ export async function syncVocabularyHanCharacters(vocabularyId, hanChars) {
             }
         } else {
             // Create new — record variant pair when known, else single-form (hanSimplified = NULL)
-            han = await prisma.hanCharacter.create({
+            han = await prisma.hanziCharacter.create({
                 data: {
                     id: randomUUID(),
                     hanTraditional: ch,
@@ -391,18 +417,17 @@ export async function syncVocabularyHanCharacters(vocabularyId, hanChars) {
                     pinyin: itemPinyin.map((s) => s.toLowerCase()),
                     jyutping: itemJyutping.map((s) => s.toLowerCase()),
                     sinoVietnamese: mergeSinoReadings([], item.sinoVietnamese),
-                    searchKey: null,
                 },
             });
             created++;
         }
 
         // Link vocabulary → han character (position = first occurrence)
-        await prisma.vocabularyCharacter.create({
+        await prisma[linkModel].create({
             data: {
                 id: randomUUID(),
-                vocabularyId,
-                hanCharacterId: han.id,
+                [linkVocabField]: vocabularyId,
+                hanziCharacterId: han.id,
                 position: i,
             },
         });
@@ -429,9 +454,10 @@ export async function backfillVocabularyHanCharacters(where = {}, onProgress = n
     let reset = false;
     let vocabWhere = { ...where };
     if (mode === "full") {
-        // Full rebuild: wipe store + links, then re-sync everything
-        await prisma.vocabularyCharacter.deleteMany({});
-        await prisma.hanCharacter.deleteMany({});
+        // Full rebuild: wipe store + links, then re-sync everything (cả 2 bên)
+        await prisma.mandarinVocabularyCharacter.deleteMany({});
+        await prisma.cantoneseVocabularyCharacter.deleteMany({});
+        await prisma.hanziCharacter.deleteMany({});
         reset = true;
         vocabWhere = {};
     } else {
@@ -439,46 +465,50 @@ export async function backfillVocabularyHanCharacters(where = {}, onProgress = n
         vocabWhere = { ...where, hanCharacters: { equals: Prisma.DbNull } };
     }
 
-    const vocabs = await prisma.vocabulary.findMany({
-        where: vocabWhere,
-        select: {
-            id: true,
-            hanTraditional: true,
-            hanSimplified: true,
-            pinyin: true,
-            jyutping: true,
-            sinoVietnamese: true,
-            romanizationJson: true,
-        },
-        orderBy: { createdAt: "asc" },
-    });
-
     let chars = 0;
     let created = 0;
     let updated = 0;
     let linked = 0;
     let merged = 0;
-    const total = vocabs.length;
+    let total = 0;
+    let processed = 0;
 
-    for (let idx = 0; idx < vocabs.length; idx++) {
-        const vocab = vocabs[idx];
-        const breakdown = computeHanCharacters(vocab);
-        if (breakdown.length === 0) continue;
-
-        await prisma.vocabulary.update({
-            where: { id: vocab.id },
-            data: { hanCharacters: breakdown, updatedAt: new Date() },
+    for (const lang of ["mandarin", "cantonese"]) {
+        const isMandarin = lang === "mandarin";
+        const model = isMandarin ? "mandarinVocabulary" : "cantoneseVocabulary";
+        const hanField = isMandarin ? "hanziTraditional" : "hanziTraditionalHk";
+        const romanField = isMandarin ? "pinyin" : "jyutping";
+        const vocabs = await prisma[model].findMany({
+            where: vocabWhere,
+            select: {
+                id: true,
+                ...(isMandarin ? { hanziSimplified: true } : {}), // ⚠️ 2026-08-22: cantonese bỏ hanzi_simplified
+                [hanField]: true,
+                romanizations: { select: { [romanField]: true, sinoVietnamese: true } },
+            },
+            orderBy: { createdAt: "asc" },
         });
-        chars += breakdown.length;
+        total += vocabs.length;
 
-        const result = await syncVocabularyHanCharacters(vocab.id, breakdown);
-        created += result.created;
-        updated += result.updated;
-        linked += result.linked;
-        merged += result.merged;
+        for (let idx = 0; idx < vocabs.length; idx++) {
+            const vocab = vocabs[idx];
+            const breakdown = computeHanCharacters(vocab, lang);
+            if (breakdown.length === 0) continue;
 
-        if (onProgress) {
-            onProgress({ processed: idx + 1, total, current: vocab.hanTraditional });
+            await prisma[model].update({
+                where: { id: vocab.id },
+                data: { hanCharacters: breakdown, updatedAt: new Date() },
+            });
+            chars += breakdown.length;
+
+            const result = await syncVocabularyHanCharacters(lang, vocab.id, breakdown);
+            created += result.created;
+            updated += result.updated;
+            linked += result.linked;
+            merged += result.merged;
+
+            processed++;
+            if (onProgress) onProgress({ processed, total, current: vocab[hanField] });
         }
     }
 
@@ -502,52 +532,55 @@ export async function backfillVocabularyHanCharacters(where = {}, onProgress = n
  */
 export async function previewVocabularyHanCharacters(mode = "fast") {
     const where = mode === "full" ? {} : { hanCharacters: { equals: Prisma.DbNull } };
-    const vocabs = await prisma.vocabulary.findMany({
-        where,
-        select: {
-            id: true,
-            hanTraditional: true,
-            hanSimplified: true,
-            pinyin: true,
-            jyutping: true,
-            sinoVietnamese: true,
-            romanizationJson: true,
-        },
-        orderBy: { createdAt: "asc" },
-    });
 
-    // Aggregate per-character readings across all vocabularies
+    // Aggregate per-character readings across all vocabularies (cả 2 ngôn ngữ)
     const charMap = new Map(); // char → { hanSimplified?, pinyin:Set, jyutping:Set, sinoVietnamese:Set, count }
-    for (const vocab of vocabs) {
-        const breakdown = computeHanCharacters(vocab);
-        for (const item of breakdown) {
-            const ch = String(item?.hanTraditional ?? item?.character ?? "").trim();
-            if (!ch) continue;
-            if (!charMap.has(ch)) {
-                charMap.set(ch, {
-                    hanTraditional: ch,
-                    hanSimplified: item.hanSimplified,
-                    pinyin: new Set(),
-                    jyutping: new Set(),
-                    sinoVietnamese: new Set(),
-                    count: 0,
-                });
-            }
-            const entry = charMap.get(ch);
-            entry.count++;
-            for (const p of splitBreakdownReadings(item.pinyin)) {
-                entry.pinyin.add(p.toLowerCase());
-            }
-            for (const j of splitBreakdownReadings(item.jyutping)) {
-                entry.jyutping.add(j.toLowerCase());
-            }
-            if (item.sinoVietnamese) {
-                // "TỊNH | TÍNH" = ONE reading (alternatives), keep whole group
-                for (const t of splitSinoVietnameseParts(item.sinoVietnamese)) {
-                    entry.sinoVietnamese.add(t);
+    for (const lang of ["mandarin", "cantonese"]) {
+        const isMandarin = lang === "mandarin";
+        const model = isMandarin ? "mandarinVocabulary" : "cantoneseVocabulary";
+        const hanField = isMandarin ? "hanziTraditional" : "hanziTraditionalHk";
+        const romanField = isMandarin ? "pinyin" : "jyutping";
+        const vocabs = await prisma[model].findMany({
+            where,
+            select: {
+                id: true,
+                ...(isMandarin ? { hanziSimplified: true } : {}), // ⚠️ 2026-08-22: cantonese bỏ hanzi_simplified
+                [hanField]: true,
+                romanizations: { select: { [romanField]: true, sinoVietnamese: true } },
+            },
+            orderBy: { createdAt: "asc" },
+        });
+        for (const vocab of vocabs) {
+            const breakdown = computeHanCharacters(vocab, lang);
+            for (const item of breakdown) {
+                const ch = String(item?.hanTraditional ?? item?.character ?? "").trim();
+                if (!ch) continue;
+                if (!charMap.has(ch)) {
+                    charMap.set(ch, {
+                        hanTraditional: ch,
+                        hanSimplified: item.hanSimplified,
+                        pinyin: new Set(),
+                        jyutping: new Set(),
+                        sinoVietnamese: new Set(),
+                        count: 0,
+                    });
                 }
+                const entry = charMap.get(ch);
+                entry.count++;
+                for (const p of splitBreakdownReadings(item.pinyin)) {
+                    entry.pinyin.add(p.toLowerCase());
+                }
+                for (const j of splitBreakdownReadings(item.jyutping)) {
+                    entry.jyutping.add(j.toLowerCase());
+                }
+                if (item.sinoVietnamese) {
+                    // "TỊNH | TÍNH" = ONE reading (alternatives), keep whole group
+                    for (const t of splitSinoVietnameseParts(item.sinoVietnamese)) {
+                        entry.sinoVietnamese.add(t);
+                    }
+                }
+                if (item.hanSimplified) entry.hanSimplified = item.hanSimplified;
             }
-            if (item.hanSimplified) entry.hanSimplified = item.hanSimplified;
         }
     }
 
@@ -575,7 +608,7 @@ export async function previewVocabularyHanCharacters(mode = "fast") {
 
     // ── Fast mode: compare aggregated readings against the existing store ──
     // Load existing store into a lookup by either form
-    const existing = await prisma.hanCharacter.findMany({
+    const existing = await prisma.hanziCharacter.findMany({
         select: {
             id: true,
             hanTraditional: true,
@@ -674,24 +707,34 @@ export async function previewVocabularyHanCharacters(mode = "fast") {
 export async function rebuildHanCharacterReadings() {
     // 1. Collect correct per-character readings from all vocabularies
     const readingsMap = new Map(); // char → { pinyin: Set, jyutping: Set }
-    const vocabs = await prisma.vocabulary.findMany({
-        select: { id: true, hanTraditional: true, hanSimplified: true, pinyin: true, jyutping: true },
-    });
-
-    for (const vocab of vocabs) {
-        const breakdown = computeHanCharacters(vocab);
-        for (const item of breakdown) {
-            const ch = String(item?.hanTraditional ?? item?.character ?? "").trim();
-            if (!ch) continue;
-            if (!readingsMap.has(ch)) readingsMap.set(ch, { pinyin: new Set(), jyutping: new Set() });
-            const entry = readingsMap.get(ch);
-            for (const py of splitBreakdownReadings(item?.pinyin)) entry.pinyin.add(py);
-            for (const jp of splitBreakdownReadings(item?.jyutping)) entry.jyutping.add(jp);
+    for (const lang of ["mandarin", "cantonese"]) {
+        const isMandarin = lang === "mandarin";
+        const model = isMandarin ? "mandarinVocabulary" : "cantoneseVocabulary";
+        const hanField = isMandarin ? "hanziTraditional" : "hanziTraditionalHk";
+        const romanField = isMandarin ? "pinyin" : "jyutping";
+        const vocabs = await prisma[model].findMany({
+            select: {
+                id: true,
+                ...(isMandarin ? { hanziSimplified: true } : {}), // ⚠️ 2026-08-22: cantonese bỏ hanzi_simplified
+                [hanField]: true,
+                romanizations: { select: { [romanField]: true, sinoVietnamese: true } },
+            },
+        });
+        for (const vocab of vocabs) {
+            const breakdown = computeHanCharacters(vocab, lang);
+            for (const item of breakdown) {
+                const ch = String(item?.hanTraditional ?? item?.character ?? "").trim();
+                if (!ch) continue;
+                if (!readingsMap.has(ch)) readingsMap.set(ch, { pinyin: new Set(), jyutping: new Set() });
+                const entry = readingsMap.get(ch);
+                for (const py of splitBreakdownReadings(item?.pinyin)) entry.pinyin.add(py);
+                for (const jp of splitBreakdownReadings(item?.jyutping)) entry.jyutping.add(jp);
+            }
         }
     }
 
     // 2. Update each HanCharacter with the correct readings
-    const chars = await prisma.hanCharacter.findMany({
+    const chars = await prisma.hanziCharacter.findMany({
         select: { id: true, hanTraditional: true, hanSimplified: true, pinyin: true, jyutping: true },
     });
 
@@ -712,7 +755,7 @@ export async function rebuildHanCharacterReadings() {
         const jpChanged = nextJyutping.join("|") !== curJyutping.join("|");
         if (!pyChanged && !jpChanged) continue;
 
-        await prisma.hanCharacter.update({
+        await prisma.hanziCharacter.update({
             where: { id: hc.id },
             data: { pinyin: nextPinyin, jyutping: nextJyutping, updatedAt: new Date() },
         });

@@ -19,7 +19,7 @@ const cantowordsMap = new Map();
 /** CC-Canto full-word map (trad OR simp → jyutping) — second source. */
 const cantoMap = new Map();
 {
-    const raw = JSON.parse(readFileSync(resolve(__dirname, "../data/cccanto.json"), "utf-8"));
+    const raw = JSON.parse(readFileSync(resolve(__dirname, "../data/CCCANTO.json"), "utf-8"));
     for (const e of raw) {
         if (!e.jp) continue;
         if (!cantoMap.has(e.t)) cantoMap.set(e.t, e.jp);

@@ -5,6 +5,7 @@ import { useFilteredGrammar, getGrammarBankSortDirLabel } from "../lib/grammarFi
 import { paginateItems } from "../lib/pagination.js";
 import { withAdminHint } from "../lib/emptyMessage.js";
 import { useDebouncedValue } from "../hooks/useDebouncedValue.js";
+import { SEARCH_DEBOUNCE_MS } from "../lib/timing.js";
 import { useConfirmDialog } from "../hooks/useConfirmDialog.jsx";
 import { useIsAdmin, useIsSignedIn } from "../store/authStore.js";
 import { cn } from "../lib/cn.js";
@@ -186,7 +187,7 @@ export const GrammarBankListPanel = memo(function GrammarBankListPanel({ filter,
     const { t, fmt } = useLocale();
     const items = useGrammarBank();
     const [search, setSearch] = useState("");
-    const debouncedSearch = useDebouncedValue(search, 300);
+    const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
     const handleChange = useCallback((value) => setSearch(value), []);
 
     const filtered = useFilteredGrammar(items, debouncedSearch, filter, sortKey, sortDir, false);

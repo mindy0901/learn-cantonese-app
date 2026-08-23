@@ -132,14 +132,16 @@ export function VocabularySetsManager({ onClose, onSelectSet }) {
                                             >
                                                 <IconEdit size={15} />
                                             </button>
-                                            <button
+                                            <Button
                                                 type="button"
-                                                className="inline-flex size-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="size-8!"
                                                 onClick={() => handleDelete(set)}
                                                 title={t.common.delete}
                                             >
                                                 <IconTrash size={15} />
-                                            </button>
+                                            </Button>
                                         </>
                                     )}
                                 </div>

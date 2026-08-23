@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../components/shadcn/button.jsx";
 import { useDataError } from "../store/appStore.js";
 import { useLocale } from "../store/localeStore.js";
+import { vocabularyBankPath } from "../lib/wordRoutes.js";
 
 const pageClass = "flex-1 w-full px-4 py-8 pb-12";
 
@@ -46,7 +47,7 @@ export function ErrorPage() {
                         <Button nativeButton={false} render={<Link to="/" />}>
                             {t.data.goBackHome}
                         </Button>
-                        <Button nativeButton={false} variant="link" render={<Link to="/vocabulary" />}>
+                        <Button nativeButton={false} variant="link" render={<Link to={vocabularyBankPath()} />}>
                             {t.data.browseVocabularies}
                             <span aria-hidden="true" className="ml-1">
                                 &rarr;
