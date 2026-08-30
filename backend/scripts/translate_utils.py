@@ -12,11 +12,24 @@ from deep_translator.exceptions import TranslationNotFound, TooManyRequests
 
 
 class GoogleRateLimitError(Exception):
-    """Google Translate rate-limited / blocked — thử lại sau."""
+    """Google Translate rate-limited — HTTP 429 THẬT (quota). Thử lại sau."""
+
+
+class GoogleBlockedError(Exception):
+    """Google chặn truy cập nhưng KHÔNG phải 429 — trả response rỗng / HTML challenge
+    (deep_translator TranslationNotFound) hoặc kết quả rỗng."""
+
+
+class GoogleError(Exception):
+    """Lỗi Google khác (network / timeout / SSL / parse...) — KHÔNG liên quan rate-limit."""
 
 
 def translate_google_only(text, source, target, logger=None):
-    """Google translate CHỈ (không fallback). Trả str, hoặc ném GoogleRateLimitError."""
+    """Google translate CHỈ (không fallback). Trả str, hoặc ném:
+    - GoogleRateLimitError: HTTP 429 thật (quota)
+    - GoogleBlockedError:   Google chặn, trả rỗng/HTML challenge (KHÔNG phải 429)
+    - GoogleError:          lỗi khác (network/timeout...)
+    (2026-08-26 — tách nhãn "rate limit" gộp trước đây vì mọi lỗi đều bị gán sai.)"""
     try:
         translator = GoogleTranslator(source=source, target=target)
         result = translator.translate(text)
@@ -24,12 +37,18 @@ def translate_google_only(text, source, target, logger=None):
             if logger:
                 logger.info("translate[google] OK for %r → %r", text, result)
             return result
-        # Google trả rỗng → thường là bị block/rate-limit.
-        raise GoogleRateLimitError("Google: no translation found (rate limit?)")
-    except (TranslationNotFound, TooManyRequests) as exc:
+        # Google trả rỗng → bị block/challenge (KHÔNG phải 429).
+        raise GoogleBlockedError("Google: empty response (blocked)")
+    except (TooManyRequests,) as exc:
+        # HTTP 429 thật → rate limit thật.
         raise GoogleRateLimitError(f"Google rate limit: {exc}") from exc
+    except TranslationNotFound as exc:
+        # deep_translator không parse được response → thường Google chặn/challenge.
+        raise GoogleBlockedError(f"Google blocked: {exc}") from exc
     except GoogleRateLimitError:
         raise
+    except GoogleBlockedError:
+        raise
     except Exception as exc:
-        # Lỗi Google khác (network...) — vẫn là lỗi Google, dựng lên để báo rõ.
-        raise GoogleRateLimitError(f"Google error: {exc}") from exc
+        # Lỗi khác (network/timeout...) — KHÔNG phải rate-limit.
+        raise GoogleError(f"Google error: {exc}") from exc

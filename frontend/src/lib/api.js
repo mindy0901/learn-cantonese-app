@@ -68,6 +68,13 @@ export function setApiLanguage(lang) {
     }
 }
 
+// Nguồn dịch gần nhất (google | libretranslate) — api.translate ghi lại mỗi lần dịch. (2026-08-25)
+// Lý do Google lỗi (rate_limit | blocked | error) + mã HTTP thực tế khi dùng fallback
+// LibreTranslate. (2026-08-26)
+let lastTranslateSource = null;
+let lastTranslateReason = null;
+let lastGoogleCode = null;
+
 export const api = {
     getAuthStatus: () => request("/auth/status"),
     getMe: () => request("/auth/me"),
@@ -275,17 +282,30 @@ export const api = {
         request(`/api/vocabulary-sets/${setId}/vocabularies/${vocabularyId}`, { method: "DELETE" }),
 
     /** Convert Chinese text to Jyutping */
-    translate: (text, source, target) =>
-        request("/api/translate", {
+    translate: async (text, source, target) => {
+        const res = await request("/api/translate", {
             method: "POST",
             body: JSON.stringify({ text, source, target }),
-        }),
-    /** Google Translate web (gtx) — bypass deep_translator */
-    translateGoogle: (text, source, target) =>
-        request("/api/translate-google", {
-            method: "POST",
-            body: JSON.stringify({ text, source, target }),
-        }),
+        });
+        // Ghi nguồn dịch (google | libretranslate) + lý do + mã HTTP Google — hiển thị ở
+        // tiến độ Full Sync. (2026-08-25/26)
+        lastTranslateSource = res?.source ?? null;
+        lastTranslateReason = res?.reason ?? null;
+        lastGoogleCode = res?.googleCode ?? null;
+        return res;
+    },
+    /** Nguồn dịch gần nhất (google | libretranslate) — đọc từ api.lastTranslateSource. */
+    get lastTranslateSource() {
+        return lastTranslateSource;
+    },
+    /** Lý do Google lỗi (rate_limit | blocked | error) khi fallback — đọc từ api.lastTranslateReason. */
+    get lastTranslateReason() {
+        return lastTranslateReason;
+    },
+    /** Mã HTTP Google khi bị chặn (403/429...) — đọc từ api.lastGoogleCode. */
+    get lastGoogleCode() {
+        return lastGoogleCode;
+    },
     /**
      * Lấy nghĩa (vi + zh) + ví dụ từ Hanzii.
      * - Có `pinyin` → trả { word, groups } cho 1 phiên âm đó.
@@ -300,6 +320,13 @@ export const api = {
         request("/api/jyutping", {
             method: "POST",
             body: JSON.stringify({ text }),
+        }),
+
+    /** TTS (gTTS server-side) — trả { url, cached }. lang: "yue" (Quảng, mặc định) | "zh-CN" (Mandarin giản thể). (2026-08-25) */
+    tts: (text, lang) =>
+        request("/api/tts", {
+            method: "POST",
+            body: JSON.stringify(lang ? { text, lang } : { text }),
         }),
 
     /** Convert Chinese text to Traditional (OpenCC s2t) */

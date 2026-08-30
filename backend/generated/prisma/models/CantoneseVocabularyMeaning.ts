@@ -27,7 +27,6 @@ export type AggregateCantoneseVocabularyMeaning = {
 export type CantoneseVocabularyMeaningMinAggregateOutputType = {
   id: string | null
   cantoneseVocabularyRomanizationId: string | null
-  category: string | null
   vi: string | null
   en: string | null
 }
@@ -35,7 +34,6 @@ export type CantoneseVocabularyMeaningMinAggregateOutputType = {
 export type CantoneseVocabularyMeaningMaxAggregateOutputType = {
   id: string | null
   cantoneseVocabularyRomanizationId: string | null
-  category: string | null
   vi: string | null
   en: string | null
 }
@@ -43,7 +41,6 @@ export type CantoneseVocabularyMeaningMaxAggregateOutputType = {
 export type CantoneseVocabularyMeaningCountAggregateOutputType = {
   id: number
   cantoneseVocabularyRomanizationId: number
-  category: number
   vi: number
   en: number
   _all: number
@@ -53,7 +50,6 @@ export type CantoneseVocabularyMeaningCountAggregateOutputType = {
 export type CantoneseVocabularyMeaningMinAggregateInputType = {
   id?: true
   cantoneseVocabularyRomanizationId?: true
-  category?: true
   vi?: true
   en?: true
 }
@@ -61,7 +57,6 @@ export type CantoneseVocabularyMeaningMinAggregateInputType = {
 export type CantoneseVocabularyMeaningMaxAggregateInputType = {
   id?: true
   cantoneseVocabularyRomanizationId?: true
-  category?: true
   vi?: true
   en?: true
 }
@@ -69,7 +64,6 @@ export type CantoneseVocabularyMeaningMaxAggregateInputType = {
 export type CantoneseVocabularyMeaningCountAggregateInputType = {
   id?: true
   cantoneseVocabularyRomanizationId?: true
-  category?: true
   vi?: true
   en?: true
   _all?: true
@@ -150,7 +144,6 @@ export type CantoneseVocabularyMeaningGroupByArgs<ExtArgs extends runtime.Types.
 export type CantoneseVocabularyMeaningGroupByOutputType = {
   id: string
   cantoneseVocabularyRomanizationId: string
-  category: string
   vi: string
   en: string
   _count: CantoneseVocabularyMeaningCountAggregateOutputType | null
@@ -179,7 +172,6 @@ export type CantoneseVocabularyMeaningWhereInput = {
   NOT?: Prisma.CantoneseVocabularyMeaningWhereInput | Prisma.CantoneseVocabularyMeaningWhereInput[]
   id?: Prisma.UuidFilter<"CantoneseVocabularyMeaning"> | string
   cantoneseVocabularyRomanizationId?: Prisma.UuidFilter<"CantoneseVocabularyMeaning"> | string
-  category?: Prisma.StringFilter<"CantoneseVocabularyMeaning"> | string
   vi?: Prisma.StringFilter<"CantoneseVocabularyMeaning"> | string
   en?: Prisma.StringFilter<"CantoneseVocabularyMeaning"> | string
   cantoneseVocabularyRomanization?: Prisma.XOR<Prisma.CantoneseVocabularyRomanizationScalarRelationFilter, Prisma.CantoneseVocabularyRomanizationWhereInput>
@@ -189,7 +181,6 @@ export type CantoneseVocabularyMeaningWhereInput = {
 export type CantoneseVocabularyMeaningOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   cantoneseVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
   cantoneseVocabularyRomanization?: Prisma.CantoneseVocabularyRomanizationOrderByWithRelationInput
@@ -202,7 +193,6 @@ export type CantoneseVocabularyMeaningWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.CantoneseVocabularyMeaningWhereInput[]
   NOT?: Prisma.CantoneseVocabularyMeaningWhereInput | Prisma.CantoneseVocabularyMeaningWhereInput[]
   cantoneseVocabularyRomanizationId?: Prisma.UuidFilter<"CantoneseVocabularyMeaning"> | string
-  category?: Prisma.StringFilter<"CantoneseVocabularyMeaning"> | string
   vi?: Prisma.StringFilter<"CantoneseVocabularyMeaning"> | string
   en?: Prisma.StringFilter<"CantoneseVocabularyMeaning"> | string
   cantoneseVocabularyRomanization?: Prisma.XOR<Prisma.CantoneseVocabularyRomanizationScalarRelationFilter, Prisma.CantoneseVocabularyRomanizationWhereInput>
@@ -212,7 +202,6 @@ export type CantoneseVocabularyMeaningWhereUniqueInput = Prisma.AtLeast<{
 export type CantoneseVocabularyMeaningOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   cantoneseVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
   _count?: Prisma.CantoneseVocabularyMeaningCountOrderByAggregateInput
@@ -226,14 +215,12 @@ export type CantoneseVocabularyMeaningScalarWhereWithAggregatesInput = {
   NOT?: Prisma.CantoneseVocabularyMeaningScalarWhereWithAggregatesInput | Prisma.CantoneseVocabularyMeaningScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"CantoneseVocabularyMeaning"> | string
   cantoneseVocabularyRomanizationId?: Prisma.UuidWithAggregatesFilter<"CantoneseVocabularyMeaning"> | string
-  category?: Prisma.StringWithAggregatesFilter<"CantoneseVocabularyMeaning"> | string
   vi?: Prisma.StringWithAggregatesFilter<"CantoneseVocabularyMeaning"> | string
   en?: Prisma.StringWithAggregatesFilter<"CantoneseVocabularyMeaning"> | string
 }
 
 export type CantoneseVocabularyMeaningCreateInput = {
   id?: string
-  category?: string
   vi?: string
   en?: string
   cantoneseVocabularyRomanization: Prisma.CantoneseVocabularyRomanizationCreateNestedOneWithoutMeaningsInput
@@ -243,7 +230,6 @@ export type CantoneseVocabularyMeaningCreateInput = {
 export type CantoneseVocabularyMeaningUncheckedCreateInput = {
   id?: string
   cantoneseVocabularyRomanizationId: string
-  category?: string
   vi?: string
   en?: string
   examples?: Prisma.CantoneseVocabularyExampleUncheckedCreateNestedManyWithoutCantoneseVocabularyMeaningInput
@@ -251,7 +237,6 @@ export type CantoneseVocabularyMeaningUncheckedCreateInput = {
 
 export type CantoneseVocabularyMeaningUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
   cantoneseVocabularyRomanization?: Prisma.CantoneseVocabularyRomanizationUpdateOneRequiredWithoutMeaningsNestedInput
@@ -261,7 +246,6 @@ export type CantoneseVocabularyMeaningUpdateInput = {
 export type CantoneseVocabularyMeaningUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   cantoneseVocabularyRomanizationId?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
   examples?: Prisma.CantoneseVocabularyExampleUncheckedUpdateManyWithoutCantoneseVocabularyMeaningNestedInput
@@ -270,14 +254,12 @@ export type CantoneseVocabularyMeaningUncheckedUpdateInput = {
 export type CantoneseVocabularyMeaningCreateManyInput = {
   id?: string
   cantoneseVocabularyRomanizationId: string
-  category?: string
   vi?: string
   en?: string
 }
 
 export type CantoneseVocabularyMeaningUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -285,7 +267,6 @@ export type CantoneseVocabularyMeaningUpdateManyMutationInput = {
 export type CantoneseVocabularyMeaningUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   cantoneseVocabularyRomanizationId?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -303,7 +284,6 @@ export type CantoneseVocabularyMeaningOrderByRelationAggregateInput = {
 export type CantoneseVocabularyMeaningCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   cantoneseVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
 }
@@ -311,7 +291,6 @@ export type CantoneseVocabularyMeaningCountOrderByAggregateInput = {
 export type CantoneseVocabularyMeaningMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   cantoneseVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
 }
@@ -319,7 +298,6 @@ export type CantoneseVocabularyMeaningMaxOrderByAggregateInput = {
 export type CantoneseVocabularyMeaningMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   cantoneseVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
 }
@@ -387,7 +365,6 @@ export type CantoneseVocabularyMeaningUpdateOneRequiredWithoutExamplesNestedInpu
 
 export type CantoneseVocabularyMeaningCreateWithoutCantoneseVocabularyRomanizationInput = {
   id?: string
-  category?: string
   vi?: string
   en?: string
   examples?: Prisma.CantoneseVocabularyExampleCreateNestedManyWithoutCantoneseVocabularyMeaningInput
@@ -395,7 +372,6 @@ export type CantoneseVocabularyMeaningCreateWithoutCantoneseVocabularyRomanizati
 
 export type CantoneseVocabularyMeaningUncheckedCreateWithoutCantoneseVocabularyRomanizationInput = {
   id?: string
-  category?: string
   vi?: string
   en?: string
   examples?: Prisma.CantoneseVocabularyExampleUncheckedCreateNestedManyWithoutCantoneseVocabularyMeaningInput
@@ -433,14 +409,12 @@ export type CantoneseVocabularyMeaningScalarWhereInput = {
   NOT?: Prisma.CantoneseVocabularyMeaningScalarWhereInput | Prisma.CantoneseVocabularyMeaningScalarWhereInput[]
   id?: Prisma.UuidFilter<"CantoneseVocabularyMeaning"> | string
   cantoneseVocabularyRomanizationId?: Prisma.UuidFilter<"CantoneseVocabularyMeaning"> | string
-  category?: Prisma.StringFilter<"CantoneseVocabularyMeaning"> | string
   vi?: Prisma.StringFilter<"CantoneseVocabularyMeaning"> | string
   en?: Prisma.StringFilter<"CantoneseVocabularyMeaning"> | string
 }
 
 export type CantoneseVocabularyMeaningCreateWithoutExamplesInput = {
   id?: string
-  category?: string
   vi?: string
   en?: string
   cantoneseVocabularyRomanization: Prisma.CantoneseVocabularyRomanizationCreateNestedOneWithoutMeaningsInput
@@ -449,7 +423,6 @@ export type CantoneseVocabularyMeaningCreateWithoutExamplesInput = {
 export type CantoneseVocabularyMeaningUncheckedCreateWithoutExamplesInput = {
   id?: string
   cantoneseVocabularyRomanizationId: string
-  category?: string
   vi?: string
   en?: string
 }
@@ -472,7 +445,6 @@ export type CantoneseVocabularyMeaningUpdateToOneWithWhereWithoutExamplesInput =
 
 export type CantoneseVocabularyMeaningUpdateWithoutExamplesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
   cantoneseVocabularyRomanization?: Prisma.CantoneseVocabularyRomanizationUpdateOneRequiredWithoutMeaningsNestedInput
@@ -481,21 +453,18 @@ export type CantoneseVocabularyMeaningUpdateWithoutExamplesInput = {
 export type CantoneseVocabularyMeaningUncheckedUpdateWithoutExamplesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   cantoneseVocabularyRomanizationId?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CantoneseVocabularyMeaningCreateManyCantoneseVocabularyRomanizationInput = {
   id?: string
-  category?: string
   vi?: string
   en?: string
 }
 
 export type CantoneseVocabularyMeaningUpdateWithoutCantoneseVocabularyRomanizationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
   examples?: Prisma.CantoneseVocabularyExampleUpdateManyWithoutCantoneseVocabularyMeaningNestedInput
@@ -503,7 +472,6 @@ export type CantoneseVocabularyMeaningUpdateWithoutCantoneseVocabularyRomanizati
 
 export type CantoneseVocabularyMeaningUncheckedUpdateWithoutCantoneseVocabularyRomanizationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
   examples?: Prisma.CantoneseVocabularyExampleUncheckedUpdateManyWithoutCantoneseVocabularyMeaningNestedInput
@@ -511,7 +479,6 @@ export type CantoneseVocabularyMeaningUncheckedUpdateWithoutCantoneseVocabularyR
 
 export type CantoneseVocabularyMeaningUncheckedUpdateManyWithoutCantoneseVocabularyRomanizationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -550,7 +517,6 @@ export type CantoneseVocabularyMeaningCountOutputTypeCountExamplesArgs<ExtArgs e
 export type CantoneseVocabularyMeaningSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   cantoneseVocabularyRomanizationId?: boolean
-  category?: boolean
   vi?: boolean
   en?: boolean
   cantoneseVocabularyRomanization?: boolean | Prisma.CantoneseVocabularyRomanizationDefaultArgs<ExtArgs>
@@ -561,7 +527,6 @@ export type CantoneseVocabularyMeaningSelect<ExtArgs extends runtime.Types.Exten
 export type CantoneseVocabularyMeaningSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   cantoneseVocabularyRomanizationId?: boolean
-  category?: boolean
   vi?: boolean
   en?: boolean
   cantoneseVocabularyRomanization?: boolean | Prisma.CantoneseVocabularyRomanizationDefaultArgs<ExtArgs>
@@ -570,7 +535,6 @@ export type CantoneseVocabularyMeaningSelectCreateManyAndReturn<ExtArgs extends 
 export type CantoneseVocabularyMeaningSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   cantoneseVocabularyRomanizationId?: boolean
-  category?: boolean
   vi?: boolean
   en?: boolean
   cantoneseVocabularyRomanization?: boolean | Prisma.CantoneseVocabularyRomanizationDefaultArgs<ExtArgs>
@@ -579,12 +543,11 @@ export type CantoneseVocabularyMeaningSelectUpdateManyAndReturn<ExtArgs extends 
 export type CantoneseVocabularyMeaningSelectScalar = {
   id?: boolean
   cantoneseVocabularyRomanizationId?: boolean
-  category?: boolean
   vi?: boolean
   en?: boolean
 }
 
-export type CantoneseVocabularyMeaningOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "cantoneseVocabularyRomanizationId" | "category" | "vi" | "en", ExtArgs["result"]["cantoneseVocabularyMeaning"]>
+export type CantoneseVocabularyMeaningOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "cantoneseVocabularyRomanizationId" | "vi" | "en", ExtArgs["result"]["cantoneseVocabularyMeaning"]>
 export type CantoneseVocabularyMeaningInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   cantoneseVocabularyRomanization?: boolean | Prisma.CantoneseVocabularyRomanizationDefaultArgs<ExtArgs>
   examples?: boolean | Prisma.CantoneseVocabularyMeaning$examplesArgs<ExtArgs>
@@ -606,7 +569,6 @@ export type $CantoneseVocabularyMeaningPayload<ExtArgs extends runtime.Types.Ext
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     cantoneseVocabularyRomanizationId: string
-    category: string
     vi: string
     en: string
   }, ExtArgs["result"]["cantoneseVocabularyMeaning"]>
@@ -1036,7 +998,6 @@ export interface Prisma__CantoneseVocabularyMeaningClient<T, Null = never, ExtAr
 export interface CantoneseVocabularyMeaningFieldRefs {
   readonly id: Prisma.FieldRef<"CantoneseVocabularyMeaning", 'String'>
   readonly cantoneseVocabularyRomanizationId: Prisma.FieldRef<"CantoneseVocabularyMeaning", 'String'>
-  readonly category: Prisma.FieldRef<"CantoneseVocabularyMeaning", 'String'>
   readonly vi: Prisma.FieldRef<"CantoneseVocabularyMeaning", 'String'>
   readonly en: Prisma.FieldRef<"CantoneseVocabularyMeaning", 'String'>
 }

@@ -17,7 +17,6 @@ import { Button } from "./shadcn/button.jsx";
 import { Input } from "./shadcn/input.jsx";
 import { Textarea } from "./shadcn/textarea.jsx";
 import { Separator } from "./shadcn/separator.jsx";
-import { MeaningGroup } from "./MeaningGroup.jsx";
 import { Checkbox } from "./shadcn/checkbox.jsx";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./shadcn/select.jsx";
 
@@ -267,7 +266,6 @@ export function buildVocabularyDraft(vocabulary, { seedEmptyReadings = true } = 
             return [
                 {
                     _tempId: crypto.randomUUID(),
-                    category: "",
                     vietMeanings: viet,
                     engMeanings: eng,
                     position: 0,
@@ -300,7 +298,6 @@ export function vocabularyDraftPayloadLegacy(draft, { activePinyinId, activeJyut
             .map((m, i) => ({
                 id: m.id,
                 _tempId: m._tempId,
-                category: capitalizeFirst((m.category ?? "").trim()),
                 gloss: capitalizeFirst((m.gloss ?? "").trim()),
                 vietMeanings: capitalizeFirst((m.vietMeanings ?? "").trim()),
                 engMeanings: capitalizeFirst((m.engMeanings ?? "").trim()),
@@ -396,12 +393,8 @@ export function vocabularyDraftPayloadLegacy(draft, { activePinyinId, activeJyut
 /**
  * Build payload model MỚI (2026-08-14) gửi API:
  *   { mandarin, cantonese, metadata } + flags (pureCantonese/important/mastered).
- * meaning dict (CC-Canto/words.hk/粵典–words.hk) → gloss vào `zh|yue`, `vi` trống;
- * meaning manual → `vi` = nghĩa tiếng Việt, `zh|yue` trống.
+ * ⚠️ 2026-08-30: bỏ group/category — meaning phẳng, gloss → zh|yue, vi = nghĩa Việt.
  */
-const DICT_CATEGORIES = new Set(["CC-Canto", "words.hk", "粵典–words.hk"]);
-const isDictCategory = (category) => DICT_CATEGORIES.has(String(category ?? "").trim());
-
 function meaningsNewFromLegacy(meanings, side) {
     const hanField = side === "mandarin" ? "zh" : "yue";
     const romanField = side === "mandarin" ? "pinyinExample" : "jyutpingExample";
@@ -413,7 +406,6 @@ function meaningsNewFromLegacy(meanings, side) {
             return {
                 id: m.id,
                 position: i,
-                category: capitalizeFirst((m.category ?? "").trim()),
                 [hanField]: gloss,
                 vi: viet,
                 en: capitalizeFirst((m.engMeanings ?? "").trim()),
@@ -660,19 +652,7 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
     const prevMeaningsRef = useRef(meanings);
 
     // Build initial categories from props
-    const [localCategories, setLocalCategories] = useState(() => {
-        const map = new Map();
-        for (const m of meanings ?? []) {
-            const cat = (m.category ?? "").trim() || "__default__";
-            if (!map.has(cat)) map.set(cat, []);
-            map.get(cat).push(m);
-        }
-        return [...map.entries()].map(([name, ms]) => ({
-            _tempId: crypto.randomUUID(),
-            name: name === "__default__" ? "" : name,
-            meanings: ms,
-        }));
-    });
+    const [localMeanings, setLocalMeanings] = useState(() => (meanings ?? []).map((m, i) => ({ ...m, position: i })));
 
     // Only sync from props when structure changes externally (not from our own flush)
     useEffect(() => {
@@ -682,19 +662,8 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
         }
         if (meanings !== prevMeaningsRef.current) {
             prevMeaningsRef.current = meanings;
-            const map = new Map();
-            for (const m of meanings ?? []) {
-                const cat = (m.category ?? "").trim() || "__default__";
-                if (!map.has(cat)) map.set(cat, []);
-                map.get(cat).push(m);
-            }
-            const cats = [...map.entries()].map(([name, ms]) => ({
-                _tempId: crypto.randomUUID(),
-                name: name === "__default__" ? "" : name,
-                meanings: ms,
-            }));
-            if (cats.length > 0 || localCategories.length === 0) {
-                setLocalCategories(cats);
+            if ((meanings ?? []).length > 0 || localMeanings.length === 0) {
+                setLocalMeanings((meanings ?? []).map((m, i) => ({ ...m, position: i })));
             }
             // Tự mở editor khi có meanings mới từ ngoài (vd scrap Hanzii): trước đó collapsed
             // vì meanings rỗng lúc mount — giờ có dữ liệu phải hiện ra ngay, không cần đổi tab.
@@ -704,66 +673,54 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
         }
     }, [meanings]);
 
-    const flushToParent = (cats) => {
-        const flat = [];
-        let pos = 0;
-        for (const cat of cats) {
-            for (const m of cat.meanings) {
-                flat.push({ ...m, category: cat.name || "", position: pos++ });
-            }
-        }
+    const flushToParent = (list) => {
+        const flat = (list ?? []).map((m, pos) => ({ ...m, position: pos }));
         skipSyncRef.current = true;
         onChange(flat);
     };
 
     // ── Di chuyển examples sang meaning khác (2026-08-22) ──
-    const [selectedEx, setSelectedEx] = useState(new Map()); // key (id/_tempId) → { catIdx, mIdx }
+    const [selectedEx, setSelectedEx] = useState(new Map()); // key (id/_tempId) → mIdx
     const [moveTarget, setMoveTarget] = useState("");
-    const toggleSelectExample = (ex, catIdx, mIdx) => {
+    const toggleSelectExample = (ex, mIdx) => {
         const key = ex?._tempId || ex?.id;
         if (!key) return;
         setSelectedEx((prev) => {
             const next = new Map(prev);
             if (next.has(key)) next.delete(key);
-            else next.set(key, { catIdx, mIdx });
+            else next.set(key, mIdx);
             return next;
         });
     };
     const clearSelection = () => setSelectedEx(new Map());
     const moveSelectedExamples = () => {
         if (!moveTarget || selectedEx.size === 0) return;
-        const [tCat, tM] = moveTarget.split(":").map(Number);
-        if (tCat == null || tM == null) return;
-        const next = localCategories.map((cat) => ({
-            ...cat,
-            meanings: (cat.meanings ?? []).map((m) => ({ ...m, examples: [...(m.examples ?? [])] })),
-        }));
+        const tM = Number(moveTarget);
+        if (!Number.isInteger(tM)) return;
+        const next = localMeanings.map((m) => ({ ...m, examples: [...(m.examples ?? [])] }));
         const moved = [];
-        for (const [key, { catIdx, mIdx }] of selectedEx) {
-            const src = next[catIdx]?.meanings?.[mIdx];
+        for (const [key, mIdx] of selectedEx) {
+            const src = next[mIdx];
             if (!src) continue;
             const idx = (src.examples ?? []).findIndex((e) => (e?._tempId || e?.id) === key);
             if (idx === -1) continue;
             moved.push(src.examples[idx]);
             src.examples.splice(idx, 1);
         }
-        const target = next[tCat]?.meanings?.[tM];
+        const target = next[tM];
         if (target && moved.length) target.examples = [...(target.examples ?? []), ...moved];
-        setLocalCategories(next);
+        setLocalMeanings(next);
         flushToParent(next);
         setSelectedEx(new Map());
         setMoveTarget("");
     };
     const selectedExKeys = new Set(selectedEx.keys());
     // Tổng examples + số đã chọn (floating quick-move bar) (2026-08-22)
-    const totalExamples = localCategories.reduce(
-        (acc, cat) => acc + (cat.meanings ?? []).reduce((a, m) => a + (m.examples ?? []).length, 0),
-        0,
-    );
+    const totalExamples = localMeanings.reduce((acc, m) => acc + (m.examples ?? []).length, 0);
     const selectedCount = selectedEx.size;
     // Select-all CHO TỪNG MEANING — checkbox nằm trong header examples của meaning (2026-08-22)
-    const toggleSelectAllInMeaning = (catIdx, mIdx) => {
-        const meaning = localCategories[catIdx]?.meanings?.[mIdx];
+    const toggleSelectAllInMeaning = (mIdx) => {
+        const meaning = localMeanings[mIdx];
         const keys = (meaning?.examples ?? []).map((ex) => ex?._tempId || ex?.id).filter(Boolean);
         if (!keys.length) return;
         setSelectedEx((prev) => {
@@ -771,53 +728,40 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
             const allSelected = keys.every((k) => next.has(k));
             for (const k of keys) {
                 if (allSelected) next.delete(k);
-                else next.set(k, { catIdx, mIdx });
+                else next.set(k, mIdx);
             }
             return next;
         });
     };
     // Loại trừ meaning nguồn của examples đang chọn khỏi target options.
-    const sourceMeaningKeys = new Set([...selectedEx.values()].map(({ catIdx, mIdx }) => `${catIdx}:${mIdx}`));
-    const moveTargetOptions = localCategories
-        .flatMap((cat, ci) =>
-            (cat.meanings ?? []).map((m, mi) => {
-                const preview = (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim();
-                return {
-                    key: `${ci}:${mi}`,
-                    // ⚠️ KHÔNG prefix "Danh từ #1" — chỉ hiển thị nghĩa preview (2026-08-22)
-                    label: preview
-                        ? preview.length > 40
-                            ? `${preview.slice(0, 40)}…`
-                            : preview
-                        : (cat.name || "Nghĩa").trim(),
-                };
-            }),
-        )
-        .filter((o) => !sourceMeaningKeys.has(o.key));
+    const sourceMeaningKeys = new Set(selectedEx.values());
+    const moveTargetOptions = localMeanings
+        .map((m, mi) => {
+            const preview = (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim();
+            return {
+                key: String(mi),
+                label: preview ? (preview.length > 40 ? `${preview.slice(0, 40)}…` : preview) : "Nghĩa",
+            };
+        })
+        .filter((o) => !sourceMeaningKeys.has(Number(o.key)));
     // Mô tả ngắn cho floating bar — chỉ "Di chuyển N ví dụ đến" (đích hiển thị trong Select) (2026-08-22)
     const moveDesc =
         t.addWord?.moveTo?.replace("{count}", String(selectedCount)) ?? `Di chuyển ${selectedCount} ví dụ đến`;
 
-    const addCategory = () => {
-        // ⚠️ 2026-08-21: không cho thêm group meaning khi chưa có reading (sino-romanization group).
+    const addMeaning = () => {
+        // ⚠️ 2026-08-21: không cho thêm meaning khi chưa có reading (sino-romanization group).
         if (!hasReading) return;
         if (!expanded) setExpanded(true);
         const next = [
-            ...localCategories,
+            ...localMeanings,
             {
                 _tempId: crypto.randomUUID(),
-                name: "",
-                meanings: [
-                    {
-                        _tempId: crypto.randomUUID(),
-                        vietMeanings: "",
-                        engMeanings: "",
-                        examples: [],
-                    },
-                ],
+                vietMeanings: "",
+                engMeanings: "",
+                examples: [],
             },
         ];
-        setLocalCategories(next);
+        setLocalMeanings(next);
         flushToParent(next);
     };
 
@@ -827,26 +771,23 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
     // ⚠️ 2026-08-21: thêm job fill pinyin-pro cho VÍ DỤ thiếu pinyin (chỉ column pinyin — mandarin).
     const buildJobs = () => {
         const jobs = [];
-        localCategories.forEach((cat, catIdx) => {
-            cat.meanings.forEach((m, mIdx) => {
-                const mv = (m.vietMeanings ?? "").trim();
-                const me = (m.engMeanings ?? "").trim();
-                const mg = (m.gloss ?? "").trim();
-                // Việt↔Anh lệch 1 chiều, HOẶC gloss zh (CHỈ mandarin) trống nhưng có eng/việt làm nguồn.
-                // ⚠️ 2026-08-22: cantonese KHÔNG còn gloss (bỏ yue) → không tạo job fill gloss.
-                if (Boolean(mv) !== Boolean(me) || (column === "pinyin" && !mg && (me || mv)))
-                    jobs.push({ catIdx, mIdx, exIdx: null, mv, me, mg });
-                (m.examples ?? []).forEach((ex, exIdx) => {
-                    const ev = (ex.vietExamples ?? "").trim();
-                    const ee = (ex.engExamples ?? "").trim();
-                    if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ catIdx, mIdx, exIdx, ev, ee });
-                    // Ví dụ thiếu pinyin (có chữ Hán) → fill pinyin-pro (chỉ mandarin).
-                    if (column === "pinyin") {
-                        const exHan = (ex.hanSimplified ?? "").trim() || (ex.hanTraditional ?? "").trim();
-                        if (!(ex.pinyinExample ?? "").trim() && exHan)
-                            jobs.push({ catIdx, mIdx, exIdx, fillPinyin: true, exHan });
-                    }
-                });
+        localMeanings.forEach((m, mIdx) => {
+            const mv = (m.vietMeanings ?? "").trim();
+            const me = (m.engMeanings ?? "").trim();
+            const mg = (m.gloss ?? "").trim();
+            // Việt↔Anh lệch 1 chiều, HOẶC gloss zh (CHỈ mandarin) trống nhưng có eng/việt làm nguồn.
+            // ⚠️ 2026-08-22: cantonese KHÔNG còn gloss (bỏ yue) → không tạo job fill gloss.
+            if (Boolean(mv) !== Boolean(me) || (column === "pinyin" && !mg && (me || mv)))
+                jobs.push({ mIdx, exIdx: null, mv, me, mg });
+            (m.examples ?? []).forEach((ex, exIdx) => {
+                const ev = (ex.vietExamples ?? "").trim();
+                const ee = (ex.engExamples ?? "").trim();
+                if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ mIdx, exIdx, ev, ee });
+                // Ví dụ thiếu pinyin (có chữ Hán) → fill pinyin-pro (chỉ mandarin).
+                if (column === "pinyin") {
+                    const exHan = (ex.hanSimplified ?? "").trim() || (ex.hanTraditional ?? "").trim();
+                    if (!(ex.pinyinExample ?? "").trim() && exHan) jobs.push({ mIdx, exIdx, fillPinyin: true, exHan });
+                }
             });
         });
         return jobs;
@@ -868,10 +809,10 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
         }
         setSyncingAllViEn(true);
         try {
-            // Deep copy categories để áp patch, rồi flush 1 lần cuối (tránh nhiều onChange).
-            const next = localCategories.map((c) => ({
-                ...c,
-                meanings: c.meanings.map((m) => ({ ...m, examples: (m.examples ?? []).map((e) => ({ ...e })) })),
+            // Deep copy meanings để áp patch, rồi flush 1 lần cuối (tránh nhiều onChange).
+            const next = localMeanings.map((m) => ({
+                ...m,
+                examples: (m.examples ?? []).map((e) => ({ ...e })),
             }));
             let done = 0;
             let synced = 0;
@@ -879,11 +820,11 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                 try {
                     if (job.fillPinyin) {
                         // Ví dụ thiếu pinyin → fill pinyin-pro từ chữ Hán giản thể (mandarin).
-                        const ex = next[job.catIdx].meanings[job.mIdx].examples[job.exIdx];
+                        const ex = next[job.mIdx].examples[job.exIdx];
                         const res = await api.toPinyin(job.exHan);
                         if (res?.pinyin) ex.pinyinExample = res.pinyin;
                     } else if (job.exIdx === null) {
-                        const m = next[job.catIdx].meanings[job.mIdx];
+                        const m = next[job.mIdx];
                         // 1) Điền chiều Việt↔Anh còn thiếu — CHỈ khi lệch 1 chiều (không đè nếu cả 2 đã có).
                         if (job.mv && !job.me) {
                             const res = await api.translate(job.mv, "vi", "en");
@@ -903,7 +844,8 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                             const curMe = (m.engMeanings ?? "").trim();
                             if (!(m.gloss ?? "").trim() && (curMe || curMv)) {
                                 const gSource = curMe ? "en" : "vi";
-                                const gRes = await api.translateGoogle(curMe || curMv, gSource, "zh");
+                                // Gloss zh đi qua /api/translate (deep_translator → LibreTranslate fallback).
+                                const gRes = await api.translate(curMe || curMv, gSource, "zh-CN");
                                 const gTranslated = String(gRes?.translated ?? "").trim();
                                 if (gTranslated) m.gloss = gTranslated;
                             }
@@ -914,7 +856,7 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                         const target = job.ev ? "en" : "vi";
                         const res = await api.translate(job.ev || job.ee, source, target);
                         const translated = normalizeGlossSeparators(res?.translated ?? "");
-                        const ex = next[job.catIdx].meanings[job.mIdx].examples[job.exIdx];
+                        const ex = next[job.mIdx].examples[job.exIdx];
                         if (job.ev) {
                             ex.vietExamples = normalizeGlossSeparators(job.ev);
                             if (translated) ex.engExamples = translated;
@@ -933,7 +875,7 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                 }
             };
             // Chạy tối đa CONCURRENT job cùng lúc (cân bằng tốc độ vs rate-limit).
-            const CONCURRENT = 3;
+            const CONCURRENT = 2;
             let idx = 0;
             await Promise.all(
                 Array.from({ length: Math.min(CONCURRENT, jobs.length) }, async () => {
@@ -943,7 +885,7 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                     }
                 }),
             );
-            setLocalCategories(next);
+            setLocalMeanings(next);
             flushToParent(next);
             return synced;
         } finally {
@@ -959,21 +901,19 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
         // Build jobs riêng cho cantonese: nghĩa thiếu 1 chiều (vi↔en), ví dụ thiếu vi/en,
         // và ví dụ thiếu jyutpingExample.
         const jobs = [];
-        localCategories.forEach((cat, catIdx) => {
-            cat.meanings.forEach((m, mIdx) => {
-                const mv = (m.vietMeanings ?? "").trim();
-                const me = (m.engMeanings ?? "").trim();
-                if (Boolean(mv) !== Boolean(me)) {
-                    jobs.push({ catIdx, mIdx, exIdx: null, mv, me });
-                }
-                (m.examples ?? []).forEach((ex, exIdx) => {
-                    const ev = (ex.vietExamples ?? "").trim();
-                    const ee = (ex.engExamples ?? "").trim();
-                    const ej = (ex.jyutpingExample ?? "").trim();
-                    const exHan = (ex.hanTraditional ?? "").trim() || (ex.hanSimplified ?? "").trim();
-                    if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ catIdx, mIdx, exIdx, ev, ee });
-                    else if (!ej && exHan) jobs.push({ catIdx, mIdx, exIdx, fillJyutping: true, exHan });
-                });
+        localMeanings.forEach((m, mIdx) => {
+            const mv = (m.vietMeanings ?? "").trim();
+            const me = (m.engMeanings ?? "").trim();
+            if (Boolean(mv) !== Boolean(me)) {
+                jobs.push({ mIdx, exIdx: null, mv, me });
+            }
+            (m.examples ?? []).forEach((ex, exIdx) => {
+                const ev = (ex.vietExamples ?? "").trim();
+                const ee = (ex.engExamples ?? "").trim();
+                const ej = (ex.jyutpingExample ?? "").trim();
+                const exHan = (ex.hanTraditional ?? "").trim() || (ex.hanSimplified ?? "").trim();
+                if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ mIdx, exIdx, ev, ee });
+                else if (!ej && exHan) jobs.push({ mIdx, exIdx, fillJyutping: true, exHan });
             });
         });
         if (!jobs.length) {
@@ -982,9 +922,9 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
         }
         setSyncingAllViEn(true);
         try {
-            const next = localCategories.map((c) => ({
-                ...c,
-                meanings: c.meanings.map((m) => ({ ...m, examples: (m.examples ?? []).map((e) => ({ ...e })) })),
+            const next = localMeanings.map((m) => ({
+                ...m,
+                examples: (m.examples ?? []).map((e) => ({ ...e })),
             }));
             let done = 0;
             let synced = 0;
@@ -992,7 +932,7 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                 try {
                     if (job.fillJyutping) {
                         // Ví dụ thiếu jyutping → điền qua pipeline 3 fallback (words.hk → CC-Canto → to-jyutping).
-                        const ex = next[job.catIdx].meanings[job.mIdx].examples[job.exIdx];
+                        const ex = next[job.mIdx].examples[job.exIdx];
                         const res = await api.toJyutping(job.exHan);
                         if (res?.jyutping) ex.jyutpingExample = res.jyutping;
                     } else if (job.exIdx !== null) {
@@ -1001,7 +941,7 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                         const target = job.ev ? "en" : "vi";
                         const res = await api.translate(job.ev || job.ee, source, target);
                         const translated = normalizeGlossSeparators(res?.translated ?? "");
-                        const ex = next[job.catIdx].meanings[job.mIdx].examples[job.exIdx];
+                        const ex = next[job.mIdx].examples[job.exIdx];
                         if (job.ev) {
                             ex.vietExamples = normalizeGlossSeparators(job.ev);
                             if (translated) ex.engExamples = translated;
@@ -1010,7 +950,7 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                             if (translated) ex.vietExamples = translated;
                         }
                     } else {
-                        const m = next[job.catIdx].meanings[job.mIdx];
+                        const m = next[job.mIdx];
                         // Điền chiều Việt↔Anh còn thiếu — CHỈ khi lệch 1 chiều.
                         // ⚠️ 2026-08-22: cantonese KHÔNG còn gloss yue → chỉ sync vi↔en.
                         if (job.mv && !job.me) {
@@ -1036,7 +976,7 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                     onProgress?.(done, jobs.length);
                 }
             };
-            const CONCURRENT = 3;
+            const CONCURRENT = 2;
             let idx = 0;
             await Promise.all(
                 Array.from({ length: Math.min(CONCURRENT, jobs.length) }, async () => {
@@ -1046,7 +986,7 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                     }
                 }),
             );
-            setLocalCategories(next);
+            setLocalMeanings(next);
             flushToParent(next);
             return synced;
         } finally {
@@ -1054,30 +994,32 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
         }
     };
 
-    // Footer "Thêm nhóm" / "Đồng bộ Việt - Anh" (WordDetailContent) gọi qua ref.
-    useImperativeHandle(
-        ref,
-        () => ({ addGroup: addCategory, syncAllViEn, syncAllCantonese, hasSyncJobs, getSyncJobCount }),
-        [addCategory, syncAllViEn, syncAllCantonese, hasSyncJobs, getSyncJobCount],
-    );
+    // Footer "Thêm nghĩa" / "Đồng bộ Việt - Anh" (WordDetailContent) gọi qua ref.
+    useImperativeHandle(ref, () => ({ addMeaning, syncAllViEn, syncAllCantonese, hasSyncJobs, getSyncJobCount }), [
+        addMeaning,
+        syncAllViEn,
+        syncAllCantonese,
+        hasSyncJobs,
+        getSyncJobCount,
+    ]);
 
     const handleExpand = () => {
         setExpanded(true);
-        // Auto-create first category with one empty meaning if none exist
-        if (localCategories.length === 0) {
-            addCategory();
+        // Auto-create first meaning nếu chưa có
+        if (localMeanings.length === 0) {
+            addMeaning();
         }
     };
 
-    const updateCategory = (idx, updated) => {
-        const next = localCategories.map((c, i) => (i === idx ? { ...c, ...updated } : c));
-        setLocalCategories(next);
+    const updateMeaning = (idx, updated) => {
+        const next = localMeanings.map((m, i) => (i === idx ? { ...m, ...updated } : m));
+        setLocalMeanings(next);
         flushToParent(next);
     };
 
-    const removeCategory = (idx) => {
-        const next = localCategories.filter((_, i) => i !== idx);
-        setLocalCategories(next);
+    const removeMeaning = (idx) => {
+        const next = localMeanings.filter((_, i) => i !== idx);
+        setLocalMeanings(next);
         flushToParent(next);
         if (next.length === 0) setExpanded(false);
     };
@@ -1113,18 +1055,19 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                 </CardTitle>
             </CardHeader>
             <CardContent className={cn("flex flex-col gap-2", flat && "p-0")}>
-                {localCategories.map((cat, i) => (
-                    <CategoryCard
-                        key={cat._tempId || i}
-                        category={cat}
-                        index={i}
-                        column={column}
-                        onChange={(updated) => updateCategory(i, updated)}
-                        onRemove={() => removeCategory(i)}
-                        selectedExKeys={selectedExKeys}
-                        onToggleSelect={(ex, mIdx) => toggleSelectExample(ex, i, mIdx)}
-                        onToggleSelectAll={(mIdx) => toggleSelectAllInMeaning(i, mIdx)}
-                    />
+                {localMeanings.map((m, i) => (
+                    <div key={m._tempId || m.id || i} className="rounded-xl bg-muted/40 border border-border/60 p-4">
+                        <MeaningCard
+                            meaning={m}
+                            index={i}
+                            column={column}
+                            onChange={(updated) => updateMeaning(i, updated)}
+                            onRemove={() => removeMeaning(i)}
+                            selectedExKeys={selectedExKeys}
+                            onToggleSelect={(ex) => toggleSelectExample(ex, i)}
+                            onToggleSelectAll={() => toggleSelectAllInMeaning(i)}
+                        />
+                    </div>
                 ))}
                 {/* Quick-move floating bar (fixed bottom — KHÔNG cần kéo lên trên) (2026-08-22) */}
                 {selectedCount > 0 && (
@@ -1161,111 +1104,17 @@ export const MeaningsEditor = forwardRef(function MeaningsEditor(
                         </Button>
                     </div>
                 )}
-                {/* Nút "Thêm nhóm" dưới group cuối — căn TRÁI + default button (2026-08-22) */}
+                {/* Nút "Thêm nghĩa" (2026-08-30: bỏ group meaning) */}
                 <div className="flex justify-start">
-                    <Button type="button" onClick={addCategory} title={t.addWord.addGroup}>
+                    <Button type="button" onClick={addMeaning} title={t.addWord.addMeaning}>
                         <IconPlus size={18} data-icon="inline-start" />
-                        {t.addWord.addGroup}
+                        {t.addWord.addMeaning}
                     </Button>
                 </div>
             </CardContent>
         </Card>
     );
 });
-
-function CategoryCard({
-    category,
-    index,
-    column,
-    onChange,
-    onRemove,
-    selectedExKeys = new Set(),
-    onToggleSelect = () => {},
-    onToggleSelectAll = () => {},
-}) {
-    const { t } = useLocale();
-    // Số La Mã cho nhóm (I., II., III.…) — khớp style view mode (ReadingMeaningsBlock).
-    const roman = (i) => ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][i] ?? String(i + 1);
-    const addMeaning = () => {
-        const nextMeanings = [
-            ...(category.meanings ?? []),
-            {
-                _tempId: crypto.randomUUID(),
-                vietMeanings: "",
-                engMeanings: "",
-                examples: [],
-            },
-        ];
-        onChange({ meanings: nextMeanings });
-    };
-
-    const updateMeaning = (mIdx, updated) => {
-        const nextMeanings = (category.meanings ?? []).map((m, i) => (i === mIdx ? { ...m, ...updated } : m));
-        onChange({ meanings: nextMeanings });
-    };
-
-    const removeMeaning = (mIdx) => {
-        const nextMeanings = (category.meanings ?? []).filter((_, i) => i !== mIdx);
-        onChange({ meanings: nextMeanings });
-    };
-
-    // Container nhóm dùng chung MeaningGroup — flat giống detail (2026-08-20).
-    return (
-        <MeaningGroup
-            className="rounded-xl bg-muted/40 border border-border/60"
-            romanLabel={roman(index)}
-            titleElement={
-                <Input
-                    className="flex-1 min-w-0 max-w-48 text-xl! font-semibold text-muted-foreground"
-                    value={category.name ?? ""}
-                    onChange={(e) => onChange({ name: e.target.value })}
-                />
-            }
-            count={category.meanings?.length ?? 0}
-            titleAsTrigger={false}
-            actions={
-                <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="self-start"
-                    onClick={onRemove}
-                    title={t.addWord.deleteGroup}
-                >
-                    <IconClose size={14} data-icon="inline-start" />
-                    {category.name
-                        ? t.addWord.deleteGroupWithName.replace("{name}", category.name)
-                        : t.addWord.deleteGroup}
-                </Button>
-            }
-        >
-            {/* Meanings in this category */}
-            <div className="flex flex-col gap-4">
-                {(category.meanings ?? []).map((m, j) => (
-                    <MeaningCard
-                        key={m._tempId || j}
-                        meaning={m}
-                        index={j}
-                        column={column}
-                        onChange={(updated) => updateMeaning(j, updated)}
-                        onRemove={() => removeMeaning(j)}
-                        selectedExKeys={selectedExKeys}
-                        onToggleSelect={(ex) => onToggleSelect(ex, j)}
-                        onToggleSelectAll={() => onToggleSelectAll(j)}
-                    />
-                ))}
-                <Button
-                    type="button"
-                    className="self-start bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90"
-                    onClick={addMeaning}
-                >
-                    <IconPlus size={14} data-icon="inline-start" />
-                    {t.addWord.addMeaning}
-                </Button>
-            </div>
-        </MeaningGroup>
-    );
-}
 
 /**
  * Format pasted Hanzii example text into simplified (line 1) + traditional (line 2).
@@ -1342,6 +1191,28 @@ async function withRetry(fn, attempts = 3) {
     throw new Error("unreachable");
 }
 
+// ═══ Check nhanh "đã đầy chưa" — item đầy → SKIP, không tạo job / không gọi API. (2026-08-25) ═══
+/** Meaning cần fill không? — vi↔en lệch 1 chiều; `withGloss` (mandarin) thêm: thiếu gloss. */
+function meaningNeedsFill(m, withGloss) {
+    const mv = (m.vietMeanings ?? "").trim();
+    const me = (m.engMeanings ?? "").trim();
+    if (Boolean(mv) !== Boolean(me)) return true;
+    if (withGloss && (me || mv) && !(m.gloss ?? "").trim()) return true;
+    return false;
+}
+/** Example cần fill vi/en không? — vi↔en lệch 1 chiều. */
+function exampleViEnNeedsFill(ex) {
+    const ev = (ex.vietExamples ?? "").trim();
+    const ee = (ex.engExamples ?? "").trim();
+    return Boolean(ev) !== Boolean(ee);
+}
+/** Example CANTONESE cần fill không? — vi/en lệch HOẶC thiếu jyutping (khi có chữ Hán). */
+function exampleCantoneseNeedsFill(ex) {
+    if (exampleViEnNeedsFill(ex)) return true;
+    const exHan = (ex.hanTraditional ?? "").trim() || (ex.hanSimplified ?? "").trim();
+    return Boolean(exHan) && !(ex.jyutpingExample ?? "").trim();
+}
+
 /**
  * Sync Việt↔Anh cho mảng meanings FLAT (meaning + ví dụ) — chỉ điền phía còn trống.
  * Không mutate đầu vào; trả { meanings: mảng mới đã sync, synced }.
@@ -1355,12 +1226,13 @@ export async function syncMeaningsViEn(meanings, column, onProgress) {
         const mv = (m.vietMeanings ?? "").trim();
         const me = (m.engMeanings ?? "").trim();
         const mg = (m.gloss ?? "").trim();
-        if (Boolean(mv) !== Boolean(me) || (column === "pinyin" && !mg && (me || mv)))
-            jobs.push({ mIdx, exIdx: null, mv, me, mg });
+        // Check nhanh: meaning đã đầy (vi+en; mandarin thêm gloss) → skip, không tạo job. (2026-08-25)
+        if (meaningNeedsFill(m, column === "pinyin")) jobs.push({ mIdx, exIdx: null, mv, me, mg });
         (m.examples ?? []).forEach((ex, exIdx) => {
             const ev = (ex.vietExamples ?? "").trim();
             const ee = (ex.engExamples ?? "").trim();
-            if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ mIdx, exIdx, ev, ee });
+            // Check nhanh: example đã đầy vi+en → skip. (2026-08-25)
+            if (exampleViEnNeedsFill(ex)) jobs.push({ mIdx, exIdx, ev, ee });
         });
     });
     if (!jobs.length) {
@@ -1371,6 +1243,11 @@ export async function syncMeaningsViEn(meanings, column, onProgress) {
     const next = src.map((m) => ({ ...m, examples: (m.examples ?? []).map((e) => ({ ...e })) }));
     let done = 0;
     let synced = 0;
+    // ⚠️ 2026-08-24: khi 1 job gặp 429 (Google rate limit) → Promise.all reject NHƯNG các
+    // worker khác vẫn chạy tiếp + vẫn ghi progress → sau khi flow reset progress "hiện lại"
+    // hoặc 2 flow ghi đè nhau → nhìn như tụt lùi (10/12 → 8/12). Cờ aborted: dừng vòng lặp
+    // worker + KHÔNG ghi progress khi đã có lỗi 429 → abort sạch, không interleave.
+    let aborted = false;
     const runJob = async (job) => {
         try {
             if (job.exIdx === null) {
@@ -1379,21 +1256,31 @@ export async function syncMeaningsViEn(meanings, column, onProgress) {
                     const res = await withRetry(() => api.translate(job.mv, "vi", "en"));
                     const translated = normalizeMeaningSync(res?.translated ?? "");
                     m.vietMeanings = normalizeMeaningSync(job.mv);
-                    if (translated) m.engMeanings = translated;
+                    if (translated) {
+                        m.engMeanings = translated;
+                        synced += 1; // ⚠️ chỉ đếm khi thực sự điền được. (2026-08-25)
+                    }
                 } else if (job.me && !job.mv) {
                     const res = await withRetry(() => api.translate(job.me, "en", "vi"));
                     const translated = normalizeMeaningSync(res?.translated ?? "");
                     m.engMeanings = normalizeMeaningSync(job.me);
-                    if (translated) m.vietMeanings = translated;
+                    if (translated) {
+                        m.vietMeanings = translated;
+                        synced += 1;
+                    }
                 }
                 const curMv = (m.vietMeanings ?? "").trim();
                 const curMe = (m.engMeanings ?? "").trim();
                 // ⚠️ 2026-08-22: chỉ fill gloss zh cho mandarin (column pinyin); cantonese bỏ gloss (yue).
                 if (column === "pinyin" && !(m.gloss ?? "").trim() && (curMe || curMv)) {
                     const gSource = curMe ? "en" : "vi";
-                    const gRes = await withRetry(() => api.translateGoogle(curMe || curMv, gSource, "zh"));
+                    // Gloss zh đi qua /api/translate (deep_translator → LibreTranslate fallback).
+                    const gRes = await withRetry(() => api.translate(curMe || curMv, gSource, "zh-CN"));
                     const gTranslated = String(gRes?.translated ?? "").trim();
-                    if (gTranslated) m.gloss = gTranslated;
+                    if (gTranslated) {
+                        m.gloss = gTranslated;
+                        synced += 1;
+                    }
                 }
             } else {
                 const source = job.ev ? "vi" : "en";
@@ -1403,26 +1290,34 @@ export async function syncMeaningsViEn(meanings, column, onProgress) {
                 const ex = next[job.mIdx].examples[job.exIdx];
                 if (job.ev) {
                     ex.vietExamples = normalizeGlossSeparators(job.ev);
-                    if (translated) ex.engExamples = translated;
+                    if (translated) {
+                        ex.engExamples = translated;
+                        synced += 1;
+                    }
                 } else {
                     ex.engExamples = normalizeGlossSeparators(job.ee);
-                    if (translated) ex.vietExamples = translated;
+                    if (translated) {
+                        ex.vietExamples = translated;
+                        synced += 1;
+                    }
                 }
             }
-            synced += 1;
         } catch (err) {
-            if (isRateLimited(err)) throw err; // Google rate limit → dừng sync, báo lỗi
+            if (isRateLimited(err)) {
+                aborted = true; // Google rate limit → dừng sync, báo lỗi, không ghi progress nữa
+                throw err;
+            }
             // Bỏ qua job lỗi khác (network tạm thời...) — vẫn xử lý các job còn lại.
         } finally {
             done += 1;
-            onProgress?.(done, jobs.length);
+            if (!aborted) onProgress?.(done, jobs.length);
         }
     };
-    const CONCURRENT = 3;
+    const CONCURRENT = 2;
     let idx = 0;
     await Promise.all(
         Array.from({ length: Math.min(CONCURRENT, jobs.length) }, async () => {
-            while (idx < jobs.length) {
+            while (!aborted && idx < jobs.length) {
                 const job = jobs[idx++];
                 await runJob(job);
             }
@@ -1467,14 +1362,18 @@ export async function syncMeaningsCantonese(meanings, onProgress) {
     src.forEach((m, mIdx) => {
         const mv = (m.vietMeanings ?? "").trim();
         const me = (m.engMeanings ?? "").trim();
-        if (Boolean(mv) !== Boolean(me)) jobs.push({ mIdx, exIdx: null, mv, me });
+        // Check nhanh: meaning đã đầy vi+en → skip, không tạo job. (2026-08-25)
+        if (meaningNeedsFill(m, false)) jobs.push({ mIdx, exIdx: null, mv, me });
         (m.examples ?? []).forEach((ex, exIdx) => {
             const ev = (ex.vietExamples ?? "").trim();
             const ee = (ex.engExamples ?? "").trim();
             const ej = (ex.jyutpingExample ?? "").trim();
             const exHan = (ex.hanTraditional ?? "").trim() || (ex.hanSimplified ?? "").trim();
-            if ((ev || ee) && Boolean(ev) !== Boolean(ee)) jobs.push({ mIdx, exIdx, ev, ee });
-            else if (!ej && exHan) jobs.push({ mIdx, exIdx, fillJyutping: true, exHan });
+            // Check nhanh: example đã đầy (vi+en+jyutping) → skip. (2026-08-25)
+            if (exampleCantoneseNeedsFill(ex)) {
+                if (exampleViEnNeedsFill(ex)) jobs.push({ mIdx, exIdx, ev, ee });
+                else jobs.push({ mIdx, exIdx, fillJyutping: true, exHan });
+            }
         });
     });
     if (!jobs.length) {
@@ -1485,13 +1384,19 @@ export async function syncMeaningsCantonese(meanings, onProgress) {
     const next = src.map((m) => ({ ...m, examples: (m.examples ?? []).map((e) => ({ ...e })) }));
     let done = 0;
     let synced = 0;
+    // ⚠️ 2026-08-24: cờ aborted — chặn worker khác chạy tiếp + không ghi progress sau khi
+    // 1 job gặp 429 (Google rate limit) → Promise.all reject sạch, không interleave progress.
+    let aborted = false;
     const runJob = async (job) => {
         try {
             if (job.fillJyutping) {
                 // Ví dụ thiếu jyutping → điền qua pipeline 3 fallback (words.hk → CC-Canto → to-jyutping).
                 const ex = next[job.mIdx].examples[job.exIdx];
                 const res = await withRetry(() => api.toJyutping(job.exHan));
-                if (res?.jyutping) ex.jyutpingExample = res.jyutping;
+                if (res?.jyutping) {
+                    ex.jyutpingExample = res.jyutping;
+                    synced += 1; // ⚠️ chỉ đếm khi thực sự điền được. (2026-08-25)
+                }
             } else if (job.exIdx !== null) {
                 // Ví dụ thiếu 1 chiều vi/en.
                 const source = job.ev ? "vi" : "en";
@@ -1501,10 +1406,16 @@ export async function syncMeaningsCantonese(meanings, onProgress) {
                 const ex = next[job.mIdx].examples[job.exIdx];
                 if (job.ev) {
                     ex.vietExamples = normalizeGlossSeparators(job.ev);
-                    if (translated) ex.engExamples = translated;
+                    if (translated) {
+                        ex.engExamples = translated;
+                        synced += 1;
+                    }
                 } else {
                     ex.engExamples = normalizeGlossSeparators(job.ee);
-                    if (translated) ex.vietExamples = translated;
+                    if (translated) {
+                        ex.vietExamples = translated;
+                        synced += 1;
+                    }
                 }
             } else {
                 const m = next[job.mIdx];
@@ -1514,28 +1425,36 @@ export async function syncMeaningsCantonese(meanings, onProgress) {
                     const res = await withRetry(() => api.translate(job.mv, "vi", "en"));
                     const translated = normalizeMeaningSync(res?.translated ?? "");
                     m.vietMeanings = normalizeMeaningSync(job.mv);
-                    if (translated) m.engMeanings = translated;
+                    if (translated) {
+                        m.engMeanings = translated;
+                        synced += 1;
+                    }
                 } else if (job.me && !job.mv) {
                     const res = await withRetry(() => api.translate(job.me, "en", "vi"));
                     const translated = normalizeMeaningSync(res?.translated ?? "");
                     m.engMeanings = normalizeMeaningSync(job.me);
-                    if (translated) m.vietMeanings = translated;
+                    if (translated) {
+                        m.vietMeanings = translated;
+                        synced += 1;
+                    }
                 }
             }
-            synced += 1;
         } catch (err) {
-            if (isRateLimited(err)) throw err; // Google rate limit → dừng sync, báo lỗi
+            if (isRateLimited(err)) {
+                aborted = true; // Google rate limit → dừng sync, báo lỗi, không ghi progress nữa
+                throw err;
+            }
             // Bỏ qua job lỗi khác (network tạm thời...) — vẫn xử lý các job còn lại.
         } finally {
             done += 1;
-            onProgress?.(done, jobs.length);
+            if (!aborted) onProgress?.(done, jobs.length);
         }
     };
-    const CONCURRENT = 3;
+    const CONCURRENT = 2;
     let idx = 0;
     await Promise.all(
         Array.from({ length: Math.min(CONCURRENT, jobs.length) }, async () => {
-            while (idx < jobs.length) {
+            while (!aborted && idx < jobs.length) {
                 const job = jobs[idx++];
                 await runJob(job);
             }

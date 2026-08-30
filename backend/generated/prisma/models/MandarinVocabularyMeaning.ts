@@ -27,7 +27,6 @@ export type AggregateMandarinVocabularyMeaning = {
 export type MandarinVocabularyMeaningMinAggregateOutputType = {
   id: string | null
   mandarinVocabularyRomanizationId: string | null
-  category: string | null
   zh: string | null
   vi: string | null
   en: string | null
@@ -36,7 +35,6 @@ export type MandarinVocabularyMeaningMinAggregateOutputType = {
 export type MandarinVocabularyMeaningMaxAggregateOutputType = {
   id: string | null
   mandarinVocabularyRomanizationId: string | null
-  category: string | null
   zh: string | null
   vi: string | null
   en: string | null
@@ -45,7 +43,6 @@ export type MandarinVocabularyMeaningMaxAggregateOutputType = {
 export type MandarinVocabularyMeaningCountAggregateOutputType = {
   id: number
   mandarinVocabularyRomanizationId: number
-  category: number
   zh: number
   vi: number
   en: number
@@ -56,7 +53,6 @@ export type MandarinVocabularyMeaningCountAggregateOutputType = {
 export type MandarinVocabularyMeaningMinAggregateInputType = {
   id?: true
   mandarinVocabularyRomanizationId?: true
-  category?: true
   zh?: true
   vi?: true
   en?: true
@@ -65,7 +61,6 @@ export type MandarinVocabularyMeaningMinAggregateInputType = {
 export type MandarinVocabularyMeaningMaxAggregateInputType = {
   id?: true
   mandarinVocabularyRomanizationId?: true
-  category?: true
   zh?: true
   vi?: true
   en?: true
@@ -74,7 +69,6 @@ export type MandarinVocabularyMeaningMaxAggregateInputType = {
 export type MandarinVocabularyMeaningCountAggregateInputType = {
   id?: true
   mandarinVocabularyRomanizationId?: true
-  category?: true
   zh?: true
   vi?: true
   en?: true
@@ -156,7 +150,6 @@ export type MandarinVocabularyMeaningGroupByArgs<ExtArgs extends runtime.Types.E
 export type MandarinVocabularyMeaningGroupByOutputType = {
   id: string
   mandarinVocabularyRomanizationId: string
-  category: string
   zh: string
   vi: string
   en: string
@@ -186,7 +179,6 @@ export type MandarinVocabularyMeaningWhereInput = {
   NOT?: Prisma.MandarinVocabularyMeaningWhereInput | Prisma.MandarinVocabularyMeaningWhereInput[]
   id?: Prisma.UuidFilter<"MandarinVocabularyMeaning"> | string
   mandarinVocabularyRomanizationId?: Prisma.UuidFilter<"MandarinVocabularyMeaning"> | string
-  category?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
   zh?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
   vi?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
   en?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
@@ -197,7 +189,6 @@ export type MandarinVocabularyMeaningWhereInput = {
 export type MandarinVocabularyMeaningOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   mandarinVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   zh?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
@@ -211,7 +202,6 @@ export type MandarinVocabularyMeaningWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.MandarinVocabularyMeaningWhereInput[]
   NOT?: Prisma.MandarinVocabularyMeaningWhereInput | Prisma.MandarinVocabularyMeaningWhereInput[]
   mandarinVocabularyRomanizationId?: Prisma.UuidFilter<"MandarinVocabularyMeaning"> | string
-  category?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
   zh?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
   vi?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
   en?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
@@ -222,7 +212,6 @@ export type MandarinVocabularyMeaningWhereUniqueInput = Prisma.AtLeast<{
 export type MandarinVocabularyMeaningOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   mandarinVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   zh?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
@@ -237,7 +226,6 @@ export type MandarinVocabularyMeaningScalarWhereWithAggregatesInput = {
   NOT?: Prisma.MandarinVocabularyMeaningScalarWhereWithAggregatesInput | Prisma.MandarinVocabularyMeaningScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"MandarinVocabularyMeaning"> | string
   mandarinVocabularyRomanizationId?: Prisma.UuidWithAggregatesFilter<"MandarinVocabularyMeaning"> | string
-  category?: Prisma.StringWithAggregatesFilter<"MandarinVocabularyMeaning"> | string
   zh?: Prisma.StringWithAggregatesFilter<"MandarinVocabularyMeaning"> | string
   vi?: Prisma.StringWithAggregatesFilter<"MandarinVocabularyMeaning"> | string
   en?: Prisma.StringWithAggregatesFilter<"MandarinVocabularyMeaning"> | string
@@ -245,7 +233,6 @@ export type MandarinVocabularyMeaningScalarWhereWithAggregatesInput = {
 
 export type MandarinVocabularyMeaningCreateInput = {
   id?: string
-  category?: string
   zh?: string
   vi?: string
   en?: string
@@ -256,7 +243,6 @@ export type MandarinVocabularyMeaningCreateInput = {
 export type MandarinVocabularyMeaningUncheckedCreateInput = {
   id?: string
   mandarinVocabularyRomanizationId: string
-  category?: string
   zh?: string
   vi?: string
   en?: string
@@ -265,7 +251,6 @@ export type MandarinVocabularyMeaningUncheckedCreateInput = {
 
 export type MandarinVocabularyMeaningUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   zh?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
@@ -276,7 +261,6 @@ export type MandarinVocabularyMeaningUpdateInput = {
 export type MandarinVocabularyMeaningUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   mandarinVocabularyRomanizationId?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   zh?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
@@ -286,7 +270,6 @@ export type MandarinVocabularyMeaningUncheckedUpdateInput = {
 export type MandarinVocabularyMeaningCreateManyInput = {
   id?: string
   mandarinVocabularyRomanizationId: string
-  category?: string
   zh?: string
   vi?: string
   en?: string
@@ -294,7 +277,6 @@ export type MandarinVocabularyMeaningCreateManyInput = {
 
 export type MandarinVocabularyMeaningUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   zh?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
@@ -303,7 +285,6 @@ export type MandarinVocabularyMeaningUpdateManyMutationInput = {
 export type MandarinVocabularyMeaningUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   mandarinVocabularyRomanizationId?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   zh?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
@@ -322,7 +303,6 @@ export type MandarinVocabularyMeaningOrderByRelationAggregateInput = {
 export type MandarinVocabularyMeaningCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   mandarinVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   zh?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
@@ -331,7 +311,6 @@ export type MandarinVocabularyMeaningCountOrderByAggregateInput = {
 export type MandarinVocabularyMeaningMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   mandarinVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   zh?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
@@ -340,7 +319,6 @@ export type MandarinVocabularyMeaningMaxOrderByAggregateInput = {
 export type MandarinVocabularyMeaningMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   mandarinVocabularyRomanizationId?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   zh?: Prisma.SortOrder
   vi?: Prisma.SortOrder
   en?: Prisma.SortOrder
@@ -409,7 +387,6 @@ export type MandarinVocabularyMeaningUpdateOneRequiredWithoutExamplesNestedInput
 
 export type MandarinVocabularyMeaningCreateWithoutMandarinVocabularyRomanizationInput = {
   id?: string
-  category?: string
   zh?: string
   vi?: string
   en?: string
@@ -418,7 +395,6 @@ export type MandarinVocabularyMeaningCreateWithoutMandarinVocabularyRomanization
 
 export type MandarinVocabularyMeaningUncheckedCreateWithoutMandarinVocabularyRomanizationInput = {
   id?: string
-  category?: string
   zh?: string
   vi?: string
   en?: string
@@ -457,7 +433,6 @@ export type MandarinVocabularyMeaningScalarWhereInput = {
   NOT?: Prisma.MandarinVocabularyMeaningScalarWhereInput | Prisma.MandarinVocabularyMeaningScalarWhereInput[]
   id?: Prisma.UuidFilter<"MandarinVocabularyMeaning"> | string
   mandarinVocabularyRomanizationId?: Prisma.UuidFilter<"MandarinVocabularyMeaning"> | string
-  category?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
   zh?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
   vi?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
   en?: Prisma.StringFilter<"MandarinVocabularyMeaning"> | string
@@ -465,7 +440,6 @@ export type MandarinVocabularyMeaningScalarWhereInput = {
 
 export type MandarinVocabularyMeaningCreateWithoutExamplesInput = {
   id?: string
-  category?: string
   zh?: string
   vi?: string
   en?: string
@@ -475,7 +449,6 @@ export type MandarinVocabularyMeaningCreateWithoutExamplesInput = {
 export type MandarinVocabularyMeaningUncheckedCreateWithoutExamplesInput = {
   id?: string
   mandarinVocabularyRomanizationId: string
-  category?: string
   zh?: string
   vi?: string
   en?: string
@@ -499,7 +472,6 @@ export type MandarinVocabularyMeaningUpdateToOneWithWhereWithoutExamplesInput = 
 
 export type MandarinVocabularyMeaningUpdateWithoutExamplesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   zh?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
@@ -509,7 +481,6 @@ export type MandarinVocabularyMeaningUpdateWithoutExamplesInput = {
 export type MandarinVocabularyMeaningUncheckedUpdateWithoutExamplesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   mandarinVocabularyRomanizationId?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   zh?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
@@ -517,7 +488,6 @@ export type MandarinVocabularyMeaningUncheckedUpdateWithoutExamplesInput = {
 
 export type MandarinVocabularyMeaningCreateManyMandarinVocabularyRomanizationInput = {
   id?: string
-  category?: string
   zh?: string
   vi?: string
   en?: string
@@ -525,7 +495,6 @@ export type MandarinVocabularyMeaningCreateManyMandarinVocabularyRomanizationInp
 
 export type MandarinVocabularyMeaningUpdateWithoutMandarinVocabularyRomanizationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   zh?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
@@ -534,7 +503,6 @@ export type MandarinVocabularyMeaningUpdateWithoutMandarinVocabularyRomanization
 
 export type MandarinVocabularyMeaningUncheckedUpdateWithoutMandarinVocabularyRomanizationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   zh?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
@@ -543,7 +511,6 @@ export type MandarinVocabularyMeaningUncheckedUpdateWithoutMandarinVocabularyRom
 
 export type MandarinVocabularyMeaningUncheckedUpdateManyWithoutMandarinVocabularyRomanizationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   zh?: Prisma.StringFieldUpdateOperationsInput | string
   vi?: Prisma.StringFieldUpdateOperationsInput | string
   en?: Prisma.StringFieldUpdateOperationsInput | string
@@ -583,7 +550,6 @@ export type MandarinVocabularyMeaningCountOutputTypeCountExamplesArgs<ExtArgs ex
 export type MandarinVocabularyMeaningSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   mandarinVocabularyRomanizationId?: boolean
-  category?: boolean
   zh?: boolean
   vi?: boolean
   en?: boolean
@@ -595,7 +561,6 @@ export type MandarinVocabularyMeaningSelect<ExtArgs extends runtime.Types.Extens
 export type MandarinVocabularyMeaningSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   mandarinVocabularyRomanizationId?: boolean
-  category?: boolean
   zh?: boolean
   vi?: boolean
   en?: boolean
@@ -605,7 +570,6 @@ export type MandarinVocabularyMeaningSelectCreateManyAndReturn<ExtArgs extends r
 export type MandarinVocabularyMeaningSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   mandarinVocabularyRomanizationId?: boolean
-  category?: boolean
   zh?: boolean
   vi?: boolean
   en?: boolean
@@ -615,13 +579,12 @@ export type MandarinVocabularyMeaningSelectUpdateManyAndReturn<ExtArgs extends r
 export type MandarinVocabularyMeaningSelectScalar = {
   id?: boolean
   mandarinVocabularyRomanizationId?: boolean
-  category?: boolean
   zh?: boolean
   vi?: boolean
   en?: boolean
 }
 
-export type MandarinVocabularyMeaningOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "mandarinVocabularyRomanizationId" | "category" | "zh" | "vi" | "en", ExtArgs["result"]["mandarinVocabularyMeaning"]>
+export type MandarinVocabularyMeaningOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "mandarinVocabularyRomanizationId" | "zh" | "vi" | "en", ExtArgs["result"]["mandarinVocabularyMeaning"]>
 export type MandarinVocabularyMeaningInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   mandarinVocabularyRomanization?: boolean | Prisma.MandarinVocabularyRomanizationDefaultArgs<ExtArgs>
   examples?: boolean | Prisma.MandarinVocabularyMeaning$examplesArgs<ExtArgs>
@@ -643,7 +606,6 @@ export type $MandarinVocabularyMeaningPayload<ExtArgs extends runtime.Types.Exte
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     mandarinVocabularyRomanizationId: string
-    category: string
     zh: string
     vi: string
     en: string
@@ -1074,7 +1036,6 @@ export interface Prisma__MandarinVocabularyMeaningClient<T, Null = never, ExtArg
 export interface MandarinVocabularyMeaningFieldRefs {
   readonly id: Prisma.FieldRef<"MandarinVocabularyMeaning", 'String'>
   readonly mandarinVocabularyRomanizationId: Prisma.FieldRef<"MandarinVocabularyMeaning", 'String'>
-  readonly category: Prisma.FieldRef<"MandarinVocabularyMeaning", 'String'>
   readonly zh: Prisma.FieldRef<"MandarinVocabularyMeaning", 'String'>
   readonly vi: Prisma.FieldRef<"MandarinVocabularyMeaning", 'String'>
   readonly en: Prisma.FieldRef<"MandarinVocabularyMeaning", 'String'>

@@ -92,7 +92,6 @@ model MandarinVocabularyRomanization {
 model MandarinVocabularyMeaning {
     id                               String @id @default(uuid()) @db.Uuid
     mandarinVocabularyRomanizationId String @map("mandarin_vocabulary_romanization_id") @db.Uuid
-    category                         String @default("") @map("category") @db.VarChar
     zh                               String @default("") @map("zh") @db.VarChar
     vi                               String @default("") @map("vi") @db.Text
     en                               String @default("") @map("en") @db.Text
@@ -175,7 +174,6 @@ model CantoneseVocabularyRomanization {
 model CantoneseVocabularyMeaning {
     id                                String @id @default(uuid()) @db.Uuid
     cantoneseVocabularyRomanizationId String @map("cantonese_vocabulary_romanization_id") @db.Uuid
-    category                          String @default("") @map("category") @db.VarChar
     vi                                String @default("") @map("vi") @db.Text
     en                                String @default("") @map("en") @db.Text
 

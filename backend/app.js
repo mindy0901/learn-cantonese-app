@@ -16,6 +16,7 @@ import { translateRoutes } from "./routes/translate.js";
 import { ocrRoutes } from "./routes/ocr.js";
 import { hanziiRoutes } from "./routes/hanzii.js";
 import { checkinRoutes } from "./routes/checkins.js";
+import { ttsRoutes } from "./routes/tts.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 const cookieSecure =
@@ -86,6 +87,7 @@ export async function buildApp(opts = {}) {
     await app.register(ocrRoutes, { prefix: "/api" });
     await app.register(hanziiRoutes, { prefix: "/api" });
     await app.register(checkinRoutes, { prefix: "/api" });
+    await app.register(ttsRoutes, { prefix: "/api" });
 
     // Error handler
     app.setErrorHandler((error, _request, reply) => {

@@ -2155,7 +2155,6 @@ export type MandarinVocabularyRomanizationScalarFieldEnum = (typeof MandarinVoca
 export const MandarinVocabularyMeaningScalarFieldEnum = {
   id: 'id',
   mandarinVocabularyRomanizationId: 'mandarinVocabularyRomanizationId',
-  category: 'category',
   zh: 'zh',
   vi: 'vi',
   en: 'en'
@@ -2215,7 +2214,6 @@ export type CantoneseVocabularyRomanizationScalarFieldEnum = (typeof CantoneseVo
 export const CantoneseVocabularyMeaningScalarFieldEnum = {
   id: 'id',
   cantoneseVocabularyRomanizationId: 'cantoneseVocabularyRomanizationId',
-  category: 'category',
   vi: 'vi',
   en: 'en'
 } as const

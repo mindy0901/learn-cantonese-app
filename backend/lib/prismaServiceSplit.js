@@ -11,19 +11,21 @@
  *
  * API object per language:
  *   mandarin:  { id, hanziSimplified, hanziTraditional, hanziCharacters, hskLevel, popularity,
- *                readings:[{id, pinyin, sinoVietnamese, meanings:[{id, category, zh, vi, en, examples:[{id, zh, romanization, vi, en}]}]}],
+ *                readings:[{id, pinyin, sinoVietnamese, meanings:[{id, zh, vi, en, examples:[{id, zh, romanization, vi, en}]}]}],
  *                createdAt, updatedAt }
  *   cantonese: { id, hanziTraditionalHk, hanziCharacters, pureCantonese, popularity,
- *                readings:[{id, jyutping, sinoVietnamese, meanings:[{id, category, vi, en, examples:[{id, romanization, vi, en}]}]}],
+ *                readings:[{id, jyutping, sinoVietnamese, meanings:[{id, vi, en, examples:[{id, romanization, vi, en}]}]}],
  *                createdAt, updatedAt }
  *
  * ⚠️ user_vocabularies ĐÃ BỎ — không còn progress/important/mastered.
  */
 import { prisma } from "./prisma.js";
 import { randomUUID } from "crypto";
+import { createHash } from "crypto";
 import { computeHanCharacters, syncVocabularyHanCharacters } from "./hanCharacterBreakdown.js";
 import { capitalizeSentences } from "./wordNormalize.js";
 import { isSinoVietnameseDash } from "./sinoVietnameseMarkers.js";
+import { deleteR2Object, r2Head } from "./r2.js";
 
 /** "" khi giá trị là dash placeholder ("-" / "—" / "–") — chỉ placeholder hiển thị, KHÔNG phải data thật. */
 const cleanSino = (v) => (isSinoVietnameseDash(v) ? "" : String(v ?? ""));
@@ -112,7 +114,6 @@ export function rowToVocabulary(row, lang) {
             sinoVietnamese: cleanSino(r.sinoVietnamese),
             meanings: (r.meanings ?? []).map((m) => ({
                 id: m.id,
-                category: m.category ?? "",
                 ...(glossField ? { [glossField]: m[glossField] ?? "" } : {}),
                 vi: m.vi ?? "",
                 en: m.en ?? "",
@@ -263,7 +264,6 @@ export function normalizeReadings(body, lang) {
         sinoVietnamese: cleanSino(r?.sinoVietnamese),
         meanings: (r?.meanings ?? []).map((m, mi) => ({
             id: m?.id || randomUUID(),
-            category: String(m?.category ?? ""),
             ...(glossField ? { [glossField]: String(m?.[glossField] ?? "") } : {}),
             vi: String(m?.vi ?? ""),
             en: String(m?.en ?? ""),
@@ -293,6 +293,34 @@ export function normalizeReadings(body, lang) {
  */
 async function writeVocabularyReadings(lang, vocabId, readings) {
     const L = LANG[lang];
+    // Capture yue cũ (chữ Hán câu ví dụ) để dọn TTS cache sau khi delete+recreate.
+    let oldYues = [];
+    if (lang === "cantonese") {
+        const roms = await prisma[L.romanization].findMany({
+            where: { [L.vocabIdField]: vocabId },
+            select: { id: true },
+        });
+        const romIds = roms.map((r) => r.id);
+        const meanings = romIds.length
+            ? await prisma[L.meaning].findMany({
+                  where: { [L.romanizationIdField]: { in: romIds } },
+                  select: { id: true },
+              })
+            : [];
+        const meaningIds = meanings.map((m) => m.id);
+        const exs = meaningIds.length
+            ? await prisma[L.example].findMany({
+                  where: { [L.meaningIdField]: { in: meaningIds } },
+                  select: { yue: true },
+              })
+            : [];
+        oldYues = exs.map((e) => String(e.yue ?? "").trim());
+    }
+    const newYues = new Set(
+        (readings ?? []).flatMap((r) =>
+            (r?.meanings ?? []).flatMap((m) => (m?.examples ?? []).map((ex) => String(ex?.yue ?? "").trim())),
+        ),
+    );
     await prisma[L.romanization].deleteMany({ where: { [L.vocabIdField]: vocabId } });
     for (const r of readings ?? []) {
         const rom = await prisma[L.romanization].create({
@@ -308,7 +336,6 @@ async function writeVocabularyReadings(lang, vocabId, readings) {
                 data: {
                     id: m?.id || randomUUID(),
                     [L.romanizationIdField]: rom.id,
-                    category: String(m?.category ?? ""),
                     ...(L.glossField ? { [L.glossField]: String(m?.[L.glossField] ?? "") } : {}),
                     vi: String(m?.vi ?? ""),
                     en: String(m?.en ?? ""),
@@ -330,6 +357,12 @@ async function writeVocabularyReadings(lang, vocabId, readings) {
                     },
                 });
             }
+        }
+    }
+    // Dọn TTS cache cho các yue example đã biến mất (không còn trong payload mới).
+    if (lang === "cantonese") {
+        for (const y of oldYues) {
+            if (y && !newYues.has(y)) await deleteTtsCacheIfUnused(y, vocabId).catch(() => {});
         }
     }
 }
@@ -612,6 +645,9 @@ export async function updateVocabulary(lang, id, body) {
     const existing = await prisma[L.vocab].findUnique({ where: { id } });
     if (!existing) throw Object.assign(new Error("Vocabulary not found"), { statusCode: 404 });
 
+    // TTS cache: ghi nhận hán tự CŨ trước khi update — nếu text đổi, file R2 cũ thành orphan.
+    const oldHan = lang === "cantonese" ? String(existing[L.hanField] ?? "").trim() : "";
+
     const row = vocabularyToRow({ ...body, id }, lang);
     const relatedWords = L.hasRelated && body?.relatedWords ? normalizeRelatedWords(body.relatedWords) : undefined;
     await prisma[L.vocab].update({
@@ -635,13 +671,51 @@ export async function updateVocabulary(lang, id, body) {
     }
     await refreshHanCharacters(lang, id);
 
+    // Xóa cache R2 cũ nếu hán tự đổi (file cantonese-tts/<md5(oldHan)>.mp3) — chỉ khi không còn từ nào khác dùng.
+    const newHan = lang === "cantonese" ? String(row[L.hanField] ?? "").trim() : "";
+    if (lang === "cantonese" && oldHan && newHan && oldHan !== newHan) {
+        await deleteTtsCacheIfUnused(oldHan, id).catch(() => {});
+    }
+
     const full = await prisma[L.vocab].findUnique({ where: { id }, include: vocabularyInclude });
     return rowToVocabulary(full, lang);
 }
 
 export async function deleteVocabulary(lang, id) {
     const L = LANG[lang];
+    // Lấy hán tự trước khi xóa để dọn cache R2.
+    const existing =
+        lang === "cantonese" ? await prisma[L.vocab].findUnique({ where: { id } }).catch(() => null) : null;
+    const han = existing ? String(existing[L.hanField] ?? "").trim() : "";
     await prisma[L.vocab].delete({ where: { id } }).catch(() => {});
+    if (lang === "cantonese" && han) {
+        await deleteTtsCacheIfUnused(han, id).catch(() => {});
+    }
+}
+
+/**
+ * Xóa file TTS cache trên R2 (cantonese-tts/<md5(text)>.mp3) nếu KHÔNG còn vocab nào khác
+ * (ngoài `excludeId`) dùng đúng text này. 2 từ trùng text dùng chung 1 file → không xóa nhầm.
+ */
+async function deleteTtsCacheIfUnused(text, excludeId) {
+    if (!text) return;
+    // Còn vocab khác có cùng hán tự HK không?
+    const others = await prisma.cantoneseVocabulary.count({
+        where: { hanziTraditionalHk: text, id: { not: excludeId } },
+    });
+    if (others > 0) return; // vẫn còn dùng → giữ file
+    // Còn example nào dùng text này làm yue không? (cache example cũng theo md5(text))
+    const exOthers = await prisma.cantoneseVocabularyExample.count({
+        where: {
+            yue: text,
+            cantoneseVocabularyMeaning: {
+                cantoneseVocabularyRomanization: { cantoneseVocabularyId: { not: excludeId } },
+            },
+        },
+    });
+    if (exOthers > 0) return;
+    const key = `cantonese-tts/${createHash("md5").update(text).digest("hex")}.mp3`;
+    await deleteR2Object(key);
 }
 
 // ── Grammar (không đổi — không tách ngôn ngữ) ──

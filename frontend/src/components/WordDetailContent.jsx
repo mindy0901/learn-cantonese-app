@@ -29,6 +29,7 @@ import {
     vocabularyContentEqual,
 } from "../lib/wordNormalize.js";
 import { useVocabularies, useAppStore, useHkSuggestionMap, useMandarinVocabularies } from "../store/appStore.js";
+import { useIsAdmin } from "../store/authStore.js";
 import { vocabularyDetailPath } from "../lib/wordRoutes.js";
 import { api } from "../lib/api.js";
 import { hanziiWordUrl } from "../lib/hanzii.js";
@@ -48,7 +49,6 @@ import { Badge } from "./shadcn/badge.jsx";
 import { toast } from "./shadcn/toast.jsx";
 import { Separator } from "./shadcn/separator.jsx";
 import { MeaningExamples } from "./MeaningExamples.jsx";
-import { MeaningGroup } from "./MeaningGroup.jsx";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./shadcn/collapsible.jsx";
 import {
     DropdownMenu,
@@ -60,52 +60,12 @@ import {
     DropdownMenuTrigger,
 } from "./shadcn/dropdown-menu.jsx";
 import { useDisplaySettings } from "../store/displaySettingsStore.js";
-import { ChevronDown, Settings2, Search } from "lucide-react";
+import { ChevronDown, Settings2, ArrowUpRight, Eye, EyeOff } from "lucide-react";
 import { Spinner } from "./shadcn/spinner.jsx";
 import { YskBadge } from "./YskBadge.jsx";
 import { SEARCH_DEBOUNCE_MS } from "../lib/timing.js";
 
 // Map mã từ loại Hanzii → tên tiếng Việt (fallback khi backend trả code thô như "intj"
-// thay vì "Thán từ"). Khớp với backend/lib/hanziiScrape.js (POS_KINDS).
-const HANZII_POS_LABELS = {
-    n: "Danh từ",
-    v: "Động từ",
-    adj: "Tính từ",
-    adv: "Phó từ",
-    pron: "Đại từ",
-    pro: "Đại từ",
-    num: "Số từ",
-    numb: "Số từ",
-    part: "Trợ từ",
-    prep: "Giới từ",
-    conj: "Liên từ",
-    int: "Thán từ",
-    interj: "Thán từ",
-    intj: "Thán từ",
-    ono: "Từ tượng thanh",
-    aux: "Trợ động từ",
-    clf: "Lượng từ",
-    m: "Lượng từ",
-    mw: "Lượng từ",
-    idm: "Thành ngữ",
-    phr: "Cụm từ",
-    p: "Tiểu từ",
-    pref: "Tiền tố",
-    suff: "Hậu tố",
-    det: "Định từ",
-    dem: "Đại từ chỉ định",
-    rel: "Đại từ quan hệ",
-    quant: "Từ chỉ lượng",
-    punc: "Dấu câu",
-    proverb: "Tục ngữ",
-    abbr: "Viết tắt",
-    name: "Danh từ riêng",
-};
-const hanziiPosLabel = (raw) => {
-    const t = String(raw ?? "").trim();
-    return HANZII_POS_LABELS[t.toLowerCase()] || t;
-};
-
 const detailTextClass = "wd-text m-0 max-w-full leading-normal break-normal";
 
 const fieldStackClass = "word-detail-content flex w-full min-w-0 flex-col gap-4";
@@ -337,11 +297,40 @@ function HanCharactersBreakdown({ vocabulary, relatedWords, activePinyin }) {
     );
     if (!hasHan) return null;
 
+    // ── Gợi ý từ ghép TỰ ĐỘNG (2026-08-25) ──
+    // Khi relatedWords không có dữ liệu compound, tính gợi ý từ kho:
+    //   - Cantonese: CHỈ dựa trên hanziTraditionalHk (hanHongKong) — KHÔNG fallback.
+    //   - Mandarin:   CHỈ dựa trên hanziSimplified — KHÔNG fallback.
+    // Áp dụng cho cả từ đơn lẫn từ ghép. Giới hạn 10 từ. (2026-08-25)
+    const isCantonese = Boolean(String(vocabulary.hanHongKong ?? "").trim());
+    const mainHan = useMemo(() => {
+        // Không fallback: dùng đúng form của ngôn ngữ đang xem.
+        return isCantonese
+            ? String(vocabulary.hanHongKong ?? "").trim()
+            : String(vocabulary.hanSimplified ?? "").trim();
+    }, [isCantonese, vocabulary.hanHongKong, vocabulary.hanSimplified]);
+
+    const autoCompound = useMemo(() => {
+        if (!mainHan) return [];
+        const set = new Set();
+        for (const v of vocabularies) {
+            // Chỉ so với đúng form của ngôn ngữ đang xem (không fallback chéo form).
+            const f = isCantonese ? String(v.hanHongKong ?? "").trim() : String(v.hanSimplified ?? "").trim();
+            if (!f) continue;
+            // Từ ghép = từ KHÁC (dài hơn) chứa hán tự hiện tại — áp dụng cả từ đơn lẫn từ ghép.
+            if (f.length > mainHan.length && f.includes(mainHan)) {
+                set.add(f);
+            }
+            if (set.size >= 10) break;
+        }
+        return [...set];
+    }, [isCantonese, mainHan, vocabularies]);
+
     const sections = [
         {
             key: "compound",
             label: t.wordDetail?.compoundWords ?? "Từ ghép",
-            items: Array.isArray(toneRw.compound) ? toneRw.compound : [],
+            items: Array.isArray(toneRw.compound) && toneRw.compound.length > 0 ? toneRw.compound : autoCompound,
         },
         {
             key: "synonyms",
@@ -584,6 +573,7 @@ function WordHanRomanBlock({
     showSuggestion = true, // Cantonese hero: tắt cột "Gợi ý giản thể" khi đã có cột Mandarin riêng (2 cột layout)
     hanziAudio = null,
     englishAudio = null,
+    autoFocus = false, // Add mode: auto-focus ô hán tự đầu tiên (2026-08-29)
 }) {
     const { t } = useLocale();
     const [copied, setCopied] = useState(null);
@@ -722,6 +712,7 @@ function WordHanRomanBlock({
                             <p className={subLabelClassLg}>{t.wordBank.colHanTitleMandarin}</p>
                             <Input
                                 className={cn(hanEditClass, "text-han-simp w-full")}
+                                autoFocus={autoFocus}
                                 value={draft.hanSimplified ?? ""}
                                 onChange={(e) => onDraftChange("hanSimplified", e.target.value)}
                             />
@@ -746,6 +737,7 @@ function WordHanRomanBlock({
                     <div className={cn(hanCellBodyClass, "w-full")}>
                         <Input
                             className={cn(hanEditClass, "text-han-trad w-full")}
+                            autoFocus={autoFocus}
                             value={draft.hanHongKong ?? ""}
                             onChange={(e) => onDraftChange("hanHongKong", e.target.value)}
                         />
@@ -760,6 +752,7 @@ function WordHanRomanBlock({
                     <HanSubField label={t.wordBank.colHanTitleMandarin}>
                         <Input
                             className={cn(hanEditClass, "text-han-simp")}
+                            autoFocus={autoFocus}
                             value={draft.hanSimplified ?? ""}
                             onChange={(e) => onDraftChange("hanSimplified", e.target.value)}
                         />
@@ -792,20 +785,26 @@ function WordHanRomanBlock({
                         <p className="m-0 text-xl font-medium tracking-wide text-center text-viet">
                             {t.wordBank.colHanTitleMandarin}
                         </p>
-                        {columns.length > 0 ? (
-                            <AlignedHanColumns
-                                columns={columns}
-                                hanClass="text-han-simp text-6xl!"
-                                romanClass="text-muted-foreground"
-                                diffFlags={null}
-                                copyText={hanStandard}
-                                onCopy={copyHanChar}
-                                copiedText={copied}
-                                t={t}
-                            />
-                        ) : (
-                            <span className="italic text-muted-foreground">-</span>
-                        )}
+                        <div className="flex min-h-0 flex-1 items-center justify-center gap-3">
+                            {columns.length > 0 ? (
+                                <AlignedHanColumns
+                                    columns={columns}
+                                    hanClass="text-han-simp text-6xl!"
+                                    romanClass="text-muted-foreground"
+                                    diffFlags={null}
+                                    copyText={hanStandard}
+                                    onCopy={copyHanChar}
+                                    copiedText={copied}
+                                    t={t}
+                                />
+                            ) : (
+                                <span className="italic text-muted-foreground">-</span>
+                            )}
+                            {/* 🔊 Mandarin (giản thể): ƯU TIÊN gTTS zh-CN (server, cache R2), fallback giọng Windows. (2026-08-25) */}
+                            {hanStandard && (
+                                <AudioPlayButton mandarinText={hanStandard} title={t.wordDetail?.listenHan} size="lg" />
+                            )}
+                        </div>
                     </div>
                     <div className="flex min-h-32 flex-col items-start justify-center gap-4">
                         <p className="m-0 text-xl font-medium tracking-wide text-center text-viet">
@@ -878,10 +877,9 @@ function WordHanRomanBlock({
                             ) : (
                                 <span className="italic text-muted-foreground">-</span>
                             )}
-                            {/* Nút audio từ — 🔊 hán ở hero (icon GẤP ĐÔI); 🔊 Anh đưa xuống nghĩa tiếng Anh (2026-08-22) */}
-                            {hanziAudio && (
-                                <AudioPlayButton url={hanziAudio} title={t.wordDetail?.listenHan} size="lg" />
-                            )}
+                            {/* Nút audio từ — 🔊 hán ở hero (icon GẤP ĐÔI); 🔊 Anh đưa xuống nghĩa tiếng Anh (2026-08-22)
+                                Cantonese: ƯU TIÊN gTTS yue (server, cache R2), fallback giọng Windows Tracy. (2026-08-25) */}
+                            {hk && <AudioPlayButton cantoneseText={hk} title={t.wordDetail?.listenHan} size="lg" />}
                         </div>
                     </div>
                     {/* Phải: Gợi ý giản thể — LUÔN giữ 2 cột (tránh giật khung khi load
@@ -1035,18 +1033,11 @@ function ReadingMeaningsBlock({
 }) {
     const { showMeaningEn, showMeaningGloss, showExampleEn, examplesDefaultOpen } = useDisplaySettings();
     const meanings = reading?.meanings ?? [];
-    const dictLabel = (raw) => ({ "words.hk": "粵典–words.hk", "CC-Canto": "CC-Canto" })[raw] ?? raw;
-    const roman = (i) => ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][i] ?? String(i + 1);
-    const groups = new Map();
-    for (const m of meanings) {
-        const cat = dictLabel((m.category ?? "").trim() || t.wordDetail.meaning);
-        if (!groups.has(cat)) groups.set(cat, []);
-        groups.get(cat).push(m);
-    }
+    // ⚠️ 2026-08-30: bỏ hẳn group/category meaning — hiển thị nghĩa PHẲNG, đánh số liên tục.
     return (
         <div className="flex flex-col gap-8">
             {showHeader && <ReadingHeader type={type} reading={reading} />}
-            {groups.size === 0 && showEmpty ? (
+            {meanings.length === 0 && showEmpty ? (
                 <div className="flex items-center gap-2 py-2">
                     <p className="text-sm text-muted-foreground italic">{t.wordDetail.noMeaningsYet}</p>
                     {onAddMeaning && (
@@ -1060,230 +1051,201 @@ function ReadingMeaningsBlock({
                         </Button>
                     )}
                 </div>
-            ) : groups.size === 0 ? null : (
-                <div className="flex flex-col gap-8">
-                    {[...groups.entries()].map(([category, items], gi, arr) => (
-                        <div key={category} className="relative">
-                            {gi < arr.length - 1 && (
-                                <div aria-hidden className="absolute left-4 top-2 -bottom-8 w-px bg-border/70" />
+            ) : meanings.length === 0 ? null : (
+                <div className="flex flex-col gap-4">
+                    {meanings.map((m, i, arr) => (
+                        <div key={m.id || i} className="relative flex flex-col">
+                            {i < arr.length - 1 && (
+                                <div aria-hidden className="absolute left-3.5 top-2 -bottom-4 w-px bg-border/70" />
                             )}
-                            <MeaningGroup
-                                key={category}
-                                romanLabel={`${roman(gi)}`}
-                                category={category}
-                                count={items.length}
-                                romanWidth="w-8"
-                            >
-                                <div className="flex flex-col gap-4">
-                                    {items.map((m, i, arr) => (
-                                        <div key={m.id || i} className="relative flex flex-col">
-                                            {i < arr.length - 1 && (
-                                                <div
-                                                    aria-hidden
-                                                    className="absolute left-3.5 top-2 -bottom-4 w-px bg-border/70"
+                            <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2">
+                                {/* Cột trái: số thứ tự — nằm trên line */}
+                                <div className="relative z-10 flex w-7 items-baseline justify-center rounded-md bg-card">
+                                    <Badge variant="outline" className="shrink-0 rounded-md px-1 text-sm text-viet">
+                                        {i + 1}
+                                    </Badge>
+                                </div>
+                                {/* Cột phải: detail meanings (vi / en / gloss) + ví dụ */}
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-base font-semibold text-foreground">
+                                        {displayMeaning(m.vietMeanings) || "-"}
+                                    </span>
+                                    {showMeaningEn && (
+                                        <span className="flex items-center gap-2">
+                                            <span className="text-sm font-semibold text-muted-foreground">
+                                                {displayMeaning(m.engMeanings) || "-"}
+                                            </span>
+                                            {/* 🔊 Anh đặt SAU text (2026-08-22) */}
+                                            {i === 0 && englishAudio && (
+                                                <AudioPlayButton
+                                                    url={englishAudio}
+                                                    title={t.wordDetail?.listenEn}
+                                                    size="xs2"
                                                 />
                                             )}
-                                            <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2">
-                                                {/* Cột trái: số thứ tự — nằm trên line */}
-                                                <div className="relative z-10 flex w-7 items-baseline justify-center rounded-md bg-card">
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="shrink-0 rounded-md px-1 text-sm text-viet"
-                                                    >
-                                                        {i + 1}
-                                                    </Badge>
-                                                </div>
-                                                {/* Cột phải: detail meanings (vi / en / gloss) + ví dụ */}
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-base font-semibold text-foreground">
-                                                        {displayMeaning(m.vietMeanings) || "-"}
-                                                    </span>
-                                                    {showMeaningEn && (
-                                                        <span className="flex items-center gap-2">
-                                                            <span className="text-sm font-semibold text-muted-foreground">
-                                                                {displayMeaning(m.engMeanings) || "-"}
-                                                            </span>
-                                                            {/* 🔊 Anh đặt SAU text (2026-08-22) */}
-                                                            {i === 0 && englishAudio && (
-                                                                <AudioPlayButton
-                                                                    url={englishAudio}
-                                                                    title={t.wordDetail?.listenEn}
-                                                                    size="xs2"
+                                        </span>
+                                    )}
+                                    {showMeaningGloss && type === "pinyin" && (
+                                        // ⚠️ 2026-08-22: gloss zh CHỈ mandarin — cantonese bỏ gloss (yue).
+                                        <span className="text-sm font-semibold text-muted-foreground">
+                                            {m.gloss?.trim() || "-"}
+                                        </span>
+                                    )}
+                                    {(m.examples ?? []).length > 0 && (
+                                        <MeaningExamples
+                                            label={fmt(t.wordDetail.examples, {
+                                                count: (m.examples ?? []).length,
+                                            })}
+                                            defaultOpen={examplesDefaultOpen}
+                                        >
+                                            <div className="flex flex-col gap-2">
+                                                {m.examples.map((ex, j, arr) => {
+                                                    const exSimp = (ex.hanSimplified ?? "").trim();
+                                                    const exTrad = (ex.hanTraditional ?? "").trim();
+                                                    const exFallback = (ex.hanExample ?? "").trim();
+                                                    // Cột dọc theo ký tự Hán — chọn line hán theo loại phiên âm
+                                                    const exHan =
+                                                        type === "jyutping"
+                                                            ? exTrad || exSimp || exFallback
+                                                            : exSimp || exTrad || exFallback;
+                                                    const exRoman =
+                                                        (type === "pinyin"
+                                                            ? ex.pinyinExample
+                                                            : ex.jyutpingExample
+                                                        )?.trim() || "";
+                                                    const hanChars = splitHanCharsAlign(exHan);
+                                                    const romanTokens = splitAlignedTokens(exRoman);
+                                                    const exampleMatched = vocabMatchIndices(hanChars, [
+                                                        hanTraditional,
+                                                        hanHongKong,
+                                                        hanSimplified,
+                                                    ]);
+                                                    const hasExampleColumns =
+                                                        hanChars.length > 0 || romanTokens.length > 0;
+                                                    return (
+                                                        <div
+                                                            key={ex.id || j}
+                                                            className="relative grid grid-cols-[auto_1fr] items-start gap-x-2"
+                                                        >
+                                                            {j < arr.length - 1 && (
+                                                                <div
+                                                                    aria-hidden
+                                                                    className="absolute left-3.5 top-2 -bottom-2 w-px bg-border/70"
                                                                 />
                                                             )}
-                                                        </span>
-                                                    )}
-                                                    {showMeaningGloss && type === "pinyin" && (
-                                                        // ⚠️ 2026-08-22: gloss zh CHỈ mandarin — cantonese bỏ gloss (yue).
-                                                        <span className="text-sm font-semibold text-muted-foreground">
-                                                            {m.gloss?.trim() || "-"}
-                                                        </span>
-                                                    )}
-                                                    {(m.examples ?? []).length > 0 && (
-                                                        <MeaningExamples
-                                                            label={fmt(t.wordDetail.examples, {
-                                                                count: (m.examples ?? []).length,
-                                                            })}
-                                                            defaultOpen={examplesDefaultOpen}
-                                                        >
-                                                            <div className="flex flex-col gap-2">
-                                                                {m.examples.map((ex, j, arr) => {
-                                                                    const exSimp = (ex.hanSimplified ?? "").trim();
-                                                                    const exTrad = (ex.hanTraditional ?? "").trim();
-                                                                    const exFallback = (ex.hanExample ?? "").trim();
-                                                                    // Cột dọc theo ký tự Hán — chọn line hán theo loại phiên âm
-                                                                    const exHan =
-                                                                        type === "jyutping"
-                                                                            ? exTrad || exSimp || exFallback
-                                                                            : exSimp || exTrad || exFallback;
-                                                                    const exRoman =
-                                                                        (type === "pinyin"
-                                                                            ? ex.pinyinExample
-                                                                            : ex.jyutpingExample
-                                                                        )?.trim() || "";
-                                                                    const hanChars = splitHanCharsAlign(exHan);
-                                                                    const romanTokens = splitAlignedTokens(exRoman);
-                                                                    const exampleMatched = vocabMatchIndices(hanChars, [
-                                                                        hanTraditional,
-                                                                        hanHongKong,
-                                                                        hanSimplified,
-                                                                    ]);
-                                                                    const hasExampleColumns =
-                                                                        hanChars.length > 0 || romanTokens.length > 0;
-                                                                    return (
-                                                                        <div
-                                                                            key={ex.id || j}
-                                                                            className="relative grid grid-cols-[auto_1fr] items-start gap-x-2"
-                                                                        >
-                                                                            {j < arr.length - 1 && (
-                                                                                <div
-                                                                                    aria-hidden
-                                                                                    className="absolute left-3.5 top-2 -bottom-2 w-px bg-border/70"
+                                                            {/* Cột counter nằm trên line (giống Hanzii — 2026-08-22) */}
+                                                            <div className="relative z-10 flex w-7 items-start justify-center rounded-md bg-card pt-1">
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="shrink-0 rounded-md px-1 text-sm text-viet"
+                                                                >
+                                                                    {String.fromCharCode(65 + j)}
+                                                                </Badge>
+                                                            </div>
+                                                            {/* Cột nội dung — card */}
+                                                            <div className="flex flex-col gap-2 rounded-lg border border-border/70 bg-muted p-4">
+                                                                {/* Cặp 1: câu (hanzi + romanization) + 🔊 hán sau text */}
+                                                                <div className="flex items-start gap-2">
+                                                                    <div className="min-w-0">
+                                                                        {hasExampleColumns ? (
+                                                                            <div className="flex flex-wrap items-start justify-start gap-1">
+                                                                                {hanChars.length > 0 ? (
+                                                                                    hanChars.map((ch, ci) => (
+                                                                                        <span
+                                                                                            key={ci}
+                                                                                            className="inline-flex flex-col items-center gap-1"
+                                                                                        >
+                                                                                            <span
+                                                                                                className={cn(
+                                                                                                    "m-0 text-center text-[24px] font-semibold leading-none text-foreground",
+                                                                                                    exampleMatched.has(
+                                                                                                        ci,
+                                                                                                    ) &&
+                                                                                                        highlightMarkClass,
+                                                                                                )}
+                                                                                            >
+                                                                                                {ch}
+                                                                                            </span>
+                                                                                            <span
+                                                                                                className={cn(
+                                                                                                    "m-0 text-center text-xs font-semibold leading-none",
+                                                                                                    exampleMatched.has(
+                                                                                                        ci,
+                                                                                                    )
+                                                                                                        ? highlightMarkClass
+                                                                                                        : "text-muted-foreground",
+                                                                                                )}
+                                                                                            >
+                                                                                                {romanTokens[ci] || "-"}
+                                                                                            </span>
+                                                                                        </span>
+                                                                                    ))
+                                                                                ) : (
+                                                                                    <span className="text-xs font-semibold text-muted-foreground">
+                                                                                        {exRoman}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <p className="text-sm font-semibold text-muted-foreground">
+                                                                                -
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    {/* 🔊 hán đặt SAU text — Cantonese: gTTS yue (cache R2), fallback Tracy; Mandarin: gTTS zh-CN, fallback giọng Windows (2026-08-25) */}
+                                                                    {type === "jyutping" && exHan && (
+                                                                        <AudioPlayButton
+                                                                            cantoneseText={exHan}
+                                                                            title={t.wordDetail?.listenHan}
+                                                                            size="xs2"
+                                                                            className="self-start pt-0.5"
+                                                                        />
+                                                                    )}
+                                                                    {type === "pinyin" && exHan && (
+                                                                        <AudioPlayButton
+                                                                            mandarinText={exHan}
+                                                                            title={t.wordDetail?.listenHan}
+                                                                            size="xs2"
+                                                                            className="self-start pt-0.5"
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                                {/* Cặp 2+3: vi + en gom sát nhau (2026-08-22) */}
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <p className="text-base text-foreground font-semibold">
+                                                                        {ex.vietExamples?.trim()
+                                                                            ? capitalizeSentences(ex.vietExamples)
+                                                                            : "-"}
+                                                                    </p>
+                                                                    {showExampleEn && (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p className="text-sm text-muted-foreground font-semibold">
+                                                                                {ex.engExamples?.trim()
+                                                                                    ? capitalizeSentences(
+                                                                                          ex.engExamples,
+                                                                                      )
+                                                                                    : "-"}
+                                                                            </p>
+                                                                            {/* 🔊 Anh đặt SAU text */}
+                                                                            {ex.englishAudio && (
+                                                                                <AudioPlayButton
+                                                                                    url={ex.englishAudio}
+                                                                                    title={t.wordDetail?.listenEn}
+                                                                                    size="xs2"
                                                                                 />
                                                                             )}
-                                                                            {/* Cột counter nằm trên line (giống Hanzii — 2026-08-22) */}
-                                                                            <div className="relative z-10 flex w-7 items-start justify-center rounded-md bg-card pt-1">
-                                                                                <Badge
-                                                                                    variant="outline"
-                                                                                    className="shrink-0 rounded-md px-1 text-sm text-viet"
-                                                                                >
-                                                                                    {String.fromCharCode(65 + j)}
-                                                                                </Badge>
-                                                                            </div>
-                                                                            {/* Cột nội dung — card */}
-                                                                            <div className="flex flex-col gap-2 rounded-lg border border-border/70 bg-muted p-4">
-                                                                                {/* Cặp 1: câu (hanzi + romanization) + 🔊 hán sau text */}
-                                                                                <div className="flex items-start gap-2">
-                                                                                    <div className="min-w-0">
-                                                                                        {hasExampleColumns ? (
-                                                                                            <div className="flex flex-wrap items-start justify-start gap-1">
-                                                                                                {hanChars.length > 0 ? (
-                                                                                                    hanChars.map(
-                                                                                                        (ch, ci) => (
-                                                                                                            <span
-                                                                                                                key={ci}
-                                                                                                                className="inline-flex flex-col items-center gap-1"
-                                                                                                            >
-                                                                                                                <span
-                                                                                                                    className={cn(
-                                                                                                                        "m-0 text-center text-[24px] font-semibold leading-none text-foreground",
-                                                                                                                        exampleMatched.has(
-                                                                                                                            ci,
-                                                                                                                        ) &&
-                                                                                                                            highlightMarkClass,
-                                                                                                                    )}
-                                                                                                                >
-                                                                                                                    {ch}
-                                                                                                                </span>
-                                                                                                                <span
-                                                                                                                    className={cn(
-                                                                                                                        "m-0 text-center text-xs font-semibold leading-none",
-                                                                                                                        exampleMatched.has(
-                                                                                                                            ci,
-                                                                                                                        )
-                                                                                                                            ? highlightMarkClass
-                                                                                                                            : "text-muted-foreground",
-                                                                                                                    )}
-                                                                                                                >
-                                                                                                                    {romanTokens[
-                                                                                                                        ci
-                                                                                                                    ] ||
-                                                                                                                        "-"}
-                                                                                                                </span>
-                                                                                                            </span>
-                                                                                                        ),
-                                                                                                    )
-                                                                                                ) : (
-                                                                                                    <span className="text-xs font-semibold text-muted-foreground">
-                                                                                                        {exRoman}
-                                                                                                    </span>
-                                                                                                )}
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            <p className="text-sm font-semibold text-muted-foreground">
-                                                                                                -
-                                                                                            </p>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    {/* 🔊 hán đặt SAU text */}
-                                                                                    {ex.hanziAudio && (
-                                                                                        <AudioPlayButton
-                                                                                            url={ex.hanziAudio}
-                                                                                            title={
-                                                                                                t.wordDetail?.listenHan
-                                                                                            }
-                                                                                            size="xs2"
-                                                                                            className="self-start pt-0.5"
-                                                                                        />
-                                                                                    )}
-                                                                                </div>
-                                                                                {/* Cặp 2+3: vi + en gom sát nhau (2026-08-22) */}
-                                                                                <div className="flex flex-col gap-0.5">
-                                                                                    <p className="text-base text-foreground font-semibold">
-                                                                                        {ex.vietExamples?.trim()
-                                                                                            ? capitalizeSentences(
-                                                                                                  ex.vietExamples,
-                                                                                              )
-                                                                                            : "-"}
-                                                                                    </p>
-                                                                                    {showExampleEn && (
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <p className="text-sm text-muted-foreground font-semibold">
-                                                                                                {ex.engExamples?.trim()
-                                                                                                    ? capitalizeSentences(
-                                                                                                          ex.engExamples,
-                                                                                                      )
-                                                                                                    : "-"}
-                                                                                            </p>
-                                                                                            {/* 🔊 Anh đặt SAU text */}
-                                                                                            {ex.englishAudio && (
-                                                                                                <AudioPlayButton
-                                                                                                    url={
-                                                                                                        ex.englishAudio
-                                                                                                    }
-                                                                                                    title={
-                                                                                                        t.wordDetail
-                                                                                                            ?.listenEn
-                                                                                                    }
-                                                                                                    size="xs2"
-                                                                                                />
-                                                                                            )}
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
                                                                         </div>
-                                                                    );
-                                                                })}
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        </MeaningExamples>
-                                                    )}
-                                                </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
-                                        </div>
-                                    ))}
+                                        </MeaningExamples>
+                                    )}
                                 </div>
-                            </MeaningGroup>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -1325,6 +1287,8 @@ export function WordDetailContent({
         toggleMeaningGloss,
         toggleExampleEn,
         toggleExamplesDefaultOpen,
+        showMandarinCol,
+        toggleMandarinCol,
     } = useDisplaySettings();
     const display = vocabularyLookupDisplay(vocabulary);
     // Hán tự tham chiếu cho link Hanzii/Google — chỉ dùng cặp simp + hk
@@ -1599,14 +1563,19 @@ export function WordDetailContent({
     // (waitEditorHasJobs) scrapingHanzii/syncingViEn đều false → nếu không có combinedOp,
     // button sẽ sáng lên (enabled) giữa chừng rồi mới disabled lại.
     const busy = scrapingHanzii || saving || combinedOp;
+    // Chống chạy song song: `busy` đọc từ state (setState bất đồng bộ) → click nhanh 2 lần
+    // (trước khi re-render) có thể chạy 2 luồng cùng ghi syncViEnProgress → tiến độ tụt lùi
+    // (vd 10/12 → 8/12). Ref này set ĐỒNG BỘ trước await đầu tiên → chặn ngay lập tức. (2026-08-24)
+    const syncBusyRef = useRef(false);
     // Footer "Đồng bộ nghĩa Việt - Anh": 1 click sync TẤT CẢ meaning + ví dụ của editor active.
     // Footer "Fill Missing Data" = STEP 2 + 3 của nút Full Sync (KHÔNG scrap Hanzii):
     //   Step 2 — fill pinyin (Mandarin) / jyutping (Cantonese) cho ví dụ thiếu.
     //   Step 3 — fill missing meanings (Eng→Việt→Zh) cho mọi reading. ⚠️ 2026-08-22: cantonese bỏ gloss yue.
     // Chạy TRỰC TIẾP trên draft (không qua editor state — tránh race, giống full sync). (2026-08-21)
     const handleSyncAllViEnFromFooter = async ({ silent } = {}) => {
-        if (busy) return 0;
+        if (syncBusyRef.current || busy) return 0;
         const isCantonese = useAppStore.getState().language === "cantonese";
+        syncBusyRef.current = true;
         setCombinedOp(true);
         setActiveOp("fillMissing");
         setFullSyncStep("examples");
@@ -1691,6 +1660,7 @@ export function WordDetailContent({
             }
             return synced;
         } finally {
+            syncBusyRef.current = false;
             setFullSyncStep(null);
             setCombinedOp(false);
             setActiveOp(null);
@@ -1708,7 +1678,8 @@ export function WordDetailContent({
     //      (Backend hanToPinyin đã fill lúc scrap; chỉ bổ sung nếu ví dụ còn thiếu pinyin.)
     //   3) Sau khi step 2 xong → fill meanings còn thiếu (ưu tiên Eng > Việt > Zh).
     const handleScrapThenSync = async () => {
-        if (busy) return;
+        if (syncBusyRef.current || busy) return;
+        syncBusyRef.current = true;
         setCombinedOp(true);
         setActiveOp("fullSync");
         setFullSyncStep("hanzii");
@@ -1784,6 +1755,7 @@ export function WordDetailContent({
                 duration: 3000,
             });
         } finally {
+            syncBusyRef.current = false;
             setFullSyncStep(null);
             setCombinedOp(false);
             setActiveOp(null);
@@ -1796,7 +1768,8 @@ export function WordDetailContent({
     // qua editor.syncAllCantonese (phụ thuộc localCategories propagate từ setDraft → race:
     // sync chạy trên state cũ, meaning scrap có en/gloss không được sync).
     const handleScrapThenSyncCantonese = async () => {
-        if (busy) return;
+        if (syncBusyRef.current || busy) return;
+        syncBusyRef.current = true;
         setCombinedOp(true);
         setActiveOp("fullSyncCantonese");
         setFullSyncStep("hanzii");
@@ -1849,6 +1822,7 @@ export function WordDetailContent({
                 duration: 3000,
             });
         } finally {
+            syncBusyRef.current = false;
             setFullSyncStep(null);
             setCombinedOp(false);
             setActiveOp(null);
@@ -1859,7 +1833,7 @@ export function WordDetailContent({
     // Scrap Hanzii → fill pinyin examples → fill missing meanings → LƯU thẳng DB qua
     // editVocabularyLang (language-explicit, không đổi mode). (2026-08-21)
     const handleFullSyncMandarinSuggestion = async () => {
-        if (busy) return;
+        if (syncBusyRef.current || busy) return;
         const target = suggestedMandarinVocab;
         if (!target) {
             toast.add({
@@ -1880,6 +1854,7 @@ export function WordDetailContent({
             });
             return;
         }
+        syncBusyRef.current = true;
         setCombinedOp(true);
         setActiveOp("fullSyncMandarin");
         setFullSyncStep("hanzii");
@@ -2006,6 +1981,7 @@ export function WordDetailContent({
                 duration: 4000,
             });
         } finally {
+            syncBusyRef.current = false;
             setFullSyncStep(null);
             setCombinedOp(false);
             setActiveOp(null);
@@ -2016,7 +1992,8 @@ export function WordDetailContent({
     // Scrap Hanzii → sync vi↔en + fill jyutping → payload cantonese → editVocabularyLang.
     // (Nút edit-mode cũ chỉ cập nhật draft — view mode này save luôn để fast sync.)
     const handleFullSyncCantonese = async () => {
-        if (busy) return;
+        if (syncBusyRef.current || busy) return;
+        syncBusyRef.current = true;
         setCombinedOp(true);
         setActiveOp("fullSyncCantonese");
         setFullSyncStep("hanzii");
@@ -2063,10 +2040,19 @@ export function WordDetailContent({
             // Bước 3: build payload cantonese (giữ audio/yue) + LƯU thẳng DB.
             const payload = vocabularyLangPayload({ ...draft, romanization: base }, "cantonese");
             await useAppStore.getState().editVocabularyLang(vocabulary.id, "cantonese", payload);
+            // ⚠️ 2026-08-29: từ trống (no readings) + Hanzii có Hán-Việt → scrap đã TẠO reading
+            // jyutping mới (to-jyutping + sino). synced=0 nhưng vẫn có giá trị → đừng báo
+            // "không có mục" gây hiểu nhầm.
+            const hasJyutping = allRoms.some((r) => (r.jyutping ?? "").trim() && (r.sinoVietnamese ?? "").trim());
             toast.add({
                 type: "success",
                 title: t.common?.done ?? "Xong",
-                description: synced > 0 ? `Đã full sync từ Cantonese: ${synced} mục` : "Không có mục nào cần đồng bộ",
+                description:
+                    synced > 0
+                        ? `Đã full sync từ Cantonese: ${synced} mục`
+                        : hasJyutping
+                          ? "Đã cập nhật phiên âm Jyutping + Hán-Việt (không có nghĩa để đồng bộ)"
+                          : "Không có mục nào cần đồng bộ",
                 duration: 3000,
             });
         } catch (err) {
@@ -2077,6 +2063,100 @@ export function WordDetailContent({
                 duration: 4000,
             });
         } finally {
+            syncBusyRef.current = false;
+            setFullSyncStep(null);
+            setCombinedOp(false);
+            setActiveOp(null);
+            setSyncViEnProgress(null);
+        }
+    };
+    // ═══ FULL SYNC MANDARIN (view mode) — chạy ngay từ detail, LƯU thẳng DB ═══ (2026-08-26)
+    // Giống handleFullSyncCantonese nhưng cho từ Mandarin: scrap Hanzii → fill pinyin ví dụ
+    // → sync vi↔en + gloss → payload mandarin → editVocabularyLang. (Nút footer view mode —
+    // trước đây chỉ có bên Cantonese, giờ bổ sung bên Mandarin theo yêu cầu user.)
+    const handleFullSyncMandarin = async () => {
+        if (syncBusyRef.current || busy) return;
+        syncBusyRef.current = true;
+        setCombinedOp(true);
+        setActiveOp("fullSyncMandarin");
+        setFullSyncStep("hanzii");
+        setSyncViEnProgress(null);
+        try {
+            // Bước 0: fill hanzi_traditional nếu trống (OpenCC s2t — giống edit mode).
+            const simpHan0 = (draft.hanSimplified ?? "").trim();
+            const tradHan0 = (draft.hanTraditional ?? "").trim();
+            if (simpHan0 && !tradHan0) {
+                try {
+                    const conv = await api.toTraditional(simpHan0);
+                    const converted = String(conv?.traditional ?? "").trim();
+                    if (converted && converted !== simpHan0) setDraftField("hanTraditional", converted);
+                } catch {
+                    /* bỏ qua — không chặn các bước sau */
+                }
+            }
+            // Bước 1: scrap Hanzii (best-effort) — KHÔNG abort nếu Hanzii không có dữ liệu;
+            // fallback sang readings hiện có và VẪN fill missing data (vi↔en + gloss).
+            const nextRoms = await handleScrapAllPinyin({ silent: true });
+            const base = Array.isArray(nextRoms)
+                ? nextRoms
+                : Array.isArray(draft.romanization)
+                  ? draft.romanization
+                  : [];
+            // Bước 2: fill pinyin (pinyin-pro) cho các VÍ DỤ còn thiếu.
+            setFullSyncStep("examples");
+            for (const rom of base) {
+                for (const m of rom.meanings ?? []) {
+                    for (const ex of m.examples ?? []) {
+                        const exHan = stripCjkPunct(
+                            (ex.hanSimplified ?? "").trim() || (ex.hanTraditional ?? "").trim(),
+                        );
+                        if (exHan && !(ex.pinyinExample ?? "").trim()) {
+                            try {
+                                const pyRes = await api.toPinyin(exHan);
+                                ex.pinyinExample = cleanRomanization(String(pyRes?.pinyin ?? ""));
+                            } catch {
+                                ex.pinyinExample = "";
+                            }
+                        }
+                    }
+                }
+            }
+            // Bước 3: đồng bộ nghĩa (vi↔en + gloss zh) cho pinyin readings.
+            setFullSyncStep("missing");
+            const allRoms = base.filter((r) => r.type === "pinyin");
+            const totalJobs = allRoms.reduce((acc, r) => acc + countViEnSyncJobs(r.meanings, "pinyin"), 0);
+            setSyncViEnProgress(totalJobs ? { done: 0, total: totalJobs } : null);
+            let done = 0;
+            let synced = 0;
+            for (const rom of allRoms) {
+                const jobsInReading = countViEnSyncJobs(rom.meanings, "pinyin");
+                const { meanings, synced: syncedThis } = await syncMeaningsViEn(rom.meanings, "pinyin", (d) =>
+                    setSyncViEnProgress({ done: done + d, total: totalJobs }),
+                );
+                rom.meanings = meanings;
+                synced += syncedThis;
+                done += jobsInReading;
+            }
+            // ⚠️ 2026-08-22: xóa meaning trùng 100% (vi + en giống nhau) — không lưu duplicate.
+            for (const rom of allRoms) rom.meanings = dedupeMeanings(rom.meanings);
+            // Bước 4: build payload mandarin + LƯU thẳng DB.
+            const payload = vocabularyLangPayload({ ...draft, romanization: base }, "mandarin");
+            await useAppStore.getState().editVocabularyLang(vocabulary.id, "mandarin", payload);
+            toast.add({
+                type: "success",
+                title: t.common?.done ?? "Xong",
+                description: synced > 0 ? `Đã full sync từ Mandarin: ${synced} mục` : "Không có mục nào cần đồng bộ",
+                duration: 3000,
+            });
+        } catch (err) {
+            toast.add({
+                type: "error",
+                title: t.common?.error ?? "Lỗi",
+                description: String(err instanceof Error ? err.message : err),
+                duration: 4000,
+            });
+        } finally {
+            syncBusyRef.current = false;
             setFullSyncStep(null);
             setCombinedOp(false);
             setActiveOp(null);
@@ -2140,7 +2220,6 @@ export function WordDetailContent({
                         .trim(),
                     engMeanings: "",
                     gloss: (m.zh ?? "").trim(),
-                    category: hanziiPosLabel(grp.title),
                     position: pos++,
                     examples: (m.examples ?? [])
                         .map((ex) => {
@@ -2194,31 +2273,38 @@ export function WordDetailContent({
             .filter(Boolean);
         return { hanSimplified: lines[0] ?? "", hanTraditional: lines[1] ?? "" };
     };
-    // Tên nhóm = tên từ điển (CC-Canto / 粵典–words.hk) — khi merge sẽ THAY bằng category scrap (Hanzii).
-    const isDictGroupName = (cat) => {
-        const c = String(cat ?? "").trim();
-        return c === "CC-Canto" || c === "粵典–words.hk" || c === "words.hk";
-    };
+    // ⚠️ 2026-08-30: bỏ group/category — merge giữ gloss, không còn category.
     const mergeMeaningInto = (target, sc) => {
-        const scCat = (sc.category ?? "").trim();
         const next = {
             ...target,
             vietMeanings: joinSenses(splitSenseParts(target.vietMeanings), splitSenseParts(sc.vietMeanings)),
             engMeanings: joinSenses(splitSenseParts(target.engMeanings), splitSenseParts(sc.engMeanings)),
             gloss: (target.gloss ?? "").trim() || sc.gloss?.trim() || "",
-            // ⚠️ Nhóm cũ là tên từ điển (CC-Canto / 粵典–words.hk) → thay bằng category scrap Hanzii.
-            category: isDictGroupName(target.category) && scCat ? scCat : (target.category ?? "").trim() || scCat,
         };
-        const seenEx = new Set(
-            (target.examples ?? []).map((ex) => {
-                const p = exHanParts(ex);
-                return `${p.hanSimplified}||${p.hanTraditional}`;
-            }),
-        );
-        const added = (sc.examples ?? []).filter((ex) => {
+        // ⚠️ Dedup ví dụ: ưu tiên theo ROMANIZATION (jyutping/pinyin — không bị lệch giản/phồn),
+        // fallback theo chữ Hán (không phân biệt cột simp/trad — example cũ lưu han ở hanTraditional,
+        // scrap lưu ở hanSimplified). Chỉ dedup theo han KHÔNG đủ: scrap là giản thể "我们种了小麦"
+        // còn DB lưu phồn "我們種了小麥" → key han khác nhau dù CÙNG ví dụ. (2026-08-25)
+        const normHanKey = (s) =>
+            String(s ?? "")
+                .replace(/[\u3000-\u303F\uFF00-\uFFEF，。！？、；：（）《》「」『』【】—…,.;:!?()"'“”]+/g, "")
+                .trim();
+        const normRom = (s) =>
+            String(s ?? "")
+                .toLowerCase()
+                .replace(/\s+/g, "")
+                .trim();
+        const exDedupKey = (ex) => {
+            const rom = normRom(ex?.jyutpingExample) || normRom(ex?.pinyinExample);
+            if (rom) return `rom:${rom}`;
             const p = exHanParts(ex);
-            const k = `${p.hanSimplified}||${p.hanTraditional}`;
-            if (!k.trim() || k === "||") return true; // ví dụ không có han → giữ
+            const han = normHanKey(p.hanSimplified) || normHanKey(p.hanTraditional);
+            return han ? `han:${han}` : "";
+        };
+        const seenEx = new Set((target.examples ?? []).map((ex) => exDedupKey(ex)));
+        const added = (sc.examples ?? []).filter((ex) => {
+            const k = exDedupKey(ex);
+            if (!k) return true; // không có romanization + han → giữ
             if (seenEx.has(k)) return false;
             seenEx.add(k);
             return true;
@@ -2331,7 +2417,7 @@ export function WordDetailContent({
             if (!tones.length) {
                 // Cantonese: Hanzii không có entry (VD phrase 我係) → KHÔNG abort — vẫn fill
                 // Hán-Việt (fallback map per-char qua backend) vào reading jyutping hiện có. (2026-08-22)
-                if (isCantonese && fallbackSino && roms.length) {
+                if (isCantonese && roms.length) {
                     const nextRoms = roms.map((rd) =>
                         rd.type === "jyutping"
                             ? { ...rd, sinoVietnamese: pickBetterSino(rd.sinoVietnamese, fallbackSino) }
@@ -2347,6 +2433,41 @@ export function WordDetailContent({
                         });
                     }
                     return nextRoms;
+                }
+                // Cantonese + từ KHÔNG có reading nào (trống) + Hanzii có Hán-Việt → vẫn TẠO
+                // reading jyutping bằng to-jyutping + gắn Hán-Việt (Hanzii có sino dù không có
+                // meanings). Trước đây bỏ sót → từ trống full sync báo "không có mục". (2026-08-29)
+                if (isCantonese && !roms.length) {
+                    let jyutping = "";
+                    try {
+                        const jp = await api.toJyutping(lookupHan);
+                        jyutping = cleanRomanization(jp?.jyutping ?? "");
+                    } catch {
+                        jyutping = "";
+                    }
+                    if (jyutping) {
+                        const nextRoms = [
+                            {
+                                id: undefined,
+                                _tempId: crypto.randomUUID(),
+                                type: "jyutping",
+                                jyutping,
+                                pinyin: "",
+                                sinoVietnamese: fallbackSino,
+                                meanings: [],
+                            },
+                        ];
+                        setDraft((d) => ({ ...d, romanization: nextRoms }));
+                        if (!silent) {
+                            toast.add({
+                                type: "success",
+                                title: t.common?.done ?? "Xong",
+                                description: "Đã điền phiên âm Jyutping + Hán-Việt (Hanzii không có nghĩa)",
+                                duration: 3000,
+                            });
+                        }
+                        return nextRoms;
+                    }
                 }
                 if (!silent) {
                     toast.add({
@@ -2614,6 +2735,21 @@ export function WordDetailContent({
 
     // Cantonese: cấp độ LUÔN = YSK, không có lựa chọn khác (2026-08-19).
     const isCantoneseMode = useAppStore.getState().language === "cantonese";
+    // Full Sync footer (ngoài detail card) chỉ hiện cho admin (2026-08-24).
+    const isAdmin = useIsAdmin();
+    // Nguồn dịch đang chạy (google | libretranslate) — hiển thị trong tiến độ Fill missing data.
+    // (2026-08-25) Khi fallback LibreTranslate, hiển thị "Google + mã HTTP lỗi" (403/429...) thay
+    // vì text "Google bị chặn" — để user thấy mã lỗi thực tế từ Google. (2026-08-26)
+    const fmtTranslateSource = () => {
+        const src = api.lastTranslateSource;
+        if (src === "libretranslate") {
+            const code = api.lastGoogleCode;
+            const codeText = code ? ` (Google ${code})` : " (Google)";
+            return ` — LibreTranslate${codeText}`;
+        }
+        if (src === "google") return " — Google";
+        return "";
+    };
 
     const headerBar = (
         <div className={cn(headerBarClass, "shrink-0")}>
@@ -2624,6 +2760,22 @@ export function WordDetailContent({
                 </div>
             )}
             <div className="flex flex-1 justify-end items-center gap-2">
+                {/* Toggle ẩn/hiện cột Mandarin trong view mode 2 cột (khi từ có data Mandarin) (2026-08-28) */}
+                {!editing && vocabulary.pinyinReading && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full text-muted-foreground"
+                        onClick={toggleMandarinCol}
+                        aria-pressed={showMandarinCol}
+                        title={
+                            showMandarinCol ? t.wordDetail?.toggleMandarinColHide : t.wordDetail?.toggleMandarinColShow
+                        }
+                    >
+                        {showMandarinCol ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                        <span>{t.wordDetail?.toggleMandarinCol}</span>
+                    </Button>
+                )}
                 {!editing && (
                     <DropdownMenu>
                         <DropdownMenuTrigger
@@ -2834,6 +2986,7 @@ export function WordDetailContent({
                                                 pinyin={vocabulary.pinyin}
                                                 jyutping={vocabulary.jyutping}
                                                 sinoVietnamese={vocabulary.sinoVietnamese}
+                                                autoFocus={addMode}
                                                 dupCheck={dupCheck.mandarin}
                                                 onShowDuplicates={(matches) => setDupDetail({ open: true, matches })}
                                             />
@@ -2886,6 +3039,7 @@ export function WordDetailContent({
                                                 pinyin={vocabulary.pinyin}
                                                 jyutping={vocabulary.jyutping}
                                                 sinoVietnamese={vocabulary.sinoVietnamese}
+                                                autoFocus={addMode}
                                                 dupCheck={dupCheck.cantonese}
                                                 onShowDuplicates={(matches) => setDupDetail({ open: true, matches })}
                                             />
@@ -2932,7 +3086,9 @@ export function WordDetailContent({
                             <div
                                 className={cn(
                                     "w-full grid gap-6 items-start",
-                                    vocabulary.pinyinReading && (vocabulary.jyutpingReading || isCantoneseMode)
+                                    showMandarinCol &&
+                                        vocabulary.pinyinReading &&
+                                        (vocabulary.jyutpingReading || isCantoneseMode)
                                         ? "grid-cols-1 lg:grid-cols-2"
                                         : "grid-cols-1",
                                 )}
@@ -2989,7 +3145,7 @@ export function WordDetailContent({
                                         </CardContent>
                                     </Card>
                                 )}
-                                {vocabulary.pinyinReading && (
+                                {showMandarinCol && vocabulary.pinyinReading && (
                                     <Card className="flex h-full flex-col gap-2! overflow-hidden rounded-xl bg-card ring-0 pt-0! pb-0!">
                                         <CardContent className="flex flex-col gap-4 px-0!">
                                             <div className="mb-4 flex min-h-32 w-full flex-col items-center justify-center gap-4">
@@ -3031,7 +3187,7 @@ export function WordDetailContent({
                                                             title={t.wordDetail?.openDetail ?? "Mở trang chi tiết"}
                                                             aria-label={t.wordDetail?.openDetail ?? "Mở trang chi tiết"}
                                                         >
-                                                            <Search className="size-4" />
+                                                            <ArrowUpRight className="size-4" />
                                                             <span>{han}</span>
                                                         </Link>
                                                     );
@@ -3105,8 +3261,9 @@ export function WordDetailContent({
                         </div>
                     )}
 
-                    {/* Separator dọc — đặt ở BODY container (relative) để kéo dài 100% body (2026-08-21) */}
-                    {((!editing && vocabulary.pinyinReading && vocabulary.jyutpingReading) ||
+                    {/* Separator dọc — đặt ở BODY container (relative) để kéo dài 100% body (2026-08-21).
+                        Ẩn cùng cột Mandarin khi toggle tắt (2026-08-29). */}
+                    {((!editing && showMandarinCol && vocabulary.pinyinReading && vocabulary.jyutpingReading) ||
                         (editing &&
                             showMandarin &&
                             readingsOf("pinyin").length > 0 &&
@@ -3261,8 +3418,31 @@ export function WordDetailContent({
                         </div>
 
                         <div className="flex justify-end items-center gap-2">
+                            {/* Full Sync MANDARIN (view mode) — scrap + sync vi↔en + lưu thẳng DB */}
+                            {isAdmin && !editing && !isCantoneseMode && (
+                                <Button
+                                    type="button"
+                                    className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90 min-w-28"
+                                    onClick={handleFullSyncMandarin}
+                                    disabled={busy}
+                                    title={t.addWord?.fetchHanziiSyncHint}
+                                >
+                                    {combinedOp && activeOp === "fullSyncMandarin" && <Spinner className="size-3.5" />}
+                                    {combinedOp && activeOp === "fullSyncMandarin"
+                                        ? fullSyncStep === "hanzii"
+                                            ? "1. Getting data from Hanzii…"
+                                            : fullSyncStep === "examples"
+                                              ? "2. Fill examples pinyin…"
+                                              : fullSyncStep === "missing"
+                                                ? syncViEnProgress
+                                                    ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})${fmtTranslateSource()}`
+                                                    : "3. Fill missing data…"
+                                                : "Full Sync - Mandarin"
+                                        : "Full Sync - Mandarin"}
+                                </Button>
+                            )}
                             {/* Full Sync CANTONESE (view mode) — scrap + sync vi↔en + lưu thẳng DB */}
-                            {!editing && isCantoneseMode && (
+                            {isAdmin && !editing && isCantoneseMode && (
                                 <Button
                                     type="button"
                                     className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90 min-w-28"
@@ -3276,14 +3456,14 @@ export function WordDetailContent({
                                             ? "1. Getting data from Hanzii…"
                                             : fullSyncStep === "missing"
                                               ? syncViEnProgress
-                                                  ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})`
+                                                  ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})${fmtTranslateSource()}`
                                                   : "3. Fill missing data…"
                                               : "Full Sync - Cantonese"
                                         : "Full Sync - Cantonese"}
                                 </Button>
                             )}
                             {/* Full Sync cho từ MANDARIN (cột gợi ý) — chạy ngay từ detail Cantonese view mode */}
-                            {!editing && isCantoneseMode && suggestedMandarinVocab && (
+                            {isAdmin && !editing && isCantoneseMode && suggestedMandarinVocab && (
                                 <Button
                                     type="button"
                                     className="bg-primary text-primary-foreground border-primary hover:enabled:bg-primary/90 min-w-28"
@@ -3299,7 +3479,7 @@ export function WordDetailContent({
                                               ? "2. Fill examples pinyin…"
                                               : fullSyncStep === "missing"
                                                 ? syncViEnProgress
-                                                    ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})`
+                                                    ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})${fmtTranslateSource()}`
                                                     : "3. Fill missing data…"
                                                 : "Full Sync - Mandarin"
                                         : "Full Sync - Mandarin"}
@@ -3331,7 +3511,7 @@ export function WordDetailContent({
                                               ? "2. Fill examples pinyin…"
                                               : fullSyncStep === "missing"
                                                 ? syncViEnProgress
-                                                    ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})`
+                                                    ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})${fmtTranslateSource()}`
                                                     : "3. Fill missing data…"
                                                 : (t.addWord?.fetchHanziiSync ?? "Lấy từ Hanzii + Đồng bộ")
                                         : (t.addWord?.fetchHanziiSync ?? "Lấy từ Hanzii + Đồng bộ")}
@@ -3354,7 +3534,7 @@ export function WordDetailContent({
                                               ? "2. Fill examples jyutping…"
                                               : fullSyncStep === "missing"
                                                 ? syncViEnProgress
-                                                    ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})`
+                                                    ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})${fmtTranslateSource()}`
                                                     : "3. Fill missing data…"
                                                 : (t.addWord?.fetchHanziiSync ?? "Full Sync")
                                         : (t.addWord?.fetchHanziiSync ?? "Full Sync")}
@@ -3374,7 +3554,7 @@ export function WordDetailContent({
                                             ? "2. Fill examples…"
                                             : fullSyncStep === "missing"
                                               ? syncViEnProgress
-                                                  ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})`
+                                                  ? `3. Fill missing data (${syncViEnProgress.done}/${syncViEnProgress.total})${fmtTranslateSource()}`
                                                   : "3. Fill missing data…"
                                               : (t.addWord?.syncAllViEn ?? "Fill Missing Data")
                                         : (t.addWord?.syncAllViEn ?? "Fill Missing Data")}

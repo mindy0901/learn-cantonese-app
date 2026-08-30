@@ -3,7 +3,7 @@
  * ⚠️ GHI ĐÈ: nếu hanzi đã tồn tại trong cantonese_vocabularies → XÓA data cũ (cascade)
  * rồi tạo mới từ dữ liệu CC101 (KHÔNG merge). (2026-08-22, user yêu cầu)
  *
- * Dữ liệu mỗi từ: hanzi (hanziTraditionalHk), jyutping, english, pos (category),
+ * Dữ liệu mỗi từ: hanzi (hanziTraditionalHk), jyutping, english,
  * hanziAudio/englishAudio (R2 public URL) + examples (jyutping/english + audio).
  * Audio URL R2 = <R2_PUBLIC_BASE>/<id>.mp3 (đọc từ backend/.env.r2).
  *
@@ -37,9 +37,7 @@ const r2 = (url) => {
     return R2_BASE && id ? `${R2_BASE}/${id}` : null;
 };
 
-// POS tiếng Anh "(n)" → tiếng Việt (theo chuẩn UI app).
-const POS_VI = { "(n)": "Danh từ", "(v)": "Động từ", "(adj)": "Tính từ", "(adv)": "Phó từ", "(pron)": "Đại từ" };
-const posLabel = (p) => POS_VI[String(p ?? "").trim()] ?? String(p ?? "").trim();
+// ⚠️ 2026-08-30: bỏ POS/category (bỏ group meaning) — meanings phẳng.
 
 const data = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "data", "cc101_core_2000.json"), "utf8"));
 console.log(`Import ${data.length} từ CC101 vào cantonese... ${DRY ? "(DRY RUN)" : ""}`);
@@ -99,7 +97,6 @@ for (const [hanzi, rows] of entries) {
         jyutping: jy,
         sinoVietnamese: "",
         meanings: rs.map((r) => ({
-            category: posLabel(r.pos),
             vi: "",
             en: r.english,
             examples: (r.examples ?? []).map((ex) => ({

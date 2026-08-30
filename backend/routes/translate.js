@@ -5,6 +5,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { toPinyin } from "../lib/pinyin.js";
 import { lookupJyutping } from "../lib/jyutpingLookup.js";
+import { libreTranslate } from "../lib/libretranslate.js";
 
 const execFileAsync = promisify(execFile);
 const __translate_dirname = dirname(fileURLToPath(import.meta.url));
@@ -20,6 +21,35 @@ const PYTHON_BIN =
             : "python"
         : "/opt/translate-venv/bin/python3");
 const SCRIPTS_DIR = resolve(__translate_dirname, "..", "scripts");
+
+// Exit code từ translate_pair.py → lý do Google (để UI hiển thị + log rõ ràng). (2026-08-26)
+const GOOGLE_FAIL_REASON = {
+    2: "rate_limit", // HTTP 429 thật
+    3: "blocked", // Google chặn, trả rỗng/HTML challenge (KHÔNG phải 429)
+    4: "error", // network/timeout/SSL...
+};
+
+// Probe mã HTTP thực tế của Google (gtx) — vì Google chặn ở tầng IP nên mã ít đổi → cache
+// 5 phút, chỉ gọi khi Google thất bại. (2026-08-26 — user muốn UI hiển thị "Google + mã code"
+// thay vì text "Google bị chặn".)
+const GOOGLE_PROBE_URL = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=probe";
+const GOOGLE_PROBE_TTL_MS = 5 * 60 * 1000;
+let googleProbeCache = { code: null, at: 0 };
+async function probeGoogleStatus() {
+    if (googleProbeCache.code != null && Date.now() - googleProbeCache.at < GOOGLE_PROBE_TTL_MS) {
+        return googleProbeCache.code;
+    }
+    try {
+        const resp = await fetch(GOOGLE_PROBE_URL, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+            signal: AbortSignal.timeout(8000),
+        });
+        googleProbeCache = { code: resp.status, at: Date.now() };
+    } catch {
+        googleProbeCache = { code: 0, at: Date.now() };
+    }
+    return googleProbeCache.code;
+}
 
 export async function translateRoutes(fastify) {
     /**
@@ -160,76 +190,54 @@ export async function translateRoutes(fastify) {
             return reply.status(400).send({ error: "Missing text" });
         }
 
-        const src = String(source || "en").toLowerCase();
-        const tgt = String(target || "vi").toLowerCase();
+        // Giữ nguyên case (deep_translator cần "zh-CN", "en", "vi" đúng case); LibreTranslate
+        // tự normalize (zh-CN → zh-Hans) ở libretranslate.js.
+        const src = String(source || "en");
+        const tgt = String(target || "vi");
 
-        // Cantonese → Vietnamese: deep_translator blocks 'yue' as a source code, so
-        // dispatch to a dedicated script that calls Google's gtx endpoint (sl=yue).
-        const isCantonese = ["yue", "zh-yue", "cantonese", "zh-hk", "hk"].includes(src);
-
-        try {
-            const args =
-                isCantonese && tgt === "vi"
-                    ? [resolve(SCRIPTS_DIR, "translate_cantonese.py"), "--single", String(text).trim()]
-                    : [
-                          resolve(SCRIPTS_DIR, "translate_pair.py"),
-                          "--single",
-                          String(text).trim(),
-                          "--source",
-                          src,
-                          "--target",
-                          tgt,
-                      ];
-            const { stdout } = await execFileAsync(PYTHON_BIN, args, {
-                timeout: 20000,
-                env: { ...process.env, PYTHONIOENCODING: "utf-8" },
-            });
-
-            return { translated: stdout.trim() };
-        } catch (err) {
-            console.error("translate error:", err.message);
-            // exit code 2 = Google rate limit → trả 429 để user biết thử lại sau (2026-08-24).
-            if (err.code === 2) {
-                return reply.status(429).send({ error: "Google Translate đang giới hạn (rate limit) — thử lại sau" });
+        // Fallback: LibreTranslate (self-hosted, không rate-limit) — dùng khi deep_translator
+        // (Google) không dịch được. Argos engine có model en/vi/zh → không phụ thuộc Google.
+        // (2026-08-24 — thay thế gtx vì gtx cũng bị Google block.) reason = lý do Google lỗi
+        // (rate_limit | blocked | error) — 2026-08-26 phân biệt để UI hiển thị đúng nguyên nhân.
+        const runLibreFallback = async (reason = null, googleCode = null) => {
+            try {
+                const translated = await libreTranslate(String(text).trim(), src, tgt);
+                return { translated, source: "libretranslate", reason, googleCode };
+            } catch (ltErr) {
+                console.error("translate LibreTranslate fallback error:", ltErr.message);
+                // LibreTranslate lỗi (service down / thiếu model / cặp ngôn ngữ) → 500:
+                // job bị skip (giống network error), sync vẫn chạy tiếp các job khác.
+                return reply.status(500).send({ error: ltErr.message, reason, googleCode });
             }
-            return reply.status(500).send({ error: err.message });
-        }
-    });
-
-    /**
-     * POST /translate-google
-     * Body: { text, source, target }
-     * Dịch qua Google Translate "gtx" (Google web) — bypass deep_translator.
-     * Dùng cho nút "Dịch từ tiếng Anh" (en → vi) trong edit page.
-     */
-    fastify.post("/translate-google", async (request, reply) => {
-        const { text, source = "en", target = "vi" } = request.body ?? {};
-
-        if (!text || !String(text).trim()) {
-            return reply.status(400).send({ error: "Missing text" });
-        }
+        };
 
         try {
             const { stdout } = await execFileAsync(
                 PYTHON_BIN,
                 [
-                    resolve(SCRIPTS_DIR, "translate_google.py"),
+                    resolve(SCRIPTS_DIR, "translate_pair.py"),
                     "--single",
                     String(text).trim(),
                     "--source",
-                    String(source),
+                    src,
                     "--target",
-                    String(target),
+                    tgt,
                 ],
                 { timeout: 20000, env: { ...process.env, PYTHONIOENCODING: "utf-8" } },
             );
 
-            return { translated: stdout.trim() };
+            return { translated: stdout.trim(), source: "google" };
         } catch (err) {
-            console.error("translate-google error:", err.message);
-            // exit code 2 = Google rate limit → trả 429 để user biết thử lại sau (2026-08-24).
-            if (err.code === 2) {
-                return reply.status(429).send({ error: "Google Translate đang giới hạn (rate limit) — thử lại sau" });
+            console.error("translate error:", err.message);
+            // Phân biệt lý do Google lỗi (2026-08-26):
+            //   exit 2 = HTTP 429 thật (rate limit) | 3 = Google chặn (trả rỗng/HTML challenge)
+            //   | 4 = lỗi khác (network/timeout). stderr chứa message gốc từ translate_utils.py.
+            const reason = GOOGLE_FAIL_REASON[err.code] ?? null;
+            if (reason) {
+                const detail = String(err?.stderr ?? "").trim();
+                console.error(`translate Google ${reason} (code=${err.code}): ${detail || err.message}`);
+                const googleCode = await probeGoogleStatus();
+                return runLibreFallback(reason, googleCode);
             }
             return reply.status(500).send({ error: err.message });
         }

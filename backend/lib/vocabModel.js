@@ -5,7 +5,7 @@
  *   vocab:     id, mandarin, cantonese, metadata
  *   block:     hanzi_simplified, hanzi_traditional, system, readings
  *   reading:   id, romanization, sino_vietnamese, meanings
- *   meaning:   id, position, category, zh|yue, vi, en, examples
+ *   meaning:   id, position, zh|yue, vi, en, examples
  *   example:   id, position, zh|yue, romanization, vi, en
  *   metadata:  hsk_level, popularity, frequency, movie_word_rank,
  *              book_word_rank, created_at, updated_at
@@ -15,13 +15,10 @@
  * - cantonese.hanzi_traditional = han_hongkong cũ; mandarin.hanzi_traditional = han_traditional cũ.
  * - Mọi object lồng PHẢI có `id` (AGENTS §2.4) — legacy thiếu id → sinh stable
  *   content-id (MD5 content) để không lệch khi đọc lại.
+ * ⚠️ 2026-08-30: bỏ hẳn `category`/group meaning — nghĩa phẳng, không phân biệt dict/manual.
  */
 import { randomUUID, createHash } from "crypto";
 import { romanizationId } from "./romanizationId.js";
-
-const DICT_CATS = new Set(["CC-Canto", "words.hk", "粵典–words.hk"]);
-
-export const isDictCategory = (cat) => DICT_CATS.has(String(cat ?? "").trim());
 
 function md5Uuid(text) {
     return createHash("md5")
@@ -32,24 +29,19 @@ function md5Uuid(text) {
 
 const sideField = (side) => (side === "mandarin" ? "zh" : "yue");
 
-const contentMeaningId = (side, cat, gloss, vi, en) => md5Uuid(`m|${side}|${cat}|${gloss}|${vi}|${en}`);
+const contentMeaningId = (side, gloss, vi, en) => md5Uuid(`m|${side}|${gloss}|${vi}|${en}`);
 const contentExampleId = (side, han, rom, vi, en) => md5Uuid(`ex|${side}|${han}|${rom}|${vi}|${en}`);
 
-/** Legacy meaning (vietMeanings/engMeanings) → meaning model mới (canonical key order). */
+/** Legacy meaning (vietMeanings/engMeanings) → meaning model mới (canonical key order).
+ * ⚠️ 2026-08-30: bỏ category/group — vietMeanings → vi, gloss (zh|yue) để trống. */
 export function meaningFromLegacy(m, side, i) {
-    const cat = String(m?.category ?? "").trim();
-    const isDict = isDictCategory(cat);
-    // dict (CC-Canto/words.hk): vietMeanings cũ là gloss chữ Hán → zh|yue; vi trống.
-    // manual: vietMeanings là tiếng Việt → vi; zh|yue trống.
-    const gloss = isDict ? String(m?.vietMeanings ?? "") : "";
-    const vi = isDict ? "" : String(m?.vietMeanings ?? "");
+    const vi = String(m?.vietMeanings ?? "");
     const en = String(m?.engMeanings ?? "");
     const out = {
-        id: m?.id ?? contentMeaningId(side, cat, gloss, vi, en),
+        id: m?.id ?? contentMeaningId(side, "", vi, en),
         position: m?.position ?? i,
-        category: cat,
     };
-    out[sideField(side)] = gloss;
+    out[sideField(side)] = "";
     out.vi = vi;
     out.en = en;
     out.examples = (m?.examples ?? []).map((ex, j) => {
@@ -105,14 +97,12 @@ export function blockFromLegacy(roms, side, hanSimplified, hanTraditional) {
 
 /** Chuẩn hóa meaning (format mới) về canonical key order + đảm bảo có id. */
 function normalizeMeaning(m, side, i, assignIds) {
-    const cat = String(m?.category ?? "").trim();
     const gloss = String(m?.[sideField(side)] ?? "");
     const vi = String(m?.vi ?? "");
     const en = String(m?.en ?? "");
     const out = {
-        id: m?.id || (assignIds ? randomUUID() : contentMeaningId(side, cat, gloss, vi, en)),
+        id: m?.id || (assignIds ? randomUUID() : contentMeaningId(side, gloss, vi, en)),
         position: m?.position ?? i,
-        category: cat,
     };
     out[sideField(side)] = gloss;
     out.vi = vi;
@@ -223,7 +213,6 @@ function readingFromRow(r, side) {
             const mo = {
                 id: m.id,
                 position: m.position ?? 0,
-                category: m.category ?? "",
             };
             mo[field] = String(m[field] ?? "");
             mo.vi = String(m.vi ?? "");

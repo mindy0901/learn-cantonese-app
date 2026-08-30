@@ -48,7 +48,6 @@ export function vocabNewToLegacy(raw) {
         };
         return {
             id: m.id,
-            category: m.category ?? "",
             gloss: m.zh ?? m.yue ?? "",
             vietMeanings: m.vi ?? "",
             engMeanings: m.en ?? "",
@@ -126,8 +125,8 @@ export function vocabNewToLegacy(raw) {
 /**
  * Adapter (2026-08-17): API model TÁCH theo ngôn ngữ (kho mandarin / cantonese độc lập)
  * → old-shape store object. API object per language:
- *   mandarin:  { id, hanziSimplified, hanziTraditional, hskLevel, popularity, readings:[{id, pinyin, sinoVietnamese, meanings:[{id, category, zh, vi, en, examples:[{id, zh, romanization, vi, en}]}]}] }
- *   cantonese: { id, hanziTraditionalHk, pureCantonese, popularity, readings:[{id, jyutping, sinoVietnamese, meanings:[{id, category, vi, en, examples:[{id, romanization, vi, en}]}]}] }
+ *   mandarin:  { id, hanziSimplified, hanziTraditional, hskLevel, popularity, readings:[{id, pinyin, sinoVietnamese, meanings:[{id, zh, vi, en, examples:[{id, zh, romanization, vi, en}]}]}] }
+ *   cantonese: { id, hanziTraditionalHk, pureCantonese, popularity, readings:[{id, jyutping, sinoVietnamese, meanings:[{id, vi, en, examples:[{id, romanization, vi, en}]}]}] }
  */
 export function vocabLangToLegacy(raw, lang) {
     const isMandarin = lang === "mandarin";
@@ -141,7 +140,6 @@ export function vocabLangToLegacy(raw, lang) {
             sinoVietnamese: cleanSino(r.sinoVietnamese),
             meanings: (r.meanings ?? []).map((m) => ({
                 id: m.id,
-                category: m.category ?? "",
                 gloss: isMandarin ? String(m.zh ?? "") : "", // ⚠️ 2026-08-22: cantonese bỏ yue gloss
                 vietMeanings: m.vi ?? "",
                 engMeanings: m.en ?? "",
@@ -245,7 +243,6 @@ function langMeaningsFromLegacy(meanings, side) {
             const out = {
                 id: m.id,
                 position: i,
-                category: capFirst((m.category ?? "").trim()),
                 ...(hanField ? { [hanField]: gloss } : {}),
                 vi: viet,
                 en: capFirst((m.engMeanings ?? "").trim()),
@@ -282,8 +279,8 @@ function langMeaningsFromLegacy(meanings, side) {
 
 /**
  * Build payload TÁCH theo ngôn ngữ (2026-08-17) gửi API từ legacy draft:
- *   mandarin:  { id, hanziSimplified, hanziTraditional, hskLevel, popularity, readings:[{id, pinyin, sinoVietnamese, meanings:[{id, category, zh, vi, en, examples}]}] }
- *   cantonese: { id, hanziTraditionalHk, pureCantonese, popularity, readings:[{id, jyutping, sinoVietnamese, meanings:[{id, category, vi, en, examples}]}] }
+ *   mandarin:  { id, hanziSimplified, hanziTraditional, hskLevel, popularity, readings:[{id, pinyin, sinoVietnamese, meanings:[{id, zh, vi, en, examples}]}] }
+ *   cantonese: { id, hanziTraditionalHk, pureCantonese, popularity, readings:[{id, jyutping, sinoVietnamese, meanings:[{id, vi, en, examples}]}] }
  */
 /** Meanings phẳng (legacy draft/OCR) → meanings per-language. */
 function flatMeaningsFromLegacy(draft, side) {
@@ -293,7 +290,6 @@ function flatMeaningsFromLegacy(draft, side) {
     const eng = (draft.engMeanings ?? "").trim();
     if (!viet && !eng) return [];
     const meaning = {
-        category: "",
         vi: capFirst(viet),
         en: capFirst(eng),
         examples: [],
@@ -304,8 +300,8 @@ function flatMeaningsFromLegacy(draft, side) {
 
 /**
  * Build payload TÁCH theo ngôn ngữ (2026-08-17) gửi API từ legacy draft:
- *   mandarin:  { id, hanziSimplified, hanziTraditional, hskLevel, popularity, readings:[{id, pinyin, sinoVietnamese, meanings:[{id, category, zh, vi, en, examples}]}] }
- *   cantonese: { id, hanziTraditionalHk, pureCantonese, popularity, readings:[{id, jyutping, sinoVietnamese, meanings:[{id, category, vi, en, examples}]}] }
+ *   mandarin:  { id, hanziSimplified, hanziTraditional, hskLevel, popularity, readings:[{id, pinyin, sinoVietnamese, meanings:[{id, zh, vi, en, examples}]}] }
+ *   cantonese: { id, hanziTraditionalHk, pureCantonese, popularity, readings:[{id, jyutping, sinoVietnamese, meanings:[{id, vi, en, examples}]}] }
  *
  * ⚠️ 2026-08-18: xử lý 3 nguồn draft:
  *   A) Per-language payload có sẵn `readings` (createVocabulary nhận payload từ saveEdit) → passthrough,

@@ -1,6 +1,8 @@
-import { useEffect } from "react";
-import { Volume2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Volume2 } from "lucide-react";
 import { cn } from "../lib/cn.js";
+import { api } from "../lib/api.js";
+import { speakCantonese, speak } from "../lib/speech.js";
 import { Button } from "./shadcn/button.jsx";
 
 // Singleton — chỉ phát 1 audio tại 1 thời điểm (bấm nút khác sẽ dừng nút trước),
@@ -26,11 +28,15 @@ export function playAudioUrl(url) {
 }
 
 /**
- * Nút phát audio từ URL (R2/MP3). KHÔNG render gì khi không có `url` — chỉ hiện
- * icon audio cho từ/câu thật sự có audio.
- * @param {{url?: string|null, title?: string, className?: string, size?: "xs2"|"xs"|"lg"}} props
+ * Nút phát audio cho hán tự.
+ * - `cantoneseText` → gTTS yue (server, cache R2) → fallback giọng Windows zh-HK (Tracy).
+ * - `mandarinText` → gTTS zh-CN (server, cache R2) → fallback giọng Windows Mandarin (zh-CN).
+ * - Không có 2 prop trên → phát `url` như cũ (nút audio thường, ví dụ tiếng Anh).
+ * - KHÔNG render gì khi cả `url` và 2 prop đều trống.
+ * @param {{url?: string|null, cantoneseText?: string|null, mandarinText?: string|null, title?: string, className?: string, size?: "xs2"|"xs"|"lg"}} props
  */
-export function AudioPlayButton({ url, title, className, size = "xs" }) {
+export function AudioPlayButton({ url, cantoneseText, mandarinText, title, className, size = "xs" }) {
+    const [loading, setLoading] = useState(false);
     // Dừng audio nếu button bị unmount (đóng trang/đổi từ) giữa chừng.
     useEffect(() => {
         return () => {
@@ -41,7 +47,37 @@ export function AudioPlayButton({ url, title, className, size = "xs" }) {
         };
     }, []);
 
-    if (!url) return null;
+    const handleClick = () => {
+        const cText = String(cantoneseText ?? "").trim();
+        const mText = String(mandarinText ?? "").trim();
+        if (cText) {
+            // 1) gTTS yue (server, cache R2) → 2) fallback giọng Windows Tracy.
+            setLoading(true);
+            api.tts(cText, "yue")
+                .then((res) => {
+                    if (res?.url) playAudioUrl(res.url);
+                    else speakCantonese(cText);
+                })
+                .catch(() => speakCantonese(cText))
+                .finally(() => setLoading(false));
+            return;
+        }
+        if (mText) {
+            // 1) gTTS zh-CN (server, cache R2) → 2) fallback giọng Windows Mandarin.
+            setLoading(true);
+            api.tts(mText, "zh-CN")
+                .then((res) => {
+                    if (res?.url) playAudioUrl(res.url);
+                    else speak(mText);
+                })
+                .catch(() => speak(mText))
+                .finally(() => setLoading(false));
+            return;
+        }
+        if (url) playAudioUrl(url);
+    };
+
+    if (!url && !cantoneseText && !mandarinText) return null;
     // "lg" = GẤP ĐÔI (48px nút / 24px icon) — hero hán tự.
     // "xs2" = 20px nút / 12px icon — example/nghĩa: không ép hàng cao hơn text (20px).
     const sizeClass =
@@ -56,11 +92,12 @@ export function AudioPlayButton({ url, title, className, size = "xs" }) {
             variant="ghost"
             size="icon-xs"
             className={cn("shrink-0 text-foreground hover:bg-primary/10 hover:text-foreground", sizeClass, className)}
-            onClick={() => playAudioUrl(url)}
+            onClick={handleClick}
+            disabled={loading}
             aria-label={title}
             title={title}
         >
-            <Volume2 />
+            {loading ? <Loader2 className="animate-spin" /> : <Volume2 />}
         </Button>
     );
 }
