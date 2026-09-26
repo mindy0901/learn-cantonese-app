@@ -17,14 +17,19 @@ from datetime import datetime
 
 import psycopg2
 from deep_translator import GoogleTranslator
-from translate_utils import translate_with_fallback
+from translate_utils import (
+    translate_google_only,
+    GoogleRateLimitError,
+    GoogleBlockedError,
+    GoogleError,
+)
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.StreamHandler(sys.stdout),
+        logging.StreamHandler(sys.stderr),  # stdout chỉ chứa kết quả dịch (API parse stdout)
         logging.FileHandler("/app/scripts/translate_english.log", encoding="utf-8"),
     ],
 )
@@ -209,11 +214,13 @@ def run_batch_translation(batch_size=50, delay=1.0, resume=False, dry_run=False)
 def translate_single(text):
     """
     Translate a single text from Chinese to English.
-    Used by the API endpoint. Tries multiple deep-translator backends.
+    Used by the API endpoint. Google only — no cross-site fallback (2026-08-24).
     """
     try:
-        translation = translate_with_fallback(text, source="zh-CN", target="en", logger=log)
-        return translation
+        return translate_google_only(text, source="zh-CN", target="en", logger=log)
+    except (GoogleRateLimitError, GoogleBlockedError, GoogleError) as e:
+        log.error(f"Failed to translate '{text}': {e}")
+        return None
     except Exception as e:
         log.error(f"Failed to translate '{text}': {e}")
         return None

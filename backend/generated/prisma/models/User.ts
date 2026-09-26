@@ -201,6 +201,9 @@ export type UserWhereInput = {
   flashcardDecks?: Prisma.FlashcardDeckListRelationFilter
   vocabularySets?: Prisma.VocabularySetListRelationFilter
   checkins?: Prisma.UserCheckinListRelationFilter
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyListRelationFilter
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyListRelationFilter
+  vocabularyMastery?: Prisma.UserVocabularyMasteryListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -214,6 +217,9 @@ export type UserOrderByWithRelationInput = {
   flashcardDecks?: Prisma.FlashcardDeckOrderByRelationAggregateInput
   vocabularySets?: Prisma.VocabularySetOrderByRelationAggregateInput
   checkins?: Prisma.UserCheckinOrderByRelationAggregateInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyOrderByRelationAggregateInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyOrderByRelationAggregateInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -230,6 +236,9 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   flashcardDecks?: Prisma.FlashcardDeckListRelationFilter
   vocabularySets?: Prisma.VocabularySetListRelationFilter
   checkins?: Prisma.UserCheckinListRelationFilter
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyListRelationFilter
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyListRelationFilter
+  vocabularyMastery?: Prisma.UserVocabularyMasteryListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -269,6 +278,9 @@ export type UserCreateInput = {
   flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
   vocabularySets?: Prisma.VocabularySetCreateNestedManyWithoutUserInput
   checkins?: Prisma.UserCheckinCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -282,6 +294,9 @@ export type UserUncheckedCreateInput = {
   flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
   vocabularySets?: Prisma.VocabularySetUncheckedCreateNestedManyWithoutUserInput
   checkins?: Prisma.UserCheckinUncheckedCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -295,6 +310,9 @@ export type UserUpdateInput = {
   flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
   vocabularySets?: Prisma.VocabularySetUpdateManyWithoutUserNestedInput
   checkins?: Prisma.UserCheckinUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -308,6 +326,9 @@ export type UserUncheckedUpdateInput = {
   flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
   vocabularySets?: Prisma.VocabularySetUncheckedUpdateManyWithoutUserNestedInput
   checkins?: Prisma.UserCheckinUncheckedUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -375,6 +396,34 @@ export type UserScalarRelationFilter = {
   isNot?: Prisma.UserWhereInput
 }
 
+export type UserCreateNestedOneWithoutFavoriteVocabulariesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFavoriteVocabulariesInput, Prisma.UserUncheckedCreateWithoutFavoriteVocabulariesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFavoriteVocabulariesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutFavoriteVocabulariesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFavoriteVocabulariesInput, Prisma.UserUncheckedCreateWithoutFavoriteVocabulariesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFavoriteVocabulariesInput
+  upsert?: Prisma.UserUpsertWithoutFavoriteVocabulariesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutFavoriteVocabulariesInput, Prisma.UserUpdateWithoutFavoriteVocabulariesInput>, Prisma.UserUncheckedUpdateWithoutFavoriteVocabulariesInput>
+}
+
+export type UserCreateNestedOneWithoutDislikedVocabulariesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutDislikedVocabulariesInput, Prisma.UserUncheckedCreateWithoutDislikedVocabulariesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutDislikedVocabulariesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutDislikedVocabulariesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutDislikedVocabulariesInput, Prisma.UserUncheckedCreateWithoutDislikedVocabulariesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutDislikedVocabulariesInput
+  upsert?: Prisma.UserUpsertWithoutDislikedVocabulariesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutDislikedVocabulariesInput, Prisma.UserUpdateWithoutDislikedVocabulariesInput>, Prisma.UserUncheckedUpdateWithoutDislikedVocabulariesInput>
+}
+
 export type UserCreateNestedOneWithoutCheckinsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutCheckinsInput, Prisma.UserUncheckedCreateWithoutCheckinsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutCheckinsInput
@@ -387,6 +436,20 @@ export type UserUpdateOneRequiredWithoutCheckinsNestedInput = {
   upsert?: Prisma.UserUpsertWithoutCheckinsInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCheckinsInput, Prisma.UserUpdateWithoutCheckinsInput>, Prisma.UserUncheckedUpdateWithoutCheckinsInput>
+}
+
+export type UserCreateNestedOneWithoutVocabularyMasteryInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVocabularyMasteryInput, Prisma.UserUncheckedCreateWithoutVocabularyMasteryInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVocabularyMasteryInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutVocabularyMasteryNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVocabularyMasteryInput, Prisma.UserUncheckedCreateWithoutVocabularyMasteryInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVocabularyMasteryInput
+  upsert?: Prisma.UserUpsertWithoutVocabularyMasteryInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutVocabularyMasteryInput, Prisma.UserUpdateWithoutVocabularyMasteryInput>, Prisma.UserUncheckedUpdateWithoutVocabularyMasteryInput>
 }
 
 export type UserCreateNestedOneWithoutFlashcardDecksInput = {
@@ -417,6 +480,158 @@ export type UserUpdateOneRequiredWithoutVocabularySetsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutVocabularySetsInput, Prisma.UserUpdateWithoutVocabularySetsInput>, Prisma.UserUncheckedUpdateWithoutVocabularySetsInput>
 }
 
+export type UserCreateWithoutFavoriteVocabulariesInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetCreateNestedManyWithoutUserInput
+  checkins?: Prisma.UserCheckinCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutFavoriteVocabulariesInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetUncheckedCreateNestedManyWithoutUserInput
+  checkins?: Prisma.UserCheckinUncheckedCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutFavoriteVocabulariesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutFavoriteVocabulariesInput, Prisma.UserUncheckedCreateWithoutFavoriteVocabulariesInput>
+}
+
+export type UserUpsertWithoutFavoriteVocabulariesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutFavoriteVocabulariesInput, Prisma.UserUncheckedUpdateWithoutFavoriteVocabulariesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutFavoriteVocabulariesInput, Prisma.UserUncheckedCreateWithoutFavoriteVocabulariesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutFavoriteVocabulariesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutFavoriteVocabulariesInput, Prisma.UserUncheckedUpdateWithoutFavoriteVocabulariesInput>
+}
+
+export type UserUpdateWithoutFavoriteVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUpdateManyWithoutUserNestedInput
+  checkins?: Prisma.UserCheckinUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutFavoriteVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUncheckedUpdateManyWithoutUserNestedInput
+  checkins?: Prisma.UserCheckinUncheckedUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutDislikedVocabulariesInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetCreateNestedManyWithoutUserInput
+  checkins?: Prisma.UserCheckinCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutDislikedVocabulariesInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetUncheckedCreateNestedManyWithoutUserInput
+  checkins?: Prisma.UserCheckinUncheckedCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutDislikedVocabulariesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutDislikedVocabulariesInput, Prisma.UserUncheckedCreateWithoutDislikedVocabulariesInput>
+}
+
+export type UserUpsertWithoutDislikedVocabulariesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutDislikedVocabulariesInput, Prisma.UserUncheckedUpdateWithoutDislikedVocabulariesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutDislikedVocabulariesInput, Prisma.UserUncheckedCreateWithoutDislikedVocabulariesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutDislikedVocabulariesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutDislikedVocabulariesInput, Prisma.UserUncheckedUpdateWithoutDislikedVocabulariesInput>
+}
+
+export type UserUpdateWithoutDislikedVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUpdateManyWithoutUserNestedInput
+  checkins?: Prisma.UserCheckinUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutDislikedVocabulariesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUncheckedUpdateManyWithoutUserNestedInput
+  checkins?: Prisma.UserCheckinUncheckedUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedUpdateManyWithoutUserNestedInput
+}
+
 export type UserCreateWithoutCheckinsInput = {
   id?: string
   email: string
@@ -427,6 +642,9 @@ export type UserCreateWithoutCheckinsInput = {
   updatedAt?: Date | string
   flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
   vocabularySets?: Prisma.VocabularySetCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCheckinsInput = {
@@ -439,6 +657,9 @@ export type UserUncheckedCreateWithoutCheckinsInput = {
   updatedAt?: Date | string
   flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
   vocabularySets?: Prisma.VocabularySetUncheckedCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCheckinsInput = {
@@ -467,6 +688,9 @@ export type UserUpdateWithoutCheckinsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
   vocabularySets?: Prisma.VocabularySetUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCheckinsInput = {
@@ -479,6 +703,85 @@ export type UserUncheckedUpdateWithoutCheckinsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
   vocabularySets?: Prisma.VocabularySetUncheckedUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutVocabularyMasteryInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetCreateNestedManyWithoutUserInput
+  checkins?: Prisma.UserCheckinCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutVocabularyMasteryInput = {
+  id?: string
+  email: string
+  password?: string | null
+  name?: string | null
+  isAdmin?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
+  vocabularySets?: Prisma.VocabularySetUncheckedCreateNestedManyWithoutUserInput
+  checkins?: Prisma.UserCheckinUncheckedCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutVocabularyMasteryInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutVocabularyMasteryInput, Prisma.UserUncheckedCreateWithoutVocabularyMasteryInput>
+}
+
+export type UserUpsertWithoutVocabularyMasteryInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutVocabularyMasteryInput, Prisma.UserUncheckedUpdateWithoutVocabularyMasteryInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutVocabularyMasteryInput, Prisma.UserUncheckedCreateWithoutVocabularyMasteryInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutVocabularyMasteryInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutVocabularyMasteryInput, Prisma.UserUncheckedUpdateWithoutVocabularyMasteryInput>
+}
+
+export type UserUpdateWithoutVocabularyMasteryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUpdateManyWithoutUserNestedInput
+  checkins?: Prisma.UserCheckinUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutVocabularyMasteryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
+  vocabularySets?: Prisma.VocabularySetUncheckedUpdateManyWithoutUserNestedInput
+  checkins?: Prisma.UserCheckinUncheckedUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFlashcardDecksInput = {
@@ -491,6 +794,9 @@ export type UserCreateWithoutFlashcardDecksInput = {
   updatedAt?: Date | string
   vocabularySets?: Prisma.VocabularySetCreateNestedManyWithoutUserInput
   checkins?: Prisma.UserCheckinCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFlashcardDecksInput = {
@@ -503,6 +809,9 @@ export type UserUncheckedCreateWithoutFlashcardDecksInput = {
   updatedAt?: Date | string
   vocabularySets?: Prisma.VocabularySetUncheckedCreateNestedManyWithoutUserInput
   checkins?: Prisma.UserCheckinUncheckedCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFlashcardDecksInput = {
@@ -531,6 +840,9 @@ export type UserUpdateWithoutFlashcardDecksInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularySets?: Prisma.VocabularySetUpdateManyWithoutUserNestedInput
   checkins?: Prisma.UserCheckinUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFlashcardDecksInput = {
@@ -543,6 +855,9 @@ export type UserUncheckedUpdateWithoutFlashcardDecksInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vocabularySets?: Prisma.VocabularySetUncheckedUpdateManyWithoutUserNestedInput
   checkins?: Prisma.UserCheckinUncheckedUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutVocabularySetsInput = {
@@ -555,6 +870,9 @@ export type UserCreateWithoutVocabularySetsInput = {
   updatedAt?: Date | string
   flashcardDecks?: Prisma.FlashcardDeckCreateNestedManyWithoutUserInput
   checkins?: Prisma.UserCheckinCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutVocabularySetsInput = {
@@ -567,6 +885,9 @@ export type UserUncheckedCreateWithoutVocabularySetsInput = {
   updatedAt?: Date | string
   flashcardDecks?: Prisma.FlashcardDeckUncheckedCreateNestedManyWithoutUserInput
   checkins?: Prisma.UserCheckinUncheckedCreateNestedManyWithoutUserInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedCreateNestedManyWithoutUserInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedCreateNestedManyWithoutUserInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutVocabularySetsInput = {
@@ -595,6 +916,9 @@ export type UserUpdateWithoutVocabularySetsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   flashcardDecks?: Prisma.FlashcardDeckUpdateManyWithoutUserNestedInput
   checkins?: Prisma.UserCheckinUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutVocabularySetsInput = {
@@ -607,6 +931,9 @@ export type UserUncheckedUpdateWithoutVocabularySetsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   flashcardDecks?: Prisma.FlashcardDeckUncheckedUpdateManyWithoutUserNestedInput
   checkins?: Prisma.UserCheckinUncheckedUpdateManyWithoutUserNestedInput
+  favoriteVocabularies?: Prisma.UserFavoriteVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  dislikedVocabularies?: Prisma.UserDislikedVocabularyUncheckedUpdateManyWithoutUserNestedInput
+  vocabularyMastery?: Prisma.UserVocabularyMasteryUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -618,12 +945,18 @@ export type UserCountOutputType = {
   flashcardDecks: number
   vocabularySets: number
   checkins: number
+  favoriteVocabularies: number
+  dislikedVocabularies: number
+  vocabularyMastery: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   flashcardDecks?: boolean | UserCountOutputTypeCountFlashcardDecksArgs
   vocabularySets?: boolean | UserCountOutputTypeCountVocabularySetsArgs
   checkins?: boolean | UserCountOutputTypeCountCheckinsArgs
+  favoriteVocabularies?: boolean | UserCountOutputTypeCountFavoriteVocabulariesArgs
+  dislikedVocabularies?: boolean | UserCountOutputTypeCountDislikedVocabulariesArgs
+  vocabularyMastery?: boolean | UserCountOutputTypeCountVocabularyMasteryArgs
 }
 
 /**
@@ -657,6 +990,27 @@ export type UserCountOutputTypeCountCheckinsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.UserCheckinWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountFavoriteVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserFavoriteVocabularyWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountDislikedVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserDislikedVocabularyWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountVocabularyMasteryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserVocabularyMasteryWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -669,6 +1023,9 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   flashcardDecks?: boolean | Prisma.User$flashcardDecksArgs<ExtArgs>
   vocabularySets?: boolean | Prisma.User$vocabularySetsArgs<ExtArgs>
   checkins?: boolean | Prisma.User$checkinsArgs<ExtArgs>
+  favoriteVocabularies?: boolean | Prisma.User$favoriteVocabulariesArgs<ExtArgs>
+  dislikedVocabularies?: boolean | Prisma.User$dislikedVocabulariesArgs<ExtArgs>
+  vocabularyMastery?: boolean | Prisma.User$vocabularyMasteryArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -707,6 +1064,9 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   flashcardDecks?: boolean | Prisma.User$flashcardDecksArgs<ExtArgs>
   vocabularySets?: boolean | Prisma.User$vocabularySetsArgs<ExtArgs>
   checkins?: boolean | Prisma.User$checkinsArgs<ExtArgs>
+  favoriteVocabularies?: boolean | Prisma.User$favoriteVocabulariesArgs<ExtArgs>
+  dislikedVocabularies?: boolean | Prisma.User$dislikedVocabulariesArgs<ExtArgs>
+  vocabularyMastery?: boolean | Prisma.User$vocabularyMasteryArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -718,6 +1078,9 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     flashcardDecks: Prisma.$FlashcardDeckPayload<ExtArgs>[]
     vocabularySets: Prisma.$VocabularySetPayload<ExtArgs>[]
     checkins: Prisma.$UserCheckinPayload<ExtArgs>[]
+    favoriteVocabularies: Prisma.$UserFavoriteVocabularyPayload<ExtArgs>[]
+    dislikedVocabularies: Prisma.$UserDislikedVocabularyPayload<ExtArgs>[]
+    vocabularyMastery: Prisma.$UserVocabularyMasteryPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1124,6 +1487,9 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   flashcardDecks<T extends Prisma.User$flashcardDecksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$flashcardDecksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   vocabularySets<T extends Prisma.User$vocabularySetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$vocabularySetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularySetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   checkins<T extends Prisma.User$checkinsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$checkinsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserCheckinPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  favoriteVocabularies<T extends Prisma.User$favoriteVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$favoriteVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserFavoriteVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  dislikedVocabularies<T extends Prisma.User$dislikedVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$dislikedVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserDislikedVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  vocabularyMastery<T extends Prisma.User$vocabularyMasteryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$vocabularyMasteryArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserVocabularyMasteryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1622,6 +1988,78 @@ export type User$checkinsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.UserCheckinScalarFieldEnum | Prisma.UserCheckinScalarFieldEnum[]
+}
+
+/**
+ * User.favoriteVocabularies
+ */
+export type User$favoriteVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UserFavoriteVocabulary
+   */
+  select?: Prisma.UserFavoriteVocabularySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UserFavoriteVocabulary
+   */
+  omit?: Prisma.UserFavoriteVocabularyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserFavoriteVocabularyInclude<ExtArgs> | null
+  where?: Prisma.UserFavoriteVocabularyWhereInput
+  orderBy?: Prisma.UserFavoriteVocabularyOrderByWithRelationInput | Prisma.UserFavoriteVocabularyOrderByWithRelationInput[]
+  cursor?: Prisma.UserFavoriteVocabularyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserFavoriteVocabularyScalarFieldEnum | Prisma.UserFavoriteVocabularyScalarFieldEnum[]
+}
+
+/**
+ * User.dislikedVocabularies
+ */
+export type User$dislikedVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UserDislikedVocabulary
+   */
+  select?: Prisma.UserDislikedVocabularySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UserDislikedVocabulary
+   */
+  omit?: Prisma.UserDislikedVocabularyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserDislikedVocabularyInclude<ExtArgs> | null
+  where?: Prisma.UserDislikedVocabularyWhereInput
+  orderBy?: Prisma.UserDislikedVocabularyOrderByWithRelationInput | Prisma.UserDislikedVocabularyOrderByWithRelationInput[]
+  cursor?: Prisma.UserDislikedVocabularyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserDislikedVocabularyScalarFieldEnum | Prisma.UserDislikedVocabularyScalarFieldEnum[]
+}
+
+/**
+ * User.vocabularyMastery
+ */
+export type User$vocabularyMasteryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UserVocabularyMastery
+   */
+  select?: Prisma.UserVocabularyMasterySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UserVocabularyMastery
+   */
+  omit?: Prisma.UserVocabularyMasteryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserVocabularyMasteryInclude<ExtArgs> | null
+  where?: Prisma.UserVocabularyMasteryWhereInput
+  orderBy?: Prisma.UserVocabularyMasteryOrderByWithRelationInput | Prisma.UserVocabularyMasteryOrderByWithRelationInput[]
+  cursor?: Prisma.UserVocabularyMasteryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserVocabularyMasteryScalarFieldEnum | Prisma.UserVocabularyMasteryScalarFieldEnum[]
 }
 
 /**

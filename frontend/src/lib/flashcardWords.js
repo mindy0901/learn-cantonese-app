@@ -1,7 +1,7 @@
 import { WORD_FETCH_PAGE_SIZE } from "./constants.js";
-import { api } from "./api.js";
+import { api, getApiLanguage } from "./api.js";
 import { fetchVocabularyBrowsePage } from "./wordBrowseCache.js";
-import { compareDueWords, isWordDueForReview, matchesFlashcardScope } from "./flashcardDue.js";
+import { vocabLangToLegacy } from "./dataTransforms.js";
 
 export { FLASHCARD_SESSION_SIZES } from "./flashcardPrefs.js";
 
@@ -14,67 +14,24 @@ function shuffleArray(items) {
     return arr;
 }
 
-function browseFilterForScope(scope) {
-    if (scope === "important") return "important";
-    return "all";
-}
-
-function browseParamsForConfig(config, page, pageSize) {
-    const { source, scope } = config;
-    const params = {
+function browseParamsForConfig(page, pageSize) {
+    return {
         page,
         pageSize,
-        sortKey: source === "due" ? "studyProgressAt" : "createdAt",
-        sortDir: source === "due" ? "asc" : "desc",
-        filter: browseFilterForScope(scope),
+        sortKey: "createdAt",
+        sortDir: "desc",
+        filter: "all",
         q: "",
+        // ⚠️ 2026-09-02: nguồn random bỏ từ đã mastered (progress >= 100) — backend lọc theo user.
+        excludeMastered: 1,
+        // ⚠️ 2026-09-20: bỏ từ user đánh dấu 🚫 "không muốn học" (cặp ❤️/🚫 với "yêu thích").
+        excludeDisliked: 1,
     };
-    if (source === "due") params.studyDue = true;
-    if (scope === "lowProgress") params.maxProgress = 49;
-    return params;
 }
 
-export async function countDueFlashcardVocabularies({ revision, mergeVocabularies } = {}) {
-    try {
-        const result = await fetchVocabularyBrowsePage(
-            { page: 1, pageSize: 1, studyDue: true, filter: "all", sortKey: "studyProgressAt", sortDir: "asc" },
-            { revision },
-        );
-        mergeVocabularies?.(result.items ?? []);
-        return result.total ?? 0;
-    } catch {
-        return 0;
-    }
-}
-
-async function collectDueVocabularies(count, config, { mergeVocabularies, revision } = {}) {
-    const collected = [];
-    let page = 1;
-    const pageSize = WORD_FETCH_PAGE_SIZE;
-    const maxPages = 40;
-
-    while (collected.length < count && page <= maxPages) {
-        const result = await fetchVocabularyBrowsePage(browseParamsForConfig(config, page, pageSize), { revision });
-        mergeVocabularies?.(result.items ?? []);
-
-        for (const vocab of result.items ?? []) {
-            if (vocab.mastered) continue;
-            if (!matchesFlashcardScope(vocab, config.scope)) continue;
-            if (!isWordDueForReview(vocab)) continue;
-            collected.push(vocab);
-            if (collected.length >= count) break;
-        }
-
-        if (page >= (result.totalPages ?? 1)) break;
-        page++;
-    }
-
-    return collected.sort(compareDueWords).slice(0, count);
-}
-
-async function collectRandomVocabularies(count, config, { mergeVocabularies, revision, vocabularyTotal } = {}) {
+async function collectRandomVocabularies(count, { revision, vocabularyTotal } = {}) {
     if (!vocabularyTotal || count <= 0) return [];
-
+    const lang = getApiLanguage();
     const pageSize = WORD_FETCH_PAGE_SIZE;
     const totalPages = Math.max(1, Math.ceil(vocabularyTotal / pageSize));
     const collected = new Map();
@@ -84,13 +41,10 @@ async function collectRandomVocabularies(count, config, { mergeVocabularies, rev
 
     while (collected.size < target && attempts < maxAttempts) {
         const page = Math.floor(Math.random() * totalPages) + 1;
-        const result = await fetchVocabularyBrowsePage(browseParamsForConfig(config, page, pageSize), { revision });
-        mergeVocabularies?.(result.items ?? []);
+        const result = await fetchVocabularyBrowsePage(browseParamsForConfig(page, pageSize), { revision });
 
         for (const vocab of result.items ?? []) {
-            if (vocab.mastered) continue;
-            if (!matchesFlashcardScope(vocab, config.scope)) continue;
-            if (!collected.has(vocab.id)) collected.set(vocab.id, vocab);
+            if (!collected.has(vocab.id)) collected.set(vocab.id, vocabLangToLegacy(vocab, lang));
             if (collected.size >= target) break;
         }
         attempts++;
@@ -99,41 +53,67 @@ async function collectRandomVocabularies(count, config, { mergeVocabularies, rev
     return shuffleArray([...collected.values()]).slice(0, target);
 }
 
-/**
- * @param {number} count
- * @param {{
- *   source?: string,
- *   scope?: string,
- *   mergeVocabularies?: Function,
- *   revision?: number,
- *   vocabularyTotal?: number,
- * }} options
- */
-export async function fetchFlashcardVocabularies(
-    count,
-    { source = "random", scope = "all", deckId = null, mergeVocabularies, revision, vocabularyTotal } = {},
-) {
-    const config = { source, scope };
-
-    if (source === "deck" && deckId) {
-        return collectDeckVocabularies(count, deckId);
-    }
-
-    if (source === "due") {
-        return collectDueVocabularies(count, config, { mergeVocabularies, revision });
-    }
-
-    return collectRandomVocabularies(count, config, { mergeVocabularies, revision, vocabularyTotal });
-}
-
-async function collectDeckVocabularies(count, deckId) {
+// ⚠️ 2026-09-01: multiple decks — deckIds mảng, gộp union + dedupe theo id, random trong đó.
+async function collectDeckVocabularies(count, deckIds, lang) {
     try {
-        const items = await api.fetchDeckVocabularies(deckId);
-        if (!Array.isArray(items) || items.length === 0) return [];
-        // Shuffle and take up to count
-        const shuffled = shuffleArray(items);
-        return shuffled.slice(0, count);
+        const ids = Array.isArray(deckIds) ? deckIds : deckIds ? [deckIds] : [];
+        if (!ids.length) return [];
+        const valid = lang === "mandarin" ? "mandarin" : "cantonese";
+        const seen = new Map();
+        for (const deckId of ids) {
+            const deck = await api.fetchFlashcardDeck(deckId).catch(() => null);
+            if (!deck) continue;
+            const items = valid === "mandarin" ? (deck.mandarinVocabularies ?? []) : (deck.cantoneseVocabularies ?? []);
+            for (const v of items) {
+                if (!v?.id || seen.has(v.id)) continue;
+                seen.set(v.id, vocabLangToLegacy(v, valid));
+            }
+        }
+        if (seen.size === 0) return [];
+        return shuffleArray([...seen.values()]).slice(0, count);
     } catch {
         return [];
     }
+}
+
+// ⚠️ 2026-09-01: source "user" = gộp TẤT CẢ từ trong mọi bộ thẻ (deck) của user (dedupe theo id),
+// random trong đó. Lấy theo ngôn ngữ active.
+async function collectUserVocabularies(count, lang) {
+    try {
+        const decks = await api.fetchFlashcardDecks();
+        if (!decks || decks.length === 0) return [];
+        const valid = lang === "mandarin" ? "mandarin" : "cantonese";
+        const seen = new Map();
+        for (const deck of decks) {
+            const full = await api.fetchFlashcardDeck(deck.id).catch(() => null);
+            if (!full) continue;
+            const items = valid === "mandarin" ? (full.mandarinVocabularies ?? []) : (full.cantoneseVocabularies ?? []);
+            for (const v of items) {
+                if (!v?.id || seen.has(v.id)) continue;
+                seen.set(v.id, vocabLangToLegacy(v, valid));
+            }
+        }
+        if (seen.size === 0) return [];
+        return shuffleArray([...seen.values()]).slice(0, count);
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Lấy danh sách từ cho phiên flashcard — theo NGÔN NGỮ active (`lang`).
+ * source: "random" (cả bank app) | "user" (gộp tất cả deck của user) | "deck" (theo các deck, cần deckIds).
+ * Trả về items đã convert sang legacy shape (vocabLangToLegacy).
+ */
+export async function fetchFlashcardVocabularies(
+    count,
+    { source = "random", deckIds = [], lang, revision, vocabularyTotal } = {},
+) {
+    if (source === "user") {
+        return collectUserVocabularies(count, lang);
+    }
+    if (source === "deck" && deckIds?.length) {
+        return collectDeckVocabularies(count, deckIds, lang);
+    }
+    return collectRandomVocabularies(count, { revision, vocabularyTotal });
 }

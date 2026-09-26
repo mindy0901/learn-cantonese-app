@@ -21,7 +21,7 @@ import { api, getApiLanguage, setApiLanguage } from "../lib/api.js";
 import { log, logWarn, logError, logFetchDone, logMutStart, logMutDone } from "../lib/actionLog.js";
 import { normalizeVocabularyFields, vocabularyContentEqual } from "../lib/wordNormalize.js";
 import { useAuthStore } from "./authStore.js";
-import { saveDataCache, invalidateDataCache } from "../lib/dataCache.js";
+import { loadDataCache, saveDataCache, invalidateDataCache, getCacheGeneration } from "../lib/dataCache.js";
 
 const LEGACY_DATA_KEY = "cantonese-app-data";
 const LANGUAGE_KEY = "learn-cantonese:language";
@@ -39,8 +39,169 @@ function getInitialLanguage() {
 /** Dedupe concurrent cloud hydrates (e.g. React Strict Mode). */
 let hydrateFromCloudPromise = null;
 
-/** Dedupe concurrent vocabulary-sets fetches (WordBankPage + WordBankListPanel). */
+/** Dedupe concurrent vocabulary-sets fetches (VocabularyBankPage + VocabularyBankListPanel). */
 let vocabularySetsFetchPromise = null;
+let tagsFetchPromise = null;
+
+/**
+ * Tags sắp xếp theo SỐ TỪ ĐÃ GẮN (giảm dần), cùng số lượng thì theo tên (locale vi).
+ * ⚠️ 2026-09-27: đổi từ "theo tên" → "theo số lượng" (user yêu cầu) — và sort lại ở
+ * `setVocabularyTag` nên thứ tự cập nhật NGAY khi gắn/gỡ tag (không chờ refetch).
+ */
+function sortTags(list) {
+    return [...list].sort(
+        (a, b) =>
+            (b.vocabularyCount ?? 0) - (a.vocabularyCount ?? 0) ||
+            String(a.name ?? "").localeCompare(String(b.name ?? ""), "vi"),
+    );
+}
+
+// ── Helpers hydrate cache-first (2026-09-02) ──
+// Cache IndexedDB giờ ĐƯỢC ĐỌC LẠI khi F5 → render ngay không phải tải 45MB; nền refresh cập nhật.
+// Bước "Lưu bộ nhớ đệm" (saveDataCache) trước đây ghi 45MB mỗi F5 nhưng không đọc lại → vô ích.
+
+/** Cho React 1 frame để paint (bước "Xử lý dữ liệu…" hiển thị thật trước khi index đồng bộ). */
+function yieldToPaint() {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/** Chữ ký nhanh của snapshot bootstrap — so cache vs server để biết có cần re-index lại không.
+ * ⚠️ 2026-09-02: format KHỚP `computeDataSignature` backend (/api/bootstrap-version):
+ * `[mLen, mMax, cLen, cMax, gLen]` — trước đây order khác (m,c,g,mMax,cMax) → không bao giờ
+ * khớp → background luôn tải full 45MB. */
+function snapshotSignature(payload) {
+    const maxUpdated = (arr) => (arr ?? []).reduce((a, v) => Math.max(a, vocabTimeMs(v)), 0);
+    // Số vocab CÒN related_words (JSONB Hanzii) — khớp backend computeDataSignature (2026-09-08):
+    // xóa field này không đổi count/max updatedAt nên phải đưa vào signature để ETag hết khớp cache cũ.
+    const relatedCount = (arr) => (arr ?? []).reduce((a, v) => a + (v?.relatedWords ? 1 : 0), 0);
+    return [
+        payload?.mandarinVocabularies?.length ?? 0,
+        maxUpdated(payload?.mandarinVocabularies),
+        relatedCount(payload?.mandarinVocabularies),
+        payload?.cantoneseVocabularies?.length ?? 0,
+        maxUpdated(payload?.cantoneseVocabularies),
+        relatedCount(payload?.cantoneseVocabularies),
+        payload?.grammars?.length ?? 0,
+    ].join(":");
+}
+
+let lastAppliedSignature = null; // chữ ký ĐẦY ĐỦ (nội dung + user) của payload đã áp — gửi làm If-None-Match
+let lastAppliedContentSignature = null; // chỉ NỘI DUNG — quyết định có cần re-index bank không
+
+/** Digest data theo user (số lượng favorite/disliked/mastery/sets) — format KHỚP backend
+ *  `computeUserDataSignature` (`f.d.m.s`). ⚠️ 2026-09-20: đưa vào If-None-Match để đánh dấu ❤️/🚫
+ *  mới làm signature đổi ⇒ không bị 304 giữ dữ liệu user cũ. */
+function userDataDigest(payload) {
+    const fav =
+        (payload?.favoriteVocabularyIds?.mandarin?.length ?? 0) +
+        (payload?.favoriteVocabularyIds?.cantonese?.length ?? 0);
+    const disliked =
+        (payload?.dislikedVocabularyIds?.mandarin?.length ?? 0) +
+        (payload?.dislikedVocabularyIds?.cantonese?.length ?? 0);
+    const mastery =
+        Object.keys(payload?.vocabularyMastery?.mandarin ?? {}).length +
+        Object.keys(payload?.vocabularyMastery?.cantonese ?? {}).length;
+    const sets = payload?.vocabularySets?.length ?? 0;
+    return `${fav}.${disliked}.${mastery}.${sets}`;
+}
+
+/** Chữ ký gửi lên server (If-None-Match) = nội dung + digest user. */
+function requestSignature(payload) {
+    return `${snapshotSignature(payload)}:${userDataDigest(payload)}`;
+}
+
+/** Cập nhật CHỈ phần data theo user (khi nội dung 2 bank không đổi — không cần re-index). */
+function applyUserDataToStore(set, payload) {
+    const mastery = payload.vocabularyMastery ?? { mandarin: {}, cantonese: {} };
+    set({
+        favoriteVocabularyIds: [
+            ...(payload.favoriteVocabularyIds?.mandarin ?? []),
+            ...(payload.favoriteVocabularyIds?.cantonese ?? []),
+        ],
+        dislikedVocabularyIds: [
+            ...(payload.dislikedVocabularyIds?.mandarin ?? []),
+            ...(payload.dislikedVocabularyIds?.cantonese ?? []),
+        ],
+        vocabularyMastery: { mandarin: mastery?.mandarin ?? {}, cantonese: mastery?.cantonese ?? {} },
+        vocabularySets: payload.vocabularySets ?? [],
+    });
+}
+
+/** Index 1 snapshot bootstrap → cập nhật store (bước "Xử lý dữ liệu…"). */
+function applySnapshotToStore(set, get, payload) {
+    const grammarIndexed = indexCloudPayload({ vocabularies: [], grammars: payload.grammars ?? [] });
+    const mandarinBank = indexVocabularies(
+        (payload.mandarinVocabularies ?? []).map((v) => vocabLangToLegacy(v, "mandarin")),
+    );
+    const cantoneseBank = indexVocabularies(
+        (payload.cantoneseVocabularies ?? []).map((v) => vocabLangToLegacy(v, "cantonese")),
+    );
+    const active = get().language === "mandarin" ? mandarinBank : cantoneseBank;
+    // ⚠️ 2026-09-20: cặp đánh dấu theo user (thay "important" cũ): ❤️ favorite + 🚫 disliked.
+    const favoriteVocabularyIds = [
+        ...(payload.favoriteVocabularyIds?.mandarin ?? []),
+        ...(payload.favoriteVocabularyIds?.cantonese ?? []),
+    ];
+    const dislikedVocabularyIds = [
+        ...(payload.dislikedVocabularyIds?.mandarin ?? []),
+        ...(payload.dislikedVocabularyIds?.cantonese ?? []),
+    ];
+    const mastery = payload.vocabularyMastery ?? { mandarin: {}, cantonese: {} };
+    lastAppliedContentSignature = snapshotSignature(payload);
+    lastAppliedSignature = requestSignature(payload);
+    set({
+        mandarinVocabularies: mandarinBank,
+        cantoneseVocabularies: cantoneseBank,
+        vocabularies: active,
+        vocabularyTotal: active.length,
+        masteredVocabularyCount: 0, // user_vocabularies đã bỏ
+        grammarBank: grammarIndexed.grammarBank,
+        favoriteVocabularyIds,
+        dislikedVocabularyIds,
+        vocabularyMastery: { mandarin: mastery?.mandarin ?? {}, cantonese: mastery?.cantonese ?? {} },
+        vocabularySets: payload.vocabularySets ?? [],
+    });
+}
+
+/** Dedupe concurrent background refresh. */
+let backgroundRefreshPromise = null;
+
+/** Fetch bootstrap mới ở nền (không loading overlay) — sau khi render từ cache. */
+function refreshBootstrapInBackground(set, get) {
+    if (backgroundRefreshPromise) return backgroundRefreshPromise;
+    backgroundRefreshPromise = (async () => {
+        try {
+            // ⚠️ 2026-09-20: capture generation TRƯỚC khi fetch — nếu có mutation xen giữa
+            // (invalidateDataCache tăng generation) thì KHÔNG ghi lại payload cũ vào cache
+            // (tránh F5 sau hiển thị thiếu đánh dấu ❤️/🚫).
+            const genAtStart = getCacheGeneration();
+            // ⚠️ 2026-09-02 (sửa): KHÔNG dùng endpoint version riêng — /api/bootstrap tự trả 304
+            // khi data không đổi (gửi If-None-Match = signature hiện tại) → không tải 45MB mỗi F5.
+            // `null` = 304 (không đổi) → giữ nguyên data đang có.
+            const fresh = await api.fetchBootstrap(lastAppliedSignature || undefined);
+            if (fresh == null) return;
+            // Nội dung 2 bank không đổi (chỉ data theo user đổi — VD vừa đánh dấu ❤️/🚫 ở tab khác)
+            // → CHỈ cập nhật phần user, KHÔNG re-index toàn bộ bank.
+            const contentChanged = snapshotSignature(fresh) !== lastAppliedContentSignature;
+            const genOk = getCacheGeneration() === genAtStart;
+            set({ dataLoadingStep: "saving-cache" });
+            if (genOk) await saveDataCache(fresh);
+            if (!contentChanged) {
+                applyUserDataToStore(set, fresh);
+                lastAppliedSignature = requestSignature(fresh);
+                set({ dataLoadingStep: "done" });
+                return;
+            }
+            await yieldToPaint();
+            applySnapshotToStore(set, get, fresh);
+        } catch {
+            // bỏ qua — F5 lần sau sẽ thử lại
+        } finally {
+            backgroundRefreshPromise = null;
+        }
+    })();
+    return backgroundRefreshPromise;
+}
 
 function assertAdmin() {
     if (!useAuthStore.getState().user?.isAdmin) {
@@ -135,9 +296,6 @@ export const useAppStore = create((set, get) => ({
     masteredVocabularyCount: 0,
     vocabulariesRevision: 0,
     grammarBank: [],
-    hanCharacters: [],
-    hanCharacterTotal: 0,
-    hanCharactersRevision: 0,
     vocabularySets: [],
     dataLoading: false,
     dataError: null, // { message: string, status?: number } | null
@@ -148,8 +306,14 @@ export const useAppStore = create((set, get) => ({
     language: getInitialLanguage(),
     mandarinVocabularies: [], // bank từ đã index theo ngôn ngữ
     cantoneseVocabularies: [],
-    // Map HK → gợi ý mandarin (precompute lúc load — tra map khi click vocab thay vì gọi API từng từ).
-    hkSuggestionMap: {},
+    // ids từ vựng user đánh dấu ❤️ "yêu thích" (unique toàn cục — uuid) + 🚫 "không muốn học"
+    // (bị loại khỏi flashcard random + hiển thị ở trang /profile). (rename 2026-09-20)
+    favoriteVocabularyIds: [],
+    dislikedVocabularyIds: [],
+    // ⚠️ 2026-09-02: tiến độ mastered (0-100%) theo từ — { mandarin: {id: progress}, cantonese: {...} }
+    vocabularyMastery: { mandarin: {}, cantonese: {} },
+    // Tags dùng chung (catalogue toàn app, admin quản lý) — [{ id, name, vocabularyCount }]
+    tags: [],
 
     clearData: () => {
         log("Clear app data");
@@ -160,13 +324,13 @@ export const useAppStore = create((set, get) => ({
             masteredVocabularyCount: 0,
             vocabulariesRevision: 0,
             grammarBank: [],
-            hanCharacters: [],
-            hanCharacterTotal: 0,
-            hanCharactersRevision: 0,
             vocabularySets: [],
+            tags: [],
             mandarinVocabularies: [],
             cantoneseVocabularies: [],
-            hkSuggestionMap: {},
+            favoriteVocabularyIds: [],
+            dislikedVocabularyIds: [],
+            vocabularyMastery: { mandarin: {}, cantonese: {} },
             dataLoading: false,
             dataError: null,
             dataLoadingStep: "",
@@ -184,41 +348,40 @@ export const useAppStore = create((set, get) => ({
                 if (useAuthStore.getState().user?.isAdmin) {
                     await migrateLegacyLocalIfNeeded();
                 }
+
+                // ⚠️ 2026-09-02: F5 render TỪ CACHE IndexedDB lần trước (bước "Lưu bộ nhớ đệm"
+                // giờ CÓ Ý NGHĨA — được đọc lại) → không chờ tải 45MB. Sau đó refresh nền để
+                // cập nhật nếu data trên server đổi. Gợi ý giản thể (mandarin) vẫn tra ON-DEMAND
+                // theo từng từ qua useHkSuggestion (không còn map precompute).
+                const cached = await loadDataCache();
+                const hasCachedData = cached
+                    ? Boolean(cached.mandarinVocabularies?.length || cached.cantoneseVocabularies?.length)
+                    : false;
+                if (hasCachedData) {
+                    set({ dataLoadingStep: "indexing" });
+                    await yieldToPaint(); // để React vẽ bước "Xử lý dữ liệu…" (spinner) trước khi index
+                    applySnapshotToStore(set, get, cached);
+                    set({ dataLoading: false, dataError: null, dataLoadingStep: "done", hydrated: true });
+                    // Refresh nền (không loading overlay): fetch mới, cập nhật nếu có thay đổi.
+                    refreshBootstrapInBackground(set, get).catch(() => {});
+                    return;
+                }
+
+                // Cold start (chưa có cache): fetch full + lưu cache (bước "Lưu bộ nhớ đệm" thật).
                 set({ dataLoadingStep: "loading-data" });
-                // Tải song song: full data + map HK→mandarin gợi ý (precompute — tra map khi
-                // click vocab thay vì gọi API từng từ, hết giật). (2026-08-21)
-                const [remote, hkSuggestionMap] = await Promise.all([
-                    api.fetchFullData(),
-                    api.fetchHkSuggestionMap().catch(() => ({})),
-                ]);
+                const boot = await api.fetchBootstrap();
+                const remote = boot;
                 logFetchDone({
                     mandarin: remote.mandarinVocabularies?.length ?? 0,
                     cantonese: remote.cantoneseVocabularies?.length ?? 0,
                     grammar: remote.grammars?.length ?? 0,
-                    hanCharacters: remote.hanCharacterTotal ?? remote.hanCharacters?.length ?? 0,
                 });
-                // Save raw payload to cache for next cold start
                 set({ dataLoadingStep: "saving-cache" });
                 await saveDataCache(remote);
                 set({ dataLoadingStep: "indexing" });
-                const grammarIndexed = indexCloudPayload({ vocabularies: [], grammars: remote.grammars ?? [] });
-                const mandarinBank = indexVocabularies(
-                    (remote.mandarinVocabularies ?? []).map((v) => vocabLangToLegacy(v, "mandarin")),
-                );
-                const cantoneseBank = indexVocabularies(
-                    (remote.cantoneseVocabularies ?? []).map((v) => vocabLangToLegacy(v, "cantonese")),
-                );
-                const active = get().language === "mandarin" ? mandarinBank : cantoneseBank;
+                await yieldToPaint(); // để React vẽ "Xử lý dữ liệu…" trước khi index đồng bộ
+                applySnapshotToStore(set, get, remote);
                 set({
-                    mandarinVocabularies: mandarinBank,
-                    cantoneseVocabularies: cantoneseBank,
-                    vocabularies: active,
-                    vocabularyTotal: active.length,
-                    masteredVocabularyCount: 0, // user_vocabularies đã bỏ
-                    grammarBank: grammarIndexed.grammarBank,
-                    hanCharacters: remote.hanCharacters ?? [],
-                    hanCharacterTotal: remote.hanCharacters?.length ?? 0,
-                    hkSuggestionMap,
                     dataLoading: false,
                     dataError: null,
                     dataLoadingStep: "done",
@@ -260,16 +423,23 @@ export const useAppStore = create((set, get) => ({
             // cần cột Mandarin gợi ý (mandarinVariants) từ store mandarin. Trước đây chỉ tải bank
             // của ngôn ngữ active → khi ở cantonese mode, mandarinVocabularies rỗng → cột gợi ý
             // không có details dù dữ liệu mandarin có đủ trong DB.
-            const [mandarinRows, cantoneseRows, hkSuggestionMap] = await Promise.all([
-                api.fetchLanguageData("mandarin"),
-                api.fetchLanguageData("cantonese"),
-                api.fetchHkSuggestionMap().catch(() => ({})),
-            ]);
-            const mandarinBank = indexVocabularies((mandarinRows ?? []).map((v) => vocabLangToLegacy(v, "mandarin")));
-            const cantoneseBank = indexVocabularies(
-                (cantoneseRows ?? []).map((v) => vocabLangToLegacy(v, "cantonese")),
-            );
+            // ⚠️ 2026-09-02: dùng chung /api/bootstrap (1 API trả 2 bank + map + user data) thay
+            // vì 5 GET riêng như cũ.
+            const boot = await api.fetchBootstrap();
+            const mandarinRows = boot.mandarinVocabularies ?? [];
+            const cantoneseRows = boot.cantoneseVocabularies ?? [];
+            const mastery = boot.vocabularyMastery ?? { mandarin: {}, cantonese: {} };
+            const mandarinBank = indexVocabularies(mandarinRows.map((v) => vocabLangToLegacy(v, "mandarin")));
+            const cantoneseBank = indexVocabularies(cantoneseRows.map((v) => vocabLangToLegacy(v, "cantonese")));
             const bank = valid === "mandarin" ? mandarinBank : cantoneseBank;
+            const favoriteVocabularyIds = [
+                ...(boot.favoriteVocabularyIds?.mandarin ?? []),
+                ...(boot.favoriteVocabularyIds?.cantonese ?? []),
+            ];
+            const dislikedVocabularyIds = [
+                ...(boot.dislikedVocabularyIds?.mandarin ?? []),
+                ...(boot.dislikedVocabularyIds?.cantonese ?? []),
+            ];
             setApiLanguage(valid);
             set({
                 language: valid,
@@ -278,7 +448,10 @@ export const useAppStore = create((set, get) => ({
                 vocabularies: bank,
                 vocabularyTotal: bank.length,
                 masteredVocabularyCount: 0,
-                hkSuggestionMap,
+                favoriteVocabularyIds,
+                dislikedVocabularyIds,
+                vocabularyMastery: { mandarin: mastery?.mandarin ?? {}, cantonese: mastery?.cantonese ?? {} },
+                vocabularySets: boot.vocabularySets ?? get().vocabularySets,
                 dataLoading: false,
                 dataError: null,
                 dataLoadingStep: "done",
@@ -338,27 +511,35 @@ export const useAppStore = create((set, get) => ({
         );
     },
 
-    createVocabularyAwait: async (vocab) => {
+    // ⚠️ 2026-09-02: thêm `lang` override — OCR chọn ngôn ngữ quét có thể khác ngôn ngữ trang.
+    // Khi targetLang khác ngôn ngữ active → chỉ cập nhật bank index đúng, KHÔNG đụng list active.
+    createVocabularyAwait: async (vocab, lang) => {
         assertAdmin();
-        const bankKey = get().language === "mandarin" ? "mandarinVocabularies" : "cantoneseVocabularies";
+        const targetLang = lang === "mandarin" ? "mandarin" : get().language;
+        const isActiveLang = targetLang === get().language;
+        const bankKey = targetLang === "mandarin" ? "mandarinVocabularies" : "cantoneseVocabularies";
         const prev = get().vocabularies;
         const prevBank = get()[bankKey];
         const item = indexVocabulary(normalizeVocabularyFields(vocab), prev.length);
         set({
-            vocabularies: [...prev, item],
+            ...(isActiveLang ? { vocabularies: [...prev, item] } : {}),
             [bankKey]: [...prevBank, item],
             vocabularyTotal: get().vocabularyTotal + 1,
         });
         try {
-            const saved = await api.createVocabulary(vocabularyLangPayload(stripSearchIndex(item), get().language));
+            const saved = await api.createVocabulary(vocabularyLangPayload(stripSearchIndex(item), targetLang));
             invalidateVocabularyBrowseCache();
             invalidateDataCache();
-            const savedLegacy = indexVocabulary(vocabLangToLegacy(saved, get().language));
+            const savedLegacy = indexVocabulary(vocabLangToLegacy(saved, targetLang));
             set({
-                vocabularies: updateVocabularyInList(get().vocabularies, item.id, {
-                    ...savedLegacy,
-                    _sortSeq: item._sortSeq,
-                }),
+                ...(isActiveLang
+                    ? {
+                          vocabularies: updateVocabularyInList(get().vocabularies, item.id, {
+                              ...savedLegacy,
+                              _sortSeq: item._sortSeq,
+                          }),
+                      }
+                    : {}),
                 [bankKey]: updateVocabularyInList(get()[bankKey], item.id, {
                     ...savedLegacy,
                     _sortSeq: item._sortSeq,
@@ -368,7 +549,11 @@ export const useAppStore = create((set, get) => ({
             });
             return saved;
         } catch (err) {
-            set({ vocabularies: prev, [bankKey]: prevBank, vocabularyTotal: Math.max(0, get().vocabularyTotal - 1) });
+            set({
+                ...(isActiveLang ? { vocabularies: prev } : {}),
+                [bankKey]: prevBank,
+                vocabularyTotal: Math.max(0, get().vocabularyTotal - 1),
+            });
             throw err;
         }
     },
@@ -433,7 +618,7 @@ export const useAppStore = create((set, get) => ({
         const patchFlags = patch ?? {};
         const legacyPatchWithFlags = {
             ...legacyPatch,
-            important: Boolean(patchFlags.important ?? existing.important),
+            favorite: Boolean(patchFlags.favorite ?? existing.favorite),
             mastered: Boolean(patchFlags.mastered ?? existing.mastered),
             pureCantonese: Boolean(patchFlags.pureCantonese ?? existing.pureCantonese),
         };
@@ -475,7 +660,7 @@ export const useAppStore = create((set, get) => ({
                 sinoVietnamese: vocab.sinoVietnamese,
                 jyutping: vocab.jyutping,
                 romanization: vocab.romanization,
-                important: vocab.important,
+                favorite: vocab.favorite,
             });
             return syncMutation(async () => {
                 const current = get().vocabularies.find((w) => w.id === id);
@@ -501,7 +686,7 @@ export const useAppStore = create((set, get) => ({
                     sinoVietnamese: savedLegacy.sinoVietnamese,
                     jyutping: savedLegacy.jyutping,
                     romanization: savedLegacy.romanization,
-                    important: savedLegacy.important,
+                    favorite: savedLegacy.favorite,
                 });
             }).catch((err) => {
                 set({ vocabularies: prev, [bankKey]: prevBank });
@@ -553,7 +738,7 @@ export const useAppStore = create((set, get) => ({
                 sinoVietnamese: savedLegacy.sinoVietnamese,
                 jyutping: savedLegacy.jyutping,
                 romanization: savedLegacy.romanization,
-                important: savedLegacy.important,
+                favorite: savedLegacy.favorite,
             });
         } catch (err) {
             set({ [bankKey]: prev });
@@ -609,7 +794,69 @@ export const useAppStore = create((set, get) => ({
         }
     },
 
-    toggleImportant: () => {}, // user_vocabularies đã bỏ (2026-08-17) — progress vocabulary không còn
+    // ⚠️ 2026-09-20: cặp đánh dấu theo user (thay "important" cũ):
+    //   ❤️ favorite  → user_favorite_vocabularies
+    //   🚫 disliked  → user_disliked_vocabularies (KHÔNG vào flashcard random + hiện ở /profile)
+    // 2 trạng thái LOẠI TRỪ NHAU ⇒ bật cái này tự bỏ cái kia (optimistic + rollback, backend cũng vậy).
+    // `lang` xác định ngôn ngữ của vocab (id uuid unique toàn cục nên Set không cần theo dõi lang).
+    toggleVocabularyFavorite: (id, lang, favorite) => {
+        assertSignedIn();
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        const prev = get().favoriteVocabularyIds;
+        const prevDisliked = get().dislikedVocabularyIds;
+        const has = prev.includes(id);
+        if (Boolean(favorite) === has) return Promise.resolve();
+        const next = Boolean(favorite) ? [...prev, id] : prev.filter((x) => x !== id);
+        set({
+            favoriteVocabularyIds: next,
+            ...(Boolean(favorite) && { dislikedVocabularyIds: prevDisliked.filter((x) => x !== id) }),
+        });
+        return syncMutation(() => api.setVocabularyFavorite(valid, id, Boolean(favorite)), {
+            requireAdmin: false,
+        }).catch((err) => {
+            set({ favoriteVocabularyIds: prev, dislikedVocabularyIds: prevDisliked });
+            throw err;
+        });
+    },
+
+    toggleVocabularyDisliked: (id, lang, disliked) => {
+        assertSignedIn();
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        const prev = get().dislikedVocabularyIds;
+        const prevFavorite = get().favoriteVocabularyIds;
+        const has = prev.includes(id);
+        if (Boolean(disliked) === has) return Promise.resolve();
+        const next = Boolean(disliked) ? [...prev, id] : prev.filter((x) => x !== id);
+        set({
+            dislikedVocabularyIds: next,
+            ...(Boolean(disliked) && { favoriteVocabularyIds: prevFavorite.filter((x) => x !== id) }),
+        });
+        return syncMutation(() => api.setVocabularyDisliked(valid, id, Boolean(disliked)), {
+            requireAdmin: false,
+        }).catch((err) => {
+            set({ dislikedVocabularyIds: prev, favoriteVocabularyIds: prevFavorite });
+            throw err;
+        });
+    },
+
+    // ⚠️ 2026-09-02: cập nhật tiến độ mastered (0-100%) — bảng user_vocabulary_mastery (mọi user đã đăng nhập).
+    // Optimistic cập nhật map → API → rollback khi lỗi. `lang` xác định ngôn ngữ của vocab.
+    updateVocabularyMastery: (lang, id, progress) => {
+        assertSignedIn();
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        const prev = get().vocabularyMastery;
+        const prevProgress = prev?.[valid]?.[id] ?? 0;
+        const clamped = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
+        if (prevProgress === clamped) return Promise.resolve();
+        const next = { ...prev, [valid]: { ...(prev?.[valid] ?? {}), [id]: clamped } };
+        set({ vocabularyMastery: next });
+        return syncMutation(() => api.setVocabularyMastery(valid, id, clamped), {
+            requireAdmin: false,
+        }).catch((err) => {
+            set({ vocabularyMastery: prev });
+            throw err;
+        });
+    },
 
     toggleGrammarImportant: (id) => {
         log("Toggle grammar important", id);
@@ -705,7 +952,7 @@ export const useAppStore = create((set, get) => ({
                                     updatedAt: existing.updatedAt,
                                 }
                               : {}),
-                          important: incomingNewer ? Boolean(raw.important) : Boolean(existing.important),
+                          favorite: incomingNewer ? Boolean(raw.favorite) : Boolean(existing.favorite),
                           mastered: incomingNewer ? Boolean(raw.mastered) : Boolean(existing.mastered),
                           vietExamples: keepExistingContent
                               ? existing.vietExamples
@@ -746,75 +993,6 @@ export const useAppStore = create((set, get) => ({
         });
     },
 
-    /** Re-fetch all han characters from server. */
-    refreshHanCharacters: async () => {
-        const remote = await api.fetchFullData();
-        set({
-            hanCharacters: remote.hanCharacters ?? [],
-            hanCharacterTotal: remote.hanCharacterTotal ?? remote.hanCharacters?.length ?? 0,
-            hanCharactersRevision: get().hanCharactersRevision + 1,
-        });
-    },
-
-    /** Merge han characters into store (upsert by id). */
-    mergeHanCharacters: (incoming) => {
-        if (!incoming?.length) return;
-        set((s) => {
-            const byId = new Map(s.hanCharacters.map((h) => [h.id, h]));
-            for (const item of incoming) {
-                byId.set(item.id, { ...byId.get(item.id), ...item });
-            }
-            return {
-                hanCharacters: Array.from(byId.values()),
-                hanCharacterTotal: byId.size,
-                hanCharactersRevision: s.hanCharactersRevision + 1,
-            };
-        });
-    },
-
-    /** Remove a han character from store. */
-    removeHanCharacter: (id) => {
-        set((s) => {
-            const next = s.hanCharacters.filter((h) => h.id !== id);
-            if (next.length === s.hanCharacters.length) return {};
-            return {
-                hanCharacters: next,
-                hanCharacterTotal: next.length,
-                hanCharactersRevision: s.hanCharactersRevision + 1,
-            };
-        });
-    },
-
-    /** Bump han characters revision to trigger re-renders. */
-    bumpHanCharactersRevision: () => {
-        set((s) => ({ hanCharactersRevision: s.hanCharactersRevision + 1 }));
-    },
-
-    editHanCharacter: (id, patch) => {
-        assertAdmin();
-        const prev = get().hanCharacters;
-        const existing = prev.find((h) => h.id === id);
-        if (!existing) return;
-
-        const merged = { ...existing, ...patch, updatedAt: new Date().toISOString() };
-        const label = existing.hanSimplified || `#${String(id).slice(0, 8)}`;
-        logMutStart("Update han char", label, patch);
-
-        const next = prev.map((h) => (h.id === id ? merged : h));
-        set({ hanCharacters: next, hanCharactersRevision: get().hanCharactersRevision + 1 });
-
-        syncMutation(async () => {
-            const current = get().hanCharacters.find((h) => h.id === id);
-            if (!current) return;
-            const saved = await api.updateHanCharacter(id, stripSearchIndex(current));
-            logMutDone("Update han char", label, saved);
-            set((s) => ({
-                hanCharacters: s.hanCharacters.map((h) => (h.id === id ? { ...h, ...saved } : h)),
-                hanCharactersRevision: s.hanCharactersRevision + 1,
-            }));
-        }).catch(() => set({ hanCharacters: prev }));
-    },
-
     removeGrammar: (id) => {
         assertAdmin();
         const prev = get().grammarBank;
@@ -824,10 +1002,85 @@ export const useAppStore = create((set, get) => ({
         syncMutation(() => api.deleteGrammar(id)).catch(() => set({ grammarBank: prev }));
     },
 
+    // ── Tags (dùng chung toàn app — CHỈ admin tạo/đổi tên/xóa + gán cho từ) — 2026-09-27 ──
+
+    fetchTags: async (force = false) => {
+        if (!force && get().tags.length > 0) return get().tags;
+        // Dedupe concurrent fetch (nhiều chỗ mở picker cùng lúc).
+        if (tagsFetchPromise) return tagsFetchPromise;
+        tagsFetchPromise = (async () => {
+            try {
+                const result = await api.fetchTags();
+                set({ tags: Array.isArray(result) ? result : [] });
+                return get().tags;
+            } finally {
+                tagsFetchPromise = null;
+            }
+        })();
+        return tagsFetchPromise;
+    },
+
+    createTag: async (name) => {
+        const saved = await api.createTag({ name });
+        set((s) => ({ tags: sortTags([...s.tags, saved]) }));
+        return saved;
+    },
+
+    // ⚠️ 2026-09-27: nhận PATCH từng phần — `{ name }` (đổi tên, BE chuẩn hóa Title Case)
+    // hoặc `{ color }` (đổi màu tag). OPTIMISTIC, lỗi → rollback.
+    updateTag: async (id, patch) => {
+        const prev = get().tags;
+        set((s) => ({ tags: sortTags(s.tags.map((tg) => (tg.id === id ? { ...tg, ...patch } : tg))) }));
+        try {
+            const saved = await api.updateTag(id, patch);
+            set((s) => ({ tags: sortTags(s.tags.map((tg) => (tg.id === id ? { ...tg, ...saved } : tg))) }));
+            return saved;
+        } catch (err) {
+            set({ tags: prev });
+            throw err;
+        }
+    },
+
+    deleteTag: async (id) => {
+        const prev = get().tags;
+        // ⚠️ 2026-09-27: OPTIMISTIC — gỡ khỏi catalogue NGAY (trước đây chờ round-trip Supabase
+        // → tag còn nằm trên UI vài trăm ms → vài giây khi mạng chậm). Lỗi → khôi phục.
+        set((s) => ({ tags: s.tags.filter((tg) => tg.id !== id) }));
+        try {
+            await api.deleteTag(id);
+        } catch (err) {
+            set({ tags: prev });
+            throw err;
+        }
+    },
+
+    // Gán/gỡ tag cho từ — cập nhật luôn số lượng từ của tag trong catalogue (optimistic).
+    setVocabularyTag: async (lang, vocabularyId, tagId, tagged) => {
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        const prev = get().tags;
+        set((s) => ({
+            tags: s.tags.map((tg) =>
+                tg.id === tagId
+                    ? { ...tg, vocabularyCount: Math.max(0, (tg.vocabularyCount ?? 0) + (tagged ? 1 : -1)) }
+                    : tg,
+            ),
+        }));
+        try {
+            await api.setVocabularyTag({ lang: valid, vocabularyId, tagId, tagged });
+        } catch (err) {
+            set({ tags: prev });
+            throw err;
+        }
+        return { ok: true };
+    },
+
     // ── Vocabulary Sets (custom user groups) ──
 
     fetchVocabularySets: async () => {
-        // Dedupe concurrent fetches (WordBankPage + WordBankListPanel mount cùng lúc → 2 API call).
+        // ⚠️ 2026-09-02: sets đã có trong bootstrap (hydrateFromCloud/loadLanguage set sẵn) →
+        // không gọi lại /api/vocabulary-sets khi mount (VocabularyBankPage/Picker/Manager).
+        if (get().vocabularySets.length > 0) return get().vocabularySets;
+        // Dedupe concurrent fetches (VocabularyBankPage + VocabularyBankListPanel mount cùng lúc → 2 API call).
         if (vocabularySetsFetchPromise) return vocabularySetsFetchPromise;
         vocabularySetsFetchPromise = (async () => {
             try {
@@ -860,29 +1113,38 @@ export const useAppStore = create((set, get) => ({
         set((s) => ({ vocabularySets: s.vocabularySets.filter((st) => st.id !== id) }));
     },
 
-    addVocabularyToSet: async (setId, vocabularyId) => {
-        await api.addVocabularyToSet(setId, vocabularyId);
+    // ⚠️ 2026-09-02: bộ từ tách theo ngôn ngữ — set object từ API có
+    // mandarinVocabularyIds/cantoneseVocabularyIds + mandarinCount/cantoneseCount. add/remove phải
+    // truyền lang để ghi đúng join table; cập nhật store theo mảng của đúng ngôn ngữ.
+    addVocabularyToSet: async (setId, vocabularyId, lang) => {
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        await api.addVocabularyToSet(setId, vocabularyId, valid);
         set((s) => ({
-            vocabularySets: s.vocabularySets.map((st) =>
-                st.id === setId && !st.vocabularyIds.includes(vocabularyId)
-                    ? { ...st, count: st.count + 1, vocabularyIds: [...st.vocabularyIds, vocabularyId] }
-                    : st,
-            ),
+            vocabularySets: s.vocabularySets.map((st) => {
+                if (st.id !== setId) return st;
+                const idKey = valid === "mandarin" ? "mandarinVocabularyIds" : "cantoneseVocabularyIds";
+                const countKey = valid === "mandarin" ? "mandarinCount" : "cantoneseCount";
+                const ids = st[idKey] ?? [];
+                if (ids.includes(vocabularyId)) return st;
+                return { ...st, [countKey]: (st[countKey] ?? 0) + 1, [idKey]: [...ids, vocabularyId] };
+            }),
         }));
     },
 
-    removeVocabularyFromSet: async (setId, vocabularyId) => {
-        await api.removeVocabularyFromSet(setId, vocabularyId);
+    removeVocabularyFromSet: async (setId, vocabularyId, lang) => {
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        await api.removeVocabularyFromSet(setId, vocabularyId, valid);
         set((s) => ({
-            vocabularySets: s.vocabularySets.map((st) =>
-                st.id === setId
-                    ? {
-                          ...st,
-                          count: Math.max(0, st.count - 1),
-                          vocabularyIds: st.vocabularyIds.filter((v) => v !== vocabularyId),
-                      }
-                    : st,
-            ),
+            vocabularySets: s.vocabularySets.map((st) => {
+                if (st.id !== setId) return st;
+                const idKey = valid === "mandarin" ? "mandarinVocabularyIds" : "cantoneseVocabularyIds";
+                const countKey = valid === "mandarin" ? "mandarinCount" : "cantoneseCount";
+                return {
+                    ...st,
+                    [countKey]: Math.max(0, (st[countKey] ?? 0) - 1),
+                    [idKey]: (st[idKey] ?? []).filter((v) => v !== vocabularyId),
+                };
+            }),
         }));
     },
 }));
@@ -891,8 +1153,11 @@ export const useLanguage = () => useAppStore((s) => s.language);
 export const useVocabularies = () => useAppStore((s) => s.vocabularies);
 export const useMandarinVocabularies = () => useAppStore((s) => s.mandarinVocabularies);
 export const useCantoneseVocabularies = () => useAppStore((s) => s.cantoneseVocabularies);
-export const useHkSuggestionMap = () => useAppStore((s) => s.hkSuggestionMap);
+export const useFavoriteVocabularyIds = () => useAppStore((s) => s.favoriteVocabularyIds);
+export const useDislikedVocabularyIds = () => useAppStore((s) => s.dislikedVocabularyIds);
+export const useVocabularyMastery = () => useAppStore((s) => s.vocabularyMastery);
 export const useVocabularySets = () => useAppStore((s) => s.vocabularySets);
+export const useTags = () => useAppStore((s) => s.tags);
 export const useGrammarBank = () => useAppStore((s) => s.grammarBank);
 export const useDataLoading = () => useAppStore((s) => s.dataLoading);
 export const useDataError = () => useAppStore((s) => s.dataError);
@@ -900,7 +1165,6 @@ export const useDataHydrated = () => useAppStore((s) => s.hydrated);
 export const useDataLoadingStep = () => useAppStore((s) => s.dataLoadingStep);
 export const useVocabularyCount = () => useAppStore((s) => s.vocabularyTotal);
 export const useVocabulariesRevision = () => useAppStore((s) => s.vocabulariesRevision);
-export const useHanCharacters = () => useAppStore((s) => s.hanCharacters);
 export const useGrammarCount = () => useAppStore((s) => s.grammarBank.length);
 export const useMasteredVocabularyCount = () => useAppStore((s) => s.masteredVocabularyCount);
 
@@ -914,7 +1178,9 @@ export const useAppActions = () =>
             editVocabulary: s.editVocabulary,
             editVocabularyLang: s.editVocabularyLang,
             editGrammar: s.editGrammar,
-            toggleImportant: s.toggleImportant,
+            toggleVocabularyFavorite: s.toggleVocabularyFavorite,
+            toggleVocabularyDisliked: s.toggleVocabularyDisliked,
+            updateVocabularyMastery: s.updateVocabularyMastery,
             toggleGrammarImportant: s.toggleGrammarImportant,
             toggleMastered: s.toggleMastered,
             setVocabularyStudyProgress: s.setVocabularyStudyProgress,
@@ -926,16 +1192,16 @@ export const useAppActions = () =>
             mergeVocabularies: s.mergeVocabularies,
             ensureVocabulariesByIds: s.ensureVocabulariesByIds,
             syncHanVariantsAll: s.syncHanVariantsAll,
-            mergeHanCharacters: s.mergeHanCharacters,
-            removeHanCharacter: s.removeHanCharacter,
-            bumpHanCharactersRevision: s.bumpHanCharactersRevision,
-            editHanCharacter: s.editHanCharacter,
-            refreshHanCharacters: s.refreshHanCharacters,
             fetchVocabularySets: s.fetchVocabularySets,
             createVocabularySet: s.createVocabularySet,
             updateVocabularySet: s.updateVocabularySet,
             deleteVocabularySet: s.deleteVocabularySet,
             addVocabularyToSet: s.addVocabularyToSet,
             removeVocabularyFromSet: s.removeVocabularyFromSet,
+            fetchTags: s.fetchTags,
+            createTag: s.createTag,
+            updateTag: s.updateTag,
+            deleteTag: s.deleteTag,
+            setVocabularyTag: s.setVocabularyTag,
         })),
     );

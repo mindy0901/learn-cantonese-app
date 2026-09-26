@@ -1,5 +1,5 @@
 import { emptyGrammarBankItem } from "../types/word.js";
-import { normalizeVocabularyFields } from "./wordNormalize.js";
+import { normalizeVocabularyFields, stripTrailingPunctuation } from "./wordNormalize.js";
 import { normalizeSinoVietnameseValue } from "./sinoVietnameseReadings.js";
 import { isSinoVietnameseDash } from "./sinoVietnameseMarkers.js";
 
@@ -112,6 +112,7 @@ export function vocabNewToLegacy(raw) {
         romanization,
         hskLevel: meta.hsk_level ?? "",
         boost: meta.popularity ?? null,
+        popularityLevel: meta.popularity_level ?? null,
         frequency: meta.frequency ?? null,
         relatedWords: raw.relatedWords ?? null,
         movieWordRank: meta.movie_word_rank ?? null,
@@ -184,6 +185,7 @@ export function vocabLangToLegacy(raw, lang) {
         romanization: readings,
         hskLevel: isMandarin ? String(raw.hskLevel ?? "") : "",
         boost: raw.popularity ?? null,
+        popularityLevel: raw.popularityLevel ?? null,
         relatedWords: raw.relatedWords ?? null,
         pureCantonese: isMandarin ? false : Boolean(raw.pureCantonese),
         hanziAudio: raw.hanziAudio ?? null,
@@ -238,14 +240,15 @@ function langMeaningsFromLegacy(meanings, side) {
     return (meanings ?? [])
         .filter((m) => (m.gloss ?? "").trim() || (m.vietMeanings ?? "").trim() || (m.engMeanings ?? "").trim())
         .map((m, i) => {
-            const gloss = capFirst((m.gloss ?? "").trim());
-            const viet = capFirst((m.vietMeanings ?? "").trim());
+            // ⚠️ 2026-09-08: bỏ dấu câu CUỐI khi build payload (meaning vi/en/gloss + example).
+            const gloss = capFirst(stripTrailingPunctuation(m.gloss));
+            const viet = capFirst(stripTrailingPunctuation(m.vietMeanings));
             const out = {
                 id: m.id,
                 position: i,
                 ...(hanField ? { [hanField]: gloss } : {}),
                 vi: viet,
-                en: capFirst((m.engMeanings ?? "").trim()),
+                en: capFirst(stripTrailingPunctuation(m.engMeanings)),
             };
             out.examples = (m.examples ?? [])
                 .filter((ex) => {
@@ -258,14 +261,17 @@ function langMeaningsFromLegacy(meanings, side) {
                         id: ex.id,
                         position: j,
                         romanization: (ex[romanField] ?? "").trim(),
-                        vi: capFirst((ex.vietExamples ?? "").trim()),
-                        en: (ex.engExamples ?? "").trim(),
+                        // ⚠️ 2026-09-08: bỏ dấu câu CUỐI example (yue/vi/en) khi lưu.
+                        vi: capFirst(stripTrailingPunctuation(ex.vietExamples)),
+                        en: stripTrailingPunctuation(ex.engExamples),
                         ...(isMandarin
                             ? {}
                             : {
                                   // ⚠️ 2026-08-23: fallback hanSimplified khi hanTraditional rỗng (giản == phồn, ex.zh không có 【】) —
                                   // trước chỉ đọc hanTraditional → MẤT yue khi trad==simp.
-                                  yue: parts.hanTraditional || parts.hanSimplified || parts.hanExample || "",
+                                  yue: stripTrailingPunctuation(
+                                      parts.hanTraditional || parts.hanSimplified || parts.hanExample,
+                                  ),
                                   hanziAudio: ex.hanziAudio ?? null,
                                   englishAudio: ex.englishAudio ?? null,
                               }),
@@ -318,6 +324,7 @@ export function vocabularyLangPayload(draft, lang) {
         const payload = {
             id: draft.id,
             popularity: draft.popularity ?? draft.boost ?? null,
+            popularityLevel: draft.popularityLevel ?? null,
             readings: draft.readings,
         };
         if (isMandarin) {
@@ -374,6 +381,7 @@ export function vocabularyLangPayload(draft, lang) {
     const payload = {
         id: draft.id,
         popularity: draft.popularity ?? draft.boost ?? null,
+        popularityLevel: draft.popularityLevel ?? null,
         readings,
     };
     if (isMandarin) {
@@ -406,7 +414,7 @@ export function migrateVocabulary(raw) {
     return normalizeVocabularyFields({
         ...source,
         hanTraditional: source.hanTraditional ?? raw.hanTrad ?? raw.han ?? kanji ?? "",
-        important: source.important ?? raw.important ?? false,
+        favorite: source.favorite ?? raw.favorite ?? false,
         mastered: source.mastered ?? raw.mastered ?? false,
         hskLevel: source.hskLevel ?? raw.hsk_level ?? undefined,
         pureCantonese: Boolean(source.pureCantonese ?? raw.pure_cantonese ?? false),

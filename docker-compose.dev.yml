@@ -1,16 +1,9 @@
 services:
-    db:
-        image: postgres:16-alpine
-        environment:
-            POSTGRES_USER: cantonese
-            POSTGRES_PASSWORD: cantonese
-            POSTGRES_DB: cantonese
-        ports:
-            - "5432:5432"
-        volumes:
-            - pgdata:/var/lib/postgresql/data
-        restart: unless-stopped
-
+    # ⚠️ 2026-09-19: ĐÃ XÓA service `db` (Postgres local) — app dùng SUPABASE
+    # (xem `DATABASE_URL` trong `.env.dev`). Snapshot cuối cùng của DB local đã được dump ra
+    # `backend/_local-snapshot-2026-09-19.dump` (pg_dump -Fc, gitignored) nếu cần restore tạm:
+    #   docker run --rm -d --name pg-tmp -e POSTGRES_USER=cantonese -e POSTGRES_PASSWORD=cantonese -e POSTGRES_DB=cantonese -p 5432:5432 postgres:16-alpine
+    #   docker exec -i pg-tmp pg_restore -U cantonese -d cantonese --no-owner < backend/_local-snapshot-2026-09-19.dump
     libretranslate:
         # Image chính thức + named volume model + healthcheck (theo doc "With Docker").
         # https://docs.libretranslate.com/guides/installation/ (2026-08-25)
@@ -34,13 +27,18 @@ services:
             start_period: 5s
 
     backend:
+        # ⚠️ 2026-09-19: tag `:dev` riêng — trước đây build prod (docker-compose.yml) ghi đè
+        # `learn-cantonese-app-backend:latest` → container dev chạy nhầm image prod.
+        image: learn-cantonese-app-backend:dev
         build:
             context: ./backend
             target: dev
         env_file:
             - .env.dev
         environment:
-            DATABASE_URL: postgres://cantonese:cantonese@db:5432/cantonese
+            # ⚠️ 2026-09-19: KHÔNG hardcode DATABASE_URL ở đây nữa — DB lấy từ `.env.dev`
+            # (hiện = Supabase session pooler). Trước đây override `postgres://…@db:5432`
+            # khiến container luôn nói DB local dù .env.dev đổi.
             BACKEND_HOST: 0.0.0.0
             BACKEND_PORT: ${BACKEND_PORT:-3001}
             FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
@@ -53,29 +51,13 @@ services:
             - ./backend:/app
             - backend_node_modules:/app/node_modules
         depends_on:
-            - db
             - libretranslate
         restart: unless-stopped
 
-    studio:
-        build:
-            context: ./backend
-            target: dev
-        env_file:
-            - .env.dev
-        environment:
-            DATABASE_URL: postgres://cantonese:cantonese@db:5432/cantonese
-        ports:
-            - "5555:5555"
-        volumes:
-            - ./backend:/app
-            - backend_node_modules:/app/node_modules
-        depends_on:
-            - db
-        command: sh -c "cd /app && npx prisma studio --port 5555 --browser none"
-        restart: unless-stopped
-
     frontend:
+        # ⚠️ 2026-09-19: tag `:dev` riêng — trước đây build prod (`docker-compose.yml`) ghi đè
+        # `learn-cantonese-app-frontend:latest` → container dev chạy nginx (image prod) thay vì Vite.
+        image: learn-cantonese-app-frontend:dev
         build:
             context: ./frontend
             target: dev
@@ -95,7 +77,6 @@ services:
         restart: unless-stopped
 
 volumes:
-    pgdata:
     backend_node_modules:
     frontend_node_modules:
     libretranslate_models:

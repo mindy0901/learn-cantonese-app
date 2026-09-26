@@ -28,10 +28,12 @@ export type AggregateMandarinVocabulary = {
 
 export type MandarinVocabularyAvgAggregateOutputType = {
   popularity: number | null
+  popularityLevel: number | null
 }
 
 export type MandarinVocabularySumAggregateOutputType = {
   popularity: number | null
+  popularityLevel: number | null
 }
 
 export type MandarinVocabularyMinAggregateOutputType = {
@@ -40,6 +42,7 @@ export type MandarinVocabularyMinAggregateOutputType = {
   hanziTraditional: string | null
   hskLevel: string | null
   popularity: number | null
+  popularityLevel: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +53,7 @@ export type MandarinVocabularyMaxAggregateOutputType = {
   hanziTraditional: string | null
   hskLevel: string | null
   popularity: number | null
+  popularityLevel: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -61,6 +65,7 @@ export type MandarinVocabularyCountAggregateOutputType = {
   hanziCharacters: number
   hskLevel: number
   popularity: number
+  popularityLevel: number
   relatedWords: number
   createdAt: number
   updatedAt: number
@@ -70,10 +75,12 @@ export type MandarinVocabularyCountAggregateOutputType = {
 
 export type MandarinVocabularyAvgAggregateInputType = {
   popularity?: true
+  popularityLevel?: true
 }
 
 export type MandarinVocabularySumAggregateInputType = {
   popularity?: true
+  popularityLevel?: true
 }
 
 export type MandarinVocabularyMinAggregateInputType = {
@@ -82,6 +89,7 @@ export type MandarinVocabularyMinAggregateInputType = {
   hanziTraditional?: true
   hskLevel?: true
   popularity?: true
+  popularityLevel?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -92,6 +100,7 @@ export type MandarinVocabularyMaxAggregateInputType = {
   hanziTraditional?: true
   hskLevel?: true
   popularity?: true
+  popularityLevel?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -103,6 +112,7 @@ export type MandarinVocabularyCountAggregateInputType = {
   hanziCharacters?: true
   hskLevel?: true
   popularity?: true
+  popularityLevel?: true
   relatedWords?: true
   createdAt?: true
   updatedAt?: true
@@ -202,6 +212,7 @@ export type MandarinVocabularyGroupByOutputType = {
   hanziCharacters: runtime.JsonValue | null
   hskLevel: string | null
   popularity: number | null
+  popularityLevel: number | null
   relatedWords: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
@@ -237,11 +248,11 @@ export type MandarinVocabularyWhereInput = {
   hanziCharacters?: Prisma.JsonNullableFilter<"MandarinVocabulary">
   hskLevel?: Prisma.StringNullableFilter<"MandarinVocabulary"> | string | null
   popularity?: Prisma.FloatNullableFilter<"MandarinVocabulary"> | number | null
+  popularityLevel?: Prisma.IntNullableFilter<"MandarinVocabulary"> | number | null
   relatedWords?: Prisma.JsonNullableFilter<"MandarinVocabulary">
   createdAt?: Prisma.DateTimeFilter<"MandarinVocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MandarinVocabulary"> | Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationListRelationFilter
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterListRelationFilter
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyListRelationFilter
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyListRelationFilter
 }
@@ -253,11 +264,11 @@ export type MandarinVocabularyOrderByWithRelationInput = {
   hanziCharacters?: Prisma.SortOrderInput | Prisma.SortOrder
   hskLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   popularity?: Prisma.SortOrderInput | Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   relatedWords?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   romanizations?: Prisma.MandarinVocabularyRomanizationOrderByRelationAggregateInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterOrderByRelationAggregateInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyOrderByRelationAggregateInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyOrderByRelationAggregateInput
 }
@@ -272,11 +283,11 @@ export type MandarinVocabularyWhereUniqueInput = Prisma.AtLeast<{
   hanziCharacters?: Prisma.JsonNullableFilter<"MandarinVocabulary">
   hskLevel?: Prisma.StringNullableFilter<"MandarinVocabulary"> | string | null
   popularity?: Prisma.FloatNullableFilter<"MandarinVocabulary"> | number | null
+  popularityLevel?: Prisma.IntNullableFilter<"MandarinVocabulary"> | number | null
   relatedWords?: Prisma.JsonNullableFilter<"MandarinVocabulary">
   createdAt?: Prisma.DateTimeFilter<"MandarinVocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MandarinVocabulary"> | Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationListRelationFilter
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterListRelationFilter
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyListRelationFilter
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyListRelationFilter
 }, "id">
@@ -288,6 +299,7 @@ export type MandarinVocabularyOrderByWithAggregationInput = {
   hanziCharacters?: Prisma.SortOrderInput | Prisma.SortOrder
   hskLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   popularity?: Prisma.SortOrderInput | Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   relatedWords?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -308,6 +320,7 @@ export type MandarinVocabularyScalarWhereWithAggregatesInput = {
   hanziCharacters?: Prisma.JsonNullableWithAggregatesFilter<"MandarinVocabulary">
   hskLevel?: Prisma.StringNullableWithAggregatesFilter<"MandarinVocabulary"> | string | null
   popularity?: Prisma.FloatNullableWithAggregatesFilter<"MandarinVocabulary"> | number | null
+  popularityLevel?: Prisma.IntNullableWithAggregatesFilter<"MandarinVocabulary"> | number | null
   relatedWords?: Prisma.JsonNullableWithAggregatesFilter<"MandarinVocabulary">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"MandarinVocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"MandarinVocabulary"> | Date | string
@@ -320,11 +333,11 @@ export type MandarinVocabularyCreateInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: string | null
   popularity?: number | null
+  popularityLevel?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationCreateNestedManyWithoutMandarinVocabularyInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterCreateNestedManyWithoutMandarinVocabularyInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyCreateNestedManyWithoutMandarinVocabularyInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyCreateNestedManyWithoutMandarinVocabularyInput
 }
@@ -336,11 +349,11 @@ export type MandarinVocabularyUncheckedCreateInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: string | null
   popularity?: number | null
+  popularityLevel?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationUncheckedCreateNestedManyWithoutMandarinVocabularyInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUncheckedCreateNestedManyWithoutMandarinVocabularyInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedCreateNestedManyWithoutMandarinVocabularyInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedCreateNestedManyWithoutMandarinVocabularyInput
 }
@@ -352,11 +365,11 @@ export type MandarinVocabularyUpdateInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationUpdateManyWithoutMandarinVocabularyNestedInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUpdateManyWithoutMandarinVocabularyNestedInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUpdateManyWithoutMandarinVocabularyNestedInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUpdateManyWithoutMandarinVocabularyNestedInput
 }
@@ -368,11 +381,11 @@ export type MandarinVocabularyUncheckedUpdateInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
 }
@@ -384,6 +397,7 @@ export type MandarinVocabularyCreateManyInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: string | null
   popularity?: number | null
+  popularityLevel?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -396,6 +410,7 @@ export type MandarinVocabularyUpdateManyMutationInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -408,6 +423,7 @@ export type MandarinVocabularyUncheckedUpdateManyInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -420,6 +436,7 @@ export type MandarinVocabularyCountOrderByAggregateInput = {
   hanziCharacters?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
   relatedWords?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -427,6 +444,7 @@ export type MandarinVocabularyCountOrderByAggregateInput = {
 
 export type MandarinVocabularyAvgOrderByAggregateInput = {
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
 }
 
 export type MandarinVocabularyMaxOrderByAggregateInput = {
@@ -435,6 +453,7 @@ export type MandarinVocabularyMaxOrderByAggregateInput = {
   hanziTraditional?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -445,17 +464,35 @@ export type MandarinVocabularyMinOrderByAggregateInput = {
   hanziTraditional?: Prisma.SortOrder
   hskLevel?: Prisma.SortOrder
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type MandarinVocabularySumOrderByAggregateInput = {
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
 }
 
 export type MandarinVocabularyScalarRelationFilter = {
   is?: Prisma.MandarinVocabularyWhereInput
   isNot?: Prisma.MandarinVocabularyWhereInput
+}
+
+export type NullableFloatFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type MandarinVocabularyCreateNestedOneWithoutRomanizationsInput = {
@@ -470,20 +507,6 @@ export type MandarinVocabularyUpdateOneRequiredWithoutRomanizationsNestedInput =
   upsert?: Prisma.MandarinVocabularyUpsertWithoutRomanizationsInput
   connect?: Prisma.MandarinVocabularyWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.MandarinVocabularyUpdateToOneWithWhereWithoutRomanizationsInput, Prisma.MandarinVocabularyUpdateWithoutRomanizationsInput>, Prisma.MandarinVocabularyUncheckedUpdateWithoutRomanizationsInput>
-}
-
-export type MandarinVocabularyCreateNestedOneWithoutVocabularyCharactersInput = {
-  create?: Prisma.XOR<Prisma.MandarinVocabularyCreateWithoutVocabularyCharactersInput, Prisma.MandarinVocabularyUncheckedCreateWithoutVocabularyCharactersInput>
-  connectOrCreate?: Prisma.MandarinVocabularyCreateOrConnectWithoutVocabularyCharactersInput
-  connect?: Prisma.MandarinVocabularyWhereUniqueInput
-}
-
-export type MandarinVocabularyUpdateOneRequiredWithoutVocabularyCharactersNestedInput = {
-  create?: Prisma.XOR<Prisma.MandarinVocabularyCreateWithoutVocabularyCharactersInput, Prisma.MandarinVocabularyUncheckedCreateWithoutVocabularyCharactersInput>
-  connectOrCreate?: Prisma.MandarinVocabularyCreateOrConnectWithoutVocabularyCharactersInput
-  upsert?: Prisma.MandarinVocabularyUpsertWithoutVocabularyCharactersInput
-  connect?: Prisma.MandarinVocabularyWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.MandarinVocabularyUpdateToOneWithWhereWithoutVocabularyCharactersInput, Prisma.MandarinVocabularyUpdateWithoutVocabularyCharactersInput>, Prisma.MandarinVocabularyUncheckedUpdateWithoutVocabularyCharactersInput>
 }
 
 export type MandarinVocabularyCreateNestedOneWithoutFlashcardDeckMandarinVocabulariesInput = {
@@ -521,10 +544,10 @@ export type MandarinVocabularyCreateWithoutRomanizationsInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: string | null
   popularity?: number | null
+  popularityLevel?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterCreateNestedManyWithoutMandarinVocabularyInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyCreateNestedManyWithoutMandarinVocabularyInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyCreateNestedManyWithoutMandarinVocabularyInput
 }
@@ -536,10 +559,10 @@ export type MandarinVocabularyUncheckedCreateWithoutRomanizationsInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: string | null
   popularity?: number | null
+  popularityLevel?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUncheckedCreateNestedManyWithoutMandarinVocabularyInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedCreateNestedManyWithoutMandarinVocabularyInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedCreateNestedManyWithoutMandarinVocabularyInput
 }
@@ -567,10 +590,10 @@ export type MandarinVocabularyUpdateWithoutRomanizationsInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUpdateManyWithoutMandarinVocabularyNestedInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUpdateManyWithoutMandarinVocabularyNestedInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUpdateManyWithoutMandarinVocabularyNestedInput
 }
@@ -582,86 +605,10 @@ export type MandarinVocabularyUncheckedUpdateWithoutRomanizationsInput = {
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
-  flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
-  vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
-}
-
-export type MandarinVocabularyCreateWithoutVocabularyCharactersInput = {
-  id?: string
-  hanziSimplified?: string | null
-  hanziTraditional?: string | null
-  hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hskLevel?: string | null
-  popularity?: number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  romanizations?: Prisma.MandarinVocabularyRomanizationCreateNestedManyWithoutMandarinVocabularyInput
-  flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyCreateNestedManyWithoutMandarinVocabularyInput
-  vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyCreateNestedManyWithoutMandarinVocabularyInput
-}
-
-export type MandarinVocabularyUncheckedCreateWithoutVocabularyCharactersInput = {
-  id?: string
-  hanziSimplified?: string | null
-  hanziTraditional?: string | null
-  hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hskLevel?: string | null
-  popularity?: number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  romanizations?: Prisma.MandarinVocabularyRomanizationUncheckedCreateNestedManyWithoutMandarinVocabularyInput
-  flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedCreateNestedManyWithoutMandarinVocabularyInput
-  vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedCreateNestedManyWithoutMandarinVocabularyInput
-}
-
-export type MandarinVocabularyCreateOrConnectWithoutVocabularyCharactersInput = {
-  where: Prisma.MandarinVocabularyWhereUniqueInput
-  create: Prisma.XOR<Prisma.MandarinVocabularyCreateWithoutVocabularyCharactersInput, Prisma.MandarinVocabularyUncheckedCreateWithoutVocabularyCharactersInput>
-}
-
-export type MandarinVocabularyUpsertWithoutVocabularyCharactersInput = {
-  update: Prisma.XOR<Prisma.MandarinVocabularyUpdateWithoutVocabularyCharactersInput, Prisma.MandarinVocabularyUncheckedUpdateWithoutVocabularyCharactersInput>
-  create: Prisma.XOR<Prisma.MandarinVocabularyCreateWithoutVocabularyCharactersInput, Prisma.MandarinVocabularyUncheckedCreateWithoutVocabularyCharactersInput>
-  where?: Prisma.MandarinVocabularyWhereInput
-}
-
-export type MandarinVocabularyUpdateToOneWithWhereWithoutVocabularyCharactersInput = {
-  where?: Prisma.MandarinVocabularyWhereInput
-  data: Prisma.XOR<Prisma.MandarinVocabularyUpdateWithoutVocabularyCharactersInput, Prisma.MandarinVocabularyUncheckedUpdateWithoutVocabularyCharactersInput>
-}
-
-export type MandarinVocabularyUpdateWithoutVocabularyCharactersInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  hanziSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanziTraditional?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  romanizations?: Prisma.MandarinVocabularyRomanizationUpdateManyWithoutMandarinVocabularyNestedInput
-  flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUpdateManyWithoutMandarinVocabularyNestedInput
-  vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUpdateManyWithoutMandarinVocabularyNestedInput
-}
-
-export type MandarinVocabularyUncheckedUpdateWithoutVocabularyCharactersInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  hanziSimplified?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanziTraditional?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  romanizations?: Prisma.MandarinVocabularyRomanizationUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
 }
@@ -673,11 +620,11 @@ export type MandarinVocabularyCreateWithoutFlashcardDeckMandarinVocabulariesInpu
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: string | null
   popularity?: number | null
+  popularityLevel?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationCreateNestedManyWithoutMandarinVocabularyInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterCreateNestedManyWithoutMandarinVocabularyInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyCreateNestedManyWithoutMandarinVocabularyInput
 }
 
@@ -688,11 +635,11 @@ export type MandarinVocabularyUncheckedCreateWithoutFlashcardDeckMandarinVocabul
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: string | null
   popularity?: number | null
+  popularityLevel?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationUncheckedCreateNestedManyWithoutMandarinVocabularyInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUncheckedCreateNestedManyWithoutMandarinVocabularyInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedCreateNestedManyWithoutMandarinVocabularyInput
 }
 
@@ -719,11 +666,11 @@ export type MandarinVocabularyUpdateWithoutFlashcardDeckMandarinVocabulariesInpu
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationUpdateManyWithoutMandarinVocabularyNestedInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUpdateManyWithoutMandarinVocabularyNestedInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUpdateManyWithoutMandarinVocabularyNestedInput
 }
 
@@ -734,11 +681,11 @@ export type MandarinVocabularyUncheckedUpdateWithoutFlashcardDeckMandarinVocabul
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
   vocabularySetMandarinVocabularies?: Prisma.VocabularySetMandarinVocabularyUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
 }
 
@@ -749,11 +696,11 @@ export type MandarinVocabularyCreateWithoutVocabularySetMandarinVocabulariesInpu
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: string | null
   popularity?: number | null
+  popularityLevel?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationCreateNestedManyWithoutMandarinVocabularyInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterCreateNestedManyWithoutMandarinVocabularyInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyCreateNestedManyWithoutMandarinVocabularyInput
 }
 
@@ -764,11 +711,11 @@ export type MandarinVocabularyUncheckedCreateWithoutVocabularySetMandarinVocabul
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: string | null
   popularity?: number | null
+  popularityLevel?: number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationUncheckedCreateNestedManyWithoutMandarinVocabularyInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUncheckedCreateNestedManyWithoutMandarinVocabularyInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedCreateNestedManyWithoutMandarinVocabularyInput
 }
 
@@ -795,11 +742,11 @@ export type MandarinVocabularyUpdateWithoutVocabularySetMandarinVocabulariesInpu
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationUpdateManyWithoutMandarinVocabularyNestedInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUpdateManyWithoutMandarinVocabularyNestedInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUpdateManyWithoutMandarinVocabularyNestedInput
 }
 
@@ -810,11 +757,11 @@ export type MandarinVocabularyUncheckedUpdateWithoutVocabularySetMandarinVocabul
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hskLevel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.MandarinVocabularyRomanizationUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
-  vocabularyCharacters?: Prisma.MandarinVocabularyCharacterUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
   flashcardDeckMandarinVocabularies?: Prisma.FlashcardDeckMandarinVocabularyUncheckedUpdateManyWithoutMandarinVocabularyNestedInput
 }
 
@@ -825,14 +772,12 @@ export type MandarinVocabularyUncheckedUpdateWithoutVocabularySetMandarinVocabul
 
 export type MandarinVocabularyCountOutputType = {
   romanizations: number
-  vocabularyCharacters: number
   flashcardDeckMandarinVocabularies: number
   vocabularySetMandarinVocabularies: number
 }
 
 export type MandarinVocabularyCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   romanizations?: boolean | MandarinVocabularyCountOutputTypeCountRomanizationsArgs
-  vocabularyCharacters?: boolean | MandarinVocabularyCountOutputTypeCountVocabularyCharactersArgs
   flashcardDeckMandarinVocabularies?: boolean | MandarinVocabularyCountOutputTypeCountFlashcardDeckMandarinVocabulariesArgs
   vocabularySetMandarinVocabularies?: boolean | MandarinVocabularyCountOutputTypeCountVocabularySetMandarinVocabulariesArgs
 }
@@ -857,13 +802,6 @@ export type MandarinVocabularyCountOutputTypeCountRomanizationsArgs<ExtArgs exte
 /**
  * MandarinVocabularyCountOutputType without action
  */
-export type MandarinVocabularyCountOutputTypeCountVocabularyCharactersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.MandarinVocabularyCharacterWhereInput
-}
-
-/**
- * MandarinVocabularyCountOutputType without action
- */
 export type MandarinVocabularyCountOutputTypeCountFlashcardDeckMandarinVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.FlashcardDeckMandarinVocabularyWhereInput
 }
@@ -883,11 +821,11 @@ export type MandarinVocabularySelect<ExtArgs extends runtime.Types.Extensions.In
   hanziCharacters?: boolean
   hskLevel?: boolean
   popularity?: boolean
+  popularityLevel?: boolean
   relatedWords?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   romanizations?: boolean | Prisma.MandarinVocabulary$romanizationsArgs<ExtArgs>
-  vocabularyCharacters?: boolean | Prisma.MandarinVocabulary$vocabularyCharactersArgs<ExtArgs>
   flashcardDeckMandarinVocabularies?: boolean | Prisma.MandarinVocabulary$flashcardDeckMandarinVocabulariesArgs<ExtArgs>
   vocabularySetMandarinVocabularies?: boolean | Prisma.MandarinVocabulary$vocabularySetMandarinVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.MandarinVocabularyCountOutputTypeDefaultArgs<ExtArgs>
@@ -900,6 +838,7 @@ export type MandarinVocabularySelectCreateManyAndReturn<ExtArgs extends runtime.
   hanziCharacters?: boolean
   hskLevel?: boolean
   popularity?: boolean
+  popularityLevel?: boolean
   relatedWords?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -912,6 +851,7 @@ export type MandarinVocabularySelectUpdateManyAndReturn<ExtArgs extends runtime.
   hanziCharacters?: boolean
   hskLevel?: boolean
   popularity?: boolean
+  popularityLevel?: boolean
   relatedWords?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -924,15 +864,15 @@ export type MandarinVocabularySelectScalar = {
   hanziCharacters?: boolean
   hskLevel?: boolean
   popularity?: boolean
+  popularityLevel?: boolean
   relatedWords?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type MandarinVocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "hanziSimplified" | "hanziTraditional" | "hanziCharacters" | "hskLevel" | "popularity" | "relatedWords" | "createdAt" | "updatedAt", ExtArgs["result"]["mandarinVocabulary"]>
+export type MandarinVocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "hanziSimplified" | "hanziTraditional" | "hanziCharacters" | "hskLevel" | "popularity" | "popularityLevel" | "relatedWords" | "createdAt" | "updatedAt", ExtArgs["result"]["mandarinVocabulary"]>
 export type MandarinVocabularyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   romanizations?: boolean | Prisma.MandarinVocabulary$romanizationsArgs<ExtArgs>
-  vocabularyCharacters?: boolean | Prisma.MandarinVocabulary$vocabularyCharactersArgs<ExtArgs>
   flashcardDeckMandarinVocabularies?: boolean | Prisma.MandarinVocabulary$flashcardDeckMandarinVocabulariesArgs<ExtArgs>
   vocabularySetMandarinVocabularies?: boolean | Prisma.MandarinVocabulary$vocabularySetMandarinVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.MandarinVocabularyCountOutputTypeDefaultArgs<ExtArgs>
@@ -944,7 +884,6 @@ export type $MandarinVocabularyPayload<ExtArgs extends runtime.Types.Extensions.
   name: "MandarinVocabulary"
   objects: {
     romanizations: Prisma.$MandarinVocabularyRomanizationPayload<ExtArgs>[]
-    vocabularyCharacters: Prisma.$MandarinVocabularyCharacterPayload<ExtArgs>[]
     flashcardDeckMandarinVocabularies: Prisma.$FlashcardDeckMandarinVocabularyPayload<ExtArgs>[]
     vocabularySetMandarinVocabularies: Prisma.$VocabularySetMandarinVocabularyPayload<ExtArgs>[]
   }
@@ -955,6 +894,7 @@ export type $MandarinVocabularyPayload<ExtArgs extends runtime.Types.Extensions.
     hanziCharacters: runtime.JsonValue | null
     hskLevel: string | null
     popularity: number | null
+    popularityLevel: number | null
     relatedWords: runtime.JsonValue | null
     createdAt: Date
     updatedAt: Date
@@ -1353,7 +1293,6 @@ readonly fields: MandarinVocabularyFieldRefs;
 export interface Prisma__MandarinVocabularyClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   romanizations<T extends Prisma.MandarinVocabulary$romanizationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MandarinVocabulary$romanizationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MandarinVocabularyRomanizationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  vocabularyCharacters<T extends Prisma.MandarinVocabulary$vocabularyCharactersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MandarinVocabulary$vocabularyCharactersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MandarinVocabularyCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   flashcardDeckMandarinVocabularies<T extends Prisma.MandarinVocabulary$flashcardDeckMandarinVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MandarinVocabulary$flashcardDeckMandarinVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckMandarinVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   vocabularySetMandarinVocabularies<T extends Prisma.MandarinVocabulary$vocabularySetMandarinVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MandarinVocabulary$vocabularySetMandarinVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularySetMandarinVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1391,6 +1330,7 @@ export interface MandarinVocabularyFieldRefs {
   readonly hanziCharacters: Prisma.FieldRef<"MandarinVocabulary", 'Json'>
   readonly hskLevel: Prisma.FieldRef<"MandarinVocabulary", 'String'>
   readonly popularity: Prisma.FieldRef<"MandarinVocabulary", 'Float'>
+  readonly popularityLevel: Prisma.FieldRef<"MandarinVocabulary", 'Int'>
   readonly relatedWords: Prisma.FieldRef<"MandarinVocabulary", 'Json'>
   readonly createdAt: Prisma.FieldRef<"MandarinVocabulary", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"MandarinVocabulary", 'DateTime'>
@@ -1808,30 +1748,6 @@ export type MandarinVocabulary$romanizationsArgs<ExtArgs extends runtime.Types.E
   take?: number
   skip?: number
   distinct?: Prisma.MandarinVocabularyRomanizationScalarFieldEnum | Prisma.MandarinVocabularyRomanizationScalarFieldEnum[]
-}
-
-/**
- * MandarinVocabulary.vocabularyCharacters
- */
-export type MandarinVocabulary$vocabularyCharactersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the MandarinVocabularyCharacter
-   */
-  select?: Prisma.MandarinVocabularyCharacterSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the MandarinVocabularyCharacter
-   */
-  omit?: Prisma.MandarinVocabularyCharacterOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.MandarinVocabularyCharacterInclude<ExtArgs> | null
-  where?: Prisma.MandarinVocabularyCharacterWhereInput
-  orderBy?: Prisma.MandarinVocabularyCharacterOrderByWithRelationInput | Prisma.MandarinVocabularyCharacterOrderByWithRelationInput[]
-  cursor?: Prisma.MandarinVocabularyCharacterWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.MandarinVocabularyCharacterScalarFieldEnum | Prisma.MandarinVocabularyCharacterScalarFieldEnum[]
 }
 
 /**

@@ -5,25 +5,17 @@ import { Layout } from "./components/Layout.jsx";
 import { GrammarBankPage } from "./pages/GrammarBankPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { FlashcardPage } from "./pages/FlashcardPage.jsx";
-import { HanCharactersPage } from "./pages/HanCharactersPage.jsx";
-import { HanCharacterDetailPage } from "./pages/HanCharacterDetailPage.jsx";
 import { RadicalsPage } from "./pages/RadicalsPage.jsx";
-import { PinyinTablePage } from "./pages/PinyinTablePage.jsx";
-import { JyutpingChartPage } from "./pages/JyutpingChartPage.jsx";
+import { MandarinPinyinTablePage } from "./pages/MandarinPinyinTablePage.jsx";
+import { CantoneseJyutpingTablePage } from "./pages/CantoneseJyutpingTablePage.jsx";
 import { PronunciationTablesPage } from "./pages/PronunciationTablesPage.jsx";
+import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { ThemePage } from "./pages/ThemePage.jsx";
-import { WordBankPage } from "./pages/WordBankPage.jsx";
-import { WordDetailPage } from "./pages/WordDetailPage.jsx";
+import { VocabularyBankPage } from "./pages/VocabularyBankPage.jsx";
+import { VocabularyDetailPage } from "./pages/VocabularyDetailPage.jsx";
 import { ErrorPage } from "./pages/ErrorPage.jsx";
-import { useIsAdmin } from "./store/authStore.js";
 import { useLanguage } from "./store/appStore.js";
 import { languageRoutePrefix } from "./lib/wordRoutes.js";
-
-function RequireAdmin({ children }) {
-    const isAdmin = useIsAdmin();
-    if (!isAdmin) return <Navigate to="/" replace />;
-    return children;
-}
 
 /** Redirect route cũ (/vocabulary...) → route có prefix ngôn ngữ active (2026-08-22). */
 function LanguageRedirect({ to }) {
@@ -49,12 +41,12 @@ function App() {
                         <Route element={<Layout />}>
                             <Route index element={<HomePage />} />
                             {/* Ngôn ngữ-tách (route-driven — KHÔNG còn mode toggle) (2026-08-22) */}
-                            <Route path="c/vocabulary" element={<WordBankPage />} />
-                            <Route path="m/vocabulary" element={<WordBankPage />} />
-                            <Route path="c/vocabulary/:han" element={<WordDetailPage />} />
-                            <Route path="m/vocabulary/:han" element={<WordDetailPage />} />
-                            <Route path="c/jyutping" element={<JyutpingChartPage />} />
-                            <Route path="m/pinyin" element={<PinyinTablePage />} />
+                            <Route path="c/vocabulary" element={<VocabularyBankPage />} />
+                            <Route path="m/vocabulary" element={<VocabularyBankPage />} />
+                            <Route path="c/vocabulary/:han" element={<VocabularyDetailPage />} />
+                            <Route path="m/vocabulary/:han" element={<VocabularyDetailPage />} />
+                            <Route path="c/jyutping" element={<CantoneseJyutpingTablePage />} />
+                            <Route path="m/pinyin" element={<MandarinPinyinTablePage />} />
                             {/* Redirect route cũ → ngôn ngữ active */}
                             <Route path="vocabulary" element={<LanguageRedirect to="bank" />} />
                             <Route path="vocabulary/:han" element={<LanguageRedirect to="detail" />} />
@@ -64,22 +56,7 @@ function App() {
                             <Route path="grammar" element={<GrammarBankPage />} />
                             <Route path="radicals" element={<RadicalsPage />} />
                             <Route path="theme" element={<ThemePage />} />
-                            <Route
-                                path="han-characters"
-                                element={
-                                    <RequireAdmin>
-                                        <HanCharactersPage />
-                                    </RequireAdmin>
-                                }
-                            />
-                            <Route
-                                path="han-characters/:id"
-                                element={
-                                    <RequireAdmin>
-                                        <HanCharacterDetailPage />
-                                    </RequireAdmin>
-                                }
-                            />
+                            <Route path="profile" element={<ProfilePage />} />
                             <Route path="flashcard" element={<FlashcardPage />} />
                             <Route path="study" element={<Navigate to="/flashcard" replace />} />
                         </Route>

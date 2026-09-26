@@ -7,7 +7,7 @@ import { toPinyin } from "../lib/pinyin.js";
 import { lookupJyutping } from "../lib/jyutpingLookup.js";
 import { normVocabularyField, vocabularyMergeKey } from "../lib/wordNormalize.js";
 import { buildMergedSinoVietnameseMap } from "../lib/sinoVietnamesesMap.js";
-import { applyDictMeanings, enrichMissingMeanings } from "../lib/meaningPipeline.js";
+import { applyDictMeanings, enrichMeaningsFromHanzi } from "../lib/meaningPipeline.js";
 
 const __ocr_dirname = dirname(fileURLToPath(import.meta.url));
 // Python binary: env override > Windows native (project venv nếu có, fallback `python` trong
@@ -26,9 +26,6 @@ const SCRIPTS_DIR = resolve(__ocr_dirname, "..", "scripts");
 const OCR_SPACE_API_KEY = process.env.OCR_SPACE_API_KEY?.trim() ?? "";
 const OCR_SPACE_ENDPOINT = "https://api.ocr.space/parse/image";
 
-/** Max characters to consider for a single word when segmenting OCR text. */
-const MAX_WORD_LEN = 8;
-
 /** CJK unified ideographs (+ extension A + compatibility). */
 const HAN_RUN_RE = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+/g;
 /** Non-global variant for .test() — global regexes are stateful (lastIndex) and skip chars in loops. */
@@ -41,16 +38,27 @@ function getSinoMap() {
     return sinoMapCache;
 }
 
-/** Per-character Sino-Vietnamese reading (uppercase, space-separated). A char
- *  without a known Hán-Việt reading renders as "-" so every Han character has a
- *  slot (e.g. 喺唔 → "HẢI NGÔ", 㗎 → "-"). */
-function deriveSinoVietnamese(text, sinoMap) {
-    if (!sinoMap) return "";
+/** True khi text là ĐÚNG 1 hán tự (dùng để lấy Hán-Việt per-char từ bank). */
+function isSingleHanChar(text) {
+    const s = String(text ?? "");
+    return s.length === 1 && HAN_CHAR_TEST.test(s);
+}
+
+/**
+ * Per-character Sino-Vietnamese reading (uppercase, space-separated). A char
+ * without a known Hán-Việt reading renders as "-" so every Han character has a
+ * slot (e.g. 喺唔 → "HẢI NGÔ", 㗎 → "-").
+ *
+ * ⚠️ 2026-09-27: ƯU TIÊN Hán-Việt lấy từ CHÍNH BANK (`bankSino` = từ 1 chữ trong kho ngôn ngữ
+ * đang quét, `otherBankSino` = kho còn lại) rồi mới tới map tĩnh `data/sino-vietnamese.json`.
+ * Trước đây chỉ dùng map tĩnh ⇒ scan lệch với app (VD "呢啲" bank="NI ĐÍCH" nhưng scan="NI -",
+ * "數字" bank="SỐ TỰ" vs scan="SỔ TỰ", "登機" bank="ĐĂNG CƠ" vs scan="ĐĂNG KI").
+ */
+function deriveSinoVietnamese(text, sinoMap, bankSino, otherBankSino) {
     const parts = [];
     for (const ch of String(text ?? "")) {
         if (!HAN_CHAR_TEST.test(ch)) continue;
-        const entry = sinoMap.get(ch);
-        parts.push(entry?.value || "-");
+        parts.push(bankSino?.get(ch) || otherBankSino?.get(ch) || sinoMap?.get(ch)?.value || "-");
     }
     return parts.join(" ");
 }
@@ -62,7 +70,9 @@ function deriveSinoVietnamese(text, sinoMap) {
  * Returns null on any failure so the caller falls back to it.
  */
 function ocrViaRapid(buffer) {
-    return new Promise((resolve) => {
+    // ⚠️ KHÔNG đặt tên tham số executor là `resolve` — nó che mất `resolve` từ node:path,
+    // làm `resolve(SCRIPTS_DIR, "ocr_rapid.py")` trả undefined → spawn sai script. (2026-09-02)
+    return new Promise((resolvePromise) => {
         const proc = spawn(PYTHON_BIN, [resolve(SCRIPTS_DIR, "ocr_rapid.py")], {
             stdio: ["pipe", "pipe", "pipe"],
             env: { ...process.env, PYTHONIOENCODING: "utf-8" },
@@ -73,7 +83,7 @@ function ocrViaRapid(buffer) {
         const finish = (val) => {
             if (settled) return;
             settled = true;
-            resolve(val);
+            resolvePromise(val);
         };
         const timer = setTimeout(() => {
             proc.kill();
@@ -314,41 +324,34 @@ async function buildVocabIndex() {
         });
     }
 
-    const byHan = new Map();
-    const keys = new Set();
+    // ⚠️ 2026-09-27: Từ điển Hán-Việt PER-CHAR lấy từ CHÍNH BANK — các từ 1 chữ có Hán-Việt
+    // trong DB (VD 啲 → "ĐÍCH", 地 → "ĐỊA"). Dùng để suy Hán-Việt cho từ MỚI khớp với app
+    // (map tĩnh data/sino-vietnamese.json là nguồn phụ, đứng sau bank).
+    const sinoByCharByLang = { mandarin: new Map(), cantonese: new Map() };
     for (const r of rows) {
-        keys.add(vocabularyMergeKey(r));
+        const sv = String(r.sinoVietnamese ?? "").trim();
+        if (!sv) continue;
+        for (const han of [r.hanziTraditional, r.hanziSimplified, r.hanziTraditionalHk]) {
+            if (!isSingleHanChar(han)) continue;
+            if (!sinoByCharByLang[r.lang].has(han)) sinoByCharByLang[r.lang].set(han, sv);
+        }
+    }
+
+    // ⚠️ 2026-09-02: byHan + keys tách theo ngôn ngữ. Trước đây 1 map union → betterRow ưu tiên
+    // row Cantonese (có jyutping, score cao hơn) → Mandarin mode derivePinyin/existing bị coi là
+    // "Cantonese-only" → pinyin rỗng. Tách per-language để đúng kho đang quét.
+    const byHanByLang = { mandarin: new Map(), cantonese: new Map() };
+    const keysByLang = { mandarin: new Set(), cantonese: new Set() };
+    for (const r of rows) {
+        keysByLang[r.lang].add(vocabularyMergeKey(r));
+        const byHan = byHanByLang[r.lang];
         for (const han of [r.hanziTraditional, r.hanziSimplified, r.hanziTraditionalHk]) {
             const h = normVocabularyField(han);
             if (!h) continue;
             byHan.set(h, betterRow(byHan.get(h), r));
         }
     }
-    return { byHan, keys };
-}
-
-/**
- * Segment one contiguous Han run into words using forward maximal matching
- * against the existing vocabulary index. Unknown runs fall back to single chars.
- */
-function segmentRun(run, byHan) {
-    const words = [];
-    let i = 0;
-    while (i < run.length) {
-        let matched = null;
-        let len = 1;
-        for (let l = Math.min(MAX_WORD_LEN, run.length - i); l >= 1; l--) {
-            const row = byHan.get(normVocabularyField(run.slice(i, i + l)));
-            if (row) {
-                matched = row;
-                len = l;
-                break;
-            }
-        }
-        words.push({ text: run.slice(i, i + len), row: matched });
-        i += len;
-    }
-    return words;
+    return { byHanByLang, keysByLang, sinoByCharByLang };
 }
 
 /**
@@ -360,7 +363,17 @@ function segmentRun(run, byHan) {
  * `sinoMap` is the Han→Sino-Vietnamese map (per-char Hán-Việt).
  * `forcePureCantonese` treats the whole word as pure Cantonese (pinyin dropped).
  */
-function makeSuggestion(hanText, existing, converters, keys, byHan, sinoMap, forcePureCantonese) {
+function makeSuggestion(
+    hanText,
+    existing,
+    converters,
+    keys,
+    byHan,
+    sinoMap,
+    forcePureCantonese,
+    lang,
+    sinoByCharByLang,
+) {
     let hanTraditional;
     let hanSimplified;
     if (existing) {
@@ -380,7 +393,7 @@ function makeSuggestion(hanText, existing, converters, keys, byHan, sinoMap, for
     const pinyin = (
         existing?.pinyin ||
         derivePinyin(hanTraditional, byHan) ||
-        toPinyin(hanSimplified || "") ||
+        toPinyin(hanSimplified || hanTraditional) ||
         ""
     ).trim();
     const jyutping = (
@@ -395,11 +408,16 @@ function makeSuggestion(hanText, existing, converters, keys, byHan, sinoMap, for
     // pureCantonese (tránh gán nhầm từ có pinyin như 長). Chỉ giữ khi client
     // gửi explicit `forcePureCantonese` (hiện frontend không gửi → luôn false).
     const pureCantonese = Boolean(forcePureCantonese);
-    const sinoVietnamese = existing?.sinoVietnamese || deriveSinoVietnamese(hanTraditional, sinoMap) || "";
+    // ⚠️ 2026-09-27: Hán-Việt — bank (từ 1 chữ, cùng kho đang quét trước → kho kia → map tĩnh).
+    const otherLang = lang === "mandarin" ? "cantonese" : "mandarin";
+    const sinoVietnamese =
+        existing?.sinoVietnamese ||
+        deriveSinoVietnamese(hanTraditional, sinoMap, sinoByCharByLang?.[lang], sinoByCharByLang?.[otherLang]) ||
+        "";
 
-    // Meanings: bank (existing, user-curated) wins; otherwise CVDICT (vi) + CEDICT
-    // (en) via the shared pipeline. An incomplete pair is filled by translate
-    // fallback (enrichMissingMeanings).
+    // Meanings: bank (existing, user-curated) wins; otherwise CVDICT (vi) + CEDICT (en).
+    // Bên còn thiếu được dịch ở bước sau bằng pipeline RIÊNG của scan
+    // (enrichMeaningsFromHanzi: Google → LibreTranslate fallback, 2026-09-27).
     const dictFill = applyDictMeanings({
         hanTraditional,
         hanSimplified,
@@ -409,18 +427,34 @@ function makeSuggestion(hanText, existing, converters, keys, byHan, sinoMap, for
     const vietMeanings = dictFill.vietMeanings;
     const engMeanings = dictFill.engMeanings;
 
-    const key = vocabularyMergeKey({ hanTraditional, hanSimplified, pinyin, jyutping });
-    return {
+    // ⚠️ 2026-09-02: suggestion TÁCH theo ngôn ngữ quét (lang) — cantonese/mandarin riêng,
+    // theo chuẩn per-language của page (§2.2). Key + exists dùng keys đúng kho ngôn ngữ.
+    const isMandarin = lang === "mandarin";
+    const key = isMandarin
+        ? vocabularyMergeKey({ hanTraditional, hanSimplified, pinyin, jyutping: "" })
+        : vocabularyMergeKey({ hanTraditional, hanSimplified, jyutping });
+    const base = {
         key,
-        hanTraditional,
-        hanSimplified,
-        pinyin: pureCantonese ? "" : pinyin.toLowerCase(),
-        jyutping: jyutping.toLowerCase(),
+        lang,
         sinoVietnamese,
-        pureCantonese,
         vietMeanings,
         engMeanings,
         exists: existing != null || keys.has(key),
+    };
+    if (isMandarin) {
+        return {
+            ...base,
+            hanSimplified: hanSimplified || "",
+            hanTraditional,
+            pinyin: pureCantonese ? "" : pinyin.toLowerCase(),
+        };
+    }
+    return {
+        ...base,
+        hanziTraditionalHk: hanTraditional,
+        hanTraditional,
+        pureCantonese,
+        jyutping: jyutping.toLowerCase(),
     };
 }
 
@@ -465,45 +499,21 @@ function charHasPinyin(ch, byHan) {
 }
 
 /**
- * Build one cluster group from a Han run:
- *  - `cluster`: the WHOLE phrase (what the user mainly adds).
- *  - `members`: the individual words (single chars + known multi-char DB words)
- *    inside the phrase, exposed when the card is expanded. Each carries a `key`
- *    so the frontend can dedupe identical words across clusters.
- * For a single-char run there is only the cluster, no members.
+ * OCR → danh sách CỤM (cluster) để user thêm vào kho từ vựng.
+ * ⚠️ 2026-09-27: CHỈ trả `cluster` — mỗi vùng/cụm OCR nhận diện được (KHÔNG còn `members`,
+ * cũng KHÔNG lọc theo số lượng hán tự).
  */
-async function buildGroup(run, byHan, keys, converters, sinoMap, forcePureCantonese) {
-    const norm = (t) => normVocabularyField(t);
-    const cluster = makeSuggestion(run, byHan.get(norm(run)), converters, keys, byHan, sinoMap, forcePureCantonese);
-
-    if (run.length === 1) {
-        return { cluster, members: [] };
-    }
-
-    const members = [];
-    const seen = new Set();
-    for (const seg of segmentRun(run, byHan)) {
-        const m = makeSuggestion(seg.text, seg.row, converters, keys, byHan, sinoMap, forcePureCantonese);
-        if (m.key === cluster.key) continue; // don't duplicate the phrase itself
-        if (seen.has(m.key)) continue;
-        seen.add(m.key);
-        members.push(m);
-    }
-    return { cluster, members };
-}
-
-/** Auto-translate meanings for suggestions whose dict lookup returned an
- *  incomplete vi-en pair — shared pipeline (meaningPipeline.enrichMissingMeanings). */
-
 export async function ocrRoutes(fastify) {
     /**
      * POST /api/ocr-vocabulary
      * Body: { image: "<base64 or data URL>" }
-     * OCR the image, extract Han words, and return suggested vocabulary entries
-     * (han + pinyin + jyutping + meanings). Read-only — no DB writes.
+     * OCR the image → trả về các CỤM (cluster) OCR nhận diện được + gợi ý
+     * (han + pinyin/jyutping + Hán-Việt + nghĩa vi/en). Read-only — no DB writes.
      */
     fastify.post("/ocr-vocabulary", { bodyLimit: 15 * 1024 * 1024 }, async (request, reply) => {
-        const { image, engine, pureCantonese } = request.body ?? {};
+        const { image, engine, pureCantonese, lang } = request.body ?? {};
+        // ⚠️ 2026-09-02: ngôn ngữ quét OCR (cantonese/mandarin) — quyết định shape suggestion trả về.
+        const scanLang = lang === "mandarin" ? "mandarin" : "cantonese";
         if (!image || !String(image).trim()) {
             return reply.status(400).send({ error: "Missing image" });
         }
@@ -523,7 +533,8 @@ export async function ocrRoutes(fastify) {
 
         try {
             const { text, lines, words } = await recognizeImage(buffer, engine);
-            const { byHan, keys } = await buildVocabIndex();
+            const { byHanByLang, keysByLang, sinoByCharByLang } = await buildVocabIndex();
+            const byHan = byHanByLang[scanLang];
             const sinoMap = getSinoMap();
             const forcePure = Boolean(pureCantonese);
 
@@ -539,31 +550,34 @@ export async function ocrRoutes(fastify) {
             const runs = clusterHanWords({ lines, words });
             const safeRuns = runs.length ? runs : (text.match(HAN_RUN_RE) ?? []);
 
-            // Build cluster groups (phrase + its individual words), deduped by cluster key.
+            // ⚠️ 2026-09-27: CHỈ lấy CỤM — mỗi run OCR nhận diện được = 1 cluster, KHÔNG sinh
+            // `members` (các từ lẻ bên trong cụm). Phân nhóm theo CỤM mà OCR đã gom (line-aware
+            // bbox / khoảng cách) — KHÔNG lọc theo số lượng hán tự (cụm 1 chữ vẫn giữ nếu OCR
+            // đọc nó thành 1 vùng riêng). Response giữ shape `[{ cluster }]`.
             const groups = [];
             const seen = new Set();
             for (const run of safeRuns) {
-                const g = await buildGroup(run, byHan, keys, converters, sinoMap, forcePure);
-                if (seen.has(g.cluster.key)) continue;
-                seen.add(g.cluster.key);
-                groups.push(g);
+                const cluster = makeSuggestion(
+                    run,
+                    byHan.get(normVocabularyField(run)),
+                    converters,
+                    keysByLang[scanLang],
+                    byHan,
+                    sinoMap,
+                    forcePure,
+                    scanLang,
+                    sinoByCharByLang,
+                );
+                if (seen.has(cluster.key)) continue;
+                seen.add(cluster.key);
+                groups.push({ cluster });
             }
 
-            // De-noise: a standalone single-char cluster whose character is already
-            // a member of a multi-char cluster is redundant (e.g. OCR split 刀 out of
-            // 飞刀 / misread 拳刃→拳+刀). The char is still reachable by expanding
-            // the phrase card, so drop the standalone card.
-            const memberKeys = new Set();
-            for (const g of groups) for (const m of g.members) memberKeys.add(m.key);
-            const filteredGroups = groups.filter((g) => {
-                if ((g.cluster.hanTraditional || "").length > 1) return true;
-                return !memberKeys.has(g.cluster.key);
-            });
+            // Auto-translate meanings cho cụm mới bằng pipeline RIÊNG của scan
+            // (Hán tự → vi/en: deep_translator/Google → LibreTranslate fallback). 2026-09-27
+            await enrichMeaningsFromHanzi(groups.map((g) => g.cluster));
 
-            // Auto-translate meanings for new items (phrases + member words).
-            await enrichMissingMeanings(filteredGroups.flatMap((g) => [g.cluster, ...g.members]));
-
-            return { text: text.trim().slice(0, 2000), groups: filteredGroups };
+            return { text: text.trim().slice(0, 2000), groups };
         } catch (err) {
             console.error("ocr-vocabulary error:", err.message);
             return reply.status(500).send({ error: err.message });
@@ -583,24 +597,29 @@ export async function ocrRoutes(fastify) {
         if (!raw) {
             return reply.status(400).send({ error: "Missing text" });
         }
+        const scanLang = request.body?.lang === "mandarin" ? "mandarin" : "cantonese";
         try {
             const { Converter } = await import("opencc-js");
             const converters = {
                 toSimp: Converter({ from: "hk", to: "cn" }),
                 toTrad: Converter({ from: "cn", to: "hk" }),
             };
-            const { byHan, keys } = await buildVocabIndex();
+            const { byHanByLang, keysByLang, sinoByCharByLang } = await buildVocabIndex();
+            const byHan = byHanByLang[scanLang];
             const sug = makeSuggestion(
                 raw,
                 byHan.get(normVocabularyField(raw)),
                 converters,
-                keys,
+                keysByLang[scanLang],
                 byHan,
                 getSinoMap(),
                 Boolean(request.body?.pureCantonese),
+                scanLang,
+                sinoByCharByLang,
             );
-            // Fill missing meanings via the app translate pipeline (same fallback as scan).
-            await enrichMissingMeanings([sug]);
+            // Fill missing meanings via the SCAN translate pipeline (hanzi → vi/en,
+            // Google → LibreTranslate fallback) — giống /ocr-vocabulary. (2026-09-27)
+            await enrichMeaningsFromHanzi([sug]);
             return sug;
         } catch (err) {
             console.error("ocr-derive error:", err.message);

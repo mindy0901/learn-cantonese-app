@@ -20,6 +20,7 @@ dist-ssr/
 # DB backups / cloud dumps / OCR models (quá nặng, không track)
 backend/_local_backup_*
 backend/_cloud_dump*
+backend/*.dump
 backend/*.traineddata
 backend/data/Unihan.zip
 

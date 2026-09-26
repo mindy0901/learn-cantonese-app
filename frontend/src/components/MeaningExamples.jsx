@@ -5,8 +5,8 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./shadcn/co
 import { ChevronDown } from "lucide-react";
 
 /**
- * Collapsible chung cho danh sách ví dụ — dùng chung ở trang detail (WordDetailContent)
- * và trang edit (WordEditFields), đảm bảo hành vi & style nhất quán.
+ * Collapsible chung cho danh sách ví dụ — dùng chung ở trang detail (VocabularyDetailContent)
+ * và trang edit (VocabularyEditFields), đảm bảo hành vi & style nhất quán.
  *
  * - Mặc định gấp gọn; truyền `defaultOpen` hoặc điều khiển qua `open`/`onOpenChange` để mở sẵn.
  * - `label`: tiêu đề cạnh chevron (VD "Ví dụ (8)").

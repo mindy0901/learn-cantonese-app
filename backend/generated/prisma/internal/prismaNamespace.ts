@@ -384,22 +384,24 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
-  HanziCharacter: 'HanziCharacter',
   HanziRadical: 'HanziRadical',
   MandarinVocabulary: 'MandarinVocabulary',
   MandarinVocabularyRomanization: 'MandarinVocabularyRomanization',
   MandarinVocabularyMeaning: 'MandarinVocabularyMeaning',
   MandarinVocabularyExample: 'MandarinVocabularyExample',
-  MandarinVocabularyCharacter: 'MandarinVocabularyCharacter',
   CantoneseVocabulary: 'CantoneseVocabulary',
   CantoneseVocabularyRomanization: 'CantoneseVocabularyRomanization',
   CantoneseVocabularyMeaning: 'CantoneseVocabularyMeaning',
   CantoneseVocabularyExample: 'CantoneseVocabularyExample',
-  CantoneseVocabularyCharacter: 'CantoneseVocabularyCharacter',
   Grammar: 'Grammar',
   GrammarExample: 'GrammarExample',
   User: 'User',
+  UserFavoriteVocabulary: 'UserFavoriteVocabulary',
+  UserDislikedVocabulary: 'UserDislikedVocabulary',
   UserCheckin: 'UserCheckin',
+  UserVocabularyMastery: 'UserVocabularyMastery',
+  Tag: 'Tag',
+  VocabularyTag: 'VocabularyTag',
   FlashcardDeck: 'FlashcardDeck',
   FlashcardDeckMandarinVocabulary: 'FlashcardDeckMandarinVocabulary',
   FlashcardDeckCantoneseVocabulary: 'FlashcardDeckCantoneseVocabulary',
@@ -421,84 +423,10 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "hanziCharacter" | "hanziRadical" | "mandarinVocabulary" | "mandarinVocabularyRomanization" | "mandarinVocabularyMeaning" | "mandarinVocabularyExample" | "mandarinVocabularyCharacter" | "cantoneseVocabulary" | "cantoneseVocabularyRomanization" | "cantoneseVocabularyMeaning" | "cantoneseVocabularyExample" | "cantoneseVocabularyCharacter" | "grammar" | "grammarExample" | "user" | "userCheckin" | "flashcardDeck" | "flashcardDeckMandarinVocabulary" | "flashcardDeckCantoneseVocabulary" | "vocabularySet" | "vocabularySetMandarinVocabulary" | "vocabularySetCantoneseVocabulary"
+    modelProps: "hanziRadical" | "mandarinVocabulary" | "mandarinVocabularyRomanization" | "mandarinVocabularyMeaning" | "mandarinVocabularyExample" | "cantoneseVocabulary" | "cantoneseVocabularyRomanization" | "cantoneseVocabularyMeaning" | "cantoneseVocabularyExample" | "grammar" | "grammarExample" | "user" | "userFavoriteVocabulary" | "userDislikedVocabulary" | "userCheckin" | "userVocabularyMastery" | "tag" | "vocabularyTag" | "flashcardDeck" | "flashcardDeckMandarinVocabulary" | "flashcardDeckCantoneseVocabulary" | "vocabularySet" | "vocabularySetMandarinVocabulary" | "vocabularySetCantoneseVocabulary"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
-    HanziCharacter: {
-      payload: Prisma.$HanziCharacterPayload<ExtArgs>
-      fields: Prisma.HanziCharacterFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.HanziCharacterFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.HanziCharacterFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload>
-        }
-        findFirst: {
-          args: Prisma.HanziCharacterFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.HanziCharacterFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload>
-        }
-        findMany: {
-          args: Prisma.HanziCharacterFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload>[]
-        }
-        create: {
-          args: Prisma.HanziCharacterCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload>
-        }
-        createMany: {
-          args: Prisma.HanziCharacterCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.HanziCharacterCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload>[]
-        }
-        delete: {
-          args: Prisma.HanziCharacterDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload>
-        }
-        update: {
-          args: Prisma.HanziCharacterUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload>
-        }
-        deleteMany: {
-          args: Prisma.HanziCharacterDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.HanziCharacterUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.HanziCharacterUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload>[]
-        }
-        upsert: {
-          args: Prisma.HanziCharacterUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HanziCharacterPayload>
-        }
-        aggregate: {
-          args: Prisma.HanziCharacterAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateHanziCharacter>
-        }
-        groupBy: {
-          args: Prisma.HanziCharacterGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.HanziCharacterGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.HanziCharacterCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.HanziCharacterCountAggregateOutputType> | number
-        }
-      }
-    }
     HanziRadical: {
       payload: Prisma.$HanziRadicalPayload<ExtArgs>
       fields: Prisma.HanziRadicalFieldRefs
@@ -869,80 +797,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    MandarinVocabularyCharacter: {
-      payload: Prisma.$MandarinVocabularyCharacterPayload<ExtArgs>
-      fields: Prisma.MandarinVocabularyCharacterFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.MandarinVocabularyCharacterFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.MandarinVocabularyCharacterFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload>
-        }
-        findFirst: {
-          args: Prisma.MandarinVocabularyCharacterFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.MandarinVocabularyCharacterFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload>
-        }
-        findMany: {
-          args: Prisma.MandarinVocabularyCharacterFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload>[]
-        }
-        create: {
-          args: Prisma.MandarinVocabularyCharacterCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload>
-        }
-        createMany: {
-          args: Prisma.MandarinVocabularyCharacterCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.MandarinVocabularyCharacterCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload>[]
-        }
-        delete: {
-          args: Prisma.MandarinVocabularyCharacterDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload>
-        }
-        update: {
-          args: Prisma.MandarinVocabularyCharacterUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload>
-        }
-        deleteMany: {
-          args: Prisma.MandarinVocabularyCharacterDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.MandarinVocabularyCharacterUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.MandarinVocabularyCharacterUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload>[]
-        }
-        upsert: {
-          args: Prisma.MandarinVocabularyCharacterUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MandarinVocabularyCharacterPayload>
-        }
-        aggregate: {
-          args: Prisma.MandarinVocabularyCharacterAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateMandarinVocabularyCharacter>
-        }
-        groupBy: {
-          args: Prisma.MandarinVocabularyCharacterGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.MandarinVocabularyCharacterGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.MandarinVocabularyCharacterCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.MandarinVocabularyCharacterCountAggregateOutputType> | number
-        }
-      }
-    }
     CantoneseVocabulary: {
       payload: Prisma.$CantoneseVocabularyPayload<ExtArgs>
       fields: Prisma.CantoneseVocabularyFieldRefs
@@ -1239,80 +1093,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    CantoneseVocabularyCharacter: {
-      payload: Prisma.$CantoneseVocabularyCharacterPayload<ExtArgs>
-      fields: Prisma.CantoneseVocabularyCharacterFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.CantoneseVocabularyCharacterFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.CantoneseVocabularyCharacterFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload>
-        }
-        findFirst: {
-          args: Prisma.CantoneseVocabularyCharacterFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.CantoneseVocabularyCharacterFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload>
-        }
-        findMany: {
-          args: Prisma.CantoneseVocabularyCharacterFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload>[]
-        }
-        create: {
-          args: Prisma.CantoneseVocabularyCharacterCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload>
-        }
-        createMany: {
-          args: Prisma.CantoneseVocabularyCharacterCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.CantoneseVocabularyCharacterCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload>[]
-        }
-        delete: {
-          args: Prisma.CantoneseVocabularyCharacterDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload>
-        }
-        update: {
-          args: Prisma.CantoneseVocabularyCharacterUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload>
-        }
-        deleteMany: {
-          args: Prisma.CantoneseVocabularyCharacterDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.CantoneseVocabularyCharacterUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.CantoneseVocabularyCharacterUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload>[]
-        }
-        upsert: {
-          args: Prisma.CantoneseVocabularyCharacterUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CantoneseVocabularyCharacterPayload>
-        }
-        aggregate: {
-          args: Prisma.CantoneseVocabularyCharacterAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateCantoneseVocabularyCharacter>
-        }
-        groupBy: {
-          args: Prisma.CantoneseVocabularyCharacterGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CantoneseVocabularyCharacterGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.CantoneseVocabularyCharacterCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CantoneseVocabularyCharacterCountAggregateOutputType> | number
-        }
-      }
-    }
     Grammar: {
       payload: Prisma.$GrammarPayload<ExtArgs>
       fields: Prisma.GrammarFieldRefs
@@ -1535,6 +1315,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserFavoriteVocabulary: {
+      payload: Prisma.$UserFavoriteVocabularyPayload<ExtArgs>
+      fields: Prisma.UserFavoriteVocabularyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserFavoriteVocabularyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserFavoriteVocabularyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload>
+        }
+        findFirst: {
+          args: Prisma.UserFavoriteVocabularyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserFavoriteVocabularyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload>
+        }
+        findMany: {
+          args: Prisma.UserFavoriteVocabularyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload>[]
+        }
+        create: {
+          args: Prisma.UserFavoriteVocabularyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload>
+        }
+        createMany: {
+          args: Prisma.UserFavoriteVocabularyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserFavoriteVocabularyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload>[]
+        }
+        delete: {
+          args: Prisma.UserFavoriteVocabularyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload>
+        }
+        update: {
+          args: Prisma.UserFavoriteVocabularyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserFavoriteVocabularyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserFavoriteVocabularyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserFavoriteVocabularyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserFavoriteVocabularyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserFavoriteVocabularyPayload>
+        }
+        aggregate: {
+          args: Prisma.UserFavoriteVocabularyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserFavoriteVocabulary>
+        }
+        groupBy: {
+          args: Prisma.UserFavoriteVocabularyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserFavoriteVocabularyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserFavoriteVocabularyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserFavoriteVocabularyCountAggregateOutputType> | number
+        }
+      }
+    }
+    UserDislikedVocabulary: {
+      payload: Prisma.$UserDislikedVocabularyPayload<ExtArgs>
+      fields: Prisma.UserDislikedVocabularyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserDislikedVocabularyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserDislikedVocabularyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload>
+        }
+        findFirst: {
+          args: Prisma.UserDislikedVocabularyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserDislikedVocabularyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload>
+        }
+        findMany: {
+          args: Prisma.UserDislikedVocabularyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload>[]
+        }
+        create: {
+          args: Prisma.UserDislikedVocabularyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload>
+        }
+        createMany: {
+          args: Prisma.UserDislikedVocabularyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserDislikedVocabularyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload>[]
+        }
+        delete: {
+          args: Prisma.UserDislikedVocabularyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload>
+        }
+        update: {
+          args: Prisma.UserDislikedVocabularyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserDislikedVocabularyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserDislikedVocabularyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserDislikedVocabularyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserDislikedVocabularyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDislikedVocabularyPayload>
+        }
+        aggregate: {
+          args: Prisma.UserDislikedVocabularyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserDislikedVocabulary>
+        }
+        groupBy: {
+          args: Prisma.UserDislikedVocabularyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserDislikedVocabularyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserDislikedVocabularyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserDislikedVocabularyCountAggregateOutputType> | number
+        }
+      }
+    }
     UserCheckin: {
       payload: Prisma.$UserCheckinPayload<ExtArgs>
       fields: Prisma.UserCheckinFieldRefs
@@ -1606,6 +1534,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCheckinCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCheckinCountAggregateOutputType> | number
+        }
+      }
+    }
+    UserVocabularyMastery: {
+      payload: Prisma.$UserVocabularyMasteryPayload<ExtArgs>
+      fields: Prisma.UserVocabularyMasteryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserVocabularyMasteryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserVocabularyMasteryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload>
+        }
+        findFirst: {
+          args: Prisma.UserVocabularyMasteryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserVocabularyMasteryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload>
+        }
+        findMany: {
+          args: Prisma.UserVocabularyMasteryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload>[]
+        }
+        create: {
+          args: Prisma.UserVocabularyMasteryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload>
+        }
+        createMany: {
+          args: Prisma.UserVocabularyMasteryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserVocabularyMasteryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload>[]
+        }
+        delete: {
+          args: Prisma.UserVocabularyMasteryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload>
+        }
+        update: {
+          args: Prisma.UserVocabularyMasteryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserVocabularyMasteryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserVocabularyMasteryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserVocabularyMasteryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserVocabularyMasteryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserVocabularyMasteryPayload>
+        }
+        aggregate: {
+          args: Prisma.UserVocabularyMasteryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserVocabularyMastery>
+        }
+        groupBy: {
+          args: Prisma.UserVocabularyMasteryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserVocabularyMasteryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserVocabularyMasteryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserVocabularyMasteryCountAggregateOutputType> | number
+        }
+      }
+    }
+    Tag: {
+      payload: Prisma.$TagPayload<ExtArgs>
+      fields: Prisma.TagFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TagFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TagFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        findFirst: {
+          args: Prisma.TagFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TagFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        findMany: {
+          args: Prisma.TagFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>[]
+        }
+        create: {
+          args: Prisma.TagCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        createMany: {
+          args: Prisma.TagCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TagCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>[]
+        }
+        delete: {
+          args: Prisma.TagDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        update: {
+          args: Prisma.TagUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        deleteMany: {
+          args: Prisma.TagDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TagUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TagUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>[]
+        }
+        upsert: {
+          args: Prisma.TagUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        aggregate: {
+          args: Prisma.TagAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTag>
+        }
+        groupBy: {
+          args: Prisma.TagGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TagGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TagCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TagCountAggregateOutputType> | number
+        }
+      }
+    }
+    VocabularyTag: {
+      payload: Prisma.$VocabularyTagPayload<ExtArgs>
+      fields: Prisma.VocabularyTagFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.VocabularyTagFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.VocabularyTagFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload>
+        }
+        findFirst: {
+          args: Prisma.VocabularyTagFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.VocabularyTagFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload>
+        }
+        findMany: {
+          args: Prisma.VocabularyTagFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload>[]
+        }
+        create: {
+          args: Prisma.VocabularyTagCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload>
+        }
+        createMany: {
+          args: Prisma.VocabularyTagCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.VocabularyTagCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload>[]
+        }
+        delete: {
+          args: Prisma.VocabularyTagDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload>
+        }
+        update: {
+          args: Prisma.VocabularyTagUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload>
+        }
+        deleteMany: {
+          args: Prisma.VocabularyTagDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.VocabularyTagUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.VocabularyTagUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload>[]
+        }
+        upsert: {
+          args: Prisma.VocabularyTagUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VocabularyTagPayload>
+        }
+        aggregate: {
+          args: Prisma.VocabularyTagAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateVocabularyTag>
+        }
+        groupBy: {
+          args: Prisma.VocabularyTagGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.VocabularyTagGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.VocabularyTagCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.VocabularyTagCountAggregateOutputType> | number
         }
       }
     }
@@ -2092,25 +2242,6 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const HanziCharacterScalarFieldEnum = {
-  id: 'id',
-  sinoVietnamese: 'sinoVietnamese',
-  hanSimplified: 'hanSimplified',
-  hanTraditional: 'hanTraditional',
-  pinyin: 'pinyin',
-  hanziSimplifiedHk: 'hanziSimplifiedHk',
-  hanziTraditionalHk: 'hanziTraditionalHk',
-  jyutping: 'jyutping',
-  strokeCount: 'strokeCount',
-  radicalId: 'radicalId',
-  popularity: 'popularity',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type HanziCharacterScalarFieldEnum = (typeof HanziCharacterScalarFieldEnum)[keyof typeof HanziCharacterScalarFieldEnum]
-
-
 export const HanziRadicalScalarFieldEnum = {
   id: 'id',
   number: 'number',
@@ -2134,6 +2265,7 @@ export const MandarinVocabularyScalarFieldEnum = {
   hanziCharacters: 'hanziCharacters',
   hskLevel: 'hskLevel',
   popularity: 'popularity',
+  popularityLevel: 'popularityLevel',
   relatedWords: 'relatedWords',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -2157,7 +2289,8 @@ export const MandarinVocabularyMeaningScalarFieldEnum = {
   mandarinVocabularyRomanizationId: 'mandarinVocabularyRomanizationId',
   zh: 'zh',
   vi: 'vi',
-  en: 'en'
+  en: 'en',
+  position: 'position'
 } as const
 
 export type MandarinVocabularyMeaningScalarFieldEnum = (typeof MandarinVocabularyMeaningScalarFieldEnum)[keyof typeof MandarinVocabularyMeaningScalarFieldEnum]
@@ -2175,21 +2308,12 @@ export const MandarinVocabularyExampleScalarFieldEnum = {
 export type MandarinVocabularyExampleScalarFieldEnum = (typeof MandarinVocabularyExampleScalarFieldEnum)[keyof typeof MandarinVocabularyExampleScalarFieldEnum]
 
 
-export const MandarinVocabularyCharacterScalarFieldEnum = {
-  id: 'id',
-  mandarinVocabularyId: 'mandarinVocabularyId',
-  hanziCharacterId: 'hanziCharacterId',
-  position: 'position'
-} as const
-
-export type MandarinVocabularyCharacterScalarFieldEnum = (typeof MandarinVocabularyCharacterScalarFieldEnum)[keyof typeof MandarinVocabularyCharacterScalarFieldEnum]
-
-
 export const CantoneseVocabularyScalarFieldEnum = {
   id: 'id',
   hanziTraditionalHk: 'hanziTraditionalHk',
   pureCantonese: 'pureCantonese',
   popularity: 'popularity',
+  popularityLevel: 'popularityLevel',
   hanziCharacters: 'hanziCharacters',
   relatedWords: 'relatedWords',
   hanziAudio: 'hanziAudio',
@@ -2215,7 +2339,8 @@ export const CantoneseVocabularyMeaningScalarFieldEnum = {
   id: 'id',
   cantoneseVocabularyRomanizationId: 'cantoneseVocabularyRomanizationId',
   vi: 'vi',
-  en: 'en'
+  en: 'en',
+  position: 'position'
 } as const
 
 export type CantoneseVocabularyMeaningScalarFieldEnum = (typeof CantoneseVocabularyMeaningScalarFieldEnum)[keyof typeof CantoneseVocabularyMeaningScalarFieldEnum]
@@ -2233,16 +2358,6 @@ export const CantoneseVocabularyExampleScalarFieldEnum = {
 } as const
 
 export type CantoneseVocabularyExampleScalarFieldEnum = (typeof CantoneseVocabularyExampleScalarFieldEnum)[keyof typeof CantoneseVocabularyExampleScalarFieldEnum]
-
-
-export const CantoneseVocabularyCharacterScalarFieldEnum = {
-  id: 'id',
-  cantoneseVocabularyId: 'cantoneseVocabularyId',
-  hanziCharacterId: 'hanziCharacterId',
-  position: 'position'
-} as const
-
-export type CantoneseVocabularyCharacterScalarFieldEnum = (typeof CantoneseVocabularyCharacterScalarFieldEnum)[keyof typeof CantoneseVocabularyCharacterScalarFieldEnum]
 
 
 export const GrammarScalarFieldEnum = {
@@ -2292,6 +2407,28 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+export const UserFavoriteVocabularyScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  language: 'language',
+  vocabularyId: 'vocabularyId',
+  createdAt: 'createdAt'
+} as const
+
+export type UserFavoriteVocabularyScalarFieldEnum = (typeof UserFavoriteVocabularyScalarFieldEnum)[keyof typeof UserFavoriteVocabularyScalarFieldEnum]
+
+
+export const UserDislikedVocabularyScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  language: 'language',
+  vocabularyId: 'vocabularyId',
+  createdAt: 'createdAt'
+} as const
+
+export type UserDislikedVocabularyScalarFieldEnum = (typeof UserDislikedVocabularyScalarFieldEnum)[keyof typeof UserDislikedVocabularyScalarFieldEnum]
+
+
 export const UserCheckinScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2300,6 +2437,40 @@ export const UserCheckinScalarFieldEnum = {
 } as const
 
 export type UserCheckinScalarFieldEnum = (typeof UserCheckinScalarFieldEnum)[keyof typeof UserCheckinScalarFieldEnum]
+
+
+export const UserVocabularyMasteryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  language: 'language',
+  vocabularyId: 'vocabularyId',
+  progress: 'progress',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserVocabularyMasteryScalarFieldEnum = (typeof UserVocabularyMasteryScalarFieldEnum)[keyof typeof UserVocabularyMasteryScalarFieldEnum]
+
+
+export const TagScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  color: 'color',
+  createdAt: 'createdAt'
+} as const
+
+export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
+
+
+export const VocabularyTagScalarFieldEnum = {
+  id: 'id',
+  tagId: 'tagId',
+  language: 'language',
+  vocabularyId: 'vocabularyId',
+  createdAt: 'createdAt'
+} as const
+
+export type VocabularyTagScalarFieldEnum = (typeof VocabularyTagScalarFieldEnum)[keyof typeof VocabularyTagScalarFieldEnum]
 
 
 export const FlashcardDeckScalarFieldEnum = {
@@ -2448,20 +2619,6 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
- * Reference to a field of type 'Float'
- */
-export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
-    
-
-
-/**
- * Reference to a field of type 'Float[]'
- */
-export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
-    
-
-
-/**
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -2486,6 +2643,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'Float[]'
+ */
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 
@@ -2605,22 +2776,24 @@ export type PrismaClientOptions = ({
   queryPlanCacheMaxSize?: number
 }
 export type GlobalOmitConfig = {
-  hanziCharacter?: Prisma.HanziCharacterOmit
   hanziRadical?: Prisma.HanziRadicalOmit
   mandarinVocabulary?: Prisma.MandarinVocabularyOmit
   mandarinVocabularyRomanization?: Prisma.MandarinVocabularyRomanizationOmit
   mandarinVocabularyMeaning?: Prisma.MandarinVocabularyMeaningOmit
   mandarinVocabularyExample?: Prisma.MandarinVocabularyExampleOmit
-  mandarinVocabularyCharacter?: Prisma.MandarinVocabularyCharacterOmit
   cantoneseVocabulary?: Prisma.CantoneseVocabularyOmit
   cantoneseVocabularyRomanization?: Prisma.CantoneseVocabularyRomanizationOmit
   cantoneseVocabularyMeaning?: Prisma.CantoneseVocabularyMeaningOmit
   cantoneseVocabularyExample?: Prisma.CantoneseVocabularyExampleOmit
-  cantoneseVocabularyCharacter?: Prisma.CantoneseVocabularyCharacterOmit
   grammar?: Prisma.GrammarOmit
   grammarExample?: Prisma.GrammarExampleOmit
   user?: Prisma.UserOmit
+  userFavoriteVocabulary?: Prisma.UserFavoriteVocabularyOmit
+  userDislikedVocabulary?: Prisma.UserDislikedVocabularyOmit
   userCheckin?: Prisma.UserCheckinOmit
+  userVocabularyMastery?: Prisma.UserVocabularyMasteryOmit
+  tag?: Prisma.TagOmit
+  vocabularyTag?: Prisma.VocabularyTagOmit
   flashcardDeck?: Prisma.FlashcardDeckOmit
   flashcardDeckMandarinVocabulary?: Prisma.FlashcardDeckMandarinVocabularyOmit
   flashcardDeckCantoneseVocabulary?: Prisma.FlashcardDeckCantoneseVocabularyOmit

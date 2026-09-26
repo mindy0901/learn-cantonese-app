@@ -25,7 +25,6 @@ import {
     IconWordBank,
     IconGrammar,
     IconFlashcard,
-    IconHanChars,
     IconRadicals,
     IconPinyin,
     IconJyutping,
@@ -88,10 +87,7 @@ export function Layout() {
         {
             key: "hanzi",
             trigger: t.nav.hanGroup,
-            items: [
-                ...(isAdmin ? [{ to: "/han-characters", label: t.nav.hanCharacters, Icon: IconHanChars }] : []),
-                { to: "/radicals", label: t.nav.radicals, Icon: IconRadicals },
-            ],
+            items: [{ to: "/radicals", label: t.nav.radicals, Icon: IconRadicals }],
         },
         {
             key: "tools",

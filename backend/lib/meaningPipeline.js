@@ -18,6 +18,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { lookupDictMeanings } from "./meaningsLookup.js";
 import { capitalizeSentences } from "./wordNormalize.js";
+import { translateHanzi, translateEnglishToVietnamese } from "./hanziTranslate.js";
 
 const execFileAsync = promisify(execFile);
 const PYTHON_BIN = "/opt/translate-venv/bin/python3";
@@ -93,6 +94,57 @@ export async function enrichMissingMeanings(entries, limit = MAX_TRANSLATE) {
         }
     };
     await Promise.all(Array.from({ length: Math.min(TRANSLATE_CONCURRENCY, targets.length) }, runWorker));
+}
+
+/** Concurrent workers cho pipeline dịch của SCAN (LibreTranslate self-hosted chịu được nhiều
+ *  request hơn Google) — đảm bảo scan nhiều cụm vẫn xong trong vài giây. */
+const SCAN_TRANSLATE_CONCURRENCY = Number(process.env.SCAN_TRANSLATE_CONCURRENCY) || 4;
+
+/**
+ * ⚠️ 2026-09-27: PIPELINE RIÊNG CHO SCAN OCR — dịch thẳng từ HÁN TỰ bằng
+ * `hanziTranslate.translateHanzi` (deep_translator/Google → **LibreTranslate fallback**),
+ * cho CẢ vi + en.
+ *
+ * Khác `enrichMissingMeanings` (Google-only, ghi đè cả cặp):
+ *  - chỉ DỊCH BÊN CÒN THIẾU (giữ nguyên bên đã có từ CVDICT/CEDICT hoặc bank),
+ *  - mỗi bên có fallback LibreTranslate khi Google 429/bị chặn.
+ * @param {Array<{ vietMeanings?: string, engMeanings?: string, hanTraditional?: string }>} entries
+ * @param {number} [limit] số entry tối đa dịch mỗi request — MẶC ĐỊNH **KHÔNG GIỚI HẠN**
+ *   (⚠️ 2026-09-27 fix: trước đây dùng MAX_TRANSLATE=12 ⇒ scan >12 cụm bị bỏ trống vi/en).
+ */
+export async function enrichMeaningsFromHanzi(entries, limit = Number.POSITIVE_INFINITY) {
+    const targets = entries.filter((e) => !e.vietMeanings || !e.engMeanings).slice(0, limit);
+    if (!targets.length) return;
+
+    let cursor = 0;
+    const runWorker = async () => {
+        while (cursor < targets.length) {
+            const s = targets[cursor++];
+            const han = s.hanTraditional || s.hanziTraditionalHk || "";
+            if (!han) continue;
+            const [vi, en] = await Promise.all([
+                s.vietMeanings ? null : translateHanzi(han, "vi"),
+                s.engMeanings ? null : translateHanzi(han, "en"),
+            ]);
+            if (vi?.text) s.vietMeanings = capitalizeSentences(vi.text);
+            if (en?.text) s.engMeanings = capitalizeSentences(en.text);
+            // 2-HOP: vi vẫn thiếu nhưng đã có EN → dịch tiếp en→vi (LibreTranslate).
+            let twoHop = "";
+            if (!s.vietMeanings && s.engMeanings) {
+                twoHop = await translateEnglishToVietnamese(s.engMeanings);
+                if (twoHop) s.vietMeanings = capitalizeSentences(twoHop);
+            }
+            if (vi?.text || en?.text || twoHop) {
+                // Chỉ log (KHÔNG thêm field vào suggestion — tránh lọt vào payload tạo từ).
+                console.log(
+                    `[scan-translate] ${han} → vi="${s.vietMeanings}" (${vi?.source ?? (twoHop ? "lt:en→vi" : "-")}) · en="${s.engMeanings}" (${en?.source ?? "-"})`,
+                );
+            } else {
+                console.warn(`[scan-translate] ${han} → KHÔNG dịch được vi/en`);
+            }
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(SCAN_TRANSLATE_CONCURRENCY, targets.length) }, runWorker));
 }
 
 /**

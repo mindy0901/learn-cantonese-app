@@ -6,8 +6,10 @@
  */
 import {
     fetchAppData,
+    fetchBootstrapData,
+    computeDataSignature,
+    computeBootstrapSignature,
     rowToGrammar,
-    rowToHanCharacter,
     queryVocabularies,
     fetchVocabulariesByIds,
     findVocabularyByHan,
@@ -20,10 +22,6 @@ import {
     createGrammar,
     updateGrammar,
     deleteGrammar,
-    // han char
-    createHanChar,
-    updateHanChar,
-    deleteHanChar,
     // flashcard
     getFlashcardDecks,
     getFlashcardDeck,
@@ -39,9 +37,23 @@ import {
     deleteVocabularySet,
     addVocabularyToSet,
     removeVocabularyFromSet,
+    // favorite / disliked vocabularies (cặp ❤️ / 🚫 theo user)
+    getFavoriteVocabularyIds,
+    setVocabularyFavorite,
+    getDislikedVocabularyIds,
+    setVocabularyDisliked,
+    // tags (dùng chung, admin quản lý) — 2026-09-27
+    getTags,
+    createTag,
+    updateTag,
+    deleteTag,
+    getVocabularyTagIds,
+    setVocabularyTag,
+    // vocabulary mastery (progress 0-100%)
+    getVocabularyMastery,
+    setVocabularyMastery,
     isLanguage,
     findSimplifiedSuggestion,
-    buildHkSuggestionMap,
 } from "../lib/prismaServiceSplit.js";
 import { getUserId, requireAuth } from "../middleware/auth.js";
 import { requireAppAdmin } from "../middleware/appAdmin.js";
@@ -52,6 +64,34 @@ function langParam(q) {
 }
 
 export async function dataRoutes(fastify) {
+    // ── Bootstrap — 1 API trả HẾT data khi đăng nhập/load app (2026-09-02) ──
+    // 2 bank từ + grammars + data theo user (favorite/disliked/mastery/sets — chỉ khi đã đăng nhập).
+    // Thay cho 5 GET riêng: /data, /hanzi/hk-suggestion-map, /favorite-vocabularies,
+    // /vocabulary-mastery, /vocabulary-sets.
+    // ⚠️ 2026-09-02 (sửa): xóa /api/bootstrap-version — gộp chế độ freshness vào NGAY endpoint này
+    // bằng ETag/304: frontend gửi If-None-Match = signature data hiện tại; không đổi → 304 (rỗng,
+    // ~ms, KHÔNG tải 45MB); đổi → 200 full kèm ETag mới.
+    fastify.get("/bootstrap", async (request, reply) => {
+        const userId = await resolveReadUserId(request.session);
+        // ⚠️ 2026-09-20: payload chứa data THEO USER (favorite/disliked/mastery/sets) nhưng ETag chỉ
+        // theo nội dung 2 bank → browser HTTP cache có thể dùng lại body CŨ (đánh dấu ❤️/🚫 mới
+        // không thấy sau F5) khi revalidate trả 304. ⇒ CẤM browser cache response này
+        // (`private, no-store`); freshness do client tự quản bằng If-None-Match như cũ.
+        reply.header("cache-control", "private, no-store");
+        const clientEtag = String(request.headers["if-none-match"] ?? "");
+        if (clientEtag) {
+            const signature = await computeBootstrapSignature(userId);
+            if (clientEtag === signature) {
+                return reply.code(304).send();
+            }
+        }
+        const data = await fetchBootstrapData(userId);
+        // ⚠️ 2026-09-20: ETag = nội dung 2 bank + digest data THEO USER (favorite/disliked/mastery/sets)
+        // → đánh dấu mới của user cũng làm signature đổi ⇒ client tải lại (không bị 304 giữ data cũ).
+        reply.header("etag", await computeBootstrapSignature(userId));
+        return data;
+    });
+
     // ── Full snapshot (2 kho từ + grammars + han characters) ──
     fastify.get("/data", async (request) => {
         await resolveReadUserId(request.session);
@@ -71,6 +111,11 @@ export async function dataRoutes(fastify) {
                     search: request.query.q ?? request.query.search,
                     hskLevel: lang === "mandarin" ? request.query.hskLevel || null : undefined,
                     pureCantonese: lang === "cantonese" ? (request.query.pureCantonese ?? null) : undefined,
+                    // ⚠️ 2026-09-02: flashcard random bỏ từ đã mastered (progress >= 100)
+                    excludeMastered: request.query.excludeMastered === "1" || request.query.excludeMastered === "true",
+                    // ⚠️ 2026-09-20: flashcard random bỏ từ user đánh dấu "không muốn học" (🚫).
+                    excludeDisliked: request.query.excludeDisliked === "1" || request.query.excludeDisliked === "true",
+                    userId: request.session?.userId ?? null,
                 });
             }
             const data = await fetchAppData();
@@ -113,17 +158,12 @@ export async function dataRoutes(fastify) {
         });
     }
 
-    // Gợi ý giản thể cho form HK (hero Cantonese — cột phải). HK → giản thể qua hk2s,
-    // CHỈ trả khi tìm thấy trong kho Mandarin.
+    // Gợi ý giản thể cho form HK (cột Mandarin / gợi ý khi click vocab). HK → giản thể qua
+    // hk2s, CHỈ trả khi tìm thấy trong kho Mandarin. Tra ON-DEMAND theo từng từ (2026-09-02 —
+    // xóa hkSuggestionMap precompute).
     fastify.get("/hanzi/simplified-suggestion", async (request) => {
         const hk = String(request.query.hk ?? "").trim();
         return await findSimplifiedSuggestion(hk);
-    });
-
-    // Toàn bộ map HK → gợi ý mandarin (precompute khi load — frontend tra map, không gọi
-    // /hanzi/simplified-suggestion từng từ khi click vocab → hết giật). (2026-08-21)
-    fastify.get("/hanzi/hk-suggestion-map", async () => {
-        return await buildHkSuggestionMap();
     });
 
     // ── Grammar CRUD ──
@@ -144,50 +184,6 @@ export async function dataRoutes(fastify) {
 
     fastify.delete("/grammar/:id", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
         await deleteGrammar(getUserId(request), request.params.id);
-        return { ok: true };
-    });
-
-    // ── Han Characters CRUD ──
-    fastify.get("/han-characters", async (request) => {
-        if (request.query.page || request.query.pageSize) {
-            const pageSize = Math.min(50, Math.max(1, Number(request.query.pageSize) || 20));
-            const page = Math.max(1, Number(request.query.page) || 1);
-            const search = String(request.query.q ?? request.query.search ?? "").trim();
-            const { prisma } = await import("../lib/prisma.js");
-            const where = {};
-            if (search) {
-                where.OR = [
-                    { hanSimplified: { contains: search, mode: "insensitive" } },
-                    { hanTraditional: { contains: search, mode: "insensitive" } },
-                ];
-            }
-            const [items, total] = await Promise.all([
-                prisma.hanziCharacter.findMany({
-                    where,
-                    orderBy: { createdAt: "desc" },
-                    skip: (page - 1) * pageSize,
-                    take: pageSize,
-                }),
-                prisma.hanziCharacter.count({ where }),
-            ]);
-            return { items: items.map(rowToHanCharacter), total, page, pageSize };
-        }
-        const data = await fetchAppData();
-        return data.hanCharacters;
-    });
-
-    fastify.post("/han-characters", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
-        const char = await createHanChar(getUserId(request), request.body);
-        return reply.code(201).send(char);
-    });
-
-    fastify.put("/han-characters/:id", { preHandler: [requireAuth] }, async (request, reply) => {
-        const char = await updateHanChar(getUserId(request), request.params.id, request.body);
-        return char;
-    });
-
-    fastify.delete("/han-characters/:id", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
-        await deleteHanChar(getUserId(request), request.params.id);
         return { ok: true };
     });
 
@@ -213,68 +209,6 @@ export async function dataRoutes(fastify) {
         }
         return { total: radicals.length, groups };
     });
-
-    // ── Sync han characters (preview + job + progress) — cập nhật theo 2 ngôn ngữ ──
-    fastify.post(
-        "/data/sync-han-characters/preview",
-        { preHandler: [requireAuth, requireAppAdmin] },
-        async (request) => {
-            const { previewVocabularyHanCharacters } = await import("../lib/hanCharacterBreakdown.js");
-            const mode = request.body?.mode === "full" ? "full" : "fast";
-            const result = await previewVocabularyHanCharacters(mode);
-            return { ok: true, mode, ...result };
-        },
-    );
-
-    fastify.post("/data/sync-han-characters", { preHandler: [requireAuth, requireAppAdmin] }, async (request) => {
-        const { createSyncJob, runSyncJob } = await import("../lib/hanCharSyncJob.js");
-        const mode = request.body?.mode === "full" ? "full" : "fast";
-        const job = createSyncJob();
-        runSyncJob(job.id, mode); // fire-and-forget
-        return { ok: true, jobId: job.id, mode };
-    });
-
-    fastify.get(
-        "/data/sync-han-characters/progress/:jobId",
-        { preHandler: [requireAuth, requireAppAdmin] },
-        async (request) => {
-            const { getSyncJob } = await import("../lib/hanCharSyncJob.js");
-            const job = getSyncJob(request.params.jobId);
-            if (!job) return { ok: true, job: null };
-            return { ok: true, job };
-        },
-    );
-
-    // ── Sync stroke count ──
-    fastify.post(
-        "/data/sync-han-char-strokes/preview",
-        { preHandler: [requireAuth, requireAppAdmin] },
-        async (request) => {
-            const { previewHanCharStrokes } = await import("../lib/hanCharStrokeSync.js");
-            const mode = request.body?.mode === "full" ? "full" : "fast";
-            const result = await previewHanCharStrokes(mode);
-            return { ok: true, mode, ...result };
-        },
-    );
-
-    fastify.post("/data/sync-han-char-strokes", { preHandler: [requireAuth, requireAppAdmin] }, async (request) => {
-        const { createStrokeJob, runStrokeJob } = await import("../lib/hanCharStrokeJob.js");
-        const mode = request.body?.mode === "full" ? "full" : "fast";
-        const job = createStrokeJob();
-        runStrokeJob(job.id, mode); // fire-and-forget
-        return { ok: true, jobId: job.id, mode };
-    });
-
-    fastify.get(
-        "/data/sync-han-char-strokes/progress/:jobId",
-        { preHandler: [requireAuth, requireAppAdmin] },
-        async (request) => {
-            const { getStrokeJob } = await import("../lib/hanCharStrokeJob.js");
-            const job = getStrokeJob(request.params.jobId);
-            if (!job) return { ok: true, job: null };
-            return { ok: true, job };
-        },
-    );
 
     // ── Flashcard Decks ──
     fastify.get("/flashcard-decks", { preHandler: [requireAuth] }, async (request) => {
@@ -400,4 +334,109 @@ export async function dataRoutes(fastify) {
             }
         },
     );
+
+    // ── Favorite / Disliked vocabularies (cặp ❤️ yêu thích / 🚫 không muốn học) — 2026-09-20 ──
+    fastify.get("/favorite-vocabularies", { preHandler: [requireAuth] }, async (request) => {
+        return getFavoriteVocabularyIds(getUserId(request));
+    });
+
+    fastify.put("/favorite-vocabularies/:lang/:id", { preHandler: [requireAuth] }, async (request, reply) => {
+        const lang = isLanguage(request.params.lang) ? request.params.lang : "cantonese";
+        const { favorite } = request.body ?? {};
+        try {
+            return await setVocabularyFavorite(getUserId(request), lang, request.params.id, Boolean(favorite));
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            throw err;
+        }
+    });
+
+    fastify.get("/disliked-vocabularies", { preHandler: [requireAuth] }, async (request) => {
+        return getDislikedVocabularyIds(getUserId(request));
+    });
+
+    fastify.put("/disliked-vocabularies/:lang/:id", { preHandler: [requireAuth] }, async (request, reply) => {
+        const lang = isLanguage(request.params.lang) ? request.params.lang : "cantonese";
+        const { disliked } = request.body ?? {};
+        try {
+            return await setVocabularyDisliked(getUserId(request), lang, request.params.id, Boolean(disliked));
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            throw err;
+        }
+    });
+
+    // ── Tags (dùng chung toàn app — CHỈ admin tạo/đổi tên/xóa + gán cho từ) — 2026-09-27 ──
+    // Đọc danh sách tag: công khai (không cần đăng nhập) để chip/tag hiển thị được cả guest.
+    fastify.get("/tags", async () => await getTags());
+
+    fastify.post("/tags", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
+        try {
+            return await createTag(request.body ?? {});
+        } catch (err) {
+            if (err.statusCode === 409 || err.statusCode === 400) {
+                return reply.code(err.statusCode).send({ error: err.message });
+            }
+            throw err;
+        }
+    });
+
+    fastify.patch("/tags/:id", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
+        try {
+            return await updateTag(request.params.id, request.body ?? {});
+        } catch (err) {
+            if (err.statusCode === 404 || err.statusCode === 409 || err.statusCode === 400) {
+                return reply.code(err.statusCode).send({ error: err.message });
+            }
+            throw err;
+        }
+    });
+
+    fastify.delete("/tags/:id", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
+        try {
+            await deleteTag(request.params.id);
+            return { ok: true };
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            throw err;
+        }
+    });
+
+    // Tag đang gán cho 1 từ (theo ngôn ngữ) — dùng cho picker ở header trang chi tiết.
+    fastify.get("/vocabulary-tags", async (request) => {
+        const lang = langParam(request.query);
+        const vocabularyId = String(request.query.id ?? request.query.vocabularyId ?? "").trim();
+        if (!vocabularyId) return { tagIds: [] };
+        return { tagIds: await getVocabularyTagIds(lang, vocabularyId) };
+    });
+
+    // Gán / gỡ tag cho từ — CHỈ admin. Body: { lang, vocabularyId, tagId, tagged }.
+    fastify.put("/vocabulary-tags", { preHandler: [requireAuth, requireAppAdmin] }, async (request, reply) => {
+        const { lang, vocabularyId, tagId, tagged } = request.body ?? {};
+        const validLang = isLanguage(lang) ? lang : "cantonese";
+        if (!vocabularyId || !tagId) return reply.code(400).send({ error: "Missing vocabularyId/tagId" });
+        try {
+            return await setVocabularyTag(validLang, String(vocabularyId), String(tagId), Boolean(tagged));
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            throw err;
+        }
+    });
+
+    // ── Vocabulary mastery (progress 0-100%) — mọi user đã đăng nhập (2026-09-02) ──
+    fastify.get("/vocabulary-mastery", { preHandler: [requireAuth] }, async (request) => {
+        return getVocabularyMastery(getUserId(request));
+    });
+
+    // Body: { progress: 0-100 }. Set progress trực tiếp (clamp 0-100, <=0 → xóa dòng).
+    fastify.put("/vocabulary-mastery/:lang/:id", { preHandler: [requireAuth] }, async (request, reply) => {
+        const lang = isLanguage(request.params.lang) ? request.params.lang : "cantonese";
+        const { progress } = request.body ?? {};
+        try {
+            return await setVocabularyMastery(getUserId(request), lang, request.params.id, progress);
+        } catch (err) {
+            if (err.statusCode === 404) return reply.code(404).send({ error: err.message });
+            throw err;
+        }
+    });
 }

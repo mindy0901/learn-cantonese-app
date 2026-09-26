@@ -7,6 +7,7 @@ import { buildMergedSinoVietnameseMap } from "./sinoVietnamesesMap.js";
 import { applyThirdToneSandhi } from "./pinyin.js";
 import { normalizeRomanizationPunctuation } from "./wordNormalize.js";
 import { normalizeSinoVietnameseValue } from "./sinoVietnameseReadings.js";
+import { hk2s, hk2t } from "./openccHK.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, "..", "data");
@@ -363,12 +364,60 @@ function greedySegmentPinyinToken(token, marked, base) {
     return parts;
 }
 
+// ⚠️ Hanzii trả pinyin bị tách ü thành token RIÊNG (VD "n ǚ hái", "l ü è" cho 女孩/略) —
+// ü (kè cả dạng mang thanh ǖǘǚǜ) bao giờ cũng thuộc âm tiết đứng TRƯỚC nó (chỉ đứng sau
+// n/l trong pinyin; j/q/x/y + ü viết không dấu nên không dính). Gộp lại trước khi split,
+// nếu không splitPinyinSyllables giữ nguyên sai "n ǚ hái" / "l ü è" vào DB. (2026-09-02)
+const UMLAUT_MARKED_RE = /^[ǖǘǚǜ]$/;
+const UMLAUT_BARE_RE = /^ü$/;
+const TONE_VOWEL_SINGLE_RE = /^[āáǎàēéěèīíǐìōóǒòūúǔù]$/;
+
+function repairSplitUmlautTokens(tokens) {
+    const out = [];
+    for (let i = 0; i < tokens.length; i++) {
+        const tok = tokens[i];
+        const prev = out[out.length - 1] ?? "";
+        // ⚠️ Chỉ merge khi token trước ĐÚNG là n/l (âm tiết khởi đầu của nǚ/lǚ...) — KHÔNG merge
+        // khi kết thúc bằng n/l nhưng là âm tiết đầy đủ (VD "chǔn ǚ" 处女 → n thuộc chǔn).
+        const isNlInitial = /^(n|l)$/.test(prev);
+        if (UMLAUT_BARE_RE.test(tok)) {
+            // "l ü è" → "lüè" (ü + nguyên âm mang thanh sau nó); "n ü …" tương tự.
+            if (isNlInitial && i + 1 < tokens.length && TONE_VOWEL_SINGLE_RE.test(tokens[i + 1])) {
+                out[out.length - 1] = prev + "ü" + tokens[i + 1];
+                i += 1;
+                continue;
+            }
+            if (isNlInitial) {
+                out[out.length - 1] = prev + "ü";
+                continue;
+            }
+            out.push(tok);
+            continue;
+        }
+        if (UMLAUT_MARKED_RE.test(tok)) {
+            // "l ǚ" → "lǚ", "n ǚ hái" → "nǚ hái".
+            if (isNlInitial) {
+                out[out.length - 1] = prev + tok;
+                continue;
+            }
+            out.push(tok);
+            continue;
+        }
+        out.push(tok);
+    }
+    return out;
+}
+
 function splitPinyinSyllables(pinyin) {
     const { marked, base } = getPinyinSyllables();
+    // Gộp token ü bị Hanzii tách lẻ trước khi segment (VD "n ǚ hái" → "nǚ hái").
+    const raws = repairSplitUmlautTokens(
+        String(pinyin ?? "")
+            .split(/[\s,/、'’]+/)
+            .filter(Boolean),
+    );
     const out = [];
-    for (const raw of String(pinyin ?? "")
-        .split(/[\s,/、'’]+/)
-        .filter(Boolean)) {
+    for (const raw of raws) {
         // Tách dấu câu cuối để giữ dính vào âm tiết cuối (VD "wénhuà." → "wén huà.").
         const pm = raw.match(/^(.*?)([.,!?。！？;；:：…]+)$/);
         // ⚠️ LUÔN lowercase token trước khi greedy match — set âm tiết (marked/base) chỉ chứa
@@ -559,7 +608,7 @@ async function fetchHanzii(url, headers, retries = 2) {
  * Ưu tiên đọc Angular TransferState (script#ng-state) → có TOÀN BỘ meanings +
  * tất cả ví dụ (kể cả phần "Xem thêm"). Tên từng nhóm lấy từ DOM .box-title theo kind.
  */
-export async function fetchHanziiMeanings(query, { hl = "vi", pinyin } = {}) {
+async function fetchHanziiPage(query, { hl = "vi", pinyin } = {}) {
     const word = String(query ?? "").trim();
     if (!word) return null;
 
@@ -635,4 +684,35 @@ export async function fetchHanziiMeanings(query, { hl = "vi", pinyin } = {}) {
         return derived ? { word, sinoVietnamese: derived } : null;
     }
     return { word, sinoVietnamese: wholeWordSino($, word), hskLevel: dom.hskLevel, groups: dom.groups };
+}
+
+/**
+ * Scrape nghĩa từ vựng từ Hanzii — TẤT CẢ nhóm TỪ LOẠI.
+ *
+ * ⚠️ 2026-09-02: Hanzii KHÔNG index một số biến thể chữ (VD 衞星 — chữ 衞 → ng-state báo
+ * `detailWord:null`), nhưng CÓ index dạng chuẩn (衛星/卫星). Nếu tra đúng form không ra
+ * meanings (tones/groups) → thử dạng chuẩn (hk2t → phồn, hk2s → giản) 1 lần, lấy meanings
+ * của trang đó. Đơn giản, KHÔNG đệ quy; `word` trả về vẫn là query gốc, kèm `sourceWord`.
+ */
+export async function fetchHanziiMeanings(query, { hl = "vi", pinyin } = {}) {
+    const word = String(query ?? "").trim();
+    if (!word) return null;
+
+    const hasMeanings = (r) => Boolean(r && ((r.tones && r.tones.length) || (r.groups && r.groups.length)));
+
+    const direct = await fetchHanziiPage(word, { hl, pinyin });
+    if (hasMeanings(direct)) return direct;
+
+    const candidates = [];
+    for (const c of [hk2t(word), hk2s(word)]) {
+        const cv = String(c ?? "").trim();
+        if (cv && cv !== word && !candidates.includes(cv)) candidates.push(cv);
+    }
+    for (const cand of candidates) {
+        const r = await fetchHanziiPage(cand, { hl, pinyin });
+        if (hasMeanings(r)) {
+            return { ...r, word, sourceWord: cand };
+        }
+    }
+    return direct;
 }

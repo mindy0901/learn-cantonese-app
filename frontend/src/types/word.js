@@ -6,7 +6,7 @@ export function emptyVocabulary(partial) {
         hanTraditional: "",
         hanSimplified: "",
         vietMeanings: "",
-        important: false,
+        favorite: false,
         mastered: false,
         studyProgress: 0,
         studyProgressAt: undefined,

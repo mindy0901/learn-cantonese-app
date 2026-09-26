@@ -28,10 +28,12 @@ export type AggregateCantoneseVocabulary = {
 
 export type CantoneseVocabularyAvgAggregateOutputType = {
   popularity: number | null
+  popularityLevel: number | null
 }
 
 export type CantoneseVocabularySumAggregateOutputType = {
   popularity: number | null
+  popularityLevel: number | null
 }
 
 export type CantoneseVocabularyMinAggregateOutputType = {
@@ -39,6 +41,7 @@ export type CantoneseVocabularyMinAggregateOutputType = {
   hanziTraditionalHk: string | null
   pureCantonese: boolean | null
   popularity: number | null
+  popularityLevel: number | null
   hanziAudio: string | null
   englishAudio: string | null
   createdAt: Date | null
@@ -50,6 +53,7 @@ export type CantoneseVocabularyMaxAggregateOutputType = {
   hanziTraditionalHk: string | null
   pureCantonese: boolean | null
   popularity: number | null
+  popularityLevel: number | null
   hanziAudio: string | null
   englishAudio: string | null
   createdAt: Date | null
@@ -61,6 +65,7 @@ export type CantoneseVocabularyCountAggregateOutputType = {
   hanziTraditionalHk: number
   pureCantonese: number
   popularity: number
+  popularityLevel: number
   hanziCharacters: number
   relatedWords: number
   hanziAudio: number
@@ -73,10 +78,12 @@ export type CantoneseVocabularyCountAggregateOutputType = {
 
 export type CantoneseVocabularyAvgAggregateInputType = {
   popularity?: true
+  popularityLevel?: true
 }
 
 export type CantoneseVocabularySumAggregateInputType = {
   popularity?: true
+  popularityLevel?: true
 }
 
 export type CantoneseVocabularyMinAggregateInputType = {
@@ -84,6 +91,7 @@ export type CantoneseVocabularyMinAggregateInputType = {
   hanziTraditionalHk?: true
   pureCantonese?: true
   popularity?: true
+  popularityLevel?: true
   hanziAudio?: true
   englishAudio?: true
   createdAt?: true
@@ -95,6 +103,7 @@ export type CantoneseVocabularyMaxAggregateInputType = {
   hanziTraditionalHk?: true
   pureCantonese?: true
   popularity?: true
+  popularityLevel?: true
   hanziAudio?: true
   englishAudio?: true
   createdAt?: true
@@ -106,6 +115,7 @@ export type CantoneseVocabularyCountAggregateInputType = {
   hanziTraditionalHk?: true
   pureCantonese?: true
   popularity?: true
+  popularityLevel?: true
   hanziCharacters?: true
   relatedWords?: true
   hanziAudio?: true
@@ -206,6 +216,7 @@ export type CantoneseVocabularyGroupByOutputType = {
   hanziTraditionalHk: string | null
   pureCantonese: boolean
   popularity: number | null
+  popularityLevel: number | null
   hanziCharacters: runtime.JsonValue | null
   relatedWords: runtime.JsonValue | null
   hanziAudio: string | null
@@ -242,6 +253,7 @@ export type CantoneseVocabularyWhereInput = {
   hanziTraditionalHk?: Prisma.StringNullableFilter<"CantoneseVocabulary"> | string | null
   pureCantonese?: Prisma.BoolFilter<"CantoneseVocabulary"> | boolean
   popularity?: Prisma.FloatNullableFilter<"CantoneseVocabulary"> | number | null
+  popularityLevel?: Prisma.IntNullableFilter<"CantoneseVocabulary"> | number | null
   hanziCharacters?: Prisma.JsonNullableFilter<"CantoneseVocabulary">
   relatedWords?: Prisma.JsonNullableFilter<"CantoneseVocabulary">
   hanziAudio?: Prisma.StringNullableFilter<"CantoneseVocabulary"> | string | null
@@ -249,7 +261,6 @@ export type CantoneseVocabularyWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"CantoneseVocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CantoneseVocabulary"> | Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationListRelationFilter
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterListRelationFilter
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyListRelationFilter
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyListRelationFilter
 }
@@ -259,6 +270,7 @@ export type CantoneseVocabularyOrderByWithRelationInput = {
   hanziTraditionalHk?: Prisma.SortOrderInput | Prisma.SortOrder
   pureCantonese?: Prisma.SortOrder
   popularity?: Prisma.SortOrderInput | Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   hanziCharacters?: Prisma.SortOrderInput | Prisma.SortOrder
   relatedWords?: Prisma.SortOrderInput | Prisma.SortOrder
   hanziAudio?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -266,7 +278,6 @@ export type CantoneseVocabularyOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   romanizations?: Prisma.CantoneseVocabularyRomanizationOrderByRelationAggregateInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterOrderByRelationAggregateInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyOrderByRelationAggregateInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyOrderByRelationAggregateInput
 }
@@ -279,6 +290,7 @@ export type CantoneseVocabularyWhereUniqueInput = Prisma.AtLeast<{
   hanziTraditionalHk?: Prisma.StringNullableFilter<"CantoneseVocabulary"> | string | null
   pureCantonese?: Prisma.BoolFilter<"CantoneseVocabulary"> | boolean
   popularity?: Prisma.FloatNullableFilter<"CantoneseVocabulary"> | number | null
+  popularityLevel?: Prisma.IntNullableFilter<"CantoneseVocabulary"> | number | null
   hanziCharacters?: Prisma.JsonNullableFilter<"CantoneseVocabulary">
   relatedWords?: Prisma.JsonNullableFilter<"CantoneseVocabulary">
   hanziAudio?: Prisma.StringNullableFilter<"CantoneseVocabulary"> | string | null
@@ -286,7 +298,6 @@ export type CantoneseVocabularyWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"CantoneseVocabulary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CantoneseVocabulary"> | Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationListRelationFilter
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterListRelationFilter
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyListRelationFilter
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyListRelationFilter
 }, "id">
@@ -296,6 +307,7 @@ export type CantoneseVocabularyOrderByWithAggregationInput = {
   hanziTraditionalHk?: Prisma.SortOrderInput | Prisma.SortOrder
   pureCantonese?: Prisma.SortOrder
   popularity?: Prisma.SortOrderInput | Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrderInput | Prisma.SortOrder
   hanziCharacters?: Prisma.SortOrderInput | Prisma.SortOrder
   relatedWords?: Prisma.SortOrderInput | Prisma.SortOrder
   hanziAudio?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -317,6 +329,7 @@ export type CantoneseVocabularyScalarWhereWithAggregatesInput = {
   hanziTraditionalHk?: Prisma.StringNullableWithAggregatesFilter<"CantoneseVocabulary"> | string | null
   pureCantonese?: Prisma.BoolWithAggregatesFilter<"CantoneseVocabulary"> | boolean
   popularity?: Prisma.FloatNullableWithAggregatesFilter<"CantoneseVocabulary"> | number | null
+  popularityLevel?: Prisma.IntNullableWithAggregatesFilter<"CantoneseVocabulary"> | number | null
   hanziCharacters?: Prisma.JsonNullableWithAggregatesFilter<"CantoneseVocabulary">
   relatedWords?: Prisma.JsonNullableWithAggregatesFilter<"CantoneseVocabulary">
   hanziAudio?: Prisma.StringNullableWithAggregatesFilter<"CantoneseVocabulary"> | string | null
@@ -330,6 +343,7 @@ export type CantoneseVocabularyCreateInput = {
   hanziTraditionalHk?: string | null
   pureCantonese?: boolean
   popularity?: number | null
+  popularityLevel?: number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: string | null
@@ -337,7 +351,6 @@ export type CantoneseVocabularyCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationCreateNestedManyWithoutCantoneseVocabularyInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterCreateNestedManyWithoutCantoneseVocabularyInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyCreateNestedManyWithoutCantoneseVocabularyInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyCreateNestedManyWithoutCantoneseVocabularyInput
 }
@@ -347,6 +360,7 @@ export type CantoneseVocabularyUncheckedCreateInput = {
   hanziTraditionalHk?: string | null
   pureCantonese?: boolean
   popularity?: number | null
+  popularityLevel?: number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: string | null
@@ -354,7 +368,6 @@ export type CantoneseVocabularyUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
 }
@@ -364,6 +377,7 @@ export type CantoneseVocabularyUpdateInput = {
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -371,7 +385,6 @@ export type CantoneseVocabularyUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationUpdateManyWithoutCantoneseVocabularyNestedInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUpdateManyWithoutCantoneseVocabularyNestedInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUpdateManyWithoutCantoneseVocabularyNestedInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUpdateManyWithoutCantoneseVocabularyNestedInput
 }
@@ -381,6 +394,7 @@ export type CantoneseVocabularyUncheckedUpdateInput = {
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -388,7 +402,6 @@ export type CantoneseVocabularyUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
 }
@@ -398,6 +411,7 @@ export type CantoneseVocabularyCreateManyInput = {
   hanziTraditionalHk?: string | null
   pureCantonese?: boolean
   popularity?: number | null
+  popularityLevel?: number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: string | null
@@ -411,6 +425,7 @@ export type CantoneseVocabularyUpdateManyMutationInput = {
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -424,6 +439,7 @@ export type CantoneseVocabularyUncheckedUpdateManyInput = {
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -437,6 +453,7 @@ export type CantoneseVocabularyCountOrderByAggregateInput = {
   hanziTraditionalHk?: Prisma.SortOrder
   pureCantonese?: Prisma.SortOrder
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
   hanziCharacters?: Prisma.SortOrder
   relatedWords?: Prisma.SortOrder
   hanziAudio?: Prisma.SortOrder
@@ -447,6 +464,7 @@ export type CantoneseVocabularyCountOrderByAggregateInput = {
 
 export type CantoneseVocabularyAvgOrderByAggregateInput = {
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
 }
 
 export type CantoneseVocabularyMaxOrderByAggregateInput = {
@@ -454,6 +472,7 @@ export type CantoneseVocabularyMaxOrderByAggregateInput = {
   hanziTraditionalHk?: Prisma.SortOrder
   pureCantonese?: Prisma.SortOrder
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
   hanziAudio?: Prisma.SortOrder
   englishAudio?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -465,6 +484,7 @@ export type CantoneseVocabularyMinOrderByAggregateInput = {
   hanziTraditionalHk?: Prisma.SortOrder
   pureCantonese?: Prisma.SortOrder
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
   hanziAudio?: Prisma.SortOrder
   englishAudio?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -473,6 +493,7 @@ export type CantoneseVocabularyMinOrderByAggregateInput = {
 
 export type CantoneseVocabularySumOrderByAggregateInput = {
   popularity?: Prisma.SortOrder
+  popularityLevel?: Prisma.SortOrder
 }
 
 export type CantoneseVocabularyScalarRelationFilter = {
@@ -496,20 +517,6 @@ export type CantoneseVocabularyUpdateOneRequiredWithoutRomanizationsNestedInput 
   upsert?: Prisma.CantoneseVocabularyUpsertWithoutRomanizationsInput
   connect?: Prisma.CantoneseVocabularyWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.CantoneseVocabularyUpdateToOneWithWhereWithoutRomanizationsInput, Prisma.CantoneseVocabularyUpdateWithoutRomanizationsInput>, Prisma.CantoneseVocabularyUncheckedUpdateWithoutRomanizationsInput>
-}
-
-export type CantoneseVocabularyCreateNestedOneWithoutVocabularyCharactersInput = {
-  create?: Prisma.XOR<Prisma.CantoneseVocabularyCreateWithoutVocabularyCharactersInput, Prisma.CantoneseVocabularyUncheckedCreateWithoutVocabularyCharactersInput>
-  connectOrCreate?: Prisma.CantoneseVocabularyCreateOrConnectWithoutVocabularyCharactersInput
-  connect?: Prisma.CantoneseVocabularyWhereUniqueInput
-}
-
-export type CantoneseVocabularyUpdateOneRequiredWithoutVocabularyCharactersNestedInput = {
-  create?: Prisma.XOR<Prisma.CantoneseVocabularyCreateWithoutVocabularyCharactersInput, Prisma.CantoneseVocabularyUncheckedCreateWithoutVocabularyCharactersInput>
-  connectOrCreate?: Prisma.CantoneseVocabularyCreateOrConnectWithoutVocabularyCharactersInput
-  upsert?: Prisma.CantoneseVocabularyUpsertWithoutVocabularyCharactersInput
-  connect?: Prisma.CantoneseVocabularyWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.CantoneseVocabularyUpdateToOneWithWhereWithoutVocabularyCharactersInput, Prisma.CantoneseVocabularyUpdateWithoutVocabularyCharactersInput>, Prisma.CantoneseVocabularyUncheckedUpdateWithoutVocabularyCharactersInput>
 }
 
 export type CantoneseVocabularyCreateNestedOneWithoutFlashcardDeckCantoneseVocabulariesInput = {
@@ -545,13 +552,13 @@ export type CantoneseVocabularyCreateWithoutRomanizationsInput = {
   hanziTraditionalHk?: string | null
   pureCantonese?: boolean
   popularity?: number | null
+  popularityLevel?: number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: string | null
   englishAudio?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterCreateNestedManyWithoutCantoneseVocabularyInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyCreateNestedManyWithoutCantoneseVocabularyInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyCreateNestedManyWithoutCantoneseVocabularyInput
 }
@@ -561,13 +568,13 @@ export type CantoneseVocabularyUncheckedCreateWithoutRomanizationsInput = {
   hanziTraditionalHk?: string | null
   pureCantonese?: boolean
   popularity?: number | null
+  popularityLevel?: number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: string | null
   englishAudio?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
 }
@@ -593,13 +600,13 @@ export type CantoneseVocabularyUpdateWithoutRomanizationsInput = {
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   englishAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUpdateManyWithoutCantoneseVocabularyNestedInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUpdateManyWithoutCantoneseVocabularyNestedInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUpdateManyWithoutCantoneseVocabularyNestedInput
 }
@@ -609,93 +616,13 @@ export type CantoneseVocabularyUncheckedUpdateWithoutRomanizationsInput = {
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   englishAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
-  flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
-  vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
-}
-
-export type CantoneseVocabularyCreateWithoutVocabularyCharactersInput = {
-  id?: string
-  hanziTraditionalHk?: string | null
-  pureCantonese?: boolean
-  popularity?: number | null
-  hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanziAudio?: string | null
-  englishAudio?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  romanizations?: Prisma.CantoneseVocabularyRomanizationCreateNestedManyWithoutCantoneseVocabularyInput
-  flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyCreateNestedManyWithoutCantoneseVocabularyInput
-  vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyCreateNestedManyWithoutCantoneseVocabularyInput
-}
-
-export type CantoneseVocabularyUncheckedCreateWithoutVocabularyCharactersInput = {
-  id?: string
-  hanziTraditionalHk?: string | null
-  pureCantonese?: boolean
-  popularity?: number | null
-  hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanziAudio?: string | null
-  englishAudio?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  romanizations?: Prisma.CantoneseVocabularyRomanizationUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
-  flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
-  vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
-}
-
-export type CantoneseVocabularyCreateOrConnectWithoutVocabularyCharactersInput = {
-  where: Prisma.CantoneseVocabularyWhereUniqueInput
-  create: Prisma.XOR<Prisma.CantoneseVocabularyCreateWithoutVocabularyCharactersInput, Prisma.CantoneseVocabularyUncheckedCreateWithoutVocabularyCharactersInput>
-}
-
-export type CantoneseVocabularyUpsertWithoutVocabularyCharactersInput = {
-  update: Prisma.XOR<Prisma.CantoneseVocabularyUpdateWithoutVocabularyCharactersInput, Prisma.CantoneseVocabularyUncheckedUpdateWithoutVocabularyCharactersInput>
-  create: Prisma.XOR<Prisma.CantoneseVocabularyCreateWithoutVocabularyCharactersInput, Prisma.CantoneseVocabularyUncheckedCreateWithoutVocabularyCharactersInput>
-  where?: Prisma.CantoneseVocabularyWhereInput
-}
-
-export type CantoneseVocabularyUpdateToOneWithWhereWithoutVocabularyCharactersInput = {
-  where?: Prisma.CantoneseVocabularyWhereInput
-  data: Prisma.XOR<Prisma.CantoneseVocabularyUpdateWithoutVocabularyCharactersInput, Prisma.CantoneseVocabularyUncheckedUpdateWithoutVocabularyCharactersInput>
-}
-
-export type CantoneseVocabularyUpdateWithoutVocabularyCharactersInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  englishAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  romanizations?: Prisma.CantoneseVocabularyRomanizationUpdateManyWithoutCantoneseVocabularyNestedInput
-  flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUpdateManyWithoutCantoneseVocabularyNestedInput
-  vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUpdateManyWithoutCantoneseVocabularyNestedInput
-}
-
-export type CantoneseVocabularyUncheckedUpdateWithoutVocabularyCharactersInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  englishAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  romanizations?: Prisma.CantoneseVocabularyRomanizationUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
 }
@@ -705,6 +632,7 @@ export type CantoneseVocabularyCreateWithoutFlashcardDeckCantoneseVocabulariesIn
   hanziTraditionalHk?: string | null
   pureCantonese?: boolean
   popularity?: number | null
+  popularityLevel?: number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: string | null
@@ -712,7 +640,6 @@ export type CantoneseVocabularyCreateWithoutFlashcardDeckCantoneseVocabulariesIn
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationCreateNestedManyWithoutCantoneseVocabularyInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterCreateNestedManyWithoutCantoneseVocabularyInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyCreateNestedManyWithoutCantoneseVocabularyInput
 }
 
@@ -721,6 +648,7 @@ export type CantoneseVocabularyUncheckedCreateWithoutFlashcardDeckCantoneseVocab
   hanziTraditionalHk?: string | null
   pureCantonese?: boolean
   popularity?: number | null
+  popularityLevel?: number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: string | null
@@ -728,7 +656,6 @@ export type CantoneseVocabularyUncheckedCreateWithoutFlashcardDeckCantoneseVocab
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
 }
 
@@ -753,6 +680,7 @@ export type CantoneseVocabularyUpdateWithoutFlashcardDeckCantoneseVocabulariesIn
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -760,7 +688,6 @@ export type CantoneseVocabularyUpdateWithoutFlashcardDeckCantoneseVocabulariesIn
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationUpdateManyWithoutCantoneseVocabularyNestedInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUpdateManyWithoutCantoneseVocabularyNestedInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUpdateManyWithoutCantoneseVocabularyNestedInput
 }
 
@@ -769,6 +696,7 @@ export type CantoneseVocabularyUncheckedUpdateWithoutFlashcardDeckCantoneseVocab
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -776,7 +704,6 @@ export type CantoneseVocabularyUncheckedUpdateWithoutFlashcardDeckCantoneseVocab
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
   vocabularySetCantoneseVocabularies?: Prisma.VocabularySetCantoneseVocabularyUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
 }
 
@@ -785,6 +712,7 @@ export type CantoneseVocabularyCreateWithoutVocabularySetCantoneseVocabulariesIn
   hanziTraditionalHk?: string | null
   pureCantonese?: boolean
   popularity?: number | null
+  popularityLevel?: number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: string | null
@@ -792,7 +720,6 @@ export type CantoneseVocabularyCreateWithoutVocabularySetCantoneseVocabulariesIn
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationCreateNestedManyWithoutCantoneseVocabularyInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterCreateNestedManyWithoutCantoneseVocabularyInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyCreateNestedManyWithoutCantoneseVocabularyInput
 }
 
@@ -801,6 +728,7 @@ export type CantoneseVocabularyUncheckedCreateWithoutVocabularySetCantoneseVocab
   hanziTraditionalHk?: string | null
   pureCantonese?: boolean
   popularity?: number | null
+  popularityLevel?: number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: string | null
@@ -808,7 +736,6 @@ export type CantoneseVocabularyUncheckedCreateWithoutVocabularySetCantoneseVocab
   createdAt?: Date | string
   updatedAt?: Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedCreateNestedManyWithoutCantoneseVocabularyInput
 }
 
@@ -833,6 +760,7 @@ export type CantoneseVocabularyUpdateWithoutVocabularySetCantoneseVocabulariesIn
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -840,7 +768,6 @@ export type CantoneseVocabularyUpdateWithoutVocabularySetCantoneseVocabulariesIn
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationUpdateManyWithoutCantoneseVocabularyNestedInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUpdateManyWithoutCantoneseVocabularyNestedInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUpdateManyWithoutCantoneseVocabularyNestedInput
 }
 
@@ -849,6 +776,7 @@ export type CantoneseVocabularyUncheckedUpdateWithoutVocabularySetCantoneseVocab
   hanziTraditionalHk?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pureCantonese?: Prisma.BoolFieldUpdateOperationsInput | boolean
   popularity?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  popularityLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   hanziCharacters?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   relatedWords?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   hanziAudio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -856,7 +784,6 @@ export type CantoneseVocabularyUncheckedUpdateWithoutVocabularySetCantoneseVocab
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   romanizations?: Prisma.CantoneseVocabularyRomanizationUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
-  vocabularyCharacters?: Prisma.CantoneseVocabularyCharacterUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
   flashcardDeckCantoneseVocabularies?: Prisma.FlashcardDeckCantoneseVocabularyUncheckedUpdateManyWithoutCantoneseVocabularyNestedInput
 }
 
@@ -867,14 +794,12 @@ export type CantoneseVocabularyUncheckedUpdateWithoutVocabularySetCantoneseVocab
 
 export type CantoneseVocabularyCountOutputType = {
   romanizations: number
-  vocabularyCharacters: number
   flashcardDeckCantoneseVocabularies: number
   vocabularySetCantoneseVocabularies: number
 }
 
 export type CantoneseVocabularyCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   romanizations?: boolean | CantoneseVocabularyCountOutputTypeCountRomanizationsArgs
-  vocabularyCharacters?: boolean | CantoneseVocabularyCountOutputTypeCountVocabularyCharactersArgs
   flashcardDeckCantoneseVocabularies?: boolean | CantoneseVocabularyCountOutputTypeCountFlashcardDeckCantoneseVocabulariesArgs
   vocabularySetCantoneseVocabularies?: boolean | CantoneseVocabularyCountOutputTypeCountVocabularySetCantoneseVocabulariesArgs
 }
@@ -899,13 +824,6 @@ export type CantoneseVocabularyCountOutputTypeCountRomanizationsArgs<ExtArgs ext
 /**
  * CantoneseVocabularyCountOutputType without action
  */
-export type CantoneseVocabularyCountOutputTypeCountVocabularyCharactersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.CantoneseVocabularyCharacterWhereInput
-}
-
-/**
- * CantoneseVocabularyCountOutputType without action
- */
 export type CantoneseVocabularyCountOutputTypeCountFlashcardDeckCantoneseVocabulariesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.FlashcardDeckCantoneseVocabularyWhereInput
 }
@@ -923,6 +841,7 @@ export type CantoneseVocabularySelect<ExtArgs extends runtime.Types.Extensions.I
   hanziTraditionalHk?: boolean
   pureCantonese?: boolean
   popularity?: boolean
+  popularityLevel?: boolean
   hanziCharacters?: boolean
   relatedWords?: boolean
   hanziAudio?: boolean
@@ -930,7 +849,6 @@ export type CantoneseVocabularySelect<ExtArgs extends runtime.Types.Extensions.I
   createdAt?: boolean
   updatedAt?: boolean
   romanizations?: boolean | Prisma.CantoneseVocabulary$romanizationsArgs<ExtArgs>
-  vocabularyCharacters?: boolean | Prisma.CantoneseVocabulary$vocabularyCharactersArgs<ExtArgs>
   flashcardDeckCantoneseVocabularies?: boolean | Prisma.CantoneseVocabulary$flashcardDeckCantoneseVocabulariesArgs<ExtArgs>
   vocabularySetCantoneseVocabularies?: boolean | Prisma.CantoneseVocabulary$vocabularySetCantoneseVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.CantoneseVocabularyCountOutputTypeDefaultArgs<ExtArgs>
@@ -941,6 +859,7 @@ export type CantoneseVocabularySelectCreateManyAndReturn<ExtArgs extends runtime
   hanziTraditionalHk?: boolean
   pureCantonese?: boolean
   popularity?: boolean
+  popularityLevel?: boolean
   hanziCharacters?: boolean
   relatedWords?: boolean
   hanziAudio?: boolean
@@ -954,6 +873,7 @@ export type CantoneseVocabularySelectUpdateManyAndReturn<ExtArgs extends runtime
   hanziTraditionalHk?: boolean
   pureCantonese?: boolean
   popularity?: boolean
+  popularityLevel?: boolean
   hanziCharacters?: boolean
   relatedWords?: boolean
   hanziAudio?: boolean
@@ -967,6 +887,7 @@ export type CantoneseVocabularySelectScalar = {
   hanziTraditionalHk?: boolean
   pureCantonese?: boolean
   popularity?: boolean
+  popularityLevel?: boolean
   hanziCharacters?: boolean
   relatedWords?: boolean
   hanziAudio?: boolean
@@ -975,10 +896,9 @@ export type CantoneseVocabularySelectScalar = {
   updatedAt?: boolean
 }
 
-export type CantoneseVocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "hanziTraditionalHk" | "pureCantonese" | "popularity" | "hanziCharacters" | "relatedWords" | "hanziAudio" | "englishAudio" | "createdAt" | "updatedAt", ExtArgs["result"]["cantoneseVocabulary"]>
+export type CantoneseVocabularyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "hanziTraditionalHk" | "pureCantonese" | "popularity" | "popularityLevel" | "hanziCharacters" | "relatedWords" | "hanziAudio" | "englishAudio" | "createdAt" | "updatedAt", ExtArgs["result"]["cantoneseVocabulary"]>
 export type CantoneseVocabularyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   romanizations?: boolean | Prisma.CantoneseVocabulary$romanizationsArgs<ExtArgs>
-  vocabularyCharacters?: boolean | Prisma.CantoneseVocabulary$vocabularyCharactersArgs<ExtArgs>
   flashcardDeckCantoneseVocabularies?: boolean | Prisma.CantoneseVocabulary$flashcardDeckCantoneseVocabulariesArgs<ExtArgs>
   vocabularySetCantoneseVocabularies?: boolean | Prisma.CantoneseVocabulary$vocabularySetCantoneseVocabulariesArgs<ExtArgs>
   _count?: boolean | Prisma.CantoneseVocabularyCountOutputTypeDefaultArgs<ExtArgs>
@@ -990,7 +910,6 @@ export type $CantoneseVocabularyPayload<ExtArgs extends runtime.Types.Extensions
   name: "CantoneseVocabulary"
   objects: {
     romanizations: Prisma.$CantoneseVocabularyRomanizationPayload<ExtArgs>[]
-    vocabularyCharacters: Prisma.$CantoneseVocabularyCharacterPayload<ExtArgs>[]
     flashcardDeckCantoneseVocabularies: Prisma.$FlashcardDeckCantoneseVocabularyPayload<ExtArgs>[]
     vocabularySetCantoneseVocabularies: Prisma.$VocabularySetCantoneseVocabularyPayload<ExtArgs>[]
   }
@@ -999,6 +918,7 @@ export type $CantoneseVocabularyPayload<ExtArgs extends runtime.Types.Extensions
     hanziTraditionalHk: string | null
     pureCantonese: boolean
     popularity: number | null
+    popularityLevel: number | null
     hanziCharacters: runtime.JsonValue | null
     relatedWords: runtime.JsonValue | null
     hanziAudio: string | null
@@ -1400,7 +1320,6 @@ readonly fields: CantoneseVocabularyFieldRefs;
 export interface Prisma__CantoneseVocabularyClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   romanizations<T extends Prisma.CantoneseVocabulary$romanizationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CantoneseVocabulary$romanizationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CantoneseVocabularyRomanizationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  vocabularyCharacters<T extends Prisma.CantoneseVocabulary$vocabularyCharactersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CantoneseVocabulary$vocabularyCharactersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CantoneseVocabularyCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   flashcardDeckCantoneseVocabularies<T extends Prisma.CantoneseVocabulary$flashcardDeckCantoneseVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CantoneseVocabulary$flashcardDeckCantoneseVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FlashcardDeckCantoneseVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   vocabularySetCantoneseVocabularies<T extends Prisma.CantoneseVocabulary$vocabularySetCantoneseVocabulariesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CantoneseVocabulary$vocabularySetCantoneseVocabulariesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VocabularySetCantoneseVocabularyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1436,6 +1355,7 @@ export interface CantoneseVocabularyFieldRefs {
   readonly hanziTraditionalHk: Prisma.FieldRef<"CantoneseVocabulary", 'String'>
   readonly pureCantonese: Prisma.FieldRef<"CantoneseVocabulary", 'Boolean'>
   readonly popularity: Prisma.FieldRef<"CantoneseVocabulary", 'Float'>
+  readonly popularityLevel: Prisma.FieldRef<"CantoneseVocabulary", 'Int'>
   readonly hanziCharacters: Prisma.FieldRef<"CantoneseVocabulary", 'Json'>
   readonly relatedWords: Prisma.FieldRef<"CantoneseVocabulary", 'Json'>
   readonly hanziAudio: Prisma.FieldRef<"CantoneseVocabulary", 'String'>
@@ -1856,30 +1776,6 @@ export type CantoneseVocabulary$romanizationsArgs<ExtArgs extends runtime.Types.
   take?: number
   skip?: number
   distinct?: Prisma.CantoneseVocabularyRomanizationScalarFieldEnum | Prisma.CantoneseVocabularyRomanizationScalarFieldEnum[]
-}
-
-/**
- * CantoneseVocabulary.vocabularyCharacters
- */
-export type CantoneseVocabulary$vocabularyCharactersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the CantoneseVocabularyCharacter
-   */
-  select?: Prisma.CantoneseVocabularyCharacterSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the CantoneseVocabularyCharacter
-   */
-  omit?: Prisma.CantoneseVocabularyCharacterOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.CantoneseVocabularyCharacterInclude<ExtArgs> | null
-  where?: Prisma.CantoneseVocabularyCharacterWhereInput
-  orderBy?: Prisma.CantoneseVocabularyCharacterOrderByWithRelationInput | Prisma.CantoneseVocabularyCharacterOrderByWithRelationInput[]
-  cursor?: Prisma.CantoneseVocabularyCharacterWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.CantoneseVocabularyCharacterScalarFieldEnum | Prisma.CantoneseVocabularyCharacterScalarFieldEnum[]
 }
 
 /**

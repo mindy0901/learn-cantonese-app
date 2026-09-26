@@ -10,6 +10,7 @@
         "prisma": "prisma"
     },
     "dependencies": {
+        "@fastify/compress": "^9.2.0",
         "@fastify/cookie": "^11.1.2",
         "@fastify/cors": "^11.3.0",
         "@fastify/formbody": "^8.0.2",
@@ -37,6 +38,7 @@
     "devDependencies": {
         "@types/node": "^26.1.1",
         "@types/pg": "^8.20.0",
-        "prisma": "^7.8.0"
+        "prisma": "^7.8.0",
+        "supabase": "^2.117.0"
     }
 }

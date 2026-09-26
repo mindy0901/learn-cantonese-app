@@ -3,32 +3,11 @@ import { useLocale } from "../store/localeStore.js";
 import { useAppActions } from "../store/appStore.js";
 import { api } from "../lib/api.js";
 import { cn } from "../lib/cn.js";
-import { diffHanChars } from "../lib/hanScriptDisplay.js";
 import { btnClass } from "./ui/buttonStyles.js";
 import { Button } from "./shadcn/button.jsx";
-import { ReadingPair } from "./ReadingPair.jsx";
+import { Checkbox } from "./shadcn/checkbox.jsx";
 import { Spinner } from "./shadcn/spinner.jsx";
-import { IconChevronDown, IconEdit } from "./NavIcons.jsx";
-
-/** Check icon for the suggestion checkbox. */
-function CheckIcon({ size = 14, className }) {
-    return (
-        <svg
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-            aria-hidden="true"
-        >
-            <polyline points="20 6 9 17 4 12" />
-        </svg>
-    );
-}
+import { IconEdit } from "./NavIcons.jsx";
 
 /** Image/upload icon. */
 function IconImage({ size = 20, className }) {
@@ -62,25 +41,55 @@ function fileToDataUrl(file) {
 }
 
 /**
- * Render the SIMPLIFIED form with per-character coloring (AGENTS.md §1.5):
- * characters identical to the traditional form stay RED (traditional), only
- * characters that genuinely differ (true simplified) are BLUE. Single chars
- * fall back to the same rule.
+ * Hán tự theo ngôn ngữ quét OCR (2026-09-02): cantonese → đỏ (phồn thể HK),
+ * mandarin → xanh (giản thể) — theo chuẩn màu page (§8.5).
  */
-function SimplifiedHan({ simplified, traditional, className }) {
-    const diff = diffHanChars({ traditional, simplified });
-    const chars = diff.simp.length
-        ? diff.simp
-        : [{ char: simplified, same: String(simplified) === String(traditional) }];
+function OcrHan({ s, lang, className }) {
+    if (lang === "mandarin") {
+        return (
+            <span className={cn("font-semibold leading-none text-han-simp", className)}>
+                {s.hanSimplified || s.hanTraditional}
+            </span>
+        );
+    }
     return (
-        <span className={className}>
-            {chars.map((c, i) => (
-                <span key={i} className={cn(c.same ? "text-han-trad" : "text-han-simp")}>
-                    {c.char}
-                </span>
-            ))}
+        <span className={cn("font-semibold leading-none text-han-trad", className)}>
+            {s.hanziTraditionalHk || s.hanTraditional}
         </span>
     );
+}
+
+/** Phiên âm theo ngôn ngữ quét OCR: mandarin → pinyin, cantonese → jyutping. */
+function OcrReading({ s, lang, className }) {
+    if (lang === "mandarin") {
+        return <span className={cn("whitespace-nowrap text-pinyin", className)}>{s.pinyin || "-"}</span>;
+    }
+    return <span className={cn("whitespace-nowrap text-jyutping", className)}>{s.jyutping || "-"}</span>;
+}
+
+/** Chữ Hán hiển thị theo ngôn ngữ (dùng cho aria-label). */
+function hanForLang(s, lang) {
+    return lang === "mandarin" ? s.hanSimplified || s.hanTraditional : s.hanziTraditionalHk || s.hanTraditional;
+}
+
+/**
+ * Sắp xếp kết quả quét: cụm **CHƯA có** trong kho lên trước, cụm **ĐÃ có** xuống dưới.
+ * `Array.sort` là stable ⇒ trong mỗi nhóm vẫn giữ ĐÚNG thứ tự đọc được trong ảnh. (2026-09-27)
+ * Đồng thời DEDUPE theo `cluster.key` (VD user sửa 1 cụm thành từ đã có trong danh sách →
+ * tránh trùng key/item).
+ */
+function sortScanGroups(list) {
+    const seen = new Set();
+    const unique = [];
+    for (const g of list) {
+        const key = g.cluster?.key;
+        if (key) {
+            if (seen.has(key)) continue;
+            seen.add(key);
+        }
+        unique.push(g);
+    }
+    return unique.sort((a, b) => Number(Boolean(a.cluster?.exists)) - Number(Boolean(b.cluster?.exists)));
 }
 
 /**
@@ -125,7 +134,7 @@ function normalizeForOcr(dataUrl, { maxDim = 2000 } = {}) {
  * standard create flow when the user confirms.
  */
 export const OcrScanSection = forwardRef(function OcrScanSection(
-    { engine, onScanningChange, onAddingChange, onImageChange },
+    { engine, lang, onScanningChange, onAddingChange, onImageChange, onSelectionChange },
     ref,
 ) {
     const { t } = useLocale();
@@ -134,8 +143,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
     const [image, setImage] = useState(null);
     const [scanning, setScanning] = useState(false);
     const [error, setError] = useState(null);
-    const [groups, setGroups] = useState([]); // [{ cluster, members }]
-    const [expanded, setExpanded] = useState(() => new Set()); // group indices
+    const [groups, setGroups] = useState([]); // [{ cluster }] — chỉ CỤM TỪ (2026-09-27: bỏ members)
     const [selected, setSelected] = useState(() => new Map()); // key -> suggestion (deduped)
     const [adding, setAdding] = useState(false);
     const [addedCount, setAddedCount] = useState(null);
@@ -143,7 +151,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
 
     // Inline correction of OCR misreads: which suggestion is being edited,
     // the current input text, and whether a derive request is in flight.
-    const [editing, setEditing] = useState(null); // { gi, mi|null, oldKey }
+    const [editing, setEditing] = useState(null); // { gi, oldKey } — sửa chữ Hán của 1 cluster
     const [editText, setEditText] = useState("");
     const [deriving, setDeriving] = useState(false);
 
@@ -155,7 +163,6 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                 const processed = await normalizeForOcr(dataUrl);
                 setImage(processed);
                 setGroups([]);
-                setExpanded(new Set());
                 setSelected(new Map());
                 setError(null);
                 setAddedCount(null);
@@ -224,19 +231,18 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
         setScanning(true);
         setError(null);
         setGroups([]);
-        setExpanded(new Set());
         setAddedCount(null);
         setScanned(false);
         try {
             const base64 = image.replace(/^data:image\/[a-z0-9.+-]+;base64,/i, "");
-            const res = await api.ocrVocabulary(base64, engine);
-            const list = res.groups ?? [];
+            const res = await api.ocrVocabulary(base64, engine, lang);
+            // Sắp xếp: chưa có (cần thêm) lên trước, đã có xuống dưới.
+            const list = sortScanGroups(res.groups ?? []);
             setGroups(list);
-            // Default: select new (not-yet-in-bank) clusters; members are opt-in via expand.
+            // ⚠️ 2026-09-27: AUTO-CHECK TẤT CẢ cluster (kể cả từ đã có trong kho) — từ đã có
+            // hiện checked + disabledđể trạng thái nhất quán; nút "Thêm" chỉ đếm cụm CHƯA có.
             const init = new Map();
-            list.forEach((g) => {
-                if (!g.cluster.exists) init.set(g.cluster.key, g.cluster);
-            });
+            list.forEach((g) => init.set(g.cluster.key, g.cluster));
             setSelected(init);
             setScanned(true);
         } catch (err) {
@@ -247,7 +253,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
         }
     }, [image, scanning, engine, t]);
 
-    /** Toggle any suggestion (cluster or member) in the selected map, deduped by key. */
+    /** Toggle a cluster suggestion in the selected map, deduped by key. */
     const toggleItem = useCallback((sug) => {
         setSelected((prev) => {
             const next = new Map(prev);
@@ -257,18 +263,9 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
         });
     }, []);
 
-    const toggleExpand = useCallback((index) => {
-        setExpanded((prev) => {
-            const next = new Set(prev);
-            if (next.has(index)) next.delete(index);
-            else next.add(index);
-            return next;
-        });
-    }, []);
-
-    /** Enter edit mode for a suggestion (gi = group index, mi = member index or null for the cluster). */
-    const startEdit = useCallback((gi, mi, sug) => {
-        setEditing({ gi, mi, oldKey: sug.key });
+    /** Enter edit mode for a cluster suggestion (gi = group index). */
+    const startEdit = useCallback((gi, sug) => {
+        setEditing({ gi, oldKey: sug.key });
         setEditText(sug.hanTraditional);
         setDeriving(false);
     }, []);
@@ -280,7 +277,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
     }, []);
 
     /**
-     * Apply a corrected suggestion (from the backend derive endpoint) to both the
+     * Apply a corrected cluster suggestion (from the backend derive endpoint) to both the
      * groups list and the selection map. Selection follows the old key: if the
      * corrected word is new, re-select it; if it already exists, drop it.
      */
@@ -289,15 +286,9 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
             setEditing(null);
             setEditText("");
             setDeriving(false);
-            setGroups((cur) =>
-                cur.map((g, i) => {
-                    if (i !== editing.gi) return g;
-                    const cluster = editing.mi === null ? newSug : g.cluster;
-                    const members =
-                        editing.mi === null ? g.members : g.members.map((m, j) => (j === editing.mi ? newSug : m));
-                    return { cluster, members };
-                }),
-            );
+            // Map theo index TRƯỚC (editing.gi tính trên mảng hiện tại), rồi mới sort lại.
+            const edited = groups.map((g, i) => (i === editing.gi ? { cluster: newSug } : g));
+            setGroups(sortScanGroups(edited));
             setSelected((prev) => {
                 const next = new Map(prev);
                 next.delete(editing.oldKey);
@@ -305,7 +296,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                 return next;
             });
         },
-        [editing],
+        [editing, groups],
     );
 
     /** Confirm the edited han text — ask the backend to re-derive the full suggestion. */
@@ -314,7 +305,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
         if (!text || deriving || !editing) return;
         setDeriving(true);
         try {
-            const sug = await api.ocrDerive(text);
+            const sug = await api.ocrDerive(text, lang);
             applyEdit(sug);
         } catch {
             setDeriving(false);
@@ -353,35 +344,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
         });
     }, [groups]);
 
-    // All member words (inside clusters) that aren't in the bank yet, deduped by key.
-    const newMembers = [];
-    {
-        const seen = new Set();
-        for (const g of groups) {
-            for (const m of g.members) {
-                if (m.exists || seen.has(m.key)) continue;
-                seen.add(m.key);
-                newMembers.push(m);
-            }
-        }
-    }
-    const allMembersSelected = newMembers.length > 0 && newMembers.every((m) => selected.has(m.key));
-
-    // One-click select/deselect of every new (not-yet-in-bank) individual word.
-    const toggleAllMembers = useCallback(() => {
-        setSelected((prev) => {
-            const next = new Map(prev);
-            const allChosen = newMembers.length > 0 && newMembers.every((m) => next.has(m.key));
-            if (allChosen) {
-                newMembers.forEach((m) => next.delete(m.key));
-            } else {
-                newMembers.forEach((m) => next.set(m.key, m));
-            }
-            return next;
-        });
-    }, [newMembers]);
-
-    // Unique selected items that aren't in the bank yet (clusters + expanded members).
+    // Unique selected items that aren't in the bank yet (chỉ cluster/cụm từ).
     const selectedCount = [...selected.values()].filter((s) => !s.exists).length;
 
     const handleAddSelected = useCallback(async () => {
@@ -394,13 +357,16 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
         for (const s of targets) {
             const { key: _key, ...vocab } = s;
             try {
-                await createVocabularyAwait({
-                    id: crypto.randomUUID(),
-                    ...vocab,
-                    important: false,
-                    mastered: false,
-                    studyProgress: 0,
-                });
+                await createVocabularyAwait(
+                    {
+                        id: crypto.randomUUID(),
+                        ...vocab,
+                        favorite: false,
+                        mastered: false,
+                        studyProgress: 0,
+                    },
+                    lang,
+                );
                 added += 1;
                 createdKeys.add(s.key);
             } catch {
@@ -410,13 +376,15 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
         setAdding(false);
         setAddedCount(added);
         if (added > 0) {
-            setGroups((cur) =>
-                cur.map((g) => ({
+            const next = sortScanGroups(
+                groups.map((g) => ({
                     cluster: createdKeys.has(g.cluster.key) ? { ...g.cluster, exists: true } : g.cluster,
-                    members: g.members.map((m) => (createdKeys.has(m.key) ? { ...m, exists: true } : m)),
                 })),
             );
-            setSelected(new Map());
+            setGroups(next);
+            // Giữ trạng thái nhất quán: từ ĐÃ CÓ = checked + disabled ⇒ sau khi thêm,
+            // chọn lại toàn bộ cụm đã có (gồm cụm vừa tạo) → nút "Thêm" về 0.
+            setSelected(new Map(next.filter((g) => g.cluster.exists).map((g) => [g.cluster.key, g.cluster])));
         }
     }, [selected, adding, createVocabularyAwait]);
 
@@ -424,7 +392,6 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
     const reset = useCallback(() => {
         setImage(null);
         setGroups([]);
-        setExpanded(new Set());
         setSelected(new Map());
         setAddedCount(null);
         setError(null);
@@ -434,7 +401,14 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
         setDeriving(false);
     }, []);
     const chooseFile = useCallback(() => fileInputRef.current?.click(), []);
-    useImperativeHandle(ref, () => ({ reset, scan: handleScan, chooseFile }));
+    // ⚠️ 2026-09-27: nút "Thêm N từ vựng" đã chuyển xuống FOOTER của panel (OcrScanPanel) →
+    // expose qua ref + báo số đã chọn lên parent (onSelectionChange).
+    useImperativeHandle(ref, () => ({ reset, scan: handleScan, chooseFile, addSelected: handleAddSelected }));
+
+    // Report selection count cho footer panel (nút "Thêm N từ vựng").
+    useEffect(() => {
+        onSelectionChange?.(selectedCount);
+    }, [selectedCount, onSelectionChange]);
 
     // Report image presence to the parent (footer disables "Scan" until an image is loaded).
     useEffect(() => {
@@ -452,7 +426,31 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
     const ocr = t.addWord;
 
     return (
-        <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-muted p-4">
+        <section
+            className={cn(
+                "flex min-h-0 flex-1 flex-col rounded-xl",
+                !image
+                    ? // ⚠️ 2026-09-02: chưa có ảnh → section CHÍNH LÀ dropzone (1 lớp duy nhất,
+                      // không còn lớp bg-muted lồng ngoài; hover áp lên CẢ section, nút quét đẩy nhau).
+                      "group relative cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-primary/25 bg-linear-to-b from-primary/10 to-card px-6 py-10 text-center transition-all hover:border-primary hover:shadow-lg dark:from-primary/5 dark:to-card dark:hover:border-primary items-center justify-center gap-4"
+                    : "rounded-xl border border-border bg-muted p-4",
+            )}
+            onClick={!image ? () => fileInputRef.current?.click() : undefined}
+            onDragOver={!image ? handleDragOver : undefined}
+            onDrop={!image ? handleDrop : undefined}
+            role={!image ? "button" : undefined}
+            tabIndex={!image ? 0 : undefined}
+            onKeyDown={
+                !image
+                    ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              fileInputRef.current?.click();
+                          }
+                      }
+                    : undefined
+            }
+        >
             <input
                 ref={fileInputRef}
                 type="file"
@@ -463,20 +461,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
             />
 
             {!image && (
-                <div
-                    className="group relative flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border-2 border-dashed border-primary/25 bg-linear-to-b from-primary/10 to-card px-6 py-10 text-center transition-all hover:border-primary hover:shadow-lg dark:from-primary/5 dark:to-card dark:hover:border-primary"
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            fileInputRef.current?.click();
-                        }
-                    }}
-                >
+                <>
                     {/* Decorative blurred color blobs for depth */}
                     <span
                         aria-hidden="true"
@@ -493,7 +478,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                         <p className="text-base font-semibold text-foreground">{ocr.ocrEmptyTitle}</p>
                         <p className="text-sm text-muted-foreground">{ocr.ocrEmptyHint}</p>
                     </div>
-                </div>
+                </>
             )}
 
             {image && (
@@ -524,35 +509,10 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                                 />
                                 {ocr.ocrSelectAll}
                             </label>
-                            <label
-                                className={cn(
-                                    "inline-flex items-center gap-2 text-sm",
-                                    newMembers.length > 0
-                                        ? "cursor-pointer text-foreground"
-                                        : "cursor-not-allowed text-muted-foreground",
-                                )}
-                            >
-                                <input
-                                    type="checkbox"
-                                    className="size-4 cursor-pointer accent-primary disabled:cursor-not-allowed"
-                                    checked={allMembersSelected}
-                                    onChange={toggleAllMembers}
-                                    disabled={newMembers.length === 0}
-                                />
-                                {ocr.ocrSelectNewMembers.replace("{count}", String(newMembers.length))}
-                            </label>
                             <span className="text-sm text-muted-foreground">
                                 {ocr.ocrResults.replace("{count}", String(groups.length))}
                             </span>
                         </div>
-                        <button
-                            type="button"
-                            className={btnClass("success")}
-                            onClick={handleAddSelected}
-                            disabled={adding || selectedCount === 0}
-                        >
-                            {adding ? ocr.ocrAdding : ocr.ocrAddSelected.replace("{count}", String(selectedCount))}
-                        </button>
                     </div>
 
                     {addedCount != null && (
@@ -564,10 +524,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                     <ul className="flex flex-col gap-2">
                         {groups.map((g, gi) => {
                             const s = g.cluster;
-                            const hasSimp = s.hanSimplified && s.hanSimplified !== s.hanTraditional;
                             const checked = selected.has(s.key);
-                            const isExpanded = expanded.has(gi);
-                            const canExpand = g.members.length > 0;
                             return (
                                 <li key={s.key} className="w-full">
                                     <div
@@ -576,40 +533,41 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                                             !(s.exists || adding) && "hover:border-primary hover:shadow-xl",
                                         )}
                                     >
-                                        <label
+                                        {/* ⚠️ 2026-09-27: bấm cả hàng = toggle chọn; Checkbox là component
+                                            shadcn (màu semantic, KHÔNG dùng slate thô như trước). Từ đã có trong
+                                            kho → checked + DISABLED (vẫn hiện dấu ✓ để rõ trạng thái). */}
+                                        <div
                                             className={cn(
-                                                "flex min-w-0 flex-1 cursor-pointer items-start gap-4",
-                                                (s.exists || adding) && "cursor-default",
+                                                "flex min-w-0 flex-1 items-start gap-4",
+                                                s.exists || adding ? "cursor-default" : "cursor-pointer",
                                             )}
+                                            onClick={() => {
+                                                if (!s.exists && !adding) toggleItem(s);
+                                            }}
                                         >
-                                            <input
-                                                type="checkbox"
-                                                className="peer sr-only"
+                                            <Checkbox
+                                                className={cn(
+                                                    "mt-1 size-6 rounded-lg",
+                                                    // Từ ĐÃ CÓ trong kho → checkbox màu MUTED (xám) để phân biệt với
+                                                    // cụm mới (primary). ⚠️ PHẢI dùng `!`: base Checkbox có
+                                                    // `dark:data-checked:bg-primary` (specificity cao hơn) → nếu không
+                                                    // `!` thì dark mode vẫn hiện màu primary. (2026-09-27)
+                                                    s.exists &&
+                                                        "border-muted! data-checked:border-muted! data-checked:bg-muted! data-checked:text-muted-foreground!",
+                                                )}
                                                 checked={checked}
                                                 disabled={s.exists || adding}
-                                                onChange={() => toggleItem(s)}
-                                                aria-label={`${s.hanTraditional} ${s.pinyin} ${s.jyutping}`}
+                                                onCheckedChange={() => toggleItem(s)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                aria-label={hanForLang(s, lang)}
                                             />
-                                            {!(s.exists || adding) && (
-                                                <span
-                                                    aria-hidden="true"
-                                                    className={cn(
-                                                        "mt-1 grid size-6 shrink-0 place-items-center rounded-lg border-2 transition-colors",
-                                                        checked
-                                                            ? "border-primary bg-primary text-white"
-                                                            : "border-slate-400 bg-background text-transparent dark:border-slate-500",
-                                                    )}
-                                                >
-                                                    <CheckIcon size={16} />
-                                                </span>
-                                            )}
                                             <div className="min-w-0 flex-1">
                                                 {s.sinoVietnamese && (
                                                     <div className="mb-1 text-sm text-viet uppercase">
                                                         {s.sinoVietnamese}
                                                     </div>
                                                 )}
-                                                {editing && editing.gi === gi && editing.mi === null ? (
+                                                {editing && editing.gi === gi ? (
                                                     <div
                                                         className="flex w-full flex-wrap items-center gap-2"
                                                         onClick={(e) => e.stopPropagation()}
@@ -648,17 +606,8 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                                        {hasSimp && (
-                                                            <SimplifiedHan
-                                                                simplified={s.hanSimplified}
-                                                                traditional={s.hanTraditional}
-                                                                className="text-xl font-semibold leading-none"
-                                                            />
-                                                        )}
-                                                        <span className="text-xl font-semibold leading-none text-han-trad">
-                                                            {s.hanTraditional}
-                                                        </span>
-                                                        {s.pureCantonese && (
+                                                        <OcrHan s={s} lang={lang} className="text-xl" />
+                                                        {lang === "cantonese" && s.pureCantonese && (
                                                             <span className="inline-flex shrink-0 items-center rounded-full bg-cyan-500/10 px-2 py-0.5 text-xs font-medium text-cyan-600 dark:text-cyan-400">
                                                                 {ocr.ocrPureCantonese}
                                                             </span>
@@ -670,7 +619,7 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
-                                                                    startEdit(gi, null, s);
+                                                                    startEdit(gi, s);
                                                                 }}
                                                                 aria-label={ocr.ocrEditHan}
                                                                 title={ocr.ocrEditHint}
@@ -679,25 +628,18 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                                                             </button>
                                                         )}
                                                         {s.exists || adding ? (
-                                                            <span className="ml-auto inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                                            <span className="ml-auto inline-flex shrink-0 items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                                                                 {ocr.ocrExists}
                                                             </span>
                                                         ) : (
-                                                            <span className="ml-auto inline-flex shrink-0 items-center text-xs font-medium text-primary">
+                                                            <span className="ml-auto inline-flex shrink-0 items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-foreground">
                                                                 {ocr.ocrNotExists}
                                                             </span>
                                                         )}
                                                     </div>
                                                 )}
                                                 <div className="mt-2">
-                                                    <ReadingPair
-                                                        left={s.pinyin}
-                                                        right={s.jyutping}
-                                                        containerClass="grid-cols-[auto_auto_auto] w-auto max-w-none mx-0 justify-start gap-2 text-sm"
-                                                        leftClass="text-pinyin"
-                                                        rightClass="text-jyutping"
-                                                        fallbackClass="italic text-muted-foreground"
-                                                    />
+                                                    <OcrReading s={s} lang={lang} className="text-sm" />
                                                 </div>
                                                 {(s.vietMeanings || s.engMeanings) && (
                                                     <div className="mt-2 flex flex-col gap-1 border-t border-border pt-2 text-sm">
@@ -714,181 +656,8 @@ export const OcrScanSection = forwardRef(function OcrScanSection(
                                                     </div>
                                                 )}
                                             </div>
-                                        </label>
-                                        {canExpand && (
-                                            <button
-                                                type="button"
-                                                className="mt-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-                                                onClick={() => toggleExpand(gi)}
-                                                aria-label={isExpanded ? ocr.collapse : ocr.ocrExpand}
-                                                aria-expanded={isExpanded}
-                                            >
-                                                <IconChevronDown
-                                                    size={16}
-                                                    className={cn(
-                                                        "transition-transform duration-200",
-                                                        isExpanded && "rotate-180",
-                                                    )}
-                                                />
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {isExpanded && canExpand && (
-                                        <div className="mt-2 flex flex-col gap-1 pl-9">
-                                            <p className="px-1 text-xs font-medium text-muted-foreground">
-                                                {ocr.ocrMembers}
-                                            </p>
-                                            {g.members.map((m, mi) => {
-                                                const mSimp = m.hanSimplified && m.hanSimplified !== m.hanTraditional;
-                                                const mChecked = selected.has(m.key);
-                                                return (
-                                                    <label
-                                                        key={m.key}
-                                                        className={cn(
-                                                            "flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background px-3 py-2 transition-colors",
-                                                            m.exists || adding
-                                                                ? "cursor-default"
-                                                                : "cursor-pointer hover:border-primary",
-                                                        )}
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            className="peer sr-only"
-                                                            checked={mChecked}
-                                                            disabled={m.exists || adding}
-                                                            onChange={() => toggleItem(m)}
-                                                            aria-label={`${m.hanTraditional} ${m.pinyin} ${m.jyutping}`}
-                                                        />
-                                                        {!(m.exists || adding) && (
-                                                            <span
-                                                                aria-hidden="true"
-                                                                className={cn(
-                                                                    "mt-1 grid size-5 shrink-0 place-items-center rounded-md border-2 transition-colors",
-                                                                    mChecked
-                                                                        ? "border-primary bg-primary text-white"
-                                                                        : "border-slate-400 bg-card text-transparent dark:border-slate-500",
-                                                                )}
-                                                            >
-                                                                <CheckIcon size={14} />
-                                                            </span>
-                                                        )}
-                                                        <div className="min-w-0 flex-1">
-                                                            {m.sinoVietnamese && (
-                                                                <div className="mb-0.5 text-xs text-viet uppercase">
-                                                                    {m.sinoVietnamese}
-                                                                </div>
-                                                            )}
-                                                            {editing && editing.gi === gi && editing.mi === mi ? (
-                                                                <div
-                                                                    className="flex w-full flex-wrap items-center gap-2"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                >
-                                                                    <input
-                                                                        value={editText}
-                                                                        onChange={(e) => setEditText(e.target.value)}
-                                                                        onKeyDown={handleEditKeyDown}
-                                                                        autoFocus
-                                                                        disabled={deriving}
-                                                                        className="min-w-0 flex-1 rounded-lg border border-border bg-card px-2 py-1 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                                                                        aria-label={ocr.ocrEditHan}
-                                                                        placeholder={ocr.ocrEditPlaceholder}
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        className={btnClass("primary", "sm")}
-                                                                        onClick={confirmEdit}
-                                                                        disabled={deriving || !editText.trim()}
-                                                                    >
-                                                                        {deriving ? (
-                                                                            <Spinner className="size-3" />
-                                                                        ) : (
-                                                                            ocr.ocrEditSave
-                                                                        )}
-                                                                    </button>
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="destructive"
-                                                                        size="sm"
-                                                                        onClick={cancelEdit}
-                                                                        disabled={deriving}
-                                                                    >
-                                                                        {ocr.ocrEditCancel}
-                                                                    </Button>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                                                    {mSimp && (
-                                                                        <SimplifiedHan
-                                                                            simplified={m.hanSimplified}
-                                                                            traditional={m.hanTraditional}
-                                                                            className="text-base font-semibold leading-none"
-                                                                        />
-                                                                    )}
-                                                                    <span className="text-base font-semibold leading-none text-han-trad">
-                                                                        {m.hanTraditional}
-                                                                    </span>
-                                                                    {m.pureCantonese && (
-                                                                        <span className="inline-flex shrink-0 items-center rounded-full bg-cyan-500/10 px-2 py-0.5 text-xs font-medium text-cyan-600 dark:text-cyan-400">
-                                                                            {ocr.ocrPureCantonese}
-                                                                        </span>
-                                                                    )}
-                                                                    {!m.exists && !adding && (
-                                                                        <button
-                                                                            type="button"
-                                                                            className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
-                                                                            onClick={(e) => {
-                                                                                e.preventDefault();
-                                                                                e.stopPropagation();
-                                                                                startEdit(gi, mi, m);
-                                                                            }}
-                                                                            aria-label={ocr.ocrEditHan}
-                                                                            title={ocr.ocrEditHint}
-                                                                        >
-                                                                            <IconEdit size={11} />
-                                                                        </button>
-                                                                    )}
-                                                                    {m.exists || adding ? (
-                                                                        <span className="ml-auto inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                                                                            {ocr.ocrExists}
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="ml-auto inline-flex shrink-0 items-center text-xs font-medium text-primary">
-                                                                            {ocr.ocrNotExists}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                            <div className="mt-1">
-                                                                <ReadingPair
-                                                                    left={m.pinyin}
-                                                                    right={m.jyutping}
-                                                                    containerClass="grid-cols-[auto_auto_auto] w-auto max-w-none mx-0 justify-start gap-2 text-xs"
-                                                                    leftClass="text-pinyin"
-                                                                    rightClass="text-jyutping"
-                                                                    fallbackClass="italic text-muted-foreground"
-                                                                />
-                                                            </div>
-                                                            {(m.vietMeanings || m.engMeanings) && (
-                                                                <div className="mt-1 flex flex-col gap-0.5 text-xs">
-                                                                    {m.vietMeanings && (
-                                                                        <span className="text-muted-foreground">
-                                                                            {m.vietMeanings}
-                                                                        </span>
-                                                                    )}
-                                                                    {m.engMeanings && (
-                                                                        <span className="text-muted-foreground">
-                                                                            {m.engMeanings}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </label>
-                                                );
-                                            })}
                                         </div>
-                                    )}
+                                    </div>
                                 </li>
                             );
                         })}

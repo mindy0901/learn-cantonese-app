@@ -1,47 +1,27 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale } from "../store/localeStore.js";
-import { useVocabulariesRevision } from "../store/appStore.js";
+import { useAppStore } from "../store/appStore.js";
 import {
-    FLASHCARD_CARD_MODES,
-    FLASHCARD_SCOPES,
     FLASHCARD_SESSION_SIZES,
     FLASHCARD_SOURCES,
     loadFlashcardPrefs,
     saveFlashcardPrefs,
 } from "../lib/flashcardPrefs.js";
-import { countDueFlashcardVocabularies } from "../lib/flashcardWords.js";
 import { api } from "../lib/api.js";
 import { cn } from "../lib/cn.js";
-import { btnClass } from "./ui/buttonStyles.js";
+import { Button } from "./shadcn/button.jsx";
+import { Card, CardContent, CardHeader, CardTitle } from "./shadcn/card.jsx";
+import { Checkbox } from "./shadcn/checkbox.jsx";
+import { Label } from "./shadcn/label.jsx";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./shadcn/select.jsx";
 
-const fieldClass =
-    "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/25";
+const selectFieldClass = "w-full!";
 
-const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground";
-
-export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = null }) {
+export function FlashcardSessionSetup({ onStart, loading, disabled }) {
     const { t, fmt } = useLocale();
-    const wordsRevision = useVocabulariesRevision();
+    const language = useAppStore((s) => s.language);
+    const setActiveLanguage = useAppStore((s) => s.setActiveLanguage);
     const [prefs, setPrefs] = useState(() => loadFlashcardPrefs());
-    const [dueTotal, setDueTotal] = useState(dueCount);
-
-    useEffect(() => {
-        if (dueCount != null) {
-            setDueTotal(dueCount);
-            return;
-        }
-        let cancelled = false;
-        countDueFlashcardVocabularies({ revision: wordsRevision })
-            .then((total) => {
-                if (!cancelled) setDueTotal(total);
-            })
-            .catch(() => {
-                if (!cancelled) setDueTotal(0);
-            });
-        return () => {
-            cancelled = true;
-        };
-    }, [dueCount, wordsRevision]);
 
     const updatePref = (patch) => {
         const next = saveFlashcardPrefs(patch);
@@ -49,15 +29,15 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
     };
 
     const sourceLabels = {
-        due: t.flashcard.sourceDue,
         random: t.flashcard.sourceRandom,
+        user: t.flashcard.sourceUser,
         deck: t.flashcard.sourceDeck,
     };
 
     const [decks, setDecks] = useState([]);
     const [decksLoading, setDecksLoading] = useState(false);
 
-    // Load decks when source is 'deck'
+    // Load decks khi nguồn là 'deck'
     useEffect(() => {
         if (prefs.source !== "deck") return;
         let cancelled = false;
@@ -77,161 +57,139 @@ export function FlashcardSessionSetup({ onStart, loading, disabled, dueCount = n
         };
     }, [prefs.source]);
 
-    const scopeLabels = {
-        all: t.flashcard.scopeAll,
-        important: t.flashcard.scopeImportant,
-        lowProgress: t.flashcard.scopeLowProgress,
-    };
-
-    const cardModeLabels = {
-        hanToMeaning: t.flashcard.modeHanToMeaning,
-        meaningToHan: t.flashcard.modeMeaningToHan,
-        jyutpingToHan: t.flashcard.modeJyutpingToHan,
+    const toggleDeck = (id) => {
+        const cur = prefs.deckIds ?? [];
+        updatePref({ deckIds: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] });
     };
 
     const handleStart = () => {
         onStart?.({
             ...prefs,
+            lang: language,
         });
     };
 
+    const langActiveClass = "border-primary bg-primary/10 text-primary shadow-sm";
+    const langIdleClass =
+        "border-border bg-background text-muted-foreground hover:bg-primary/10/40 hover:border-primary/25/60";
+
+    // ⚠️ 2026-09-02: user yêu cầu label này là text title — text-lg + trắng.
+    const microLabelClass = "mb-1.5 text-lg font-semibold text-foreground";
+
     return (
         <div className="flex flex-col gap-5">
-            {dueTotal != null && dueTotal > 0 && (
-                <div className="rounded-xl border border-primary/25 bg-primary/10/50 px-4 py-3 text-center">
-                    <p className="m-0 text-sm text-muted-foreground">{t.flashcard.dueToday}</p>
-                    <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-primary">
-                        {fmt(t.flashcard.dueCount, { count: dueTotal })}
-                    </p>
-                </div>
-            )}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg text-foreground">{t.flashcard.setupLanguage}</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className={cn("min-h-14", language === "cantonese" ? langActiveClass : langIdleClass)}
+                        onClick={() => setActiveLanguage("cantonese")}
+                        disabled={disabled || loading}
+                    >
+                        {t.nav.cantoneseGroup}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className={cn("min-h-14", language === "mandarin" ? langActiveClass : langIdleClass)}
+                        onClick={() => setActiveLanguage("mandarin")}
+                        disabled={disabled || loading}
+                    >
+                        {t.nav.mandarinGroup}
+                    </Button>
+                </CardContent>
+            </Card>
 
-            <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-                <h2 className="m-0 mb-4 text-sm font-semibold text-foreground">{t.flashcard.setupSource}</h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label className={labelClass} htmlFor="flashcard-source">
-                            {t.flashcard.sourceLabel}
-                        </label>
-                        <select
-                            id="flashcard-source"
-                            className={fieldClass}
-                            value={prefs.source}
-                            onChange={(e) => updatePref({ source: e.target.value })}
-                        >
-                            {FLASHCARD_SOURCES.map((value) => (
-                                <option key={value} value={value}>
-                                    {sourceLabels[value]}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className={labelClass} htmlFor="flashcard-scope">
-                            {t.flashcard.scopeLabel}
-                        </label>
-                        {prefs.source !== "deck" ? (
-                            <select
-                                id="flashcard-scope"
-                                className={fieldClass}
-                                value={prefs.scope}
-                                onChange={(e) => updatePref({ scope: e.target.value })}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg text-foreground">{t.flashcard.setupSourceSize}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                    {/* Top: số lượng thẻ 20/50/100 — mặc định ngẫu nhiên toàn bộ kho */}
+                    <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
+                        {FLASHCARD_SESSION_SIZES.map((size) => (
+                            <Button
+                                key={size}
+                                type="button"
+                                variant="outline"
+                                className={cn(
+                                    "min-h-22 flex-col",
+                                    prefs.sessionSize === size ? langActiveClass : langIdleClass,
+                                )}
+                                disabled={disabled || loading}
+                                onClick={() => updatePref({ sessionSize: size })}
                             >
-                                {FLASHCARD_SCOPES.map((value) => (
-                                    <option key={value} value={value}>
-                                        {scopeLabels[value]}
-                                    </option>
-                                ))}
-                            </select>
-                        ) : (
-                            <>
-                                <select
-                                    id="flashcard-deck"
-                                    className={fieldClass}
-                                    value={prefs.deckId ?? ""}
-                                    onChange={(e) => updatePref({ deckId: e.target.value || null })}
+                                <span className="text-[1.5rem] font-bold leading-none">{size}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    {fmt(t.flashcard.randomCards, { count: size })}
+                                </span>
+                            </Button>
+                        ))}
+                    </div>
+
+                    {/* Dưới: chọn nguồn từ vựng — 3 lựa chọn click */}
+                    <div className="flex flex-col gap-2">
+                        <Label className={microLabelClass}>{t.flashcard.sourceLabel}</Label>
+                        <div className="flex flex-col gap-2">
+                            {FLASHCARD_SOURCES.map((value) => (
+                                <Button
+                                    key={value}
+                                    type="button"
+                                    variant="outline"
+                                    className={cn(
+                                        "w-full justify-start text-left",
+                                        prefs.source === value ? langActiveClass : langIdleClass,
+                                    )}
+                                    onClick={() => updatePref({ source: value })}
+                                    disabled={disabled || loading}
                                 >
-                                    <option value="">{t.flashcard.deckPlaceholder}</option>
-                                    {decks.map((deck) => (
-                                        <option key={deck.id} value={deck.id}>
-                                            {deck.name} ({deck.vocabularyCount ?? 0})
-                                        </option>
-                                    ))}
-                                </select>
-                                {decksLoading && <p className="m-0 mt-1 text-xs text-muted-foreground">{t.common.loading}</p>}
-                            </>
+                                    {sourceLabels[value]}
+                                </Button>
+                            ))}
+                        </div>
+                        {prefs.source === "deck" && (
+                            <div className="mt-2 flex flex-col gap-2">
+                                {decksLoading ? (
+                                    <p className="m-0 text-xs text-muted-foreground">{t.common.loading}</p>
+                                ) : decks.length === 0 ? (
+                                    <p className="m-0 text-xs text-muted-foreground">{t.flashcard.noDecks}</p>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        {decks.map((deck) => (
+                                            <label
+                                                key={deck.id}
+                                                className="flex cursor-pointer items-center gap-2 text-sm text-foreground"
+                                            >
+                                                <Checkbox
+                                                    checked={(prefs.deckIds ?? []).includes(deck.id)}
+                                                    onCheckedChange={() => toggleDeck(deck.id)}
+                                                />
+                                                {deck.name} ({deck.vocabularyCount ?? 0})
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {prefs.source === "user" && (
+                            <p className="text-xs text-muted-foreground">{t.flashcard.userLangHint}</p>
+                        )}
+                        {prefs.source === "random" && (
+                            <p className="text-xs text-muted-foreground">{t.flashcard.randomLangHint}</p>
                         )}
                     </div>
-                </div>
-            </section>
+                </CardContent>
+            </Card>
 
-            <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-                <h2 className="m-0 mb-4 text-sm font-semibold text-foreground">{t.flashcard.setupMode}</h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                        <label className={labelClass} htmlFor="flashcard-card-mode">
-                            {t.flashcard.cardModeLabel}
-                        </label>
-                        <select
-                            id="flashcard-card-mode"
-                            className={fieldClass}
-                            value={prefs.cardMode}
-                            onChange={(e) => updatePref({ cardMode: e.target.value })}
-                        >
-                            {FLASHCARD_CARD_MODES.map((value) => (
-                                <option key={value} value={value}>
-                                    {cardModeLabels[value]}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <label className="flex items-center gap-2 text-sm text-foreground sm:col-span-2">
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-border accent-accent"
-                            checked={prefs.hideJyutping}
-                            onChange={(e) => updatePref({ hideJyutping: e.target.checked })}
-                            disabled={prefs.cardMode === "jyutpingToHan"}
-                        />
-                        {t.flashcard.hideJyutping}
-                    </label>
-                </div>
-            </section>
-
-            <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-                <h2 className="m-0 mb-4 text-sm font-semibold text-foreground">{t.flashcard.setupSize}</h2>
-                <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
-                    {FLASHCARD_SESSION_SIZES.map((size) => (
-                        <button
-                            key={size}
-                            type="button"
-                            className={cn(
-                                "flex flex-col items-center justify-center gap-1.5 min-h-[5.5rem] px-3 py-3 border rounded-xl cursor-pointer transition-[background,border-color,transform] duration-150",
-                                prefs.sessionSize === size
-                                    ? "border-primary/25 bg-primary/10 text-primary shadow-sm"
-                                    : "border-border bg-background text-muted-foreground hover:bg-primary/10/40 hover:border-primary/25/60",
-                                "disabled:opacity-60 disabled:cursor-not-allowed",
-                            )}
-                            disabled={disabled || loading}
-                            onClick={() => updatePref({ sessionSize: size })}
-                        >
-                            <span className="text-[1.5rem] font-bold leading-none">{size}</span>
-                            <span className="text-xs text-muted-foreground">
-                                {fmt(t.flashcard.randomCards, { count: size })}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-            </section>
-
-            <button
-                type="button"
-                className={cn(btnClass("primary"), "w-full")}
-                disabled={disabled || loading}
-                onClick={handleStart}
-            >
+            {/* ⚠️ 2026-09-19: BỎ card "Chọn chế độ lật Flashcard" — thẻ giờ chỉ có 1 kiểu:
+                hero hán tự + bấm để mở nghĩa & ví dụ (user yêu cầu). */}
+            <Button type="button" className="w-full text-lg" disabled={disabled || loading} onClick={handleStart}>
                 {loading ? t.common.loading : t.flashcard.startSession}
-            </button>
+            </Button>
         </div>
     );
 }

@@ -126,7 +126,7 @@ export const HeaderSearch = memo(function HeaderSearch({ className }) {
                     }}
                     placeholder={t.headerSearch?.placeholder ?? "Tìm hán tự…"}
                     aria-label={t.headerSearch?.placeholder ?? "Tìm hán tự…"}
-                    className="h-9 w-full rounded-4xl border border-input bg-input/30 pr-8 pl-8 text-base placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm"
+                    className="h-9 w-full rounded-4xl border border-input bg-input/30 pr-8 pl-8 text-base placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-cancel-button]:[-webkit-appearance:none]"
                 />
                 {hasQuery && (
                     <button

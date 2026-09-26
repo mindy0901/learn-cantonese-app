@@ -21,6 +21,18 @@ function splitHanChars(text) {
     return [...value].filter((ch) => isHanChar(ch));
 }
 
+/**
+ * Đếm SỐ HÁN TỰ trong chuỗi (bỏ khoảng trắng/dấu câu/ký tự latin).
+ * Dùng cho sort "số lượng hán tự" ở bảng từ vựng (VocabularyRowColumns).
+ * ⚠️ Regex `\p{Script=Han}` (KHÔNG cờ `g` — tránh stateful lastIndex) phủ cả
+ * Extension B+ (chữ Cantonese hiếm như 𥄫/𠝹), `isHanChar` ở trên chỉ tới U+9FFF.
+ */
+const HAN_ANY_RE = /\p{Script=Han}/u;
+
+export function countHanChars(text) {
+    return [...String(text ?? "")].filter((ch) => HAN_ANY_RE.test(ch)).length;
+}
+
 /** Split a pinyin string into per-syllable parts (space/comma separated), lowercased. */
 function splitPinyinParts(pinyin) {
     return String(pinyin ?? "")

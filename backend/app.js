@@ -7,6 +7,7 @@ dotenv.config({ path: resolve(__app_dirname, "..", ".env.dev") });
 
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import compress from "@fastify/compress";
 import cookie from "@fastify/cookie";
 import session from "@fastify/session";
 import formbody from "@fastify/formbody";
@@ -45,6 +46,11 @@ export async function buildApp(opts = {}) {
         origin: FRONTEND_URL,
         credentials: true,
     });
+
+    // ⚠️ 2026-09-19: nén response (gzip) — `/api/bootstrap` trả ~39MB JSON (2 bank từ) ⇒ gzip
+    // giảm còn ~4–6MB, thời gian tải lần đầu giảm mạnh. Chỉ nén body > `threshold`.
+    // (Lần load sau đã có ETag/304 ở route `/bootstrap`.)
+    await app.register(compress, { global: true, threshold: 1024, encodings: ["gzip"] });
 
     // Body parsing
     await app.register(formbody);

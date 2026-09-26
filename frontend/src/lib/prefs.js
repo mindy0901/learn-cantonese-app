@@ -3,7 +3,7 @@ const STORAGE_KEY = "cantonese-app-prefs";
 export const DEFAULT_PREFS = {
     wordBank: {
         filter: "all",
-        showImportant: false,
+        showFavorite: false,
         showMastered: false,
         hskLevel: "all",
         setId: "all",

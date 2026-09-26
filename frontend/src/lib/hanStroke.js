@@ -1,39 +1,37 @@
 /**
- * Per-character stroke counts loaded from the han_characters store (DB).
- * Building a Map is cheap; we no longer need cnchar at render/sort time.
+ * Per-character stroke counts computed CLIENT-SIDE via cnchar.
+ * Không còn phụ thuộc bảng han_characters store (2026-08-31 — đã drop bảng).
  */
+import cnchar from "cnchar";
+import "cnchar-trad";
 
-let charStroke = new Map(); // char -> strokeCount (number)
+const strokeCache = new Map(); // char -> strokeCount (number) | 0 (unknown)
 
-/** Populate the char → strokeCount lookup from the store's hanCharacters list. */
-export function setHanStrokeMap(hanCharacters) {
-    const map = new Map();
-    for (const h of hanCharacters || []) {
-        const n = h?.strokeCount;
-        if (typeof n !== "number" || n <= 0) continue;
-        // Chỉ key các form PHỒN THỂ (traditional + HK) — strokeCount khớp glyph.
-        // KHÔNG đăng ký hanSimplified: simplified của 1 chữ có thể là chữ KHÁC
-        // với số nét khác (vd 於=8 nét nhưng giản thể 于=3 nét) → đăng ký nhầm.
-        // (2026-08-20) Sort cột "Chữ Hán" phải dùng form phồn thể (xem accessor "han").
-        for (const c of [h?.hanTraditional, h?.hanTraditionalHk, h?.hanHongKong]) {
-            if (c) map.set(c, n);
-        }
+function strokeOf(ch) {
+    if (strokeCache.has(ch)) return strokeCache.get(ch);
+    let n = 0;
+    try {
+        const v = cnchar.stroke(ch);
+        n = typeof v === "number" && v > 0 ? v : 0;
+    } catch {
+        n = 0;
     }
-    charStroke = map;
+    strokeCache.set(ch, n);
+    return n;
 }
 
 /**
  * Per-char stroke counts of a han string: array where element i = strokes of
  * char i. Returns null when ANY char is unknown (no stroke data) — caller
- * falls back to the collator, matching the DB (NULL stroke_count) behavior.
+ * falls back to the collator.
  */
 export function strokeCounts(str) {
     if (!str) return null;
     const counts = [];
     for (const ch of String(str)) {
         if (ch === " ") continue;
-        const n = charStroke.get(ch);
-        if (n === undefined) return null;
+        const n = strokeOf(ch);
+        if (n <= 0) return null;
         counts.push(n);
     }
     return counts;

@@ -1,4 +1,4 @@
-import { api } from "./api.js";
+import { api, getApiLanguage } from "./api.js";
 import { WORD_BROWSE_PREFETCH_PAGES } from "./constants.js";
 
 const cache = new Map();
@@ -16,13 +16,14 @@ export function setVocabularyBrowseCacheOwner(ownerId) {
 function buildKey(params) {
     return JSON.stringify({
         owner: cacheOwner,
+        lang: getApiLanguage(), // ⚠️ 2026-09: tránh cache chéo 2 bank khi đổi ngôn ngữ
         page: params.page,
         pageSize: params.pageSize,
         sortKey: params.sortKey,
         sortDir: params.sortDir,
         filter: params.filter,
         q: (params.q ?? "").trim(),
-        importantFirst: Boolean(params.importantFirst),
+        favoriteFirst: Boolean(params.favoriteFirst),
         studyDue: Boolean(params.studyDue),
         maxProgress: params.maxProgress ?? null,
     });

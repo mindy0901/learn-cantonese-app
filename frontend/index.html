@@ -13,8 +13,14 @@
     <style>
         /* Pre-hydration boot fallback: a single spinner centered on the app
            background (theme-matched) so there is no white flash while the JS
-           bundle loads. Colors mirror globals.css tokens. */
+           bundle loads. Colors mirror globals.css tokens.
+           ⚠️ 2026-09-20: đây là LOADER DUY NHẤT của lần tải đầu — nằm NGOÀI #root
+           (React không xoá khi mount) và được AuthGate.removeBootFallback() gỡ khi
+           app đã có dữ liệu. */
         #boot-fallback {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
             margin: 0;
             padding: 2.5rem 1.5rem;
             /* = Tailwind p-8 px-6 @ 20px root */
@@ -58,16 +64,22 @@
                 document.documentElement.classList.toggle("dark", s.theme === "dark");
             }
         } catch (e) { /* ignore */ }
+
+        // Safety net: nếu vì lý do gì đó app không gỡ được spinner (route lỗi/404,
+        // hydrate treo) → tự gỡ sau 12s để không khoá màn hình vĩnh viễn.
+        setTimeout(function () {
+            var el = document.getElementById("boot-fallback");
+            if (el) el.remove();
+        }, 12000);
     </script>
     <title>3107Hanzi</title>
 </head>
 
 <body>
-    <div id="root">
-        <p id="boot-fallback" role="status" aria-live="polite">
-            <span class="boot-spinner" aria-hidden="true"></span>
-        </p>
-    </div>
+    <p id="boot-fallback" role="status" aria-live="polite">
+        <span class="boot-spinner" aria-hidden="true"></span>
+    </p>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
 </body>
 

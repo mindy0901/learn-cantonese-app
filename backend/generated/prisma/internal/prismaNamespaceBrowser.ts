@@ -51,22 +51,24 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  HanziCharacter: 'HanziCharacter',
   HanziRadical: 'HanziRadical',
   MandarinVocabulary: 'MandarinVocabulary',
   MandarinVocabularyRomanization: 'MandarinVocabularyRomanization',
   MandarinVocabularyMeaning: 'MandarinVocabularyMeaning',
   MandarinVocabularyExample: 'MandarinVocabularyExample',
-  MandarinVocabularyCharacter: 'MandarinVocabularyCharacter',
   CantoneseVocabulary: 'CantoneseVocabulary',
   CantoneseVocabularyRomanization: 'CantoneseVocabularyRomanization',
   CantoneseVocabularyMeaning: 'CantoneseVocabularyMeaning',
   CantoneseVocabularyExample: 'CantoneseVocabularyExample',
-  CantoneseVocabularyCharacter: 'CantoneseVocabularyCharacter',
   Grammar: 'Grammar',
   GrammarExample: 'GrammarExample',
   User: 'User',
+  UserFavoriteVocabulary: 'UserFavoriteVocabulary',
+  UserDislikedVocabulary: 'UserDislikedVocabulary',
   UserCheckin: 'UserCheckin',
+  UserVocabularyMastery: 'UserVocabularyMastery',
+  Tag: 'Tag',
+  VocabularyTag: 'VocabularyTag',
   FlashcardDeck: 'FlashcardDeck',
   FlashcardDeckMandarinVocabulary: 'FlashcardDeckMandarinVocabulary',
   FlashcardDeckCantoneseVocabulary: 'FlashcardDeckCantoneseVocabulary',
@@ -89,25 +91,6 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
-
-
-export const HanziCharacterScalarFieldEnum = {
-  id: 'id',
-  sinoVietnamese: 'sinoVietnamese',
-  hanSimplified: 'hanSimplified',
-  hanTraditional: 'hanTraditional',
-  pinyin: 'pinyin',
-  hanziSimplifiedHk: 'hanziSimplifiedHk',
-  hanziTraditionalHk: 'hanziTraditionalHk',
-  jyutping: 'jyutping',
-  strokeCount: 'strokeCount',
-  radicalId: 'radicalId',
-  popularity: 'popularity',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type HanziCharacterScalarFieldEnum = (typeof HanziCharacterScalarFieldEnum)[keyof typeof HanziCharacterScalarFieldEnum]
 
 
 export const HanziRadicalScalarFieldEnum = {
@@ -133,6 +116,7 @@ export const MandarinVocabularyScalarFieldEnum = {
   hanziCharacters: 'hanziCharacters',
   hskLevel: 'hskLevel',
   popularity: 'popularity',
+  popularityLevel: 'popularityLevel',
   relatedWords: 'relatedWords',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -156,7 +140,8 @@ export const MandarinVocabularyMeaningScalarFieldEnum = {
   mandarinVocabularyRomanizationId: 'mandarinVocabularyRomanizationId',
   zh: 'zh',
   vi: 'vi',
-  en: 'en'
+  en: 'en',
+  position: 'position'
 } as const
 
 export type MandarinVocabularyMeaningScalarFieldEnum = (typeof MandarinVocabularyMeaningScalarFieldEnum)[keyof typeof MandarinVocabularyMeaningScalarFieldEnum]
@@ -174,21 +159,12 @@ export const MandarinVocabularyExampleScalarFieldEnum = {
 export type MandarinVocabularyExampleScalarFieldEnum = (typeof MandarinVocabularyExampleScalarFieldEnum)[keyof typeof MandarinVocabularyExampleScalarFieldEnum]
 
 
-export const MandarinVocabularyCharacterScalarFieldEnum = {
-  id: 'id',
-  mandarinVocabularyId: 'mandarinVocabularyId',
-  hanziCharacterId: 'hanziCharacterId',
-  position: 'position'
-} as const
-
-export type MandarinVocabularyCharacterScalarFieldEnum = (typeof MandarinVocabularyCharacterScalarFieldEnum)[keyof typeof MandarinVocabularyCharacterScalarFieldEnum]
-
-
 export const CantoneseVocabularyScalarFieldEnum = {
   id: 'id',
   hanziTraditionalHk: 'hanziTraditionalHk',
   pureCantonese: 'pureCantonese',
   popularity: 'popularity',
+  popularityLevel: 'popularityLevel',
   hanziCharacters: 'hanziCharacters',
   relatedWords: 'relatedWords',
   hanziAudio: 'hanziAudio',
@@ -214,7 +190,8 @@ export const CantoneseVocabularyMeaningScalarFieldEnum = {
   id: 'id',
   cantoneseVocabularyRomanizationId: 'cantoneseVocabularyRomanizationId',
   vi: 'vi',
-  en: 'en'
+  en: 'en',
+  position: 'position'
 } as const
 
 export type CantoneseVocabularyMeaningScalarFieldEnum = (typeof CantoneseVocabularyMeaningScalarFieldEnum)[keyof typeof CantoneseVocabularyMeaningScalarFieldEnum]
@@ -232,16 +209,6 @@ export const CantoneseVocabularyExampleScalarFieldEnum = {
 } as const
 
 export type CantoneseVocabularyExampleScalarFieldEnum = (typeof CantoneseVocabularyExampleScalarFieldEnum)[keyof typeof CantoneseVocabularyExampleScalarFieldEnum]
-
-
-export const CantoneseVocabularyCharacterScalarFieldEnum = {
-  id: 'id',
-  cantoneseVocabularyId: 'cantoneseVocabularyId',
-  hanziCharacterId: 'hanziCharacterId',
-  position: 'position'
-} as const
-
-export type CantoneseVocabularyCharacterScalarFieldEnum = (typeof CantoneseVocabularyCharacterScalarFieldEnum)[keyof typeof CantoneseVocabularyCharacterScalarFieldEnum]
 
 
 export const GrammarScalarFieldEnum = {
@@ -291,6 +258,28 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+export const UserFavoriteVocabularyScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  language: 'language',
+  vocabularyId: 'vocabularyId',
+  createdAt: 'createdAt'
+} as const
+
+export type UserFavoriteVocabularyScalarFieldEnum = (typeof UserFavoriteVocabularyScalarFieldEnum)[keyof typeof UserFavoriteVocabularyScalarFieldEnum]
+
+
+export const UserDislikedVocabularyScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  language: 'language',
+  vocabularyId: 'vocabularyId',
+  createdAt: 'createdAt'
+} as const
+
+export type UserDislikedVocabularyScalarFieldEnum = (typeof UserDislikedVocabularyScalarFieldEnum)[keyof typeof UserDislikedVocabularyScalarFieldEnum]
+
+
 export const UserCheckinScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -299,6 +288,40 @@ export const UserCheckinScalarFieldEnum = {
 } as const
 
 export type UserCheckinScalarFieldEnum = (typeof UserCheckinScalarFieldEnum)[keyof typeof UserCheckinScalarFieldEnum]
+
+
+export const UserVocabularyMasteryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  language: 'language',
+  vocabularyId: 'vocabularyId',
+  progress: 'progress',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserVocabularyMasteryScalarFieldEnum = (typeof UserVocabularyMasteryScalarFieldEnum)[keyof typeof UserVocabularyMasteryScalarFieldEnum]
+
+
+export const TagScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  color: 'color',
+  createdAt: 'createdAt'
+} as const
+
+export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
+
+
+export const VocabularyTagScalarFieldEnum = {
+  id: 'id',
+  tagId: 'tagId',
+  language: 'language',
+  vocabularyId: 'vocabularyId',
+  createdAt: 'createdAt'
+} as const
+
+export type VocabularyTagScalarFieldEnum = (typeof VocabularyTagScalarFieldEnum)[keyof typeof VocabularyTagScalarFieldEnum]
 
 
 export const FlashcardDeckScalarFieldEnum = {

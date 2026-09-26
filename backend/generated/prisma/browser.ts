@@ -18,11 +18,6 @@ export { Prisma }
 export * as $Enums from './enums.ts'
 export * from './enums.ts';
 /**
- * Model HanziCharacter
- * 
- */
-export type HanziCharacter = Prisma.HanziCharacterModel
-/**
  * Model HanziRadical
  * 
  */
@@ -48,11 +43,6 @@ export type MandarinVocabularyMeaning = Prisma.MandarinVocabularyMeaningModel
  */
 export type MandarinVocabularyExample = Prisma.MandarinVocabularyExampleModel
 /**
- * Model MandarinVocabularyCharacter
- * 
- */
-export type MandarinVocabularyCharacter = Prisma.MandarinVocabularyCharacterModel
-/**
  * Model CantoneseVocabulary
  * 
  */
@@ -73,11 +63,6 @@ export type CantoneseVocabularyMeaning = Prisma.CantoneseVocabularyMeaningModel
  */
 export type CantoneseVocabularyExample = Prisma.CantoneseVocabularyExampleModel
 /**
- * Model CantoneseVocabularyCharacter
- * 
- */
-export type CantoneseVocabularyCharacter = Prisma.CantoneseVocabularyCharacterModel
-/**
  * Model Grammar
  * 
  */
@@ -93,10 +78,35 @@ export type GrammarExample = Prisma.GrammarExampleModel
  */
 export type User = Prisma.UserModel
 /**
+ * Model UserFavoriteVocabulary
+ * 
+ */
+export type UserFavoriteVocabulary = Prisma.UserFavoriteVocabularyModel
+/**
+ * Model UserDislikedVocabulary
+ * 
+ */
+export type UserDislikedVocabulary = Prisma.UserDislikedVocabularyModel
+/**
  * Model UserCheckin
  * 
  */
 export type UserCheckin = Prisma.UserCheckinModel
+/**
+ * Model UserVocabularyMastery
+ * 
+ */
+export type UserVocabularyMastery = Prisma.UserVocabularyMasteryModel
+/**
+ * Model Tag
+ * 
+ */
+export type Tag = Prisma.TagModel
+/**
+ * Model VocabularyTag
+ * 
+ */
+export type VocabularyTag = Prisma.VocabularyTagModel
 /**
  * Model FlashcardDeck
  * 

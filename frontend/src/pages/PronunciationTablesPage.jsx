@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useLocale } from "../store/localeStore.js";
 import { Button } from "../components/shadcn/button.jsx";
 import { cn } from "../lib/cn.js";
-import { PinyinTablePage } from "./PinyinTablePage.jsx";
-import { JyutpingChartPage } from "./JyutpingChartPage.jsx";
+import { MandarinPinyinTablePage } from "./MandarinPinyinTablePage.jsx";
+import { CantoneseJyutpingTablePage } from "./CantoneseJyutpingTablePage.jsx";
 
 /** Trang Bảng phiên âm — segmented control (2 nút pill) đổi giữa Pinyin / Jyutping (2026-08-18). */
 export function PronunciationTablesPage() {
@@ -37,7 +37,7 @@ export function PronunciationTablesPage() {
                     ))}
                 </div>
             </div>
-            {useJyutping ? <JyutpingChartPage /> : <PinyinTablePage />}
+            {useJyutping ? <CantoneseJyutpingTablePage /> : <MandarinPinyinTablePage />}
         </div>
     );
 }

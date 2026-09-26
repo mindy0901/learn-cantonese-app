@@ -31,8 +31,8 @@ export * from "./enums.ts"
  * const prisma = new PrismaClient({
  *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
  * })
- * // Fetch zero or more HanziCharacters
- * const hanziCharacters = await prisma.hanziCharacter.findMany()
+ * // Fetch zero or more HanziRadicals
+ * const hanziRadicals = await prisma.hanziRadical.findMany()
  * ```
  * 
  * Read more in our [docs](https://pris.ly/d/client).
@@ -41,11 +41,6 @@ export const PrismaClient = $Class.getPrismaClientClass()
 export type PrismaClient<LogOpts extends Prisma.LogLevel = never, OmitOpts extends Prisma.PrismaClientOptions["omit"] = Prisma.PrismaClientOptions["omit"], ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = $Class.PrismaClient<LogOpts, OmitOpts, ExtArgs>
 export { Prisma }
 
-/**
- * Model HanziCharacter
- * 
- */
-export type HanziCharacter = Prisma.HanziCharacterModel
 /**
  * Model HanziRadical
  * 
@@ -72,11 +67,6 @@ export type MandarinVocabularyMeaning = Prisma.MandarinVocabularyMeaningModel
  */
 export type MandarinVocabularyExample = Prisma.MandarinVocabularyExampleModel
 /**
- * Model MandarinVocabularyCharacter
- * 
- */
-export type MandarinVocabularyCharacter = Prisma.MandarinVocabularyCharacterModel
-/**
  * Model CantoneseVocabulary
  * 
  */
@@ -97,11 +87,6 @@ export type CantoneseVocabularyMeaning = Prisma.CantoneseVocabularyMeaningModel
  */
 export type CantoneseVocabularyExample = Prisma.CantoneseVocabularyExampleModel
 /**
- * Model CantoneseVocabularyCharacter
- * 
- */
-export type CantoneseVocabularyCharacter = Prisma.CantoneseVocabularyCharacterModel
-/**
  * Model Grammar
  * 
  */
@@ -117,10 +102,35 @@ export type GrammarExample = Prisma.GrammarExampleModel
  */
 export type User = Prisma.UserModel
 /**
+ * Model UserFavoriteVocabulary
+ * 
+ */
+export type UserFavoriteVocabulary = Prisma.UserFavoriteVocabularyModel
+/**
+ * Model UserDislikedVocabulary
+ * 
+ */
+export type UserDislikedVocabulary = Prisma.UserDislikedVocabularyModel
+/**
  * Model UserCheckin
  * 
  */
 export type UserCheckin = Prisma.UserCheckinModel
+/**
+ * Model UserVocabularyMastery
+ * 
+ */
+export type UserVocabularyMastery = Prisma.UserVocabularyMasteryModel
+/**
+ * Model Tag
+ * 
+ */
+export type Tag = Prisma.TagModel
+/**
+ * Model VocabularyTag
+ * 
+ */
+export type VocabularyTag = Prisma.VocabularyTagModel
 /**
  * Model FlashcardDeck
  * 

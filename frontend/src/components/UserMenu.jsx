@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FolderCog } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { FolderCog, UserRound } from "lucide-react";
 import { useAuthSigningOut, useAuthStore, useAuthUser } from "../store/authStore.js";
 import { useUiStore } from "../store/uiStore.js";
 import { Button } from "./shadcn/button.jsx";
@@ -22,6 +23,7 @@ export function UserMenu() {
     const signingOut = useAuthSigningOut();
     const { signOut, clearAuthError } = useAuthStore();
     const setVocabSetsManagerOpen = useUiStore((s) => s.setVocabSetsManagerOpen);
+    const navigate = useNavigate();
 
     const [loginOpen, setLoginOpen] = useState(false);
 
@@ -73,6 +75,10 @@ export function UserMenu() {
                     <DropdownMenuItem className="cursor-pointer" onClick={() => setVocabSetsManagerOpen(true)}>
                         <FolderCog className="size-3.5 shrink-0" aria-hidden="true" />
                         {t.vocabSets.manage}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/profile")}>
+                        <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+                        {t.nav.profile}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

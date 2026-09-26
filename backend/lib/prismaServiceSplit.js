@@ -22,7 +22,7 @@
 import { prisma } from "./prisma.js";
 import { randomUUID } from "crypto";
 import { createHash } from "crypto";
-import { computeHanCharacters, syncVocabularyHanCharacters } from "./hanCharacterBreakdown.js";
+import { computeHanCharacters } from "./hanCharacterBreakdown.js";
 import { capitalizeSentences } from "./wordNormalize.js";
 import { isSinoVietnameseDash } from "./sinoVietnameseMarkers.js";
 import { deleteR2Object, r2Head } from "./r2.js";
@@ -38,6 +38,76 @@ const cleanRomanization = (v) =>
         .replace(/\s+/g, " ")
         .trim();
 
+/** Bỏ dấu câu CUỐI (Latin + CJK + khoảng trắng) — dùng cho nghĩa/ví dụ khi LƯU (2026-09-08).
+ *  VD "加一等於六。" → "加一等於六"; "To go!" → "To go". Chỉ cắt CUỐI chuỗi, giữ dấu bên trong. */
+const TRAILING_PUNCT_RE = /(?:\.{2,}|[\s.,?!…:;，。！？、])+$/u;
+function stripTrailingPunct(value) {
+    let s = String(value ?? "").trim();
+    while (s.length > 0) {
+        const next = s.replace(TRAILING_PUNCT_RE, "").trim();
+        if (next === s) break;
+        s = next;
+    }
+    return s;
+}
+
+/** Tách senses theo dấu phân tách (`,` `;` `；` `、` `/`) → dedupe case-insensitive → nối ", ".
+ *  Fix full sync: vi nhiều nghĩa ("Đấu tranh, đánh nhau, đánh") → dịch en ra "fight, fight, fight"
+ *  → gộp thành "fight" (2026-09-01). 2026-09-05: tách cả `/` — "some / some / some" → "some";
+ *  chuỗi KHÔNG trùng (vd "啊 / 呀") giữ NGUYÊN vì chỉ nối lại khi phát hiện trùng. */
+const dedupeSenses = (value) => {
+    const s = String(value ?? "");
+    // Tách theo separator sense-list (kể cả "/") — chỉ thay đổi khi có sense trùng thật.
+    const parts = s
+        .split(/[,，;；、/]+/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+    if (parts.length < 2) return s;
+    const seen = new Set();
+    let dup = false;
+    for (const p of parts) {
+        const k = p.toLowerCase();
+        if (seen.has(k)) {
+            dup = true;
+            break;
+        }
+        seen.add(k);
+    }
+    // Không có trùng thật → giữ NGUYÊN chuỗi gốc (không đổi dấu câu/dấu cách).
+    if (!dup) return s;
+    const out = [];
+    const outSeen = new Set();
+    for (const p of parts) {
+        const k = p.toLowerCase();
+        if (outSeen.has(k)) continue;
+        outSeen.add(k);
+        out.push(p);
+    }
+    return out.join(", ");
+};
+
+// ⚠️ 2026-09-01: dedupe ví dụ TRÙNG theo HÁN (yue cantonese / zh mandarin) — chuẩn hóa bỏ khoảng
+// trắng, lowercase. Giữ bản ĐẦU TIÊN (cách a — user chọn), bỏ các bản trùng (chỉ khác en/vi/audio).
+// Ví dụ rỗng (chưa có hán) KHÔNG dedupe.
+const dedupeExamples = (list, hanField) => {
+    const seen = new Set();
+    const out = [];
+    for (const ex of list ?? []) {
+        const han = String(ex?.[hanField] ?? "")
+            .replace(/\s+/g, "")
+            .toLowerCase()
+            .trim();
+        if (!han) {
+            out.push(ex);
+            continue;
+        }
+        if (seen.has(han)) continue;
+        seen.add(han);
+        out.push(ex);
+    }
+    return out;
+};
+
 // ── Cấu hình theo ngôn ngữ (map model Prisma + field) ──
 const LANG = {
     mandarin: {
@@ -45,7 +115,6 @@ const LANG = {
         romanization: "mandarinVocabularyRomanization",
         meaning: "mandarinVocabularyMeaning",
         example: "mandarinVocabularyExample",
-        vocabCharacter: "mandarinVocabularyCharacter",
         deckLink: "flashcardDeckMandarinVocabulary",
         setLink: "vocabularySetMandarinVocabulary",
         vocabIdField: "mandarinVocabularyId", // FK trên bảng romanization
@@ -63,7 +132,6 @@ const LANG = {
         romanization: "cantoneseVocabularyRomanization",
         meaning: "cantoneseVocabularyMeaning",
         example: "cantoneseVocabularyExample",
-        vocabCharacter: "cantoneseVocabularyCharacter",
         deckLink: "flashcardDeckCantoneseVocabulary",
         setLink: "vocabularySetCantoneseVocabulary",
         vocabIdField: "cantoneseVocabularyId",
@@ -85,11 +153,14 @@ export function isLanguage(lang) {
 }
 
 // Shared include — 2 bên đều dùng relation `romanizations` → `meanings` → `examples`.
+// ⚠️ 2026-09-20: meanings ORDER BY position — thứ tự do user chỉnh ở UI edit (khoông có ORDER BY
+// thì Postgres trả thứ tự tuỳ ý).
 const vocabularyInclude = {
     romanizations: {
         include: {
             meanings: {
                 include: { examples: {} },
+                orderBy: { position: "asc" },
             },
         },
     },
@@ -108,6 +179,8 @@ export function rowToVocabulary(row, lang) {
         [L.hanField]: row[L.hanField] ?? "",
         hanziCharacters: row.hanCharacters ?? null,
         popularity: row.popularity ?? null,
+        // ⚠️ 2026-09-05: level 1–5 (1=Hiếm … 5=Rất cao) — nguồn hiển thị chính; popularity giữ raw.
+        popularityLevel: row.popularityLevel ?? null,
         readings: (row.romanizations ?? []).map((r) => ({
             id: r.id,
             [readingField]: r[readingField] ?? "",
@@ -178,6 +251,13 @@ export function vocabListSummary(row, lang) {
     return out;
 }
 
+/** Giữ CHỈ ký tự Hán — hán tự KHÔNG được chứa dấu câu/khoảng trắng/ký tự khác (2026-09-08).
+ * Dùng \p{Script=Han} để bắt cả ký tự ngoài BMP (vd 𠮶 U+20BB6). */
+const HAN_CHAR_RE = /\p{Script=Han}/u;
+function keepOnlyHan(value) {
+    return [...String(value ?? "")].filter((ch) => HAN_CHAR_RE.test(ch)).join("");
+}
+
 /** API object → DB row fields (không gồm readings — ghi riêng qua writeVocabularyReadings).
  * ⚠️ 2026-08-18: cột han/hsk_level NOT NULL DEFAULT '' trong DB → dùng `""` thay `null`
  * (Prisma String? cho phép null nhưng DB từ chối → P2011 Null constraint violation). */
@@ -185,23 +265,21 @@ export function vocabularyToRow(body, lang) {
     const L = LANG[lang];
     const row = {
         id: body?.id || randomUUID(),
-        [L.hanField]: String(body?.[L.hanField] ?? "").trim(),
+        // ⚠️ 2026-09-08: chỉ giữ ký tự Hán (bỏ dấu câu/khoảng trắng) khi ghi han.
+        [L.hanField]: keepOnlyHan(body?.[L.hanField]),
         popularity: body?.popularity ?? null,
+        popularityLevel: body?.popularityLevel ?? null,
     };
-    if (L.simpField) row[L.simpField] = String(body?.hanziSimplified ?? "").trim() || "";
+    if (L.simpField) row[L.simpField] = keepOnlyHan(body?.hanziSimplified) || "";
     if (L.hasHsk) row.hskLevel = String(body?.hskLevel ?? "").trim() || "";
     else row.pureCantonese = Boolean(body?.pureCantonese);
     if (lang === "cantonese") {
         row.hanziAudio = body?.hanziAudio ?? null;
         row.englishAudio = body?.englishAudio ?? null;
     }
-    if (L.hasRelated) {
-        const rw = normalizeRelatedWords(body?.relatedWords);
-        const hasData = Array.isArray(rw.compound)
-            ? rw.compound.length || rw.synonyms.length || rw.antonyms.length
-            : Object.keys(rw).length > 0;
-        if (hasData) row.relatedWords = rw;
-    }
+    // ⚠️ 2026-09-08: KHÔNG lưu related_words (từ ghép/đồng nghĩa/trái nghĩa từ Hanzii) nữa — chỉ
+    // dùng gợi ý tự động từ app. Luôn ghi NULL để dữ liệu Hanzii cũ không tái lập khi tạo mới.
+    if (L.hasRelated) row.relatedWords = null;
     return row;
 }
 
@@ -262,28 +340,32 @@ export function normalizeReadings(body, lang) {
         id: r?.id || randomUUID(),
         [readingField]: cleanRomanization(String(r?.[readingField] ?? "").toLowerCase()),
         sinoVietnamese: cleanSino(r?.sinoVietnamese),
-        meanings: (r?.meanings ?? []).map((m, mi) => ({
-            id: m?.id || randomUUID(),
-            ...(glossField ? { [glossField]: String(m?.[glossField] ?? "") } : {}),
-            vi: String(m?.vi ?? ""),
-            en: String(m?.en ?? ""),
-            position: m?.position ?? mi,
-            examples: (m?.examples ?? []).map((ex, ei) => ({
+        meanings: (r?.meanings ?? []).map((m, mi) => {
+            // ⚠️ 2026-09-08: bỏ dấu câu CUỐI khi lưu (meaning vi/en/gloss + example).
+            const meaning = {
+                id: m?.id || randomUUID(),
+                ...(glossField ? { [glossField]: dedupeSenses(stripTrailingPunct(m?.[glossField])) } : {}),
+                vi: dedupeSenses(stripTrailingPunct(m?.vi)),
+                en: dedupeSenses(stripTrailingPunct(m?.en)),
+                position: m?.position ?? mi,
+            };
+            meaning.examples = dedupeExamples(m?.examples, lang === "cantonese" ? "yue" : glossField).map((ex, ei) => ({
                 id: ex?.id || randomUUID(),
-                ...(glossField ? { [glossField]: String(ex?.[glossField] ?? "") } : {}),
+                ...(glossField ? { [glossField]: stripTrailingPunct(ex?.[glossField]) } : {}),
                 romanization: cleanRomanization(String(ex?.romanization ?? "")),
-                vi: String(ex?.vi ?? ""),
-                en: String(ex?.en ?? ""),
+                vi: stripTrailingPunct(ex?.vi),
+                en: stripTrailingPunct(ex?.en),
                 ...(lang === "cantonese"
                     ? {
-                          yue: String(ex?.yue ?? ""), // chữ Hán câu ví dụ CC101 (2026-08-22: thêm lại)
+                          yue: stripTrailingPunct(ex?.yue), // chữ Hán câu ví dụ CC101 (2026-08-22: thêm lại)
                           hanziAudio: ex?.hanziAudio ?? null,
                           englishAudio: ex?.englishAudio ?? null,
                       }
                     : {}),
                 position: ex?.position ?? ei,
-            })),
-        })),
+            }));
+            return meaning;
+        }),
     }));
 }
 
@@ -331,7 +413,7 @@ async function writeVocabularyReadings(lang, vocabId, readings) {
                 sinoVietnamese: cleanSino(r?.sinoVietnamese),
             },
         });
-        for (const m of r?.meanings ?? []) {
+        for (const [mi, m] of (r?.meanings ?? []).entries()) {
             const meaning = await prisma[L.meaning].create({
                 data: {
                     id: m?.id || randomUUID(),
@@ -339,6 +421,8 @@ async function writeVocabularyReadings(lang, vocabId, readings) {
                     ...(L.glossField ? { [L.glossField]: String(m?.[L.glossField] ?? "") } : {}),
                     vi: String(m?.vi ?? ""),
                     en: String(m?.en ?? ""),
+                    // ⚠️ 2026-09-20: lưu THỨ TỰ meaning (0-based) — normalizeReadings đã gán theo vị trí mảng.
+                    position: Number.isFinite(Number(m?.position)) ? Number(m.position) : mi,
                 },
             });
             for (const ex of m?.examples ?? []) {
@@ -380,7 +464,6 @@ async function refreshHanCharacters(lang, vocabId) {
             where: { id: vocabId },
             data: { hanziCharacters: breakdown, updatedAt: new Date() },
         });
-        await syncVocabularyHanCharacters(lang, vocabId, breakdown);
     } else {
         await prisma[L.vocab].update({
             where: { id: vocabId },
@@ -391,24 +474,146 @@ async function refreshHanCharacters(lang, vocabId) {
 
 // ── Fetch ──
 
-/** Full snapshot: 2 kho từ + grammars + han characters. */
-export async function fetchAppData() {
-    const [mandarin, cantonese, grammars, hanCharacters] = await Promise.all([
+// ⚠️ 2026-09-19: CACHE in-memory cho snapshot lớn. `/api/bootstrap` trả ~44MB JSON; build
+// (đọc 219k dòng qua Supabase pooler + rowToVocabulary) mất ~4,4s MỖI lần. Cache theo
+// `signature` (counts + max updatedAt của 2 bank) → lần gọi sau cùng signature trả NGAY.
+// An toàn: mọi thay đổi nội dung đều đổi `updatedAt` (⇒ signature đổi) hoặc đổi count.
+// TTL chỉ để tránh giữ dữ liệu cũ khi có sửa đổi không đổi signature (vd chỉ đổi related_words
+// — đã được tính trong signature) và để giải phóng bộ nhớ.
+const SNAPSHOT_TTL_MS = 5 * 60 * 1000;
+let snapshotCache = { sig: null, data: null, at: 0 };
+let sigCache = { value: null, at: 0 };
+const SIG_TTL_MS = 5 * 1000; // 5s: tránh gọi lặp aggregate trong cùng 1 request
+
+/** Xóa cache snapshot (gọi sau mọi mutation vocab/grammar trong cùng process). */
+export function invalidateSnapshotCache() {
+    snapshotCache = { sig: null, data: null, at: 0 };
+    sigCache = { value: null, at: 0 };
+}
+
+function snapshotGet(sig) {
+    if (snapshotCache.sig === sig && Date.now() - snapshotCache.at < SNAPSHOT_TTL_MS) return snapshotCache.data;
+    return null;
+}
+
+function snapshotSet(sig, data) {
+    snapshotCache = { sig, data, at: Date.now() };
+}
+
+/** Đọc 2 bank + grammars và map sang shape API (phần dùng chung của /data và /bootstrap). */
+async function loadSnapshotBase() {
+    const [mandarin, cantonese, grammars] = await Promise.all([
         prisma.mandarinVocabulary.findMany({ include: vocabularyInclude }),
         prisma.cantoneseVocabulary.findMany({ include: vocabularyInclude }),
         prisma.grammar.findMany({ include: { grammarExamples: {} } }),
-        prisma.hanziCharacter.findMany(),
     ]);
     return {
         mandarinVocabularies: mandarin.map((v) => rowToVocabulary(v, "mandarin")),
         cantoneseVocabularies: cantonese.map((v) => rowToVocabulary(v, "cantonese")),
         grammars: grammars.map(rowToGrammar),
-        hanCharacters: hanCharacters.map(rowToHanCharacter),
     };
+}
+
+/** Full snapshot: 2 kho từ + grammars + han characters (có cache theo signature). */
+export async function fetchAppData() {
+    const sig = await computeDataSignature();
+    const cached = snapshotGet(sig);
+    if (cached) return cached;
+    const base = await loadSnapshotBase();
+    snapshotSet(sig, base);
+    return base;
 }
 
 export async function fetchAllData() {
     return fetchAppData();
+}
+
+/** Bootstrap — 1 API trả HẾT data cần khi đăng nhập / load app (2026-09-02):
+ *  2 bank từ + grammars + data theo user (favorite/disliked ids / mastery / vocabulary sets —
+ *  chỉ khi có userId). Giảm login từ 5 API GET → 1.
+ *  ⚠️ KHÔNG còn hkSuggestionMap (xóa 2026-09-02) — gợi ý giản thể giờ tra ON-DEMAND theo
+ *  từng từ qua /api/hanzi/simplified-suggestion khi click vào vocab.
+ *  ⚠️ 2026-09-19: phần 2 bank + grammars lấy từ cache (key = signature); data theo user
+ *  luôn đọc mới (nhỏ, phụ thuộc userId). */
+export async function fetchBootstrapData(userId) {
+    const sig = await computeDataSignature();
+    let base = snapshotGet(sig);
+    if (!base) {
+        base = await loadSnapshotBase();
+        snapshotSet(sig, base);
+    }
+    const userData = userId
+        ? await Promise.all([
+              getFavoriteVocabularyIds(userId),
+              getVocabularyMastery(userId),
+              getVocabularySets(userId),
+              getDislikedVocabularyIds(userId),
+          ])
+        : null;
+    const favoriteVocabularyIds = userData ? userData[0] : { mandarin: [], cantonese: [] };
+    const vocabularyMastery = userData ? userData[1] : { mandarin: {}, cantonese: {} };
+    const vocabularySets = userData ? userData[2] : [];
+    const dislikedVocabularyIds = userData ? userData[3] : { mandarin: [], cantonese: [] };
+    return {
+        ...base,
+        favoriteVocabularyIds,
+        vocabularyMastery,
+        vocabularySets,
+        dislikedVocabularyIds,
+    };
+}
+
+/** Chữ ký dữ liệu hiện tại (counts + max updatedAt của 2 bank + grammars). Dùng cho ETag của
+ *  GET /api/bootstrap (If-None-Match) — data không đổi → 304, KHÔNG tải 45MB lại. Không còn
+ *  endpoint /api/bootstrap-version riêng (xóa 2026-09-02). Format khớp snapshotSignature frontend. */
+export async function computeDataSignature() {
+    // Cache 5s: route `/bootstrap` gọi hàm này 2 lần/request (so ETag + gắn header) và
+    // `fetchBootstrapData` gọi thêm 1 lần → tránh 3 lần aggregate trên pooler xa.
+    if (sigCache.value && Date.now() - sigCache.at < SIG_TTL_MS) return sigCache.value;
+    const [m, c, g, mRelRows, cRelRows] = await Promise.all([
+        prisma.mandarinVocabulary.aggregate({ _count: { _all: true }, _max: { updatedAt: true } }),
+        prisma.cantoneseVocabulary.aggregate({ _count: { _all: true }, _max: { updatedAt: true } }),
+        prisma.grammar.aggregate({ _count: { _all: true }, _max: { updatedAt: true } }),
+        // ⚠️ 2026-09-08: đếm related_words (JSONB, bỏ JSON-null) — xóa/ghi field này KHÔNG đổi
+        // count/max updatedAt nên signature phải theo dõi để client hết 304 cache cũ.
+        prisma.$queryRaw`SELECT COUNT(*)::int AS n FROM mandarin_vocabularies WHERE related_words IS NOT NULL AND related_words::text <> 'null'`,
+        prisma.$queryRaw`SELECT COUNT(*)::int AS n FROM cantonese_vocabularies WHERE related_words IS NOT NULL AND related_words::text <> 'null'`,
+    ]);
+    const maxMs = (x) => (x?._max?.updatedAt ? new Date(x._max.updatedAt).getTime() : 0);
+    const mRel = Number(mRelRows?.[0]?.n ?? 0);
+    const cRel = Number(cRelRows?.[0]?.n ?? 0);
+    const value = `${m._count._all}:${maxMs(m)}:${mRel}:${c._count._all}:${maxMs(c)}:${cRel}:${g._count._all}`;
+    sigCache = { value, at: Date.now() };
+    return value;
+}
+
+// ⚠️ 2026-09-20: digest data THEO USER (số dòng favorite/disliked/mastery/sets) — ghép vào ETag của
+// `/api/bootstrap`. Lý do: payload bootstrap chứa data theo user; nếu ETag chỉ theo nội dung 2 bank thì
+// đánh dấu ❤️/🚫 mới KHÔNG đổi signature ⇒ client nhận 304 và giữ dữ liệu cũ (đánh dấu "biến mất").
+// Cache 5s theo user (giống `sigCache`) — route gọi 2 lần/request.
+const userSigCache = new Map(); // userId -> { value, at }
+const USER_SIG_TTL_MS = 5000;
+
+export async function computeUserDataSignature(userId) {
+    if (!userId) return "anon";
+    const cached = userSigCache.get(userId);
+    if (cached && Date.now() - cached.at < USER_SIG_TTL_MS) return cached.value;
+    const [f, d, m, s] = await Promise.all([
+        prisma.userFavoriteVocabulary.count({ where: { userId } }),
+        prisma.userDislikedVocabulary.count({ where: { userId } }),
+        prisma.userVocabularyMastery.count({ where: { userId } }),
+        prisma.vocabularySet.count({ where: { userId } }),
+    ]);
+    const value = `${f}.${d}.${m}.${s}`;
+    userSigCache.set(userId, { value, at: Date.now() });
+    return value;
+}
+
+/** Chữ ký ĐẦY ĐỦ cho `/api/bootstrap`: nội dung 2 bank + data theo user. Format khớp frontend
+ *  (`requestSignature` = snapshotSignature + digest user). */
+export async function computeBootstrapSignature(userId) {
+    const [content, user] = await Promise.all([computeDataSignature(), computeUserDataSignature(userId)]);
+    return `${content}:${user}`;
 }
 
 // ── Query (browse) per language ──
@@ -428,6 +633,9 @@ export async function queryVocabularies(
         search = "",
         hskLevel = null,
         pureCantonese = null,
+        excludeMastered = false,
+        excludeDisliked = false,
+        userId = null,
     } = {},
 ) {
     const L = LANG[lang];
@@ -443,6 +651,31 @@ export async function queryVocabularies(
         wordWhere.pureCantonese = true;
     } else if (pureCantonese === false || pureCantonese === "false") {
         wordWhere.pureCantonese = false;
+    }
+
+    // ⚠️ 2026-09-02: lọc bỏ từ đã MASTERED (progress >= 100) khỏi kết quả — dùng cho flashcard random.
+    // ⚠️ 2026-09-20: lọc bỏ cả từ user đánh dấu "không muốn học" (user_disliked_vocabularies).
+    const excludedIds = [];
+    if (userId && (excludeMastered || excludeDisliked)) {
+        const [mastered, disliked] = await Promise.all([
+            excludeMastered
+                ? prisma.userVocabularyMastery.findMany({
+                      where: { userId, language: lang, progress: { gte: 100 } },
+                      select: { vocabularyId: true },
+                  })
+                : [],
+            excludeDisliked
+                ? prisma.userDislikedVocabulary.findMany({
+                      where: { userId, language: lang },
+                      select: { vocabularyId: true },
+                  })
+                : [],
+        ]);
+        for (const m of mastered) excludedIds.push(m.vocabularyId);
+        for (const d of disliked) excludedIds.push(d.vocabularyId);
+    }
+    if (excludedIds.length) {
+        wordWhere.NOT = [...(wordWhere.NOT ?? []), { id: { in: excludedIds } }];
     }
 
     if (search && search.trim()) {
@@ -573,59 +806,9 @@ export async function findSimplifiedSuggestion(hk) {
  *        - không có → KHÔNG lấy (found = false).
  *   3) TUYỆT ĐỐI KHÔNG trả về hanzi traditional dưới dạng simplified.
  */
-let hkSuggestionMapCache = { key: "", map: null };
-
-export async function buildHkSuggestionMap() {
-    const [mandarin, cantonese] = await Promise.all([
-        prisma.mandarinVocabulary.findMany({ include: vocabularyInclude }),
-        prisma.cantoneseVocabulary.findMany({
-            select: { hanziTraditionalHk: true, updatedAt: true },
-        }),
-    ]);
-    const mMax = mandarin.reduce((a, v) => (v.updatedAt > a ? v.updatedAt : a), new Date(0)).getTime();
-    const cMax = cantonese.reduce((a, v) => (v.updatedAt > a ? v.updatedAt : a), new Date(0)).getTime();
-    const key = `${mandarin.length}:${mMax}:${cantonese.length}:${cMax}`;
-    if (hkSuggestionMapCache.key === key) return hkSuggestionMapCache.map;
-
-    // Lookup maps từ mandarin bank (giống findSimplifiedSuggestion nhưng in-memory).
-    const bySimplified = new Map();
-    const byTraditional = new Map();
-    for (const v of mandarin) {
-        const s = (v.hanziSimplified ?? "").trim();
-        const t = (v.hanziTraditional ?? "").trim();
-        if (s && !bySimplified.has(s)) bySimplified.set(s, vocabListSummary(v, "mandarin"));
-        if (t && !byTraditional.has(t)) byTraditional.set(t, vocabListSummary(v, "mandarin"));
-    }
-    const { hk2s, hk2t } = await import("./openccHK.js");
-    const map = {};
-    const seen = new Set();
-    for (const c of cantonese) {
-        const source = (c.hanziTraditionalHk ?? "").trim();
-        if (!source || seen.has(source)) continue;
-        seen.add(source);
-        const simplified = String(hk2s(source)).trim();
-        const traditional = String(hk2t(source)).trim();
-        // Giá trị simplified CỦA VOCAB MANDARIN (chỉ chấp nhận giản thể thật, KHÔNG bao giờ
-        // fallback sang traditional). Rỗng = found false → không lưu entry.
-        let simplifiedOut = "";
-        // 1) Ưu tiên hk2s → tìm theo hanziSimplified.
-        if (simplified) {
-            const hit = bySimplified.get(simplified);
-            if (hit && (hit.hanziSimplified ?? "").trim()) simplifiedOut = hit.hanziSimplified;
-        }
-        // 2) Fallback hk2t → tìm theo hanziTraditional; CHỈ lấy nếu vocab đó có hanziSimplified.
-        if (!simplifiedOut && traditional) {
-            const hit = byTraditional.get(traditional);
-            if (hit && (hit.hanziSimplified ?? "").trim()) simplifiedOut = hit.hanziSimplified;
-        }
-        // 3) Có simplified thật mới lưu; không có → bỏ qua (found = false).
-        if (simplifiedOut) {
-            map[source] = { simplified: simplifiedOut };
-        }
-    }
-    hkSuggestionMapCache = { key, map };
-    return map;
-}
+// ⚠️ 2026-09-02: ĐÃ XÓA hkSuggestionMap (precompute map HK→giản thể) + endpoint
+// /hanzi/hk-suggestion-map. Gợi ý giản thể giờ tra ON-DEMAND theo từng từ khi click
+// vocab qua /api/hanzi/simplified-suggestion (findSimplifiedSuggestion bên dưới).
 
 // ── CRUD per language ──
 
@@ -636,6 +819,7 @@ export async function createVocabulary(lang, body) {
     const vocab = await prisma[L.vocab].create({ data: row });
     await writeVocabularyReadings(lang, vocab.id, readings);
     await refreshHanCharacters(lang, vocab.id);
+    invalidateSnapshotCache();
     const full = await prisma[L.vocab].findUnique({ where: { id: vocab.id }, include: vocabularyInclude });
     return rowToVocabulary(full, lang);
 }
@@ -649,7 +833,6 @@ export async function updateVocabulary(lang, id, body) {
     const oldHan = lang === "cantonese" ? String(existing[L.hanField] ?? "").trim() : "";
 
     const row = vocabularyToRow({ ...body, id }, lang);
-    const relatedWords = L.hasRelated && body?.relatedWords ? normalizeRelatedWords(body.relatedWords) : undefined;
     await prisma[L.vocab].update({
         where: { id },
         data: {
@@ -657,7 +840,10 @@ export async function updateVocabulary(lang, id, body) {
             [L.hanField]: row[L.hanField],
             ...(L.hasHsk ? { hskLevel: row.hskLevel ?? undefined } : { pureCantonese: row.pureCantonese }),
             ...(row.popularity !== null ? { popularity: row.popularity } : {}),
-            ...(L.hasRelated ? { relatedWords: relatedWords ?? undefined } : {}),
+            // ⚠️ 2026-09-05: level có thể bị clear (null) → áp khi key xuất hiện trong body.
+            ...(body && "popularityLevel" in body ? { popularityLevel: body.popularityLevel ?? null } : {}),
+            // ⚠️ 2026-09-08: KHÔNG ghi related_words (Hanzii) — luôn NULL để không tái lập.
+            ...(L.hasRelated ? { relatedWords: null } : {}),
             ...(lang === "cantonese"
                 ? { hanziAudio: row.hanziAudio ?? undefined, englishAudio: row.englishAudio ?? undefined }
                 : {}),
@@ -678,6 +864,7 @@ export async function updateVocabulary(lang, id, body) {
     }
 
     const full = await prisma[L.vocab].findUnique({ where: { id }, include: vocabularyInclude });
+    invalidateSnapshotCache();
     return rowToVocabulary(full, lang);
 }
 
@@ -688,6 +875,7 @@ export async function deleteVocabulary(lang, id) {
         lang === "cantonese" ? await prisma[L.vocab].findUnique({ where: { id } }).catch(() => null) : null;
     const han = existing ? String(existing[L.hanField] ?? "").trim() : "";
     await prisma[L.vocab].delete({ where: { id } }).catch(() => {});
+    invalidateSnapshotCache();
     if (lang === "cantonese" && han) {
         await deleteTtsCacheIfUnused(han, id).catch(() => {});
     }
@@ -787,6 +975,7 @@ export async function createGrammar(userId, body) {
     const { id, createdAt, updatedAt, examples, ...data } = row;
     await prisma.grammar.create({ data: { id, ...data } });
     await upsertGrammarExamples(id, body.examples);
+    invalidateSnapshotCache();
     const full = await prisma.grammar.findUnique({ where: { id }, include: { grammarExamples: {} } });
     return rowToGrammar(full);
 }
@@ -796,93 +985,14 @@ export async function updateGrammar(userId, id, body) {
     const { createdAt, examples, ...data } = row;
     await prisma.grammar.update({ where: { id_userId: { id, userId } }, data });
     await upsertGrammarExamples(id, body.examples);
+    invalidateSnapshotCache();
     const full = await prisma.grammar.findUnique({ where: { id }, include: { grammarExamples: {} } });
     return rowToGrammar(full);
 }
 
 export async function deleteGrammar(userId, id) {
     await prisma.grammar.delete({ where: { id_userId: { id, userId } } });
-}
-
-// ── Han Character (không đổi bảng — chỉ bỏ field đã xóa) ──
-
-export function hanCharacterToRow(item) {
-    const readings = Array.isArray(item.sinoVietnamese)
-        ? item.sinoVietnamese.map((r) => String(r ?? "").trim()).filter(Boolean)
-        : String(item.sinoVietnamese ?? "").trim()
-          ? [String(item.sinoVietnamese).trim()]
-          : [];
-    const parseArr = (val) => {
-        if (Array.isArray(val)) return val.map((r) => String(r ?? "").trim()).filter(Boolean);
-        const s = String(val ?? "").trim();
-        return s ? [s] : [];
-    };
-    const now = new Date().toISOString();
-    return {
-        id: item.id,
-        hanSimplified: item.hanSimplified ?? undefined,
-        hanTraditional: item.hanTraditional || item.hanSimplified || "",
-        sinoVietnamese: readings.length > 0 ? readings : [],
-        jyutping: parseArr(item.jyutping),
-        pinyin: parseArr(item.pinyin),
-        strokeCount: item.strokeCount ?? null,
-        popularity: item.popularity ?? null,
-        createdAt: item.createdAt ?? now,
-        updatedAt: now,
-    };
-}
-
-export function rowToHanCharacter(row) {
-    return {
-        id: row.id,
-        hanSimplified: row.hanSimplified ?? "",
-        hanTraditional: row.hanTraditional ?? undefined,
-        sinoVietnamese: row.sinoVietnamese ?? [],
-        jyutping: row.jyutping ?? [],
-        pinyin: row.pinyin ?? [],
-        strokeCount: row.strokeCount ?? null,
-        popularity: row.popularity ?? null,
-        createdAt: row.createdAt ?? row.updatedAt,
-        updatedAt: row.updatedAt ?? row.createdAt,
-    };
-}
-
-export async function createHanChar(userId, body) {
-    const row = hanCharacterToRow(body);
-    const { id, createdAt, updatedAt, ...rest } = row;
-    const created = await prisma.hanziCharacter.create({
-        data: {
-            id: id || randomUUID(),
-            hanSimplified: rest.hanSimplified || null,
-            hanTraditional: rest.hanTraditional || rest.hanSimplified || "",
-            sinoVietnamese: rest.sinoVietnamese || [],
-            jyutping: rest.jyutping || [],
-            pinyin: rest.pinyin || [],
-            strokeCount: rest.strokeCount ?? null,
-            popularity: rest.popularity ?? null,
-        },
-    });
-    return rowToHanCharacter(created);
-}
-
-export async function updateHanChar(userId, id, body) {
-    const row = hanCharacterToRow({ ...body, id });
-    const { createdAt, ...rest } = row;
-    const data = {};
-    if (rest.hanSimplified !== undefined) data.hanSimplified = rest.hanSimplified || null;
-    if (rest.hanTraditional !== undefined) data.hanTraditional = rest.hanTraditional;
-    if (rest.sinoVietnamese !== undefined) data.sinoVietnamese = rest.sinoVietnamese;
-    if (rest.jyutping !== undefined) data.jyutping = rest.jyutping;
-    if (rest.pinyin !== undefined) data.pinyin = rest.pinyin;
-    if (rest.strokeCount !== undefined) data.strokeCount = rest.strokeCount;
-    if (rest.popularity !== undefined) data.popularity = rest.popularity;
-    data.updatedAt = new Date();
-    const updated = await prisma.hanziCharacter.update({ where: { id }, data });
-    return rowToHanCharacter(updated);
-}
-
-export async function deleteHanChar(userId, id) {
-    await prisma.hanziCharacter.delete({ where: { id } });
+    invalidateSnapshotCache();
 }
 
 // ── Flashcard Deck (link table tách theo ngôn ngữ) ──
@@ -901,12 +1011,12 @@ function rowToFlashcardDeck(row) {
         mandarinVocabularies: mandarin.map((dv) => ({
             id: dv.mandarinVocabularyId,
             position: dv.position,
-            ...(dv.mandarinVocabulary ? vocabListSummary(dv.mandarinVocabulary, "mandarin") : {}),
+            ...(dv.mandarinVocabulary ? rowToVocabulary(dv.mandarinVocabulary, "mandarin") : {}),
         })),
         cantoneseVocabularies: cantonese.map((dv) => ({
             id: dv.cantoneseVocabularyId,
             position: dv.position,
-            ...(dv.cantoneseVocabulary ? vocabListSummary(dv.cantoneseVocabulary, "cantonese") : {}),
+            ...(dv.cantoneseVocabulary ? rowToVocabulary(dv.cantoneseVocabulary, "cantonese") : {}),
         })),
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
@@ -993,7 +1103,8 @@ export async function removeVocabularyFromDeck(lang, userId, deckId, vocabularyI
     const deck = await prisma.flashcardDeck.findUnique({ where: { id_userId: { id: deckId, userId } } });
     if (!deck) throw Object.assign(new Error("Deck not found"), { statusCode: 404 });
     await prisma[L.deckLink].delete({
-        where: { deckId_vocabularyId: { deckId, vocabularyId } },
+        // ⚠️ 2026-09: compound unique field + input key đều theo vocabIdField
+        where: { [`deckId_${L.vocabIdField}`]: { deckId, [L.vocabIdField]: vocabularyId } },
     });
 }
 
@@ -1070,7 +1181,273 @@ export async function removeVocabularyFromSet(lang, userId, setId, vocabularyId)
     const L = LANG[lang];
     const set = await prisma.vocabularySet.findUnique({ where: { id_userId: { id: setId, userId } } });
     if (!set) throw Object.assign(new Error("Set not found"), { statusCode: 404 });
-    await prisma[L.setLink].delete({ where: { setId_vocabularyId: { setId, vocabularyId } } });
+    await prisma[L.setLink].delete({
+        // ⚠️ 2026-09: compound unique field + input key đều theo vocabIdField
+        where: { [`setId_${L.vocabIdField}`]: { setId, [L.vocabIdField]: vocabularyId } },
+    });
+}
+
+// ── Tags (dùng chung toàn app, CHỈ admin tạo/đổi tên/xóa + gán cho từ) — 2026-09-27 ──
+// Bảng tags (name unique) + vocabulary_tags (tag_id, language, vocabulary_id) unique.
+// `vocabulary_tags` chỉ FK tới `tags` (onDelete CASCADE) — giống pattern favorite/disliked
+// (không FK chéo tới 2 bảng vocab riêng biệt).
+
+/**
+ * Chuẩn hóa tên tag: trim + gộp khoảng trắng + **Title Case** (viết hoa chữ đầu MỖI từ,
+ * giữ nguyên phần còn lại để không phá từ viết hoa như "HSK"). Áp dụng cho cả tạo mới & đổi tên.
+ * (2026-09-27) VD: "động vật có vú" → "Động Vật Có Vú".
+ */
+function normalizeTagName(value) {
+    return String(value ?? "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .replace(/(^|\s)(\S)/gu, (_, sep, ch) => sep + ch.toUpperCase());
+}
+
+// ⚠️ 2026-09-27: MÀU TAG — bảng màu 10 sắc gốc × 5 tông (500→900, KHÔNG có màu nhạt/đen) nằm ở FE
+// (`frontend/src/lib/tagColors.js`). BE chấp nhận MỌI mã #rrggbb (`normalizeTagColor`) nên
+// đổi/thêm màu ở FE KHÔNG cần sửa BE; list dưới đây chỉ dùng để gán màu MẶC ĐỊNH khi tạo tag
+// (10 sắc tông 500).
+export const TAG_DEFAULT_COLORS = [
+    "#ef4444", // Đỏ
+    "#f97316", // Cam
+    "#f59e0b", // Vàng
+    "#84cc16", // Lục
+    "#22c55e", // Xanh lá
+    "#14b8a6", // Ngọc
+    "#3b82f6", // Xanh dương
+    "#6366f1", // Chàm
+    "#8b5cf6", // Tím
+    "#ec4899", // Hồng
+];
+
+/** Chỉ nhận mã màu hex 6 số (#rrggbb) — chống giá trị rác từ client. */
+function normalizeTagColor(value) {
+    const c = String(value ?? "")
+        .trim()
+        .toLowerCase();
+    return /^#[0-9a-f]{6}$/.test(c) ? c : null;
+}
+
+/** Màu mặc định khi tạo tag = màu ÍT DÙNG NHẤT trong 7 màu mặc định (không random, vẫn đa dạng). */
+async function defaultTagColor() {
+    const rows = await prisma.tag.findMany({ select: { color: true } });
+    const counts = new Map(TAG_DEFAULT_COLORS.map((c) => [c, 0]));
+    for (const r of rows) {
+        const c = normalizeTagColor(r.color);
+        if (counts.has(c)) counts.set(c, counts.get(c) + 1);
+    }
+    let best = TAG_DEFAULT_COLORS[0];
+    for (const c of TAG_DEFAULT_COLORS) if ((counts.get(c) ?? 0) < (counts.get(best) ?? 0)) best = c;
+    return best;
+}
+
+function tagToObject(t, count) {
+    return {
+        id: t.id,
+        name: t.name,
+        color: t.color ?? null,
+        vocabularyCount: count ?? 0,
+        createdAt: t.createdAt,
+    };
+}
+
+export async function getTags() {
+    const rows = await prisma.tag.findMany({
+        include: { _count: { select: { vocabularyTags: true } } },
+    });
+    // ⚠️ 2026-09-27: sắp theo SỐ TỪ ĐÃ GẮN (giảm dần), cùng số thì theo tên (locale vi).
+    // Sort bằng JS (bảng tag nhỏ) để không phụ thuộc `orderBy` theo _count của Prisma.
+    return rows
+        .map((t) => tagToObject(t, t._count?.vocabularyTags))
+        .sort(
+            (a, b) =>
+                (b.vocabularyCount ?? 0) - (a.vocabularyCount ?? 0) ||
+                String(a.name ?? "").localeCompare(String(b.name ?? ""), "vi"),
+        );
+}
+
+export async function createTag(body) {
+    const name = normalizeTagName(body?.name);
+    if (!name) throw Object.assign(new Error("Tag name is required"), { statusCode: 400 });
+    const color = normalizeTagColor(body?.color) ?? (await defaultTagColor());
+    try {
+        const created = await prisma.tag.create({ data: { id: body?.id ?? randomUUID(), name, color } });
+        return tagToObject(created);
+    } catch (err) {
+        if (err?.code === "P2002") throw Object.assign(new Error("Tag already exists"), { statusCode: 409 });
+        throw err;
+    }
+}
+
+/**
+ * Cập nhật tag — nhận PATCH từng phần: `{ name? , color? }` (phải có ít nhất 1 field).
+ * (2026-09-27) Tách name/color riêng vì UI cho đổi tên VÀ đổi màu độc lập.
+ */
+export async function updateTag(id, body) {
+    const data = {};
+    if (body?.name !== undefined) {
+        const name = normalizeTagName(body.name);
+        if (!name) throw Object.assign(new Error("Tag name is required"), { statusCode: 400 });
+        data.name = name;
+    }
+    if (body?.color !== undefined) {
+        const color = normalizeTagColor(body.color);
+        if (!color) throw Object.assign(new Error("Invalid tag color"), { statusCode: 400 });
+        data.color = color;
+    }
+    if (Object.keys(data).length === 0) {
+        throw Object.assign(new Error("Nothing to update"), { statusCode: 400 });
+    }
+    try {
+        const updated = await prisma.tag.update({ where: { id }, data });
+        const count = await prisma.vocabularyTag.count({ where: { tagId: id } });
+        return tagToObject(updated, count);
+    } catch (err) {
+        if (err?.code === "P2002") throw Object.assign(new Error("Tag already exists"), { statusCode: 409 });
+        if (err?.code === "P2025") throw Object.assign(new Error("Tag not found"), { statusCode: 404 });
+        throw err;
+    }
+}
+
+/** Xóa tag — `vocabulary_tags` bị gỡ theo nhờ FK ON DELETE CASCADE. */
+export async function deleteTag(id) {
+    try {
+        await prisma.tag.delete({ where: { id } });
+    } catch (err) {
+        if (err?.code === "P2025") throw Object.assign(new Error("Tag not found"), { statusCode: 404 });
+        throw err;
+    }
+}
+
+/** Id các tag đang gán cho 1 từ (theo ngôn ngữ). */
+export async function getVocabularyTagIds(lang, vocabularyId) {
+    const rows = await prisma.vocabularyTag.findMany({
+        where: { language: lang, vocabularyId },
+        select: { tagId: true },
+    });
+    return rows.map((r) => r.tagId);
+}
+
+/** Gán / gỡ 1 tag cho 1 từ. `tagged=true` → tạo liên kết (idempotent); false → xóa. */
+export async function setVocabularyTag(lang, vocabularyId, tagId, tagged) {
+    const L = LANG[lang];
+    const [vocab, tag] = await Promise.all([
+        prisma[L.vocab].findUnique({ where: { id: vocabularyId }, select: { id: true } }),
+        prisma.tag.findUnique({ where: { id: tagId }, select: { id: true } }),
+    ]);
+    if (!vocab) throw Object.assign(new Error("Vocabulary not found"), { statusCode: 404 });
+    if (!tag) throw Object.assign(new Error("Tag not found"), { statusCode: 404 });
+    if (tagged) {
+        await prisma.vocabularyTag.upsert({
+            where: { tagId_language_vocabularyId: { tagId, language: lang, vocabularyId } },
+            create: { tagId, language: lang, vocabularyId },
+            update: {},
+        });
+    } else {
+        await prisma.vocabularyTag.deleteMany({ where: { tagId, language: lang, vocabularyId } });
+    }
+    return { ok: true, tagged: Boolean(tagged) };
+}
+
+// ── Favorite / Disliked vocabularies (cặp ❤️ / 🚫 theo user) — 2026-09-02 → rename 2026-09-20 ──
+// Bảng user_favorite_vocabularies + user_disliked_vocabularies: (user_id, language, vocabulary_id)
+// unique. KHÔNG FK tới users (pattern giống user_checkins). 2 trạng thái LOẠI TRỪ NHAU.
+// Từ `disliked` ("không muốn học") KHÔNG xuất hiện trong flashcard random (queryVocabularies excludeDisliked).
+
+export async function getFavoriteVocabularyIds(userId) {
+    const rows = await prisma.userFavoriteVocabulary.findMany({
+        where: { userId },
+        select: { language: true, vocabularyId: true },
+    });
+    const result = { mandarin: [], cantonese: [] };
+    for (const r of rows) {
+        if (Object.prototype.hasOwnProperty.call(result, r.language)) result[r.language].push(r.vocabularyId);
+    }
+    return result;
+}
+
+export async function getDislikedVocabularyIds(userId) {
+    const rows = await prisma.userDislikedVocabulary.findMany({
+        where: { userId },
+        select: { language: true, vocabularyId: true },
+    });
+    const result = { mandarin: [], cantonese: [] };
+    for (const r of rows) {
+        if (Object.prototype.hasOwnProperty.call(result, r.language)) result[r.language].push(r.vocabularyId);
+    }
+    return result;
+}
+
+/** Bật/tắt ❤️ yêu thích — bật thì tự động BỎ 🚫 không muốn học (2 trạng thái loại trừ nhau). */
+export async function setVocabularyFavorite(userId, lang, vocabularyId, favorite) {
+    const L = LANG[lang];
+    const exists = await prisma[L.vocab].findUnique({ where: { id: vocabularyId }, select: { id: true } });
+    if (!exists) throw Object.assign(new Error("Vocabulary not found"), { statusCode: 404 });
+    if (favorite) {
+        await prisma.userFavoriteVocabulary.upsert({
+            where: { userId_language_vocabularyId: { userId, language: lang, vocabularyId } },
+            create: { userId, language: lang, vocabularyId },
+            update: {},
+        });
+        await prisma.userDislikedVocabulary.deleteMany({ where: { userId, language: lang, vocabularyId } });
+    } else {
+        await prisma.userFavoriteVocabulary.deleteMany({ where: { userId, language: lang, vocabularyId } });
+    }
+    return { ok: true, favorite: Boolean(favorite) };
+}
+
+/** Bật/tắt 🚫 không muốn học — bật thì tự động BỎ ❤️ yêu thích (2 trạng thái loại trừ nhau). */
+export async function setVocabularyDisliked(userId, lang, vocabularyId, disliked) {
+    const L = LANG[lang];
+    const exists = await prisma[L.vocab].findUnique({ where: { id: vocabularyId }, select: { id: true } });
+    if (!exists) throw Object.assign(new Error("Vocabulary not found"), { statusCode: 404 });
+    if (disliked) {
+        await prisma.userDislikedVocabulary.upsert({
+            where: { userId_language_vocabularyId: { userId, language: lang, vocabularyId } },
+            create: { userId, language: lang, vocabularyId },
+            update: {},
+        });
+        await prisma.userFavoriteVocabulary.deleteMany({ where: { userId, language: lang, vocabularyId } });
+    } else {
+        await prisma.userDislikedVocabulary.deleteMany({ where: { userId, language: lang, vocabularyId } });
+    }
+    return { ok: true, disliked: Boolean(disliked) };
+}
+
+// ── Vocabulary mastery (progress 0-100%) — mọi user đã đăng nhập (2026-09-02) ──
+// Bảng user_vocabulary_mastery: (user_id, language, vocabulary_id) unique.
+// Khó +5 / Trung bình +10 / Dễ +25; Lại nữa → reset 0; Đã nắm → 100 (mastered).
+
+export async function getVocabularyMastery(userId) {
+    const rows = await prisma.userVocabularyMastery.findMany({
+        where: { userId },
+        select: { language: true, vocabularyId: true, progress: true },
+    });
+    const result = { mandarin: {}, cantonese: {} };
+    for (const r of rows) {
+        if (Object.prototype.hasOwnProperty.call(result, r.language)) {
+            result[r.language][r.vocabularyId] = r.progress;
+        }
+    }
+    return result;
+}
+
+export async function setVocabularyMastery(userId, lang, vocabularyId, progress) {
+    const L = LANG[lang];
+    const exists = await prisma[L.vocab].findUnique({ where: { id: vocabularyId }, select: { id: true } });
+    if (!exists) throw Object.assign(new Error("Vocabulary not found"), { statusCode: 404 });
+    const clamped = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
+    if (clamped <= 0) {
+        await prisma.userVocabularyMastery.deleteMany({ where: { userId, language: lang, vocabularyId } });
+        return { ok: true, progress: 0, mastered: false };
+    }
+    const row = await prisma.userVocabularyMastery.upsert({
+        where: { userId_language_vocabularyId: { userId, language: lang, vocabularyId } },
+        create: { userId, language: lang, vocabularyId, progress: clamped },
+        update: { progress: clamped, updatedAt: new Date() },
+    });
+    return { ok: true, progress: row.progress, mastered: row.progress >= 100 };
 }
 
 // ── Resolve user ──

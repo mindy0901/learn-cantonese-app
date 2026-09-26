@@ -1,12 +1,12 @@
 /**
  * Han character lookup display helpers.
- * Used by WordRow and WordDetailContent for displaying traditional/simplified variants.
+ * Used by VocabularyDetailContent for displaying traditional/simplified variants.
  */
 
 /**
  * Extract han forms for display — CHỈ dùng cặp simp + hk.
  * Dạng đỏ (thay vai "phồn thể") = hanHongKong; `traditional` giữ để tương thích
- * code cũ (WordRow/WordDetailContent), giờ trỏ về HK.
+ * code cũ (VocabularyDetailContent), giờ trỏ về HK.
  */
 export function vocabularyLookupDisplay(word) {
     const traditional = word.hanHongKong || word.hanTraditional || word.traditional || "";

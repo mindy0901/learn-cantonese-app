@@ -161,11 +161,19 @@
     --color-jyutping: var(--jyutping-color);
     --color-viet: var(--viet-color);
     --color-purple: var(--purple-color);
+    /* ⚠️ 2026-09-27: màu ĐỎ cho icon ❤️ "yêu thích" (khác `--destructive` dùng cho 🚫). */
+    --color-favorite: var(--favorite-color);
     --color-han-pop-0: var(--han-popularity-0);
     --color-han-pop-1: var(--han-popularity-1);
     --color-han-pop-2: var(--han-popularity-2);
     --color-han-pop-3: var(--han-popularity-3);
     --color-han-pop-4: var(--han-popularity-4);
+    /* ⚠️ 2026-09-20: thang màu "Độ phổ biến" của TỪ VỰNG (level 1–5) → class `text-pop-1..5`. */
+    --color-pop-1: var(--pop-1-color);
+    --color-pop-2: var(--pop-2-color);
+    --color-pop-3: var(--pop-3-color);
+    --color-pop-4: var(--pop-4-color);
+    --color-pop-5: var(--pop-5-color);
     --shadow-md: var(--shadow);
     --shadow-sm: var(--shadow-sm);
     --font-sans: var(--sans);
@@ -187,11 +195,19 @@
     --han-popularity-2: #65a30d;
     --han-popularity-3: #059669;
     --han-popularity-4: #7c3aed;
+    /* Độ phổ biến từ vựng (light): 1 Hiếm (đỏ) → 5 Rất cao (xanh lá). 2026-09-20 */
+    --pop-1-color: #dc2626;
+    --pop-2-color: #ea580c;
+    --pop-3-color: #d97706;
+    --pop-4-color: #65a30d;
+    --pop-5-color: #059669;
     /* pinyin/jyutping/viet cùng màu text-foreground (mist-50 dark / mist-950 light) — 2026-08-21 */
     --jyutping-color: var(--foreground);
     --viet-color: var(--foreground);
     --pinyin-color: var(--foreground);
     --purple-color: #7c3aed;
+    /* ❤️ yêu thích (light): đỏ đậm cho đủ tương phản trên nền sáng. 2026-09-27 */
+    --favorite-color: #dc2626;
 
     /* Legacy tokens — map sang theme UI lib (tự theo light/dark) */
     --accent: var(--primary);
@@ -248,11 +264,19 @@
     --han-popularity-2: #a3e635;
     --han-popularity-3: #34d399;
     --han-popularity-4: #a78bfa;
+    /* Độ phổ biến từ vựng (dark): 1 Hiếm (đỏ) → 5 Rất cao (xanh lá). 2026-09-20 */
+    --pop-1-color: #f87171;
+    --pop-2-color: #fb923c;
+    --pop-3-color: #fbbf24;
+    --pop-4-color: #a3e635;
+    --pop-5-color: #34d399;
     /* pinyin/jyutping/viet cùng màu text-foreground (mist-50) — 2026-08-21 */
     --jyutping-color: var(--foreground);
     --viet-color: var(--foreground);
     --pinyin-color: var(--foreground);
     --purple-color: #a78bfa;
+    /* ❤️ yêu thích (dark): đỏ sáng hơn cho nổi trên nền tối. 2026-09-27 */
+    --favorite-color: #f87171;
 }
 
 *,
@@ -332,21 +356,107 @@ code {
 /* ── Flashcard 3D flip (minimal custom CSS) ── */
 
 .flashcard-stage {
-    overflow: hidden;
     min-height: 360px;
 }
 
-.flashcard-nav-row {
-    display: flex;
-    align-items: stretch;
-    gap: 0.75rem;
+/* ⚠️ 2026-09: flashcard dùng flip card BỘ THỦ (radicals-flip). Bỏ overflow:hidden (vốn cho slide
+   animation cũ — gây cắt 2 bên khi 3D flip); giới hạn bề rộng card (~960px như bộ thủ) căn giữa
+   để perspective không méo trái/phải. */
+.flashcard-stage .radicals-flip {
+    margin-inline: auto;
+    max-width: 60rem;
+    /* ⚠️ 2026-09-17: thẻ CAO HẾT chiều cao vùng còn lại (lấp đầy view) — trước đây chỉ 360px. */
+    height: 100%;
+    /* ⚠️ 2026-09-02: xóa bôi xanh chữ + tap-highlight + focus ring khi click nhiều trên card */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+.flashcard-stage .radicals-flip:focus,
+.flashcard-stage .radicals-flip:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+.flashcard-stage .radicals-flip__inner {
+    min-height: 360px;
+    /* ⚠️ 2026-09-19: thẻ giờ CHỈ CÒN 1 MẶT (bấm mở nghĩa, không lật) — giữ class để tái dùng style khung. */
+    transition: none;
+    transform-style: flat;
 }
 
-.flashcard-nav-btn {
-    align-self: center;
-    min-width: 4.5rem;
-    max-width: 5.5rem;
-    flex-shrink: 0;
+/* ⚠️ 2026-09-19: TẮT HẲN cơ chế lật thẻ (flashcard) — chỉ còn 1 mặt, KHÔNG xoay 3D.
+   Scope `.flashcard-stage` ⇒ trang Bộ thủ (`/radicals`, dùng chung class `radicals-flip`)
+   KHÔNG bị ảnh hưởng (vẫn lật 3D như cũ).
+   `transform: none` để chắc chắn không còn rotate nào (kể cả khi state/class cũ lọt vào). */
+.flashcard-stage .radicals-flip__inner,
+.flashcard-stage .radicals-flip--flipped .radicals-flip__inner {
+    transform: none;
+}
+.flashcard-stage .radicals-flip__face,
+.flashcard-stage .radicals-flip__face--back {
+    transform: none;
+    backface-visibility: visible;
+    -webkit-backface-visibility: visible;
+}
+/* ⚠️ 2026-09-19: KHÔNG còn rule `display: none` theo mặt thẻ — mặt thẻ duy nhất
+   (`.radicals-flip__face`) luôn hiển thị. Base `.radicals-flip__face` đã là `display: flex`. */
+.flashcard-stage .radicals-flip__face {
+    /* ⚠️ 2026-09-19: BỎ `overflow-y: auto` ở mặt thẻ — vùng nội dung bên trong đã tự cuộn
+       (xem `face()` trong FlashcardDeck) → trước đây có 2 scroll (thừa). Chỉ giữ 1 scroll. */
+    overflow: visible;
+    /* ⚠️ 2026-09-19: hàng icon ★🔖⚡ bám SÁT mép trên thẻ — chỉ giảm padding-TOP (giữ padding
+       ngang/dưới 1.5rem như base) để icon & nội dung bên dưới vẫn thẳng hàng nhau. */
+    padding-top: 0.5rem;
+}
+
+/* ⚠️ 2026-09-19: ẩn THANH scrollbar nhưng VẪN cuộn được (wheel / touch / kéo / phím). */
+.flashcard-scroll {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Edge/IE cũ */
+}
+.flashcard-scroll::-webkit-scrollbar {
+    /* Chrome / Edge / Safari */
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+/* ⚠️ 2026-09-19: ĐÃ XÓA tính năng tắt/bật hiệu ứng lật (icon ⚡ + pref `noFlipAnimation`) và
+   rule `.radicals-flip--no-anim`. Hiệu ứng lật của flashcard đã bị TẮT HẲN bằng block
+   "TẠM TẮT ANIMATION LẬT THẺ" (scope `.flashcard-stage`) ở bên dưới. */
+
+.flashcard-nav-row {
+    display: flex;
+    align-items: stretch; /* ⚠️ 2026-09-19: căn GIỮA hàng — stage = đúng bề rộng thẻ (xem rule dưới).
+       (2 nút arrow Trước/Tiếp đã xóa — giờ hàng chỉ chứa thẻ.) */
+    justify-content: center;
+    gap: 0.75rem;
+    /* ⚠️ 2026-09-17: hàng thẻ GIÃN hết chiều cao còn lại trong cột flashcard → thẻ lấp đầy view
+       (progress bar & bảng nút rating phía trên/dưới giữ chiều cao tự nhiên). */
+    flex: 1 1 auto;
+}
+
+/* ⚠️ 2026-09-19: stage = đúng bề rộng thẻ (60rem, khớp `max-width` của `.radicals-flip`) thay vì
+   `flex-1` giãn hết hàng. Hẹp hơn 60rem thì co lại (`flex-shrink: 1`). */
+.flashcard-nav-row > .flashcard-stage {
+    flex: 0 1 60rem;
+    max-width: 60rem;
+}
+
+/* ⚠️ 2026-09-01: flashcard detail dialog — đồng bộ chiều cao + căn giữa footer = header như trang
+   detail. actionBar của VocabularyDetailContent có sẵn pt-4/pb-4 (dùng chung detail page) → footer cao
+   hơn/lệch căn giữa; override padding trong phạm vi dialog về 0 → footer child = min-h-10 (40px)
+   y hệt header child, cả 2 bar min-h-14 items-center → buttons căn giữa hoàn hảo. */
+.flashcard-detail-dialog .border-t > div {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* ⚠️ 2026-09-01: nút X (close) của dialog căn giữa theo chiều dọc với header (h-14 = 56px).
+   X height ~32px → top = (56-32)/2 = 12px (thay vì top-4 mặc định 16px → lệch 4px xuống). */
+.flashcard-detail-dialog [data-slot="dialog-close"] {
+    top: 0.75rem;
 }
 
 @media (max-width: 640px) {
@@ -355,9 +465,10 @@ code {
         align-items: stretch;
     }
 
-    .flashcard-nav-btn {
+    /* Cột dọc: bỏ bề rộng 60rem (flex-basis theo trục dọc = chiều cao) → stage giãn hết chỗ còn lại. */
+    .flashcard-nav-row > .flashcard-stage {
+        flex: 1 1 auto;
         max-width: none;
-        width: 100%;
     }
 }
 
@@ -453,7 +564,8 @@ code {
 }
 
 .flashcard-3d--flipped .flashcard-3d__inner {
-    transform: rotateY(180deg);
+    /* ⚠️ 2026-09: lật theo trục X (dọc) giống trang 214 bộ thủ (radicals-flip), bỏ trục Y cũ. */
+    transform: rotateX(-180deg);
 }
 
 .flashcard-face {
@@ -474,7 +586,8 @@ code {
 }
 
 .flashcard-face--back {
-    transform: rotateY(180deg);
+    /* ⚠️ 2026-09: mặt sau lật trục X cho khớp flip bộ thủ */
+    transform: rotateX(180deg);
 }
 
 /* Flashcard typography */
@@ -493,16 +606,6 @@ code {
     margin: 0;
 }
 
-.flashcard-han:not([class*="han-popularity--lvl-"]) {
-    color: #dc2626;
-}
-
-@media (prefers-color-scheme: dark) {
-    .flashcard-han:not([class*="han-popularity--lvl-"]) {
-        color: #f87171;
-    }
-}
-
 .flashcard-viet {
     font-size: 1.375rem;
     font-weight: 600;
@@ -519,27 +622,10 @@ code {
     margin: 0;
 }
 
-.flashcard-jyutping {
-    font-size: calc(2.5rem * var(--jyutping-scale));
-    font-weight: 600;
-    font-style: normal;
-    color: var(--jyutping-color);
-    margin: 0;
-    line-height: 1.2;
-}
-
-.flashcard-face--front .flashcard-jyutping {
-    font-size: calc(1.35rem * var(--jyutping-scale));
-}
-
-.flashcard-face--back .flashcard-viet {
-    font-size: 1.75rem;
-}
-
-.flashcard-face--back .flashcard-english {
-    font-size: 1.25rem;
-    color: var(--muted-foreground);
-}
+/* ⚠️ 2026-09-19: ĐÃ XÓA `.flashcard-jyutping`, `.flashcard-aligned`, `.flashcard-example-han`,
+   `.flashcard-example-roman` và các rule theo `.flashcard-face--front/back` — thẻ flashcard giờ
+   render bằng component DÙNG CHUNG với trang detail (`AlignedHanColumns` + `VocabularyMeaningsBlock`
+trong `components/VocabularyContent.jsx`), không còn markup/CSS riêng cho hero & ví dụ. */
 
 @media (max-width: 640px) {
     .flashcard-han {
@@ -575,6 +661,7 @@ code {
    giữa run giản/phồn → độ dày nét lệch. Ép font Hán cố định (Noto Sans CJK
    web font self-host trước, hệ thống fallback sau) cho MỌI nơi hiển thị hán. */
 .flashcard-han,
+.vocab-han,
 .wd-han,
 .text-han-trad,
 .text-han-simp,

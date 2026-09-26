@@ -2,19 +2,17 @@ import { loadPrefs, savePrefs } from "./prefs.js";
 
 export const FLASHCARD_SESSION_SIZES = [20, 50, 100];
 
-export const FLASHCARD_SOURCES = ["due", "random", "deck"];
+// ⚠️ 2026-09: SRS (user_vocabularies) đã bỏ → nguồn: random (toàn bộ app) | user (gộp tất cả deck của
+// user) | deck (theo 1 bộ thẻ). Không còn source "due".
+export const FLASHCARD_SOURCES = ["random", "user", "deck"];
 
-export const FLASHCARD_SCOPES = ["all", "important", "lowProgress"];
-
-export const FLASHCARD_CARD_MODES = ["hanToMeaning", "meaningToHan", "jyutpingToHan"];
+export const FLASHCARD_SCOPES = ["all"];
 
 export const DEFAULT_FLASHCARD_PREFS = {
-    source: "due",
+    source: "random",
     scope: "all",
-    cardMode: "hanToMeaning",
-    hideJyutping: false,
     sessionSize: 20,
-    deckId: null,
+    deckIds: [],
 };
 
 export function loadFlashcardPrefs() {
@@ -28,16 +26,21 @@ export function loadFlashcardPrefs() {
         ...saved,
         source: FLASHCARD_SOURCES.includes(saved.source) ? saved.source : DEFAULT_FLASHCARD_PREFS.source,
         scope: FLASHCARD_SCOPES.includes(saved.scope) ? saved.scope : DEFAULT_FLASHCARD_PREFS.scope,
-        cardMode: FLASHCARD_CARD_MODES.includes(saved.cardMode) ? saved.cardMode : DEFAULT_FLASHCARD_PREFS.cardMode,
-        hideJyutping: Boolean(saved.hideJyutping),
         sessionSize,
-        deckId: saved.deckId ?? null,
+        // ⚠️ 2026-09-01: deckIds là lựa chọn theo phiên (session-only) — KHÔNG đọc từ localStorage,
+        // luôn reset rỗng sau F5. (Bỏ fallback deckId cũ — tránh khôi phục lựa chọn bộ thẻ cũ.)
+        deckIds: [],
     };
 }
 
 export function saveFlashcardPrefs(patch) {
     const prefs = loadPrefs();
-    prefs.flashcard = { ...loadFlashcardPrefs(), ...patch };
+    const merged = { ...loadFlashcardPrefs(), ...patch };
+    // ⚠️ 2026-09-01: deckIds (và deckId legacy) là session-only — KHÔNG lưu localStorage.
+    // Giữ deckIds trong state trả về (UI giữ lựa chọn khi đang trong phiên), nhưng bỏ khi persist
+    // → sau F5 checkbox chọn bộ từ sẽ reset về rỗng.
+    const { deckIds, deckId, ...persisted } = merged;
+    prefs.flashcard = persisted;
     savePrefs(prefs);
-    return prefs.flashcard;
+    return merged;
 }

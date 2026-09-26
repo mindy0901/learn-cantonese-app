@@ -7,32 +7,6 @@ datasource db {
     provider = "postgresql"
 }
 
-model HanziCharacter {
-    id                 String   @id @default(uuid()) @db.Uuid
-    sinoVietnamese     String[] @map("sino_vietnamese") @db.VarChar
-    hanSimplified      String?  @default("") @map("han_simplified") @db.VarChar
-    hanTraditional     String   @map("han_traditional") @db.VarChar
-    pinyin             String[] @db.VarChar
-    hanziSimplifiedHk  String?  @default("") @map("hanzi_simplified_hk") @db.VarChar
-    hanziTraditionalHk String?  @default("") @map("hanzi_traditional_hk") @db.VarChar
-    jyutping           String[] @db.VarChar
-    strokeCount        Int?     @map("stroke_count")
-    radicalId          String?  @map("radical_id") @db.Uuid
-    popularity         Float?   @db.Real
-
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
-
-    hanziRadical                  HanziRadical?                  @relation(fields: [radicalId], references: [id], onDelete: SetNull)
-    mandarinVocabularyCharacters  MandarinVocabularyCharacter[]
-    cantoneseVocabularyCharacters CantoneseVocabularyCharacter[]
-
-    @@unique([id, hanSimplified, hanTraditional])
-    @@index([jyutping, pinyin])
-    @@index([radicalId])
-    @@map("han_characters")
-}
-
 model HanziRadical {
     id          String   @id @default(uuid()) @db.Uuid
     number      Int      @unique @map("number")
@@ -46,8 +20,6 @@ model HanziRadical {
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 
-    hanziCharacters HanziCharacter[]
-
     @@map("radicals")
 }
 
@@ -58,6 +30,8 @@ model MandarinVocabulary {
     hanziCharacters  Json?   @map("hanzi_characters") @db.JsonB
     hskLevel         String? @default("") @map("hsk_level") @db.VarChar
     popularity       Float?  @db.Real
+    // ⚠️ 2026-09-05: level 1–5 (1=Hiếm … 5=Rất cao) — backfill từ popularity qua quintile
+    popularityLevel  Int?    @map("popularity_level")
     // ⚠️ 2026-08-22: từ ghép / đồng nghĩa / trái nghĩa từ Hanzii — JSONB
     // { compound: string[], synonyms: string[], antonyms: string[] }
     relatedWords     Json?   @map("related_words") @db.JsonB
@@ -66,7 +40,6 @@ model MandarinVocabulary {
     updatedAt DateTime @updatedAt @map("updated_at")
 
     romanizations                     MandarinVocabularyRomanization[]
-    vocabularyCharacters              MandarinVocabularyCharacter[]
     flashcardDeckMandarinVocabularies FlashcardDeckMandarinVocabulary[]
     vocabularySetMandarinVocabularies VocabularySetMandarinVocabulary[]
 
@@ -79,7 +52,7 @@ model MandarinVocabulary {
 model MandarinVocabularyRomanization {
     id                   String @id @default(uuid()) @db.Uuid
     mandarinVocabularyId String @map("mandarin_vocabulary_id") @db.Uuid
-    pinyin               String @map("pinyin") @db.VarChar // pinyin
+    pinyin               String @map("pinyin") @db.VarChar
     sinoVietnamese       String @map("sino_vietnamese") @db.VarChar
 
     mandarinVocabulary MandarinVocabulary          @relation(fields: [mandarinVocabularyId], references: [id], onDelete: Cascade)
@@ -95,6 +68,8 @@ model MandarinVocabularyMeaning {
     zh                               String @default("") @map("zh") @db.VarChar
     vi                               String @default("") @map("vi") @db.Text
     en                               String @default("") @map("en") @db.Text
+    // ⚠️ 2026-09-20: thứ tự hiển thị meaning trong 1 reading (0-based) — user đổi được ở UI edit.
+    position                         Int    @default(0) @db.SmallInt
 
     mandarinVocabularyRomanization MandarinVocabularyRomanization @relation(fields: [mandarinVocabularyRomanizationId], references: [id], onDelete: Cascade)
     examples                       MandarinVocabularyExample[]
@@ -117,26 +92,13 @@ model MandarinVocabularyExample {
     @@map("mandarin_vocabulary_examples")
 }
 
-model MandarinVocabularyCharacter {
-    id                   String @id @default(uuid()) @db.Uuid
-    mandarinVocabularyId String @map("mandarin_vocabulary_id") @db.Uuid
-    hanziCharacterId     String @map("hanzi_character_id") @db.Uuid
-    position             Int    @db.SmallInt
-
-    mandarinVocabulary MandarinVocabulary @relation(fields: [mandarinVocabularyId], references: [id], onDelete: Cascade)
-    hanziCharacter     HanziCharacter     @relation(fields: [hanziCharacterId], references: [id], onDelete: Cascade)
-
-    @@unique([mandarinVocabularyId, hanziCharacterId])
-    @@unique([mandarinVocabularyId, position])
-    @@index([hanziCharacterId])
-    @@map("mandarin_vocabulary_characters")
-}
-
 model CantoneseVocabulary {
     id                 String  @id @default(uuid()) @db.Uuid
     hanziTraditionalHk String? @default("") @map("hanzi_traditional_hk") @db.VarChar
     pureCantonese      Boolean @default(false) @map("pure_cantonese")
     popularity         Float?  @db.Real
+    // ⚠️ 2026-09-05: level 1–5 (1=Hiếm … 5=Rất cao) — backfill từ popularity qua quintile
+    popularityLevel    Int?    @map("popularity_level")
     hanziCharacters    Json?   @map("hanzi_characters") @db.JsonB
     // ⚠️ 2026-08-22: từ ghép / đồng nghĩa / trái nghĩa từ Hanzii (giống mandarin)
     // { compound: string[], synonyms: string[], antonyms: string[] } (theo pinyin map)
@@ -149,7 +111,6 @@ model CantoneseVocabulary {
     updatedAt DateTime @updatedAt @map("updated_at")
 
     romanizations                      CantoneseVocabularyRomanization[]
-    vocabularyCharacters               CantoneseVocabularyCharacter[]
     flashcardDeckCantoneseVocabularies FlashcardDeckCantoneseVocabulary[]
     vocabularySetCantoneseVocabularies VocabularySetCantoneseVocabulary[]
 
@@ -176,6 +137,8 @@ model CantoneseVocabularyMeaning {
     cantoneseVocabularyRomanizationId String @map("cantonese_vocabulary_romanization_id") @db.Uuid
     vi                                String @default("") @map("vi") @db.Text
     en                                String @default("") @map("en") @db.Text
+    // ⚠️ 2026-09-20: thứ tự hiển thị meaning trong 1 reading (0-based) — user đổi được ở UI edit.
+    position                          Int    @default(0) @db.SmallInt
 
     cantoneseVocabularyRomanization CantoneseVocabularyRomanization @relation(fields: [cantoneseVocabularyRomanizationId], references: [id], onDelete: Cascade)
     examples                        CantoneseVocabularyExample[]
@@ -199,21 +162,6 @@ model CantoneseVocabularyExample {
 
     @@index([cantoneseVocabularyMeaningId])
     @@map("cantonese_vocabulary_examples")
-}
-
-model CantoneseVocabularyCharacter {
-    id                    String @id @default(uuid()) @db.Uuid
-    cantoneseVocabularyId String @map("cantonese_vocabulary_id") @db.Uuid
-    hanziCharacterId      String @map("hanzi_character_id") @db.Uuid
-    position              Int    @db.SmallInt
-
-    cantoneseVocabulary CantoneseVocabulary @relation(fields: [cantoneseVocabularyId], references: [id], onDelete: Cascade)
-    hanziCharacter      HanziCharacter      @relation(fields: [hanziCharacterId], references: [id], onDelete: Cascade)
-
-    @@unique([cantoneseVocabularyId, hanziCharacterId])
-    @@unique([cantoneseVocabularyId, position])
-    @@index([hanziCharacterId])
-    @@map("cantonese_vocabulary_characters")
 }
 
 model Grammar {
@@ -257,18 +205,53 @@ model GrammarExample {
 }
 
 model User {
-    id             String          @id @default(uuid()) @db.Uuid
-    email          String          @unique
-    password       String?         @db.VarChar
-    name           String?
-    isAdmin        Boolean         @default(false) @map("is_admin")
-    createdAt      DateTime        @default(now()) @map("created_at")
-    updatedAt      DateTime        @updatedAt @map("updated_at")
-    flashcardDecks FlashcardDeck[]
-    vocabularySets VocabularySet[]
-    checkins       UserCheckin[]
+    id                   String                   @id @default(uuid()) @db.Uuid
+    email                String                   @unique
+    password             String?                  @db.VarChar
+    name                 String?
+    isAdmin              Boolean                  @default(false) @map("is_admin")
+    createdAt            DateTime                 @default(now()) @map("created_at")
+    updatedAt            DateTime                 @updatedAt @map("updated_at")
+    flashcardDecks       FlashcardDeck[]
+    vocabularySets       VocabularySet[]
+    checkins             UserCheckin[]
+    favoriteVocabularies UserFavoriteVocabulary[]
+    dislikedVocabularies UserDislikedVocabulary[]
+    vocabularyMastery    UserVocabularyMastery[]
 
     @@map("users")
+}
+
+// ⚠️ 2026-09-20: cặp đánh dấu theo user (thay "important" từ 2026-09-02):
+//   ❤️ `UserFavoriteVocabulary` = "yêu thích"   · 🚫 `UserDislikedVocabulary` = "không muốn học"
+// 2 trạng thái LOẠI TRỪ NHAU. Từ `disliked` KHÔNG xuất hiện trong flashcard random.
+// `language` = 'mandarin' | 'cantonese'; `vocabularyId` = id từ tương ứng (uuid, unique toàn cục).
+model UserFavoriteVocabulary {
+    id           String   @id @default(uuid()) @db.Uuid
+    userId       String   @map("user_id") @db.Uuid
+    language     String   @map("language") @db.VarChar
+    vocabularyId String   @map("vocabulary_id") @db.Uuid
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, language, vocabularyId])
+    @@index([userId])
+    @@map("user_favorite_vocabularies")
+}
+
+model UserDislikedVocabulary {
+    id           String   @id @default(uuid()) @db.Uuid
+    userId       String   @map("user_id") @db.Uuid
+    language     String   @map("language") @db.VarChar
+    vocabularyId String   @map("vocabulary_id") @db.Uuid
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, language, vocabularyId])
+    @@index([userId])
+    @@map("user_disliked_vocabularies")
 }
 
 model UserCheckin {
@@ -282,6 +265,53 @@ model UserCheckin {
     @@unique([userId, date])
     @@index([userId])
     @@map("user_checkins")
+}
+
+// ⚠️ 2026-09-02: tiến độ "mastered" theo từ (progress 0-100%) cho mọi user đã đăng nhập.
+// Khó +5 / Trung bình +10 / Dễ +25; Lại nữa → reset 0; Đã nắm → 100 (mastered).
+// `language` = 'mandarin' | 'cantonese'; `vocabularyId` = id từ tương ứng (uuid, unique toàn cục).
+model UserVocabularyMastery {
+    id           String   @id @default(uuid()) @db.Uuid
+    userId       String   @map("user_id") @db.Uuid
+    language     String   @map("language") @db.VarChar
+    vocabularyId String   @map("vocabulary_id") @db.Uuid
+    progress     Int      @default(0) @map("progress")
+    createdAt    DateTime @default(now()) @map("created_at")
+    updatedAt    DateTime @updatedAt @map("updated_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, language, vocabularyId])
+    @@index([userId])
+    @@map("user_vocabulary_mastery")
+}
+
+// ⚠️ 2026-09-27: TAG dùng chung toàn app (CHỈ admin tạo/đổi tên/xóa + gán cho từ vựng).
+// `VocabularyTag` = liên kết tag ↔ từ vựng đã có (theo ngôn ngữ; KHÔNG FK tới 2 bảng vocab
+// riêng biệt — chỉ FK tới `tags`, xóa tag → cascade gỡ liên kết).
+model Tag {
+    id             String          @id @default(uuid()) @db.Uuid
+    name           String          @unique @db.VarChar(64)
+    // ⚠️ 2026-09-27: màu tag do ADMIN chọn từ palette (bỏ màu random theo hash).
+    color          String?         @db.VarChar(16)
+    createdAt      DateTime        @default(now()) @map("created_at")
+    vocabularyTags VocabularyTag[]
+
+    @@map("tags")
+}
+
+model VocabularyTag {
+    id           String   @id @default(uuid()) @db.Uuid
+    tagId        String   @map("tag_id") @db.Uuid
+    language     String   @map("language") @db.VarChar
+    vocabularyId String   @map("vocabulary_id") @db.Uuid
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+    @@unique([tagId, language, vocabularyId])
+    @@index([tagId])
+    @@map("vocabulary_tags")
 }
 
 model FlashcardDeck {

@@ -18,6 +18,11 @@ export function normVocabularyField(value) {
     return stripTrailingPunctuation(value).toLowerCase();
 }
 
+/** Giữ CHỈ ký tự Hán — hán tự KHÔNG được chứa dấu câu/khoảng trắng/ký tự khác (2026-09-08). */
+export function keepOnlyHan(value) {
+    return [...String(value ?? "")].filter((ch) => /\p{Script=Han}/u.test(ch)).join("");
+}
+
 /** Title-case each word (and hyphen segment) for Hán–Việt / Vietnamese / English display. */
 function titleCaseSegment(segment) {
     if (!segment) return segment;
@@ -71,15 +76,31 @@ export function collectMeaningsField(meanings, field, limit) {
  * Display form for a meaning string: capitalize the first letter of the whole
  * string and of each item after a comma (and `.`, `!`, `?`, `;`). Data is
  * stored lowercase (after sync); this restores nice casing ONLY for display.
- * Example: "1, một, số 1, số một" → "1, Một, Số 1, Số một".
+ *
+ * 2026-09-03: giữa các MỤC NGHĨA NGẮN, separator hiển thị dùng "/" thay cho dấu phẩy
+ * (vd "phá vỡ, phá hỏng" → "Phá vỡ / Phá hỏng"). Chỉ áp dụng khi mọi mục đều ngắn
+ * (≤ MAX_ITEM ký tự) — câu mô tả DÀI có dấu phẩy bên trong giữ nguyên (tránh bẻ câu).
+ * Example: "1, một, số 1, số một" → "1 / Một / Số 1 / Số một".
  */
+const MEANING_SLASH_MAX_ITEM = 40;
+
 export function displayMeaning(value) {
-    return capitalizeSentences(String(value ?? "").trim(), { comma: true });
+    const s = String(value ?? "").trim();
+    if (!s) return s;
+    const items = s
+        .split(/[,;]+/)
+        .map((it) => it.trim())
+        .filter(Boolean);
+    const isShortList = items.length >= 2 && items.every((it) => it.length <= MEANING_SLASH_MAX_ITEM);
+    if (isShortList) {
+        return items.map((it) => capitalizeSentences(it, { comma: true })).join(" / ");
+    }
+    return capitalizeSentences(s, { comma: true });
 }
 
 /** @param {{ hanTraditional?: string, hanTrad?: string, han?: string }} vocab */
 function resolveHanTraditional(vocab) {
-    return stripTrailingPunctuation(vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han);
+    return keepOnlyHan(vocab.hanTraditional ?? vocab.hanTrad ?? vocab.han);
 }
 
 /** Duplicate when Hán tự + romanization match (ignoring trailing punctuation). */
@@ -93,7 +114,7 @@ export function vocabularyKeyIsEmpty(key) {
 
 export function normalizeVocabularyFields(vocab) {
     const hanTraditional = resolveHanTraditional(vocab);
-    const hanSimplified = stripTrailingPunctuation(vocab.hanSimplified);
+    const hanSimplified = keepOnlyHan(vocab.hanSimplified);
     const next = {
         ...vocab,
         engMeanings: capitalizeSentences(stripTrailingPunctuation(vocab.engMeanings), { comma: true }),
@@ -150,7 +171,7 @@ export function mergeVocabularyFieldsPreferFilled(existing, incoming) {
         jyutping: "jyutping" in incoming ? (incoming.jyutping ?? "") : (existing.jyutping ?? ""),
         pinyin: "pinyin" in incoming ? (incoming.pinyin ?? "") : (existing.pinyin ?? ""),
         vietExamples: "vietExamples" in incoming ? incoming.vietExamples || undefined : existing.vietExamples,
-        important: Boolean(existing.important || incoming.important),
+        favorite: Boolean(existing.favorite || incoming.favorite),
         mastered: Boolean(existing.mastered || incoming.mastered),
         pureCantonese: Boolean(existing.pureCantonese || incoming.pureCantonese),
 
@@ -171,9 +192,10 @@ export function vocabularyContentEqual(a, b) {
         normVocabularyField(a.jyutping) === normVocabularyField(b.jyutping) &&
         normVocabularyField(a.pinyin) === normVocabularyField(b.pinyin) &&
         String(a.vietExamples ?? "").trim() === String(b.vietExamples ?? "").trim() &&
-        Boolean(a.important) === Boolean(b.important) &&
+        Boolean(a.favorite) === Boolean(b.favorite) &&
         Boolean(a.mastered) === Boolean(b.mastered) &&
         String(a.hskLevel ?? "").trim() === String(b.hskLevel ?? "").trim() &&
+        Number(a.popularityLevel ?? null) === Number(b.popularityLevel ?? null) &&
         Boolean(a.pureCantonese) === Boolean(b.pureCantonese) &&
         JSON.stringify(a.relatedWords ?? null) === JSON.stringify(b.relatedWords ?? null) &&
         jsonNoTemp(a.meanings) === jsonNoTemp(b.meanings) &&

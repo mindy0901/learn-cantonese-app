@@ -36,7 +36,7 @@ export function FlashcardStatsPanel({ compact = false }) {
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-sm">{t.flashcard.statsTitle}</CardTitle>
+                    <CardTitle className="text-lg text-foreground">{t.flashcard.statsTitle}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground">{t.flashcard.statsEmpty}</p>
@@ -48,7 +48,7 @@ export function FlashcardStatsPanel({ compact = false }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-sm">{t.flashcard.statsTitle}</CardTitle>
+                <CardTitle className="text-lg text-foreground">{t.flashcard.statsTitle}</CardTitle>
             </CardHeader>
             <CardContent>
                 <div

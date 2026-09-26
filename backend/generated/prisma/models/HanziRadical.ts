@@ -256,7 +256,6 @@ export type HanziRadicalWhereInput = {
   strokeCount?: Prisma.IntFilter<"HanziRadical"> | number
   createdAt?: Prisma.DateTimeFilter<"HanziRadical"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"HanziRadical"> | Date | string
-  hanziCharacters?: Prisma.HanziCharacterListRelationFilter
 }
 
 export type HanziRadicalOrderByWithRelationInput = {
@@ -270,7 +269,6 @@ export type HanziRadicalOrderByWithRelationInput = {
   strokeCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  hanziCharacters?: Prisma.HanziCharacterOrderByRelationAggregateInput
 }
 
 export type HanziRadicalWhereUniqueInput = Prisma.AtLeast<{
@@ -287,7 +285,6 @@ export type HanziRadicalWhereUniqueInput = Prisma.AtLeast<{
   strokeCount?: Prisma.IntFilter<"HanziRadical"> | number
   createdAt?: Prisma.DateTimeFilter<"HanziRadical"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"HanziRadical"> | Date | string
-  hanziCharacters?: Prisma.HanziCharacterListRelationFilter
 }, "id" | "number">
 
 export type HanziRadicalOrderByWithAggregationInput = {
@@ -335,7 +332,6 @@ export type HanziRadicalCreateInput = {
   strokeCount: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  hanziCharacters?: Prisma.HanziCharacterCreateNestedManyWithoutHanziRadicalInput
 }
 
 export type HanziRadicalUncheckedCreateInput = {
@@ -349,7 +345,6 @@ export type HanziRadicalUncheckedCreateInput = {
   strokeCount: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  hanziCharacters?: Prisma.HanziCharacterUncheckedCreateNestedManyWithoutHanziRadicalInput
 }
 
 export type HanziRadicalUpdateInput = {
@@ -363,7 +358,6 @@ export type HanziRadicalUpdateInput = {
   strokeCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  hanziCharacters?: Prisma.HanziCharacterUpdateManyWithoutHanziRadicalNestedInput
 }
 
 export type HanziRadicalUncheckedUpdateInput = {
@@ -377,7 +371,6 @@ export type HanziRadicalUncheckedUpdateInput = {
   strokeCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  hanziCharacters?: Prisma.HanziCharacterUncheckedUpdateManyWithoutHanziRadicalNestedInput
 }
 
 export type HanziRadicalCreateManyInput = {
@@ -419,9 +412,12 @@ export type HanziRadicalUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type HanziRadicalNullableScalarRelationFilter = {
-  is?: Prisma.HanziRadicalWhereInput | null
-  isNot?: Prisma.HanziRadicalWhereInput | null
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
 }
 
 export type HanziRadicalCountOrderByAggregateInput = {
@@ -471,24 +467,12 @@ export type HanziRadicalSumOrderByAggregateInput = {
   strokeCount?: Prisma.SortOrder
 }
 
-export type HanziRadicalCreateNestedOneWithoutHanziCharactersInput = {
-  create?: Prisma.XOR<Prisma.HanziRadicalCreateWithoutHanziCharactersInput, Prisma.HanziRadicalUncheckedCreateWithoutHanziCharactersInput>
-  connectOrCreate?: Prisma.HanziRadicalCreateOrConnectWithoutHanziCharactersInput
-  connect?: Prisma.HanziRadicalWhereUniqueInput
-}
-
-export type HanziRadicalUpdateOneWithoutHanziCharactersNestedInput = {
-  create?: Prisma.XOR<Prisma.HanziRadicalCreateWithoutHanziCharactersInput, Prisma.HanziRadicalUncheckedCreateWithoutHanziCharactersInput>
-  connectOrCreate?: Prisma.HanziRadicalCreateOrConnectWithoutHanziCharactersInput
-  upsert?: Prisma.HanziRadicalUpsertWithoutHanziCharactersInput
-  disconnect?: Prisma.HanziRadicalWhereInput | boolean
-  delete?: Prisma.HanziRadicalWhereInput | boolean
-  connect?: Prisma.HanziRadicalWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.HanziRadicalUpdateToOneWithWhereWithoutHanziCharactersInput, Prisma.HanziRadicalUpdateWithoutHanziCharactersInput>, Prisma.HanziRadicalUncheckedUpdateWithoutHanziCharactersInput>
-}
-
 export type HanziRadicalCreatevariantsInput = {
   set: string[]
+}
+
+export type StringFieldUpdateOperationsInput = {
+  set?: string
 }
 
 export type IntFieldUpdateOperationsInput = {
@@ -499,108 +483,19 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
 export type HanziRadicalUpdatevariantsInput = {
   set?: string[]
   push?: string | string[]
 }
 
-export type HanziRadicalCreateWithoutHanziCharactersInput = {
-  id?: string
-  number: number
-  char: string
-  name: string
-  desc?: string | null
-  pinyin?: string | null
-  variants?: Prisma.HanziRadicalCreatevariantsInput | string[]
-  strokeCount: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
+export type DateTimeFieldUpdateOperationsInput = {
+  set?: Date | string
 }
 
-export type HanziRadicalUncheckedCreateWithoutHanziCharactersInput = {
-  id?: string
-  number: number
-  char: string
-  name: string
-  desc?: string | null
-  pinyin?: string | null
-  variants?: Prisma.HanziRadicalCreatevariantsInput | string[]
-  strokeCount: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type HanziRadicalCreateOrConnectWithoutHanziCharactersInput = {
-  where: Prisma.HanziRadicalWhereUniqueInput
-  create: Prisma.XOR<Prisma.HanziRadicalCreateWithoutHanziCharactersInput, Prisma.HanziRadicalUncheckedCreateWithoutHanziCharactersInput>
-}
-
-export type HanziRadicalUpsertWithoutHanziCharactersInput = {
-  update: Prisma.XOR<Prisma.HanziRadicalUpdateWithoutHanziCharactersInput, Prisma.HanziRadicalUncheckedUpdateWithoutHanziCharactersInput>
-  create: Prisma.XOR<Prisma.HanziRadicalCreateWithoutHanziCharactersInput, Prisma.HanziRadicalUncheckedCreateWithoutHanziCharactersInput>
-  where?: Prisma.HanziRadicalWhereInput
-}
-
-export type HanziRadicalUpdateToOneWithWhereWithoutHanziCharactersInput = {
-  where?: Prisma.HanziRadicalWhereInput
-  data: Prisma.XOR<Prisma.HanziRadicalUpdateWithoutHanziCharactersInput, Prisma.HanziRadicalUncheckedUpdateWithoutHanziCharactersInput>
-}
-
-export type HanziRadicalUpdateWithoutHanziCharactersInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  number?: Prisma.IntFieldUpdateOperationsInput | number
-  char?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  desc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  variants?: Prisma.HanziRadicalUpdatevariantsInput | string[]
-  strokeCount?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type HanziRadicalUncheckedUpdateWithoutHanziCharactersInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  number?: Prisma.IntFieldUpdateOperationsInput | number
-  char?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  desc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  pinyin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  variants?: Prisma.HanziRadicalUpdatevariantsInput | string[]
-  strokeCount?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-
-/**
- * Count Type HanziRadicalCountOutputType
- */
-
-export type HanziRadicalCountOutputType = {
-  hanziCharacters: number
-}
-
-export type HanziRadicalCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  hanziCharacters?: boolean | HanziRadicalCountOutputTypeCountHanziCharactersArgs
-}
-
-/**
- * HanziRadicalCountOutputType without action
- */
-export type HanziRadicalCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the HanziRadicalCountOutputType
-   */
-  select?: Prisma.HanziRadicalCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * HanziRadicalCountOutputType without action
- */
-export type HanziRadicalCountOutputTypeCountHanziCharactersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.HanziCharacterWhereInput
-}
 
 
 export type HanziRadicalSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -614,8 +509,6 @@ export type HanziRadicalSelect<ExtArgs extends runtime.Types.Extensions.Internal
   strokeCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  hanziCharacters?: boolean | Prisma.HanziRadical$hanziCharactersArgs<ExtArgs>
-  _count?: boolean | Prisma.HanziRadicalCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["hanziRadical"]>
 
 export type HanziRadicalSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -658,18 +551,10 @@ export type HanziRadicalSelectScalar = {
 }
 
 export type HanziRadicalOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "number" | "char" | "name" | "desc" | "pinyin" | "variants" | "strokeCount" | "createdAt" | "updatedAt", ExtArgs["result"]["hanziRadical"]>
-export type HanziRadicalInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  hanziCharacters?: boolean | Prisma.HanziRadical$hanziCharactersArgs<ExtArgs>
-  _count?: boolean | Prisma.HanziRadicalCountOutputTypeDefaultArgs<ExtArgs>
-}
-export type HanziRadicalIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type HanziRadicalIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
 
 export type $HanziRadicalPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "HanziRadical"
-  objects: {
-    hanziCharacters: Prisma.$HanziCharacterPayload<ExtArgs>[]
-  }
+  objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     number: number
@@ -1075,7 +960,6 @@ readonly fields: HanziRadicalFieldRefs;
  */
 export interface Prisma__HanziRadicalClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  hanziCharacters<T extends Prisma.HanziRadical$hanziCharactersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.HanziRadical$hanziCharactersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HanziCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1132,10 +1016,6 @@ export type HanziRadicalFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
-  /**
    * Filter, which HanziRadical to fetch.
    */
   where: Prisma.HanziRadicalWhereUniqueInput
@@ -1154,10 +1034,6 @@ export type HanziRadicalFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Exte
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
-  /**
    * Filter, which HanziRadical to fetch.
    */
   where: Prisma.HanziRadicalWhereUniqueInput
@@ -1175,10 +1051,6 @@ export type HanziRadicalFindFirstArgs<ExtArgs extends runtime.Types.Extensions.I
    * Omit specific fields from the HanziRadical
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
   /**
    * Filter, which HanziRadical to fetch.
    */
@@ -1228,10 +1100,6 @@ export type HanziRadicalFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Exten
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
-  /**
    * Filter, which HanziRadical to fetch.
    */
   where?: Prisma.HanziRadicalWhereInput
@@ -1279,10 +1147,6 @@ export type HanziRadicalFindManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * Omit specific fields from the HanziRadical
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
   /**
    * Filter, which HanziRadicals to fetch.
    */
@@ -1332,10 +1196,6 @@ export type HanziRadicalCreateArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
-  /**
    * The data needed to create a HanziRadical.
    */
   data: Prisma.XOR<Prisma.HanziRadicalCreateInput, Prisma.HanziRadicalUncheckedCreateInput>
@@ -1383,10 +1243,6 @@ export type HanziRadicalUpdateArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Omit specific fields from the HanziRadical
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
   /**
    * The data needed to update a HanziRadical.
    */
@@ -1454,10 +1310,6 @@ export type HanziRadicalUpsertArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
-  /**
    * The filter to search for the HanziRadical to update in case it exists.
    */
   where: Prisma.HanziRadicalWhereUniqueInput
@@ -1484,10 +1336,6 @@ export type HanziRadicalDeleteArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
-  /**
    * Filter which HanziRadical to delete.
    */
   where: Prisma.HanziRadicalWhereUniqueInput
@@ -1508,30 +1356,6 @@ export type HanziRadicalDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.
 }
 
 /**
- * HanziRadical.hanziCharacters
- */
-export type HanziRadical$hanziCharactersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the HanziCharacter
-   */
-  select?: Prisma.HanziCharacterSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the HanziCharacter
-   */
-  omit?: Prisma.HanziCharacterOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziCharacterInclude<ExtArgs> | null
-  where?: Prisma.HanziCharacterWhereInput
-  orderBy?: Prisma.HanziCharacterOrderByWithRelationInput | Prisma.HanziCharacterOrderByWithRelationInput[]
-  cursor?: Prisma.HanziCharacterWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.HanziCharacterScalarFieldEnum | Prisma.HanziCharacterScalarFieldEnum[]
-}
-
-/**
  * HanziRadical without action
  */
 export type HanziRadicalDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1543,8 +1367,4 @@ export type HanziRadicalDefaultArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Omit specific fields from the HanziRadical
    */
   omit?: Prisma.HanziRadicalOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HanziRadicalInclude<ExtArgs> | null
 }

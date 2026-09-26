@@ -7,8 +7,7 @@ import { useLocale } from "../store/localeStore.js";
 import { useVocabularySets, useAppActions } from "../store/appStore.js";
 import { IconPlus, IconTrash, IconEdit } from "./NavIcons.jsx";
 import { EmptyState } from "./ui/EmptyState.jsx";
-
-const SET_COLORS = ["#7c3aed", "#0ea5e9", "#16a34a", "#f59e0b", "#ef4444", "#8b5cf6"];
+import { SET_COLORS, randomSetColor } from "../lib/vocabSetColors.js";
 
 /** Modal quản lý các bộ từ vựng (custom vocabulary sets) của user. */
 export function VocabularySetsManager({ onClose, onSelectSet }) {
@@ -29,8 +28,7 @@ export function VocabularySetsManager({ onClose, onSelectSet }) {
         if (!name || creating) return;
         setCreating(true);
         try {
-            const color = SET_COLORS[sets.length % SET_COLORS.length];
-            const created = await createVocabularySet({ name, color });
+            const created = await createVocabularySet({ name, color: randomSetColor() });
             setNewName("");
             onSelectSet?.(created.id);
         } finally {
@@ -122,7 +120,10 @@ export function VocabularySetsManager({ onClose, onSelectSet }) {
                                                 {set.name}
                                             </span>
                                             <span className="shrink-0 text-xs text-muted-foreground">
-                                                {fmt(t.vocabSets.words, { count: set.count })}
+                                                {/* ⚠️ 2026-09-02: bộ từ tách theo ngôn ngữ → count = tổng 2 kho */}
+                                                {fmt(t.vocabSets.words, {
+                                                    count: (set.mandarinCount ?? 0) + (set.cantoneseCount ?? 0),
+                                                })}
                                             </span>
                                             <button
                                                 type="button"

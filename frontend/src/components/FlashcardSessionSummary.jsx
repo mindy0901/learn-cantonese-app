@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useLocale } from "../store/localeStore.js";
-import { WordFieldText } from "./WordFieldText.jsx";
+import { VocabularyFieldText } from "./VocabularyFieldText.jsx";
 import { cn } from "../lib/cn.js";
 import { btnClass } from "./ui/buttonStyles.js";
 import { FlashcardStatsPanel } from "./FlashcardStatsPanel.jsx";
@@ -62,10 +62,10 @@ export function FlashcardSessionSummary({ entries, onPlayAgain, onNewSession, lo
                                     {t.flashcard.hanTraditional}
                                 </th>
                                 <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                    {t.wordBank.colVietnamese}
+                                    {t.wordBank.colVietMeanings}
                                 </th>
                                 <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                    {t.wordBank.colEnglish}
+                                    {t.wordBank.colEngMeanings}
                                 </th>
                                 <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                     {t.flashcard.summaryResult}
@@ -79,7 +79,7 @@ export function FlashcardSessionSummary({ entries, onPlayAgain, onNewSession, lo
                                         <span className="font-semibold text-han-trad">
                                             {entry.hanSimplified || entry.hanHongKong || entry.hanTraditional || "—"}
                                         </span>
-                                        <WordFieldText
+                                        <VocabularyFieldText
                                             word={entry}
                                             field="sinoVietnamese"
                                             updatingLabel={t.wordBank.fieldUpdating}
@@ -87,14 +87,14 @@ export function FlashcardSessionSummary({ entries, onPlayAgain, onNewSession, lo
                                         />
                                     </td>
                                     <td className="px-4 py-2.5 align-middle text-viet">
-                                        <WordFieldText
+                                        <VocabularyFieldText
                                             word={entry}
                                             field="vietMeanings"
                                             updatingLabel={t.wordBank.fieldUpdating}
                                         />
                                     </td>
                                     <td className="px-4 py-2.5 align-middle text-muted-foreground">
-                                        <WordFieldText
+                                        <VocabularyFieldText
                                             word={entry}
                                             field="engMeanings"
                                             updatingLabel={t.wordBank.fieldUpdating}

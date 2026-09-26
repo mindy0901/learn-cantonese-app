@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "../store/localeStore.js";
-import { api } from "../lib/api.js";
+import { api, getApiLanguage } from "../lib/api.js";
+import { vocabLangToLegacy } from "../lib/dataTransforms.js";
 import { cn } from "../lib/cn.js";
 import { btnClass } from "./ui/buttonStyles.js";
 import { SkeletonBlock } from "./ui/Skeleton.jsx";
 import { EmptyState } from "./ui/EmptyState.jsx";
 import { ConfirmDialog } from "./ConfirmDialog.jsx";
+import { FlashcardStatsPanel } from "./FlashcardStatsPanel.jsx";
 import { IconFlashcard } from "./NavIcons.jsx";
 import { Button } from "./shadcn/button.jsx";
 import { normalizeSearchText } from "../lib/wordSearch.js";
@@ -91,16 +93,23 @@ export function FlashcardDeckManager({ onClose, onDeckSelect }) {
         setEditingDeck(null);
     }, []);
 
-    const handleDeckVocabChanged = useCallback((vocabId, added) => {
+    const handleDeckVocabChanged = useCallback((mandarinCount, cantoneseCount) => {
         setManagingDeck((prev) => {
             if (!prev) return prev;
-            const count = prev.vocabularies?.length ?? 0;
             return {
                 ...prev,
-                vocabularyCount: added ? count + 1 : count - 1,
+                mandarinCount,
+                cantoneseCount,
+                vocabularyCount: mandarinCount + cantoneseCount,
             };
         });
     }, []);
+
+    // Khi đóng màn quản lý từ — refresh lại danh sách deck để count cập nhật đúng. (2026-09)
+    const closeManager = useCallback(() => {
+        setManagingDeck(null);
+        loadDecks();
+    }, [loadDecks]);
 
     if (editingDeck) {
         return (
@@ -114,11 +123,7 @@ export function FlashcardDeckManager({ onClose, onDeckSelect }) {
 
     if (managingDeck) {
         return (
-            <DeckVocabularyManager
-                deck={managingDeck}
-                onBack={() => setManagingDeck(null)}
-                onVocabChanged={handleDeckVocabChanged}
-            />
+            <DeckVocabularyManager deck={managingDeck} onBack={closeManager} onVocabChanged={handleDeckVocabChanged} />
         );
     }
 
@@ -143,6 +148,9 @@ export function FlashcardDeckManager({ onClose, onDeckSelect }) {
                     {error}
                 </p>
             )}
+
+            {/* ⚠️ 2026-09-02: thống kê tiến trình hiển thị ngay trong màn quản lý bộ thẻ (theo yêu cầu user) */}
+            <FlashcardStatsPanel />
 
             {loading ? (
                 <SkeletonBlock height="8rem" className="rounded-xl" />
@@ -199,6 +207,14 @@ function DeckCard({ deck, onSelect, onManage, onEdit, onDelete }) {
                     {deck.description && (
                         <p className="m-0 mt-1 text-sm text-muted-foreground line-clamp-2">{deck.description}</p>
                     )}
+                    <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
+                        <span>
+                            {t.nav.mandarinGroup}: {deck.mandarinCount ?? 0}
+                        </span>
+                        <span>
+                            {t.nav.cantoneseGroup}: {deck.cantoneseCount ?? 0}
+                        </span>
+                    </div>
                 </div>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {t.flashcard.deckVocabCount.replace("{count}", deck.vocabularyCount ?? 0)}
@@ -333,7 +349,14 @@ function DeckForm({ deck, onSave, onCancel }) {
 
 function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
     const { t } = useLocale();
-    const [vocabularies, setVocabularies] = useState(deck.vocabularies ?? []);
+    // ⚠️ 2026-09: deck tách ngôn ngữ — gộp 2 mảng mandarin + cantonese, convert sang legacy + tag _lang.
+    const [vocabularies, setVocabularies] = useState(() => [
+        ...(deck.mandarinVocabularies ?? []).map((v) => ({ ...vocabLangToLegacy(v, "mandarin"), _lang: "mandarin" })),
+        ...(deck.cantoneseVocabularies ?? []).map((v) => ({
+            ...vocabLangToLegacy(v, "cantonese"),
+            _lang: "cantonese",
+        })),
+    ]);
     const [search, setSearch] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [searching, setSearching] = useState(false);
@@ -342,7 +365,14 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
 
     const deckVocabIds = useMemo(() => new Set(vocabularies.map((v) => v.id)), [vocabularies]);
 
-    // Search vocabulary to add
+    // Báo counts lên parent sau khi state đã commit (tránh setState trong render).
+    useEffect(() => {
+        const man = vocabularies.filter((v) => v._lang === "mandarin").length;
+        const can = vocabularies.filter((v) => v._lang === "cantonese").length;
+        onVocabChanged?.(man, can);
+    }, [vocabularies, onVocabChanged]);
+
+    // Search vocabulary to add (theo ngôn ngữ active)
     useEffect(() => {
         const q = search.trim();
         if (q.length < 1) {
@@ -353,9 +383,10 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
         const timer = setTimeout(async () => {
             try {
                 setSearching(true);
+                const lang = getApiLanguage();
                 const result = await api.browseVocabularies({ page: 1, pageSize: 20, q });
                 if (!cancelled) {
-                    setSearchResults(result.items ?? []);
+                    setSearchResults((result.items ?? []).map((v) => ({ ...vocabLangToLegacy(v, lang), _lang: lang })));
                 }
             } catch {
                 if (!cancelled) setSearchResults([]);
@@ -373,48 +404,33 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
         async (vocab) => {
             setAddingId(vocab.id);
             try {
-                await api.addVocabularyToDeck(deck.id, vocab.id);
-                setVocabularies((prev) => [
-                    ...prev,
-                    {
-                        id: vocab.id,
-                        hanTraditional: vocab.hanTraditional,
-                        hanSimplified: vocab.hanSimplified,
-                        sinoVietnamese: vocab.sinoVietnamese,
-                        jyutping: vocab.jyutping,
-                        pinyin: vocab.pinyin,
-                        vietMeanings: vocab.vietMeanings,
-                        engMeanings: vocab.engMeanings,
-                        meanings: vocab.meanings,
-                        romanization: vocab.romanization,
-                        hskLevel: vocab.hskLevel,
-                    },
-                ]);
-                onVocabChanged?.(vocab.id, true);
+                await api.addVocabularyToDeck(deck.id, vocab.id, vocab._lang);
+                setVocabularies((prev) => [...prev, vocab]);
             } catch {
                 // silently ignore (might already be in deck)
             } finally {
                 setAddingId(null);
             }
         },
-        [deck.id, onVocabChanged],
+        [deck.id],
     );
 
     const handleRemove = useCallback(
         async (vocab) => {
             setRemovingId(vocab.id);
             try {
-                await api.removeVocabularyFromDeck(deck.id, vocab.id);
+                await api.removeVocabularyFromDeck(deck.id, vocab.id, vocab._lang);
                 setVocabularies((prev) => prev.filter((v) => v.id !== vocab.id));
-                onVocabChanged?.(vocab.id, false);
             } catch {
                 // silently ignore
             } finally {
                 setRemovingId(null);
             }
         },
-        [deck.id, onVocabChanged],
+        [deck.id],
     );
+
+    const langLabel = (lang) => (lang === "mandarin" ? t.nav.mandarinGroup : t.nav.cantoneseGroup);
 
     return (
         <div className="flex flex-col gap-4">
@@ -457,7 +473,10 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
                                 >
                                     <div className="flex-1 min-w-0">
                                         <span className="font-semibold text-han-trad text-base">
-                                            {vocab.hanTraditional}
+                                            {vocab.hanTraditional || vocab.hanHongKong || "—"}
+                                        </span>
+                                        <span className="ml-2 text-xs text-muted-foreground">
+                                            {langLabel(vocab._lang)}
                                         </span>
                                         {vocabRomanizationField(vocab, "sinoVietnamese") && (
                                             <span className="ml-2 text-sm text-viet">
@@ -511,8 +530,9 @@ function DeckVocabularyManager({ deck, onBack, onVocabChanged }) {
                             >
                                 <div className="flex-1 min-w-0">
                                     <span className="font-semibold text-han-trad text-base">
-                                        {vocab.hanTraditional}
+                                        {vocab.hanTraditional || vocab.hanHongKong || "—"}
                                     </span>
+                                    <span className="ml-2 text-xs text-muted-foreground">{langLabel(vocab._lang)}</span>
                                     {vocabRomanizationField(vocab, "sinoVietnamese") && (
                                         <span className="ml-2 text-sm text-viet">
                                             {vocabRomanizationField(vocab, "sinoVietnamese")}

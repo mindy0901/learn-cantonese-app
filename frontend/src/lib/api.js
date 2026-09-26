@@ -16,6 +16,10 @@ async function request(path, options = {}) {
             },
         });
 
+        // 304 Not Modified — data không đổi (ETag/If-None-Match trên /api/bootstrap). Trả null
+        // để caller biết dùng cache hiện tại, KHÔNG có body. (2026-09-02)
+        if (res.status === 304) return null;
+
         if (!res.ok) {
             const raw = await res.text();
             let message = res.statusText;
@@ -87,9 +91,35 @@ export const api = {
     checkIn: (date) => request("/api/checkins", { method: "POST", body: JSON.stringify({ date: date ?? null }) }),
     fetchCheckins: () => request("/api/checkins"),
 
+    // Favorite vocabularies (❤️ yêu thích) — mọi user đã đăng nhập. (đổi tên từ important 2026-09-20)
+    fetchFavoriteVocabularies: () => request("/api/favorite-vocabularies"),
+    setVocabularyFavorite: (lang, id, favorite) =>
+        request(`/api/favorite-vocabularies/${lang}/${id}`, { method: "PUT", body: JSON.stringify({ favorite }) }),
+
+    // Vocabulary mastery (progress 0-100%) — mọi user đã đăng nhập (2026-09-02)
+    fetchVocabularyMastery: () => request("/api/vocabulary-mastery"),
+    setVocabularyMastery: (lang, id, progress) =>
+        request(`/api/vocabulary-mastery/${lang}/${id}`, { method: "PUT", body: JSON.stringify({ progress }) }),
+
+    // Disliked vocabularies (🚫 không muốn học) — mọi user đã đăng nhập. (đổi tên từ ignored 2026-09-20)
+    fetchDislikedVocabularies: () => request("/api/disliked-vocabularies"),
+    setVocabularyDisliked: (lang, id, disliked) =>
+        request(`/api/disliked-vocabularies/${lang}/${id}`, { method: "PUT", body: JSON.stringify({ disliked }) }),
+
     fetchFromCloud: () => request("/api/data"),
 
     fetchFullData: () => api.fetchFromCloud(),
+
+    // Bootstrap — 1 API trả HẾT data khi đăng nhập/load app (2026-09-02):
+    // { mandarinVocabularies, cantoneseVocabularies, grammars,
+    //   favoriteVocabularyIds, dislikedVocabularyIds, vocabularyMastery, vocabularySets }.
+    // Thay cho 5 GET riêng (fetchFullData + fetchHkSuggestionMap + favorite + mastery + sets).
+    // `etag`: signature data hiện tại (client) → gửi If-None-Match; server trả 304 (null) khi
+    // không đổi → KHÔNG tải 45MB. Không truyền → luôn nhận 200 full. (2026-09-02)
+    fetchBootstrap: (etag) =>
+        request("/api/bootstrap", {
+            headers: etag ? { "If-None-Match": etag } : {},
+        }),
 
     // Tải toàn bộ 1 kho từ theo ngôn ngữ (on-demand).
     fetchLanguageData: (lang = apiLanguage) => request(`/api/${lang}-vocabularies`),
@@ -101,7 +131,7 @@ export const api = {
         sortDir = "desc",
         filter = "all",
         q = "",
-        importantFirst = false,
+        favoriteFirst = false,
         studyDue = false,
         maxProgress = null,
         hskLevel = null,
@@ -112,7 +142,7 @@ export const api = {
             sortKey,
             sortDir,
             filter,
-            importantFirst: importantFirst ? "1" : "0",
+            favoriteFirst: favoriteFirst ? "1" : "0",
         });
         if (q.trim()) params.set("q", q.trim());
         if (studyDue) params.set("studyDue", "1");
@@ -126,6 +156,14 @@ export const api = {
         const list = [...new Set((ids ?? []).map(String).filter(Boolean))];
         if (list.length === 0) return Promise.resolve([]);
         return request(`/api/${apiLanguage}-vocabularies/by-ids?ids=${encodeURIComponent(list.join(","))}`);
+    },
+
+    // By-ids theo NGÔN NGỮ tường minh (popup trùng khi thêm từ — không phụ thuộc mode hiện tại). (2026-09-09)
+    fetchVocabulariesByIdsLang: (lang, ids) => {
+        const valid = lang === "mandarin" || lang === "cantonese" ? lang : "cantonese";
+        const list = [...new Set((ids ?? []).map(String).filter(Boolean))];
+        if (list.length === 0) return Promise.resolve([]);
+        return request(`/api/${valid}-vocabularies/by-ids?ids=${encodeURIComponent(list.join(","))}`);
     },
 
     // Tra cứu từ đã tồn tại theo hán tự (duplicate detection khi tạo từ mới).
@@ -145,22 +183,23 @@ export const api = {
         return request(`/api/${valid}-vocabularies/find-by-han?han=${encodeURIComponent(h)}`);
     },
 
-    // Gợi ý giản thể cho form HK (hero Cantonese) — HK → giản thể qua hk2s, chỉ trả
-    // khi tìm thấy trong kho Mandarin.
+    // Gợi ý giản thể cho form HK (on-demand khi click vocab, 2026-09-02) — HK → giản thể
+    // qua hk2s, chỉ trả khi tìm thấy trong kho Mandarin.
     hanziSimplifiedSuggestion: async (hk) => {
         const h = String(hk ?? "").trim();
         if (!h) return { found: false, simplified: "" };
         return request(`/api/hanzi/simplified-suggestion?hk=${encodeURIComponent(h)}`);
     },
 
-    // Toàn bộ map HK → gợi ý mandarin (precompute lúc load — tra map thay vì gọi từng từ).
-    fetchHkSuggestionMap: () => request("/api/hanzi/hk-suggestion-map"),
-
     createVocabulary: (vocab) =>
         request(`/api/${apiLanguage}-vocabularies`, { method: "POST", body: JSON.stringify(vocab) }),
-    ocrVocabulary: (imageBase64, engine = "local") =>
-        request("/api/ocr-vocabulary", { method: "POST", body: JSON.stringify({ image: imageBase64, engine }) }),
-    ocrDerive: (text) => request("/api/ocr-derive", { method: "POST", body: JSON.stringify({ text }) }),
+    ocrVocabulary: (imageBase64, engine = "local", lang = "cantonese") =>
+        request("/api/ocr-vocabulary", {
+            method: "POST",
+            body: JSON.stringify({ image: imageBase64, engine, lang }),
+        }),
+    ocrDerive: (text, lang = "cantonese") =>
+        request("/api/ocr-derive", { method: "POST", body: JSON.stringify({ text, lang }) }),
     updateVocabulary: (id, vocab) =>
         request(`/api/${apiLanguage}-vocabularies/${id}`, { method: "PUT", body: JSON.stringify(vocab) }),
     deleteVocabulary: (id) => request(`/api/${apiLanguage}-vocabularies/${id}`, { method: "DELETE" }),
@@ -175,81 +214,7 @@ export const api = {
 
     backfillHanCharJyutping: () => request("/api/data/backfill-han-char-jyutping", { method: "POST", body: "{}" }),
 
-    backfillHanCharVariants: () => request("/api/data/backfill-han-char-variants", { method: "POST", body: "{}" }),
-
-    // Sync tất cả hán tự từ vocabularies vào bảng han_characters (find-or-create + merge readings + link)
-    // mode: "fast" = chỉ xử lý vocab chưa có hanCharacters; "full" = xóa hết rồi sync lại từ đầu
-    previewSyncHanCharacters: (mode = "fast") =>
-        request("/api/data/sync-han-characters/preview", { method: "POST", body: JSON.stringify({ mode }) }),
-    syncHanCharacters: (mode = "fast") =>
-        request("/api/data/sync-han-characters", { method: "POST", body: JSON.stringify({ mode }) }),
-    syncHanCharactersProgress: (jobId) => request(`/api/data/sync-han-characters/progress/${jobId}`),
-
-    // Sync stroke count cho bảng han_characters (cnchar + Unihan fallback)
-    // mode: "fast" = chỉ fill những ký tự chưa có stroke_count; "full" = tính lại tất cả
-    previewSyncHanCharStrokes: (mode = "fast") =>
-        request("/api/data/sync-han-char-strokes/preview", { method: "POST", body: JSON.stringify({ mode }) }),
-    syncHanCharStrokes: (mode = "fast") =>
-        request("/api/data/sync-han-char-strokes", { method: "POST", body: JSON.stringify({ mode }) }),
-    syncHanCharStrokesProgress: (jobId) => request(`/api/data/sync-han-char-strokes/progress/${jobId}`),
-
-    getHanCharsForVocabulary: (wordId) => request(`/api/vocabulary/${wordId}/han-characters`),
-
-    getVocabulariesForHanChar: (hanCharId) => request(`/api/han-characters/${hanCharId}/vocabulary`),
-
-    // Han Characters
-    browseHanCharacters: async ({
-        page = 1,
-        pageSize = 30,
-        search = "",
-        filter = "all",
-        sortKey = "createdAt",
-        sortDir = "desc",
-    } = {}) => {
-        const params = new URLSearchParams({
-            page: String(page),
-            pageSize: String(pageSize),
-            filter,
-            sortKey,
-            sortDir,
-        });
-        if (search.trim()) params.set("search", search.trim());
-        return request(`/api/han-characters/browse?${params}`);
-    },
-
-    /** Fetch multiple pages in one request: pages=1,2,3,4,5 */
-    browseHanCharactersChunk: async ({
-        pageSize = 30,
-        search = "",
-        filter = "all",
-        sortKey = "createdAt",
-        sortDir = "desc",
-        pages = [],
-    } = {}) => {
-        const params = new URLSearchParams({
-            pages: pages.join(","),
-            pageSize: String(pageSize),
-            filter,
-            sortKey,
-            sortDir,
-        });
-        if (search.trim()) params.set("search", search.trim());
-        return request(`/api/han-characters/browse?${params}`);
-    },
-
-    fetchHanCharacters: () => request("/api/han-characters"),
-
     fetchRadicals: () => request("/api/radicals"),
-
-    createHanCharacter: (item) => request("/api/han-characters", { method: "POST", body: JSON.stringify(item) }),
-
-    updateHanCharacter: (id, item) =>
-        request(`/api/han-characters/${id}`, { method: "PUT", body: JSON.stringify(item) }),
-
-    deleteHanCharacter: (id) => request(`/api/han-characters/${id}`, { method: "DELETE" }),
-
-    patchHanCharacterFlags: (id, flags) =>
-        request(`/api/han-characters/${id}/flags`, { method: "PATCH", body: JSON.stringify(flags) }),
 
     // Flashcard Decks
     fetchFlashcardDecks: () => request("/api/flashcard-decks"),
@@ -258,14 +223,25 @@ export const api = {
     updateFlashcardDeck: (id, deck) =>
         request(`/api/flashcard-decks/${id}`, { method: "PUT", body: JSON.stringify(deck) }),
     deleteFlashcardDeck: (id) => request(`/api/flashcard-decks/${id}`, { method: "DELETE" }),
-    fetchDeckVocabularies: (deckId) => request(`/api/flashcard-decks/${deckId}/vocabularies`),
-    addVocabularyToDeck: (deckId, vocabularyId) =>
+    addVocabularyToDeck: (deckId, vocabularyId, lang = apiLanguage) =>
         request(`/api/flashcard-decks/${deckId}/vocabularies`, {
             method: "POST",
-            body: JSON.stringify({ vocabularyId }),
+            body: JSON.stringify({ vocabularyId, lang }),
         }),
-    removeVocabularyFromDeck: (deckId, vocabularyId) =>
-        request(`/api/flashcard-decks/${deckId}/vocabularies/${vocabularyId}`, { method: "DELETE" }),
+    removeVocabularyFromDeck: (deckId, vocabularyId, lang = apiLanguage) =>
+        request(`/api/flashcard-decks/${deckId}/vocabularies/${vocabularyId}?lang=${encodeURIComponent(lang)}`, {
+            method: "DELETE",
+        }),
+
+    // Tags (dùng chung toàn app — CHỈ admin tạo/đổi tên/xóa + gán cho từ) — 2026-09-27
+    fetchTags: () => request("/api/tags"),
+    createTag: (tag) => request("/api/tags", { method: "POST", body: JSON.stringify(tag) }),
+    updateTag: (id, tag) => request(`/api/tags/${id}`, { method: "PATCH", body: JSON.stringify(tag) }),
+    deleteTag: (id) => request(`/api/tags/${id}`, { method: "DELETE" }),
+    fetchVocabularyTags: (lang, id) =>
+        request(`/api/vocabulary-tags?lang=${encodeURIComponent(lang)}&id=${encodeURIComponent(id)}`),
+    setVocabularyTag: ({ lang, vocabularyId, tagId, tagged }) =>
+        request("/api/vocabulary-tags", { method: "PUT", body: JSON.stringify({ lang, vocabularyId, tagId, tagged }) }),
 
     // Vocabulary Sets (custom user groups)
     fetchVocabularySets: () => request("/api/vocabulary-sets"),
@@ -273,13 +249,16 @@ export const api = {
     updateVocabularySet: (id, set) =>
         request(`/api/vocabulary-sets/${id}`, { method: "PUT", body: JSON.stringify(set) }),
     deleteVocabularySet: (id) => request(`/api/vocabulary-sets/${id}`, { method: "DELETE" }),
-    addVocabularyToSet: (setId, vocabularyId) =>
+    // ⚠️ 2026-09-02: bộ từ tách theo ngôn ngữ (mandarin/cantonese join table) → phải truyền lang.
+    addVocabularyToSet: (setId, vocabularyId, lang = apiLanguage) =>
         request(`/api/vocabulary-sets/${setId}/vocabularies`, {
             method: "POST",
-            body: JSON.stringify({ vocabularyId }),
+            body: JSON.stringify({ vocabularyId, lang }),
         }),
-    removeVocabularyFromSet: (setId, vocabularyId) =>
-        request(`/api/vocabulary-sets/${setId}/vocabularies/${vocabularyId}`, { method: "DELETE" }),
+    removeVocabularyFromSet: (setId, vocabularyId, lang = apiLanguage) =>
+        request(`/api/vocabulary-sets/${setId}/vocabularies/${vocabularyId}?lang=${encodeURIComponent(lang)}`, {
+            method: "DELETE",
+        }),
 
     /** Convert Chinese text to Jyutping */
     translate: async (text, source, target) => {
